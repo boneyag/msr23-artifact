@@ -27,7 +27,7 @@ Generalizable Python code change patterns - MSR 2023 paper artifact
     <td style="text-align:right">0 (0%)</td>
 	</tr><tr>
 		<td style="text-align:right">3</td>
-		<td>Swap ML tranining device</td>
+		<td>[Swap ML tranining device](https://github.com/boneyag/msr23-artifact/blob/main/p3.md)</td>
     <td style="text-align:right">5</td>
     <td style="text-align:right">0 (0%)</td>
 	</tr>
