@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        pg.done()
+
+        self.log.debug({&quotphase&quot: phase, &quottime&quot: time.time() - start})
+        <a id="change">avg_loss = float(total_loss)/total</a>
+        <a id="change">metrics[&quotavg_loss&quot] = avg_loss</a>
+        <a id="change">metrics[&quotperplexity&quot] = np.exp(avg_loss)</a>
+        for reporting in reporting_fns:
+            reporting(metrics, epochs, phase)
+        return metrics
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        for batch_dict in pg(vs):
+            input_ = self._input(batch_dict)
+            tgt = input_[&quottgt&quot]
+            <a id="change">tgt_lens = batch_dict[&quottgt_lengths&quot]</a>
+            pred = self.model(input_)
+            loss = self.crit(pred, tgt)
+            toks = self._num_toks(tgt_lens)
+            total_loss += loss.item() * toks
+            <a id="change">total_toks += toks</a>
+
+        metrics = <a id="change">self.calc_metrics(total_loss, total_toks)</a>
+        <a id="change">self.report(
+            epochs, metrics, start,
+            phase, &quotEPOCH&quot, reporting_fns
+        )</a>
+        return metrics
+
+    def train(self, ts, reporting_fns):
+        self.model.train()</code></pre>

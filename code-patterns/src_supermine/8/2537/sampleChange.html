@@ -1,0 +1,87 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        td3_trainer.load_weights()
+
+        <a id="change">while frame_idx &lt; test_frames:
+            state = env.reset()
+            state = state.astype(np.float32)
+            episode_reward = 0
+            if frame_idx &lt; 1:
+                _ = td3_trainer.policy_net(
+                    [state]
+                )  &#47&#47 need an extra call to make inside functions be able to use forward
+                _ = td3_trainer.target_policy_net([state])
+
+            for step in range(max_steps):
+                action = td3_trainer.policy_net.get_action(state, explore_noise_scale=1.0)
+                next_state, reward, done, _ = env.step(action)
+                next_state = next_state.astype(np.float32)
+                env.render()
+                done = 1 if done ==True else 0
+
+                state = next_state
+                episode_reward += reward
+                frame_idx += 1
+
+                &#47&#47 if frame_idx % 50 == 0:
+                &#47&#47     plot(frame_idx, rewards)
+
+                if done:
+                    break
+            episode = int(frame_idx / max_steps)
+            all_episodes = int(test_frames / max_steps)
+            print(&quotEpisode: {}/{}  | Episode Reward: {:.4f}  | Running Time: {:.4f}&quot\
+            .format(episode, all_episodes, episode_reward, time.time()-t0 ) )
+            rewards.append(episode_reward)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        frame_idx = 0
+        rewards = []
+        t0 = time.time()
+        <a id="change">for eps in range(train_episodes):
+            state = env.reset()
+            state = state.astype(np.float32)
+            episode_reward = 0
+            if frame_idx &lt; 1:
+                _ = td3_trainer.policy_net(
+                    [state]
+                )  &#47&#47 need an extra call here to make inside functions be able to use model.forward
+                _ = td3_trainer.target_policy_net([state])
+
+            for step in range(max_steps):
+                if frame_idx &gt; explore_steps:
+                    action = td3_trainer.policy_net.get_action(state, explore_noise_scale=1.0)
+                else:
+                    action = td3_trainer.policy_net.sample_action()
+
+                next_state, reward, done, _ = env.step(action)
+                next_state = next_state.astype(np.float32)
+                env.render()
+                done = 1 if done ==True else 0
+
+                replay_buffer.push(state, action, reward, next_state, done)
+
+                state = next_state
+                episode_reward += reward
+                frame_idx += 1
+
+                if len(replay_buffer) &gt; batch_size:
+                    for i in range(update_itr):
+                        td3_trainer.update(batch_size, eval_noise_scale=0.5, reward_scale=1.)
+
+                if done:
+                    break
+
+            if eps % int(save_interval) == 0:
+                plot(rewards, Algorithm_name=&quotTD3&quot, Env_name=env_id)
+                td3_trainer.save_weights()
+
+            print(&quotEpisode: {}/{}  | Episode Reward: {:.4f}  | Running Time: {:.4f}&quot\
+            .format(eps, train_episodes, episode_reward, time.time()-t0 ))
+            rewards.append(episode_reward)
+       </a> td3_trainer.save_weights()
+
+    if mode==&quottest&quot:
+        frame_idx = 0</code></pre>

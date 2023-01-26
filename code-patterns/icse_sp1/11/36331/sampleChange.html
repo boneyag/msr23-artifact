@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    zy = mx.sym.pick(fc7, gt_label, axis=1)
+    cos_t = zy/s
+    t = mx.sym.arccos(cos_t)
+    <a id="change">if args.margin_verbose&gt;0:
+      margin_symbols.append(mx.symbol.mean(t))
+   </a> if args.margin_a&gt;0.0:
+      t = t*args.margin_a
+    if args.margin_m&gt;0.0:
+      t = t+args.margin_m</code></pre><h3>After Change</h3><pre><code class='java'>
+    _weight = mx.symbol.L2Normalization(_weight, mode=&quotinstance&quot)
+    nembedding = mx.symbol.L2Normalization(embedding, mode=&quotinstance&quot, name=&quotfc1n&quot)*s
+    fc7 = mx.sym.FullyConnected(data=nembedding, weight = _weight, no_bias = True, num_hidden=args.num_classes, name=&quotfc7&quot)
+    <a id="change">if args.margin_a!=1.0 or args.margin_m!=0.0 or args.margin_b!=0.0:
+      if args.margin_a==1.0 and args.margin_m==0.0:
+        s_m = s*args.margin_b
+        gt_one_hot = mx.sym.one_hot(gt_label, depth = args.num_classes, on_value = s_m, off_value = 0.0)
+        fc7 = fc7-gt_one_hot
+      else:
+        zy = mx.sym.pick(fc7, gt_label, axis=1)
+        cos_t = zy/s
+        t = mx.sym.arccos(cos_t)
+        if args.margin_a!=1.0:
+          t = t*args.margin_a
+        if args.margin_m&gt;0.0:
+          t = t+args.margin_m
+        body = mx.sym.cos(t)
+        if args.margin_b&gt;0.0:
+          body = body - args.margin_b
+        new_zy = body*s
+        diff = new_zy - zy
+        diff = mx.sym.expand_dims(diff, 1)
+        gt_one_hot = mx.sym.one_hot(gt_label, depth = args.num_classes, on_value = 1.0, off_value = 0.0)
+        body = mx.sym.broadcast_mul(gt_one_hot, diff)
+        fc7 = fc7+body
+ </a> elif args.loss_type==6:
+    s = args.margin_s
+    m = args.margin_m
+    assert s&gt;0.0</code></pre>

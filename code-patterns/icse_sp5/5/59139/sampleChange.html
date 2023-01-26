@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        output_size = preact.shape[2]
+        preact = preact.reshape([num_time_steps * num_sequences,
+                                 output_size])
+        self.output_probs = <a id="change">tensor.nnet.softmax(preact)</a>
+        self.output_probs = self.output_probs.reshape([num_time_steps,
+                                                       num_sequences,
+                                                       output_size])
+        if self.network.mode.is_distribution():</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Generate one word for each training word as a negative sample.
+            sample_class_ids = self.random.uniform(self.target_probs.shape)
+            sample_class_ids *= num_classes
+            <a id="change">sample_class_ids = tensor.cast(sample_class_ids, &quotint64&quot)</a>
+            <a id="change">self.negative_probs = self._get_sigmoid(layer_input,
+                                                    sample_class_ids)</a>
+            &#47&#47 minibatch_size = self.negative_probs.shape[0] * self.negative_probs.shape[1]
+            &#47&#47 minibatch_size = tensor.cast(minibatch_size, theano.config.floatX)
+            &#47&#47 cost = -tensor.log(self.target_probs)
+            &#47&#47 cost -= minibatch_size * tensor.log(1.0 - self.negative_probs)</code></pre>

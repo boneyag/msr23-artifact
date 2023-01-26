@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Return `top_beams` decoding
+    &#47&#47 (also remove initial id from the beam search)
+    if not params.decode_normalize:
+        <a id="change">if top_beams == 1:
+            return ids[:, 0, 1:]
+        else:
+            return ids[:, :top_beams, 1:]
+   </a> else:
+        if top_beams == 1:
+            return ids[:, 0, 1:], scores[:, 0]
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 shape: [batch, beam_size]
+    normalized_scores = scores / output_length
+
+    <a id="change">if params.decode_normalize:
+        scores, indices = tf.nn.top_k(normalized_scores, k=top_beams)
+        &#47&#47 shape of ids: [batch, beam_size, max_length]
+        &#47&#47 shape of coordinates: [batch, beam_size, 2]
+        batch_pos = compute_batch_indices(batch_size, beam_size)
+        coordinates = tf.stack([batch_pos, indices], axis=2)
+        ids = tf.gather_nd(ids, coordinates)
+
+    &#47&#47 Return `top_beams` decoding
+    &#47&#47 (also remove initial id from the beam search)
+   </a> return ids[:, :top_beams, 1:], scores[:, :top_beams]
+</code></pre>

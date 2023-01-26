@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+@ONNXConverter.register_handler("GlobalAveragePool")
+def _convert_global_average_pool(converter: ONNXConverter, onnx_op: INodeProto):
+    &#47&#47 FIXME: It&quots possible to support in current version of webdnn
+    <a id="change">raise NotImplementedError("[ONNXConverter] Operator \"GlobalAveragePooling\" is not supported yet.")</a>
+
+
+@ONNXConverter.register_handler("GlobalMaxPool")
+def _convert_global_max_pool(converter: ONNXConverter, onnx_op: INodeProto):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+@ONNXConverter.register_handler("GlobalAveragePool")
+def _convert_global_average_pool(converter: ONNXConverter, onnx_op: INodeProto):
+    <a id="change">x = converter.get_variable(onnx_op.input[0])</a>
+    if x.ndim == 4:
+        x.order.unify(OrderNCHW)
+
+    reduction_size = mul(<a id="change">x.shape[2:]</a>)
+    reduction_axis = Axis()
+
+    x = x.reshape([<a id="change">x.shape[0]</a>, <a id="change">x</a>.shape[1], reduction_size],
+                  <a id="change">Order([x.order.axes[0], x.order.axes[1], reduction_axis])</a>)
+    <a id="change">y, = Sum(None, axis=reduction_axis)(x)</a>
+    y /= reduction_size
+
+    converter.set_variable(<a id="change">onnx_op.output[0]</a>, y)
+
+
+@ONNXConverter.register_handler("GlobalMaxPool")</code></pre>

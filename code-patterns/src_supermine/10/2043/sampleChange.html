@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    if compute_loss:
+      total_samples_all = MPI.COMM_WORLD.gather(total_samples)
+      <a id="change">total_loss_all = MPI.COMM_WORLD.gather(total_loss)</a>
+    results_per_batch_all = MPI.COMM_WORLD.gather(results_per_batch)
+
+    MPI.COMM_WORLD.Barrier()
+    if MPI.COMM_WORLD.Get_rank() != 0:
+      &#47&#47 returning dummy tuple of correct shape
+      if compute_loss:
+        return None, None
+      else:
+        return None
+
+    if compute_loss:
+      total_loss = np.sum(total_loss_all)
+      <a id="change">total_samples = np.sum(total_samples_all)</a>
+    &#47&#47 moving GPU dimension into the batch dimension
+    <a id="change">results_per_batch = [item for sl in results_per_batch_all for item in sl]</a>
+
+  if compute_loss:
+    total_loss /= total_samples
+    <a id="change">return results_per_batch, total_loss</a>
+
+  return results_per_batch
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    )
+
+  if compute_loss:
+    <a id="change">total_samples = collect_if_horovod(total_samples, model.hvd, &quotsum&quot)</a>
+    <a id="change">total_loss = collect_if_horovod(total_loss, model.hvd, &quotsum&quot)</a>
+  results_per_batch = collect_if_horovod(results_per_batch, model.hvd, &quotgather&quot)
+
+  if results_per_batch is None:
+    &#47&#47 returning dummy tuple of correct shape if not in master worker
+    if compute_loss:
+      return None, None
+    else:
+      return None
+
+  if compute_loss:
+    <a id="change">return results_per_batch, total_loss / total_samples</a>
+  else:
+    return results_per_batch
+
+</code></pre>

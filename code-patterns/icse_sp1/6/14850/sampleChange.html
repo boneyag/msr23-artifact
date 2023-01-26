@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      clip_gradients=clip_gradients,
+      learning_rate_decay_fn=decay_fn,
+      name="optim",
+      summaries=<a id="change">[
+          "learning_rate",
+          "global_gradient_norm",
+      ]</a>,
+      colocate_gradients_with_ops=True)
+
+def regularization_penalty(regularization_type, scale, weights_list=None):</code></pre><h3>After Change</h3><pre><code class='java'>
+          start_decay_steps=params.get("start_decay_steps", 0),
+          minimum_learning_rate=params.get("minimum_learning_rate", 0))
+      learning_rate = decay_fn(learning_rate, global_step)
+    <a id="change">tf.summary.scalar("learning_rate", learning_rate)</a>
+
+    &#47&#47 Optimizer.
+    optimizer_class = get_optimizer_class(params["optimizer"])
+    optimizer_params = params.get("optimizer_params", {})
+    if optimizer_class.__name__ == "AdafactorOptimizer":
+      optimizer = optimizers.get_adafactor_optimizer_from_params(
+          optimizer_class, optimizer_params, learning_rate=learning_rate)
+    else:
+      optimizer = optimizer_class(learning_rate, **optimizer_params)
+    if mixed_precision:
+      optimizer = optimizers.MixedPrecisionOptimizerWrapper(
+          optimizer, loss_scale=get_loss_scale_from_params(params))
+
+    &#47&#47 Gradients.
+    gradients = optimizer.compute_gradients(loss, colocate_gradients_with_ops=True)
+    _summarize_gradients_norm("global_norm/gradient_norm", gradients)
+    if "clip_gradients" in params:
+      <a id="change">gradients = _clip_gradients_by_norm(gradients, float(params["clip_gradients"]))</a>
+      _summarize_gradients_norm("global_norm/clipped_gradient_norm", gradients)
+
+    return optimizer.apply_gradients(gradients, global_step=global_step)
+</code></pre>

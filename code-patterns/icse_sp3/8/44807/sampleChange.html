@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def train_runtime(Net, data, epochs, device):
+    <a id="change">g = DGLGraph(data.graph)</a>
+    g.set_n_initializer(dgl.init.zero_initializer)
+    x = torch.tensor(data.features, dtype=torch.float, device=device)
+    mask = torch.tensor(data.train_mask, dtype=torch.uint8, device=device)
+    y = torch.tensor(data.labels, dtype=torch.long, device=device)[mask]
+    g.add_edges(g.nodes(), g.nodes())
+    <a id="change">norm = torch.pow(g.in_degrees().float(), -0.5)</a>
+    norm[torch.isinf(norm)] = 0
+    g.ndata[&quotnorm&quot] = norm.unsqueeze(1).to(device)
+
+    model = Net(g, x.size(1), data.num_labels).to(device)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def train_runtime(model, data, epochs, device):
+    <a id="change">if hasattr(data, &quotfeatures&quot</a>):
+        x = torch.tensor(data.features, dtype=torch.float, device=device)
+    else:
+        <a id="change">x = None</a>
+    mask = data.train_mask if hasattr(data, &quottrain_mask&quot) else data.train_idx
+    y = torch.tensor(data.labels, dtype=torch.long, device=device)[mask]
+
+    model = model.to(device)</code></pre>

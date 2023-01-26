@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        sent = lookup_sentence(rlut2, tgt_i)
+        print(&quot[Actual] %s&quot % sent)
+
+        dst_i, scores = <a id="change">beam_decode(model, torch.autograd.Variable(src_i.view(1, -1), requires_grad=False), 1)</a>
+        sent = lookup_sentence(rlut2, dst_i[0])
+        print(&quotGuess: %s&quot % sent)
+        print(&quot------------------------------------------------------------------------&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    for src_len_i, src_i, tgt_i in zip(src_len, src_array, tgt_array):
+
+        print(&quot========================================================================&quot)
+        <a id="change">src_len_i = torch.ones(1).fill_(src_len_i).type_as(src_len)</a>
+
+        sent = lookup_sentence(rlut1, src_i.cpu().numpy(), reverse=reverse)
+        print(&quot[OP] %s&quot % sent)
+        sent = lookup_sentence(rlut2, tgt_i)
+        print(&quot[Actual] %s&quot % sent)
+        src_dict = {&quotsrc&quot: torch.autograd.Variable(src_i.view(1, -1), requires_grad=False),
+                    &quotsrc_len&quot: torch.autograd.Variable(src_len_i, requires_grad=False)}
+        <a id="change">dst_i = model.run(src_dict)[0][0]</a>
+        sent = lookup_sentence(rlut2, dst_i)
+        print(&quotGuess: %s&quot % sent)
+        print(&quot------------------------------------------------------------------------&quot)
+</code></pre>

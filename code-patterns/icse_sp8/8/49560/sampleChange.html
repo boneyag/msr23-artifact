@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 x[1]: neighbour vector (batch_size, head size, neighbours, feature_size)
+        x_self, x_neigh = x
+
+        <a id="change">if self._build_mlp_only:
+            return self.apply_mlp(x_self, **kwargs)
+
+        &#47&#47 Weight maxtrix multiplied by self features
+       </a> from_self = <a id="change">K.dot(x_self, self.w_self)</a>
+
+        &#47&#47 If there are neighbours aggregate over them
+        from_neigh = self.aggregate_neighbours(x_neigh)
+
+        h_out = K.concatenate([from_self, from_neigh], axis=2)
+
+        &#47&#47 Finally, add bias and apply activation
+        if self.has_bias:
+            h_out = self.act(h_out + self.bias)
+        else:
+            <a id="change">h_out = self.act(h_out)</a>
+
+        return h_out
+
+    def compute_output_shape(self, input_shape):</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        &#47&#47 If a neighbourhood dimension exists for the group, aggregate over the neighbours
+        &#47&#47 otherwise create a simple layer.
+        <a id="change">sources = []</a>
+        for ii, x in enumerate(inputs):
+            &#47&#47 If the group is included, apply aggregation and collect the output tensor
+            &#47&#47 otherwise, this group is ignored
+            if self.included_weight_groups[ii]:
+                x_agg = self.group_aggregate(x, group_idx=ii)
+                <a id="change">sources.append(x_agg)</a>
+
+        &#47&#47 Concatenate outputs from all groups
+        &#47&#47 TODO: Generalize to sum a subset of groups.
+        h_out = K.concatenate(sources, axis=2)</code></pre>

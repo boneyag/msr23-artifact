@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      source_vars = tf.contrib.framework.get_model_variables(&quotsource&quot)
+      target_vars = tf.contrib.framework.get_model_variables(&quottarget&quot)
+      update_op = common.soft_variables_update(source_vars, target_vars, tau)
+      <a id="change">with self.cached_session(graph=g) as sess:
+        tf.global_variables_initializer().run()
+        v_s, v_t = sess.run([source_vars, target_vars])
+        sess.run(update_op)
+        new_v_s, new_v_t = sess.run([source_vars, target_vars])
+        for i_v_s, i_v_t, n_v_s, n_v_t in zip(v_s, v_t, new_v_s, new_v_t):
+          &#47&#47 Source variables don&quott change
+          self.assertAllClose(n_v_s, i_v_s)
+          &#47&#47 Target variables are updated
+          self.assertAllClose(n_v_t, tau*i_v_s + (1-tau)*i_v_t)
+
+ </a> @parameterized.parameters(0.0, 0.5, 1.0)
+  def testShuffleOrderVariables(self, tau):
+    with tf.Graph().as_default() as g:
+      inputs = tf.constant([[1, 2], [3, 4]], dtype=tf.float32)</code></pre><h3>After Change</h3><pre><code class='java'>
+    v_s, v_t = self.evaluate([source_vars, target_vars])
+    self.evaluate(update_op)
+    new_v_s, new_v_t = self.evaluate([source_vars, target_vars])
+    <a id="change">for i_v_s, i_v_t, n_v_s, n_v_t in zip(v_s, v_t, new_v_s, new_v_t):
+      &#47&#47 Source variables don&quott change
+      self.assertAllClose(n_v_s, i_v_s)
+      &#47&#47 Target variables are updated
+      self.assertAllClose(n_v_t, tau*i_v_s + (1-tau)*i_v_t)
+
+ </a> @parameterized.parameters(0.0, 0.5, 1.0)
+  def testShuffleOrderVariables(self, tau):
+    inputs = tf.constant([[1, 2], [3, 4]], dtype=tf.float32)
+    tf.contrib.layers.fully_connected(inputs, 2, scope=&quotsource&quot)</code></pre>

@@ -1,0 +1,105 @@
+<html><h3>60c52ea766b8049c4396ad76c6f4242039c5e974,keras/models.py,,load_model,#Any#Any#Any#,170
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if model_config is None:
+        raise ValueError(&quotNo model found in config file.&quot)
+    model_config = json.loads(model_config.decode(&quotutf-8&quot))
+    <a id="change">model = model_from_config(model_config, custom_objects=custom_objects)</a>
+
+    &#47&#47 set weights
+    topology.load_weights_from_hdf5_group(f[&quotmodel_weights&quot], model.layers)
+
+    &#47&#47 Early return if compilation is not required.
+    if not compile:
+        f.close()
+        return model
+
+    &#47&#47 instantiate optimizer
+    training_config = f.attrs.get(&quottraining_config&quot)
+    if training_config is None:
+        warnings.warn(&quotNo training configuration found in save file: &quot
+                      &quotthe model was *not* compiled. Compile it manually.&quot)
+        f.close()
+        return model
+    training_config = json.loads(training_config.decode(&quotutf-8&quot))
+    optimizer_config = training_config[&quotoptimizer_config&quot]
+    optimizer = optimizers.deserialize(optimizer_config,
+                                       custom_objects=custom_objects)
+
+    &#47&#47 Recover loss functions and metrics.
+    loss = convert_custom_objects(training_config[&quotloss&quot])
+    metrics = convert_custom_objects(training_config[&quotmetrics&quot])
+    sample_weight_mode = training_config[&quotsample_weight_mode&quot]
+    <a id="change">loss_weights = training_config[&quotloss_weights&quot]</a>
+
+    &#47&#47 Compile model.
+    <a id="change">model.compile(optimizer=optimizer,
+                  loss=loss,
+                  metrics=metrics,
+                  loss_weights=loss_weights,
+                  sample_weight_mode=sample_weight_mode)</a>
+
+    &#47&#47 Set optimizer weights.
+    if &quotoptimizer_weights&quot in f:
+        &#47&#47 Build train function (to get weight updates).</code></pre><h3>After Change</h3><pre><code class='java'>
+        if obj in custom_objects:
+            return custom_objects[obj]
+        return obj
+    <a id="change">with h5py.File(filepath, mode=&quotr&quot) as f:
+        &#47&#47 instantiate model
+        model_config = f.attrs.get(&quotmodel_config&quot)
+        if model_config is None:
+            raise ValueError(&quotNo model found in config file.&quot)
+        model_config = json.loads(model_config.decode(&quotutf-8&quot))
+        model = model_from_config(model_config, custom_objects=custom_objects)
+
+        &#47&#47 set weights
+        topology.load_weights_from_hdf5_group(f[&quotmodel_weights&quot], model.layers)
+
+        &#47&#47 Early return if compilation is not required.
+        if not compile:
+            return model
+
+        &#47&#47 instantiate optimizer
+        training_config = f.attrs.get(&quottraining_config&quot)
+        if training_config is None:
+            warnings.warn(&quotNo training configuration found in save file: &quot
+                          &quotthe model was *not* compiled. Compile it manually.&quot)
+            return model
+        training_config = json.loads(training_config.decode(&quotutf-8&quot))
+        optimizer_config = training_config[&quotoptimizer_config&quot]
+        optimizer = optimizers.deserialize(optimizer_config,
+                                           custom_objects=custom_objects)
+
+        &#47&#47 Recover loss functions and metrics.
+        loss = convert_custom_objects(training_config[&quotloss&quot])
+        metrics = convert_custom_objects(training_config[&quotmetrics&quot])
+        sample_weight_mode = training_config[&quotsample_weight_mode&quot]
+        loss_weights = training_config[&quotloss_weights&quot]
+
+        &#47&#47 Compile model.
+        model.compile(optimizer=optimizer,
+                      loss=loss,
+                      metrics=metrics,
+                      loss_weights=loss_weights,
+                      sample_weight_mode=sample_weight_mode)
+
+        &#47&#47 Set optimizer weights.
+        if &quotoptimizer_weights&quot in f:
+            &#47&#47 Build train function (to get weight updates).
+            if isinstance(model, Sequential):
+                model.model._make_train_function()
+            else:
+                model._make_train_function()
+            optimizer_weights_group = f[&quotoptimizer_weights&quot]
+            optimizer_weight_names = [n.decode(&quotutf8&quot) for n in
+                                      optimizer_weights_group.attrs[&quotweight_names&quot]]
+            optimizer_weight_values = [optimizer_weights_group[n] for n in
+                                       optimizer_weight_names]
+            model.optimizer.set_weights(optimizer_weight_values)
+   </a> return model
+
+
+def model_from_config(config, custom_objects=None):</code></pre><img src="221241742.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 7</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/60c52ea766b8049c4396ad76c6f4242039c5e974#diff-b36b9e0ef3d3d534810dc5cc50ad9f7ed1c5f17b9b3419157cd5ad8a14be9f2eL236' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: 60c52ea766b8049c4396ad76c6f4242039c5e974</div><div id='time'> Time: 2017-05-26</div><div id='author'> Author: anis.khlif01@gmail.com</div><div id='file'> File Name: keras/models.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: load_model</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/82b56ca707a6cd08ddc65c6f33ade2acfaca5ca3#diff-8504c1ef49944afb5660b91d0710e9a640f041c7b4b63db4a883a58a2bc64f05L124' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 82b56ca707a6cd08ddc65c6f33ade2acfaca5ca3</div><div id='time'> Time: 2019-01-03</div><div id='author'> Author: shiningsun@google.com</div><div id='file'> File Name: official/resnet/keras/keras_imagenet_main.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/cmu-db/ottertune/commit/c76c8e7bfb2ade8fc5496b60339d77424dfa29b8#diff-c11056232312aba0d77abc88722dd91be8ded26050920746f5ff375acdc924f7L29' target='_blank'>Link</a></div><div id='project'> Project Name: cmu-db/ottertune</div><div id='commit'> Commit Name: c76c8e7bfb2ade8fc5496b60339d77424dfa29b8</div><div id='time'> Time: 2019-12-17</div><div id='author'> Author: bohanzhang95@gmail.com</div><div id='file'> File Name: server/analysis/nn_tf.py</div><div id='class'> Class Name: NeuralNet</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/1255d5b94dec8f1927e3d500db15ef2078196ecb#diff-138507cc4baeb86c0261fca833ea972a7155432d9af3e450f92e2a41ea987997L178' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 1255d5b94dec8f1927e3d500db15ef2078196ecb</div><div id='time'> Time: 2019-04-08</div><div id='author'> Author: seemuch@users.noreply.github.com</div><div id='file'> File Name: official/recommendation/ncf_keras_main.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: run_ncf</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/82b56ca707a6cd08ddc65c6f33ade2acfaca5ca3#diff-607cf153466250f6215cfcda4fe373ea88a5a8baeeb7d377571b6bbab09b8a37L135' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 82b56ca707a6cd08ddc65c6f33ade2acfaca5ca3</div><div id='time'> Time: 2019-01-03</div><div id='author'> Author: shiningsun@google.com</div><div id='file'> File Name: official/resnet/keras/keras_cifar_main.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/286f897139d03390497a7a896e541f40497d73bd#diff-df688f1224a7107c12d9c11398f155ae6f3edac9b6e01965ff7cbefcf747222aL193' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 286f897139d03390497a7a896e541f40497d73bd</div><div id='time'> Time: 2019-08-06</div><div id='author'> Author: rxsang@google.com</div><div id='file'> File Name: models/experimental/resnet50_keras/resnet50_tf2.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/8d77bc5f267a49ed890222039f9ee058cca7f22f#diff-3c44f2e425ebcd5bbe2bf95190a8e3418945a916913e965f6e7f7890ba32a133L999' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: 8d77bc5f267a49ed890222039f9ee058cca7f22f</div><div id='time'> Time: 2021-03-01</div><div id='author'> Author: scottzhu@google.com</div><div id='file'> File Name: keras/saving/save_test.py</div><div id='class'> Class Name: TestWholeModelSaving</div><div id='method'> Method Name: test_multi_output_metrics_name_stay_same</div><BR>

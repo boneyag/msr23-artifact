@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def user_representation(self, item_sequences):
+
+        sequence_embeddings = <a id="change">self.item_embeddings(item_sequences)</a>
+
+        (batch_size, seq_len, dim) = sequence_embeddings.size()
+
+        &#47&#47 Move embedding dimensions to channels and add a fourth dim.</code></pre><h3>After Change</h3><pre><code class='java'>
+    def user_representation(self, item_sequences):
+
+        &#47&#47 Make the embedding dimension the channel dimension
+        sequence_embeddings = <a id="change">(self.item_embeddings(item_sequences)
+                               .permute(0, 2, 1))</a>
+        &#47&#47 Add a trailing dimension of 1
+        <a id="change">sequence_embeddings = (sequence_embeddings
+                               .unsqueeze(3))</a>
+
+        x = sequence_embeddings
+        for i, cnn_layer in enumerate(self.cnn_layers):
+            &#47&#47 Pad so that the CNN doesn&quott have the future
+            &#47&#47 of the sequence in its receptive field.
+            x = <a id="change">F.pad(x, (0, 0, self.kernel_width - min(i, 1), 0))</a>
+            x = F.relu(cnn_layer(x))
+
+        x = <a id="change">x.squeeze(3)</a>
+
+        return x[:, :, :-1], x[:, :, -1]
+
+    def forward(self, user_representations, targets):</code></pre>

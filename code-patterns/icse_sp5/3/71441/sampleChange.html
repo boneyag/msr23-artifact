@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            processed += 1
+            
+            &#47&#47 Throttle notifications to client as to not flood them
+            <a id="change">if time.time() - throttle &gt; 0.05:
+                r.publish(user.username, &quotsearch_index_complete:%.4s&quot % (float(processed)/total))
+                throttle = time.time()
+        
+       </a> duration = time.time() - start
+        logging.user(user, "~FCIndexed ~SB%s/%s feeds~SN for ~SB~FB%s~FC~SN in ~FM~SB%s~FC~SN sec." % 
+                     (processed, total, user.username, round(duration, 2)))
+        r.publish(user.username, &quotsearch_index_complete:done&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+        subscriptions = UserSubscription.objects.filter(user=user).only(&quotfeed&quot)
+        total = subscriptions.count()
+        
+        <a id="change">feed_ids = []</a>
+        for sub in subscriptions:
+            try:
+                feed_ids.append(sub.feed.pk)
+            except Feed.DoesNotExist:
+                continue
+        
+        feed_id_chunks = [c for c in chunks(feed_ids, 6)]
+        logging.user(user, "~FCIndexing ~SB%s feeds~SN in %s chunks..." % 
+                     (total, len(feed_id_chunks)))
+        
+        tasks = [IndexSubscriptionsChunkForSearch().s(feed_ids=feed_id_chunk,
+                                                      user_id=self.user_id
+                                                      ).set(queue=&quotsearch_indexer&quot)
+                 for feed_id_chunk in feed_id_chunks]
+        group = celery.group(*tasks)
+        res = <a id="change">group.apply_async(queue=&quotsearch_indexer&quot)</a>
+        res.join_native()
+        
+        duration = time.time() - start
+        logging.user(user, "~FCIndexed ~SB%s feeds~SN in ~FM~SB%s~FC~SN sec." % </code></pre>

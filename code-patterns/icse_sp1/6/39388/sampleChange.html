@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            for goal in goals:
+              goal_chunk = filter(goal.group.predicate, chunk)
+              if len(goal_chunk) &gt; 0:
+                <a id="change">context.log.info(&quot[%s:%s:%s]&quot % (phase, group_name, goal.name))</a>
+                execution_phases[phase].add((group_name, goal.name))
+                execute_task(goal.name, tasks_by_goal[goal], goal_chunk)
+
+      if getattr(context.options, &quotexplain&quot, None):</code></pre><h3>After Change</h3><pre><code class='java'>
+            with context.new_workunit(name=goal.name, labels=[WorkUnit.GOAL]):
+              execute_task(goal.name, tasks_by_goal[goal], context.targets())
+          else:
+            <a id="change">with context.new_workunit(name=group_name, labels=[WorkUnit.GROUP]):
+              for chunk in Group._create_chunks(context, goals):
+                for goal in goals:
+                  goal_chunk = filter(goal.group.predicate, chunk)
+                  if len(goal_chunk) &gt; 0:
+                    execution_phases[phase].add((group_name, goal.name))
+                    with context.new_workunit(name=goal.name, labels=[WorkUnit.GOAL]):
+                      execute_task(goal.name, tasks_by_goal[goal], goal_chunk)
+
+     </a> if getattr(context.options, &quotexplain&quot, None):
+        for phase, goals in execution_phases.items():
+          goal_to_task = ", ".join(expand_goal(goal) for goal in goals)
+          print("%s [%s]" % (phase, goal_to_task))</code></pre>

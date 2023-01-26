@@ -1,0 +1,47 @@
+<html><h3>ff0d04f231cc8cd912a99982269dca0c41a68316,thinc/neural/_classes/batchnorm.py,BatchNorm,begin_update,#BatchNorm#Any#Any#,43
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        diff = X - self.m
+        incr = (1-alpha) * diff
+        self.m += incr.mean(axis=0)
+        self.v += <a id="change">(diff * incr).mean(axis=0)</a>
+        self.v *= alpha
+
+        Xhat = _forward(self.ops, X, mu, var)
+
+        &#47&#47 Batch "renormalization"
+        if self.nr_upd &gt;= 7500:
+            Xhat *= var / <a id="change">(self.v+1e-08)</a>
+            <a id="change">Xhat += (mu - self.m) / (self.v+1e-08)</a>
+
+        y, backprop_rescale = self._begin_update_scale_shift(Xhat)
+
+        def finish_update(dy, sgd=None):</code></pre><h3>After Change</h3><pre><code class='java'>
+        X, backprop_child = self.child.begin_update(X, drop=0.)
+        N, mu, var = _get_moments(self.ops, X)
+        var += self.eps
+        self.r = min(self.rmax, max(<a id="change">1. / self.rmax</a>, var / self.v))
+        self.d = min(self.dmax, <a id="change">max(-self.dmax, (mu-self.m) / self.v)</a>)
+        self.nr_upd += 1
+
+        &#47&#47 I&quotm not sure this is the best thing to do --
+        &#47&#47 Should we consider a sample be the instance, or the batch?
+        &#47&#47 If we want the variance of the inputs it should be like:
+        &quot&quot&quot
+        diff = X - self.m
+        incr = (1-alpha) * diff
+        self.m += incr.mean(axis=0)
+        self.v += (diff * incr).mean(axis=0)
+        self.v *= alpha
+        &quot&quot&quot
+        self.m += self.alpha * (mu - self.m)
+        self.v += self.alpha * (var - self.v)
+        Xhat = _forward(self.ops, X, mu, var)
+        Xhat *= self.r
+        <a id="change">Xhat += self.d</a>
+
+        y, backprop_rescale = self._begin_update_scale_shift(Xhat)
+
+        def finish_update(dy, sgd=None):</code></pre><img src="107609608.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/explosion/thinc/commit/ff0d04f231cc8cd912a99982269dca0c41a68316#diff-109786c0d7b3ddfaa47501c055f28058edf07707406dd5b965311a49967021baL43' target='_blank'>Link</a></div><div id='project'> Project Name: explosion/thinc</div><div id='commit'> Commit Name: ff0d04f231cc8cd912a99982269dca0c41a68316</div><div id='time'> Time: 2018-03-14</div><div id='author'> Author: honnibal+gh@gmail.com</div><div id='file'> File Name: thinc/neural/_classes/batchnorm.py</div><div id='class'> Class Name: BatchNorm</div><div id='method'> Method Name: begin_update</div><BR><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/68963166e5fe4e23655279b653f7cc6ed6d0d0b3#diff-94e4e0f4d6cb9a253dfe26a52ef960dbe66dc761af68bc9480b907945181e500L32' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: 68963166e5fe4e23655279b653f7cc6ed6d0d0b3</div><div id='time'> Time: 2015-09-14</div><div id='author'> Author: mauro.zucchelli88@gmail.com</div><div id='file'> File Name: dipy/reconst/mapmri.py</div><div id='class'> Class Name: MapmriModel</div><div id='method'> Method Name: fit</div><BR><BR><div id='link'><a href='https://github.com/explosion/thinc/commit/3611452afac53b53f3e41ee83d7fc7bd811ffb81#diff-109786c0d7b3ddfaa47501c055f28058edf07707406dd5b965311a49967021baL43' target='_blank'>Link</a></div><div id='project'> Project Name: explosion/thinc</div><div id='commit'> Commit Name: 3611452afac53b53f3e41ee83d7fc7bd811ffb81</div><div id='time'> Time: 2018-03-14</div><div id='author'> Author: honnibal+gh@gmail.com</div><div id='file'> File Name: thinc/neural/_classes/batchnorm.py</div><div id='class'> Class Name: BatchNorm</div><div id='method'> Method Name: begin_update</div><BR>

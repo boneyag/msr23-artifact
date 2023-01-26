@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    super(SubnetworkLayer, cls).transform_config_dict(d, network=network, get_layer=get_layer)
+    &#47&#47 Construct it now, just to resolve dependencies.
+    <a id="change">cls._construct_template_subnet(
+      name=d.get("name", "unknown-subnet"),
+      network=network, get_parent_layer=get_layer, parent_layer_cache=d.setdefault("_parent_layer_cache", {}),
+      subnetwork=d["subnetwork"],
+      concat_sources=d.get("concat_sources", True), sources=d["sources"])</a>
+
+  &#47&#47 noinspection PyShadowingNames
+  @classmethod
+  def _construct_template_subnet(cls, name, network, subnetwork, sources, concat_sources=True,</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Note that in the common cases, this transform_config_dict is actually *not* called,
+    &#47&#47 because net.construct_layer directly gets the Subnetwork via cls_get_sub_network.
+    &#47&#47 This is only called when we explicitly construct the layer itself.
+    <a id="change">name = d["_name"]</a>
+    &#47&#47 Make sure the Subnetwork instance is created.
+    &#47&#47 This works both in case of template construction or for real construction.
+    &#47&#47 See Subnetwork for determining whether this is supposed to be a template or real.
+    subnet = cls.cls_get_sub_network(network=network, name=name, layer_desc=d)
+    cls._update_for_rec_previous_layer(d.get("rec_previous_layer"), d["subnetwork"], <a id="change">subnet.net</a>)
+    d["_subnet"] = subnet
+    &#47&#47 In case of non-template construction, this will trigger the non-template construction of our "output" sublayer.
+    d["_output"] = subnet.construct_layer("output", parent_get_layer=get_layer)</code></pre>

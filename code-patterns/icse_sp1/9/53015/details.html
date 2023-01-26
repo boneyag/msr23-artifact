@@ -1,0 +1,41 @@
+<html><h3>d7148f390db12a3f7e4b43ab584648b2e4a1882d,pyro/distributions/spanning_tree.py,SpanningTree,log_partition_function,#SpanningTree#,109
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        adjacency = torch.zeros(V, V, dtype=edge_probs.dtype)
+        adjacency[grid[0], grid[1]] = edge_probs
+        adjacency[grid[1], grid[0]] = edge_probs
+        <a id="change">laplacian = adjacency.sum(-1).diag() - adjacency</a>
+        truncated = laplacian[:-1, :-1]
+        try:
+            import gpytorch
+            log_det = gpytorch.lazy.NonLazyTensor(truncated).logdet()
+        except ImportError:
+            log_det = torch.cholesky(truncated).diag().log().sum() * 2
+        <a id="change">return log_det + shift * (V - 1)</a>
+
+    def log_prob(self, edges):
+        if self._validate_args:
+            self.validate_edges(edges)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 See https://en.wikipedia.org/wiki/Kirchhoff%27s_theorem
+        V = self.num_vertices
+        v1, v2 = make_complete_graph(V).unbind(0)
+        <a id="change">logits = self.edge_logits.new_full((V, V), -math.inf)</a>
+        logits[v1, v2] = self.edge_logits
+        logits[v2, v1] = self.edge_logits
+        <a id="change">log_diag = logits.logsumexp(-1)</a>
+        &#47&#47 Numerically stabilize so that laplacian has 1&quots on the diagonal.
+        shift = 0.5 * log_diag
+        laplacian = torch.eye(V) - (logits - shift - shift[:, None]).exp()
+        truncated = laplacian[:-1, :-1]
+        try:
+            import gpytorch
+            log_det = gpytorch.lazy.NonLazyTensor(truncated).logdet()
+        except ImportError:
+            log_det = torch.cholesky(truncated).diag().log().sum() * 2
+        <a id="change">return log_det + log_diag[:-1].sum()</a>
+
+    def log_prob(self, edges):
+        if self._validate_args:
+            self.validate_edges(edges)</code></pre><img src="245064123.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/uber/pyro/commit/d7148f390db12a3f7e4b43ab584648b2e4a1882d#diff-2961f8062e8cfa849cb6f357c7877d5438bdd5b9c9995adfddf2d2c045c94df3L109' target='_blank'>Link</a></div><div id='project'> Project Name: uber/pyro</div><div id='commit'> Commit Name: d7148f390db12a3f7e4b43ab584648b2e4a1882d</div><div id='time'> Time: 2020-11-07</div><div id='author'> Author: fritz.obermeyer@gmail.com</div><div id='file'> File Name: pyro/distributions/spanning_tree.py</div><div id='class'> Class Name: SpanningTree</div><div id='method'> Method Name: log_partition_function</div><BR><BR><div id='link'><a href='https://github.com/geomstats/geomstats/commit/39c16df4d13f716bd6e1c4702e32890cb5944917#diff-7423536be0895f0f6585447bfd773622fef4b26e646a0455c44386da90d5c71dL116' target='_blank'>Link</a></div><div id='project'> Project Name: geomstats/geomstats</div><div id='commit'> Commit Name: 39c16df4d13f716bd6e1c4702e32890cb5944917</div><div id='time'> Time: 2020-11-19</div><div id='author'> Author: alice.le-brigant@enac.fr</div><div id='file'> File Name: geomstats/geometry/dirichlet_distributions.py</div><div id='class'> Class Name: DirichletMetric</div><div id='method'> Method Name: metric_matrix</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/8c40ed8fb56baef7ab5ce8d5ed85bb10e4f09174#diff-48c0f5a56e9f867307681b2c7a4f74ab2a45939a5791bdbe5ff93af5f4018bebL199' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 8c40ed8fb56baef7ab5ce8d5ed85bb10e4f09174</div><div id='time'> Time: 2020-12-16</div><div id='author'> Author: wjm363@nyu.edu</div><div id='file'> File Name: gpytorch/lazy/kronecker_product_lazy_tensor.py</div><div id='class'> Class Name: KroneckerProductLazyTensor</div><div id='method'> Method Name: root_decomposition</div><BR>

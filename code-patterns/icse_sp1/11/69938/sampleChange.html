@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+ds_data, data, labels = gen_data()
+
+&#47&#47 Create tf session
+<a id="change">sess = tf.Session()</a>
+<a id="change">sess.run(tf.global_variables_initializer())</a>
+
+config = dict(dynamic_model=dict(arg1=0, arg2=0))
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+config = dict(dynamic_model=dict(arg1=0, arg2=0))
+
+&#47&#47 create a model
+<a id="change">model = MyModel()</a>
+
+&#47&#47 Create a template pipeline
+pp = (Pipeline(config=config)
+        .init_variable(&quotnum_classes&quot, 3)
+        .init_variable(&quotvar_name&quot, &quotnum_classes&quot)
+        .init_variable(&quotloss_history&quot, init_on_each_run=list)
+        .init_variable(&quotloss_history2&quot, init_on_each_run=list)
+        .init_model("static", MyModel, name="static_model", config=dict(loss=&quotce&quot))
+        .init_model("dynamic", MyModel, "dynamic_model",
+                    dict(num_classes=V(V(&quotvar_name&quot)),
+                         images_shape=F(lambda batch: batch.images.shape[1:]),
+                         loss=&quotce&quot))
+        .import_model(&quotimported_model&quot, <a id="change">model</a>)
+        &#47&#47.init_model("static", TFModel, "dynamic_model2", config=dict(build=False, load=True, path=&quot./models/dynamic&quot))
+        .load((data, labels))
+        &#47&#47.train_model("static_model", fn=trans)
+        .train_in_batch()
+        .train_model("dynamic_model", fetches=["loss", "loss"], feed_dict={&quotx&quot: B(&quotimages&quot), &quoty&quot: B(&quotlabels&quot)},
+                    extend_to=V(&quotloss_history&quot))
+        .train_model("imported_model", fetches="loss", feed_dict={&quotx&quot: B(&quotimages&quot), &quoty&quot: B(&quotlabels&quot)},
+                    append_to=V(&quotloss_history2&quot))
+        .run(K//10, n_epochs=1, shuffle=False, drop_last=False, lazy=True)
+)
+
+&#47&#47 Create another template
+t = time()
+&#47&#47res = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+
+print("-------------------------------------------")
+print("============== start run ==================")
+t = time()
+res = (pp &lt;&lt; ds_data).run()
+print(time() - t)
+
+res.save_model("dynamic_model", &quot./models/dynamic&quot)
+
+print(res.get_variable("loss_history"))
+
+<a id="change">print(res.get_variable("loss_history2"))</a>
+</code></pre>

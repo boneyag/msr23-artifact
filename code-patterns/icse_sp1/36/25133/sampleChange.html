@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        sample_size = len(self.data)
+        num_parents_states = float(len(state_counts.columns))
+
+        <a id="change">score = 0</a>
+        <a id="change">for (
+            parents_state
+        ) in state_counts:  &#47&#47 iterate over df columns (only 1 if no parents)
+            conditional_sample_size = sum(state_counts[parents_state])
+
+            for state in var_states:
+                if state_counts[parents_state][state] &gt; 0:
+                    score += state_counts[parents_state][state] * (
+                        log(state_counts[parents_state][state])
+                        - log(conditional_sample_size)
+                    )
+
+       </a> score -= 0.5 * log(sample_size) * num_parents_states * (var_cardinality - 1)
+
+        return score
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        var_states = self.state_names[variable]
+        var_cardinality = len(var_states)
+        <a id="change">state_counts</a> = self.state_counts(variable, parents)
+        sample_size = len(self.data)
+        num_parents_states = float(<a id="change">state_counts.shape[1]</a>)
+
+        <a id="change">counts = np.asarray(state_counts)</a>
+        log_likelihoods = np.zeros_like(counts, dtype=np.float_)
+
+        &#47&#47 Compute the log-counts
+        np.log(counts, out=log_likelihoods, where=counts &gt; 0)
+
+        &#47&#47 Compute the log-conditional sample size
+        <a id="change">log_conditionals = np.sum(counts, axis=0, dtype=np.float_)</a>
+        np.log(log_conditionals, out=log_conditionals, where=log_conditionals &gt; 0)
+
+        &#47&#47 Compute the log-likelihoods
+        log_likelihoods -= log_conditionals
+        log_likelihoods *= counts
+
+        <a id="change">score = np.sum(log_likelihoods)</a>
+        score -= 0.5 * log(sample_size) * num_parents_states * (var_cardinality - 1)
+
+        return score
+</code></pre>

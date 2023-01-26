@@ -1,0 +1,89 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        pm._log.info("Stage: {:3d} Beta: {:.3f} Steps: {:3d}".format(stage, beta, n_steps))
+        &#47&#47 Apply Metropolis kernel (mutation)
+        proposed = draws * n_steps
+        priors = <a id="change">np.array([prior_logp(sample) for sample in posterior]).squeeze()</a>
+        tempered_logp = priors + likelihoods * beta
+
+        parameters = (
+            proposal,</code></pre><h3>After Change</h3><pre><code class='java'>
+        priors = [prior_logp(sample) for sample in posterior]
+        likelihoods = [likelihood_logp(sample) for sample in posterior]
+
+    <a id="change">priors = np.array(priors).squeeze()</a>
+    likelihoods = np.array(likelihoods).squeeze()
+
+    while beta &lt; 1:
+        beta, old_beta, weights, sj = calc_beta(beta, likelihoods, threshold)
+
+        model.marginal_likelihood *= sj
+        &#47&#47 resample based on plausibility weights (selection)
+        resampling_indexes = np.random.choice(np.arange(draws), size=draws, p=weights)
+        posterior = posterior[resampling_indexes]
+        priors = priors[resampling_indexes]
+        likelihoods = likelihoods[resampling_indexes]
+
+        &#47&#47 compute proposal distribution based on weights
+        covariance = _calc_covariance(posterior, weights)
+        proposal = MultivariateNormalProposal(covariance)
+
+        &#47&#47 compute scaling (optional) and number of Markov chains steps (optional), based on the
+        &#47&#47 acceptance rate of the previous stage
+        if (tune_scaling or tune_steps) and stage &gt; 0:
+            scaling, n_steps = _tune(
+                acc_rate, proposed, tune_scaling, tune_steps, scaling, max_steps, p_acc_rate
+            )
+
+        pm._log.info("Stage: {:3d} Beta: {:.3f} Steps: {:3d}".format(stage, beta, n_steps))
+        &#47&#47 Apply Metropolis kernel (mutation)
+        proposed = draws * n_steps
+        tempered_logp = priors + likelihoods * beta
+
+        parameters = (
+            proposal,
+            scaling,
+            accepted,
+            any_discrete,
+            all_discrete,
+            discrete,
+            n_steps,
+            prior_logp,
+            likelihood_logp,
+            beta,
+        )
+        if parallel and cores &gt; 1:
+            results = pool.starmap(
+                metrop_kernel,
+                [
+                    (
+                        posterior[draw],
+                        tempered_logp[draw],
+                        priors[draw],
+                        likelihoods[draw],
+                        *parameters,
+                    )
+                    for draw in range(draws)
+                ],
+            )
+        else:
+            results = [
+                metrop_kernel(
+                    posterior[draw],
+                    tempered_logp[draw],
+                    priors[draw],
+                    likelihoods[draw],
+                    *parameters
+                )
+                for draw in tqdm(range(draws), disable=not progressbar)
+            ]
+
+        posterior, acc_list, priors, likelihoods = zip(*results)
+        posterior = np.array(posterior)
+        <a id="change">priors = np.array(priors)</a>
+        likelihoods = np.array(likelihoods)
+        acc_rate = sum(acc_list) / proposed
+        stage += 1
+</code></pre>

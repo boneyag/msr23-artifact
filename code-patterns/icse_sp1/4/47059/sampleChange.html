@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mask = sequence_mask(
+            sequence_length=length, max_len=target.size(1)).unsqueeze(2)
+        losses = losses * mask.float()
+        <a id="change">loss = losses.sum() / (length.float().sum() * float(target.shape[2]))</a>
+        return loss
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        mask = sequence_mask(
+            sequence_length=length, max_len=target.size(1)).unsqueeze(2).float()
+        mask = mask.expand_as(input)
+        <a id="change">loss = functional.mse_loss(
+            input * mask, target * mask, reduction="sum")</a>
+        loss = loss / mask.sum()
+        return loss
+
+</code></pre>

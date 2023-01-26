@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.mean_module = ConstantMean()
+        self.covar_module = RBFKernel()
+        self.task_covar_module = IndexKernel()
+        <a id="change">self.register_parameter(&quotconstant_mean&quot, nn.Parameter(torch.randn(1)), bounds=(-1, 1))</a>
+        self.register_parameter(&quotlog_noise&quot, nn.Parameter(torch.randn(1)), bounds=(-6, 6))
+        <a id="change">self.register_parameter(&quotlog_lengthscale&quot, nn.Parameter(torch.randn(1)), bounds=(-6, 6))</a>
+        self.register_parameter(&quottask_matrix&quot, nn.Parameter(torch.randn(2, 1)), bounds=(-6, 6))
+        <a id="change">self.register_parameter(&quottask_log_vars&quot, nn.Parameter(torch.randn(2)), bounds=(-6, 6))</a>
+
+    def forward(self, x, i):
+        mean_x = self.mean_module(x, constant=self.constant_mean)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+class MultitaskGPModel(gpytorch.GPModel):
+    def __init__(self):
+        <a id="change">likelihood = GaussianLikelihood(log_noise_bounds=(-6, 6))</a>
+        super(MultitaskGPModel, self).__init__(likelihood)
+        self.mean_module = ConstantMean(constant_bounds=(-1, 1))
+        self.covar_module = RBFKernel(log_lengthscale_bounds=(-6, 6))
+        self.task_covar_module = IndexKernel(n_tasks=2, rank=1, covar_factor_bounds=(-6, 6), log_var_bounds=(-6, 6))</code></pre>

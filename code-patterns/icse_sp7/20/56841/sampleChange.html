@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        Hebbian learning rule for ``Connection`` subclass of ``AbstractConnection`` class.
+        
+        source_s = <a id="change">self</a>.source.s.view(-1).float()
+        source_x = self.source.x.view(-1)
+        target_s = self.target.s.view(-1).float()
+        target_x = <a id="change">self.target.x.view(-1)</a>
+
+        &#47&#47 Pre-synaptic update.
+        self.connection.w += self.nu[0] * <a id="change">torch.ger(source_s, target_x)</a>
+        &#47&#47 Post-synaptic update.
+        self.connection.w += self.nu[1] * torch.ger(source_x, target_s)
+
+        super().update()</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        Hebbian learning rule for ``Connection`` subclass of ``AbstractConnection`` class.
+        
+        <a id="change">batch_size = self.source.batch_size</a>
+
+        source_s = <a id="change">self</a>.source.s.view(<a id="change">batch_size</a>, -1).unsqueeze(<a id="change">2</a>).float()
+        source_x = <a id="change">self.source.x.view(batch_size, -1).unsqueeze(2)</a>
+        target_s = <a id="change">self</a>.target.s.view(batch_size, -1).unsqueeze(<a id="change">1</a>).float()
+        target_x = <a id="change">self.target.x.view(batch_size, -1).unsqueeze(1)</a>
+
+        &#47&#47 Pre-synaptic update.
+        <a id="change">update = torch.bmm(source_s, target_x).sum(dim=0)</a>
+        self.connection.w += self.nu[0] * update
+
+        &#47&#47 Post-synaptic update.
+        <a id="change">update = torch.bmm(source_x, target_s).sum(dim=0)</a>
+        self.connection.w += self.nu[1] * update
+
+        super().update()
+</code></pre>

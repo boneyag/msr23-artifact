@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        function uses the grad, alongside the embedding_matrix to select the token that maximizes the
+        first-order taylor approximation of the loss.
+        
+        grad = <a id="change">torch.from_numpy(grad)</a>
+        if token_idx &gt;= self.embedding_matrix.size(0):
+            &#47&#47 This happens when we&quotve truncated our fake embedding matrix.  We need to do a dot
+            &#47&#47 product with the word vector of the current token; if that token is out of
+            &#47&#47 vocabulary for our truncated matrix, we need to run it through the embedding layer.
+            inputs = self._make_embedder_input([self.vocab.get_token_from_index(token_idx)])
+            word_embedding = self.embedding_layer(inputs)[0]
+        else:
+            word_embedding = torch.nn.functional.embedding(
+                torch.LongTensor([token_idx]), self.embedding_matrix
+            )
+        word_embedding = word_embedding.detach().unsqueeze(0)
+        grad = grad.unsqueeze(0).unsqueeze(0)
+        &#47&#47 solves equation (3) here https://arxiv.org/abs/1903.06620
+        new_embed_dot_grad = torch.einsum("bij,kj-&gt;bik", (grad, self.embedding_matrix))
+        prev_embed_dot_grad = torch.einsum("bij,bij-&gt;bi", (grad, word_embedding)).unsqueeze(-1)
+        <a id="change">neg_dir_dot_grad</a> = sign * (prev_embed_dot_grad - new_embed_dot_grad)
+        <a id="change">neg_dir_dot_grad</a> = neg_dir_dot_grad.detach().cpu().numpy()
+        &#47&#47 Do not replace with non-alphanumeric tokens
+        neg_dir_dot_grad[:, :, self.invalid_replacement_indices] = -numpy.inf
+        best_at_each_step = neg_dir_dot_grad.argmax(2)</code></pre><h3>After Change</h3><pre><code class='java'>
+        function uses the grad, alongside the embedding_matrix to select the token that maximizes the
+        first-order taylor approximation of the loss.
+        
+        grad = util.move_to_device(<a id="change">torch.from_numpy(grad)</a>, self.cuda_device)
+        if token_idx &gt;= self.embedding_matrix.size(0):
+            &#47&#47 This happens when we&quotve truncated our fake embedding matrix.  We need to do a dot
+            &#47&#47 product with the word vector of the current token; if that token is out of
+            &#47&#47 vocabulary for our truncated matrix, we need to run it through the embedding layer.
+            inputs = self._make_embedder_input([self.vocab.get_token_from_index(token_idx)])
+            word_embedding = self.embedding_layer(inputs)[0]
+        else:
+            word_embedding = torch.nn.functional.embedding(
+                util.move_to_device(torch.LongTensor([token_idx]), self.cuda_device),
+                self.embedding_matrix,
+            )
+        word_embedding = word_embedding.detach().unsqueeze(0)
+        grad = grad.unsqueeze(0).unsqueeze(0)
+        &#47&#47 solves equation (3) here https://arxiv.org/abs/1903.06620
+        new_embed_dot_grad = torch.einsum("bij,kj-&gt;bik", (grad, self.embedding_matrix))
+        prev_embed_dot_grad = torch.einsum("bij,bij-&gt;bi", (grad, word_embedding)).unsqueeze(-1)
+        <a id="change">neg_dir_dot_grad</a> = sign * (prev_embed_dot_grad - new_embed_dot_grad)
+        <a id="change">neg_dir_dot_grad</a> = neg_dir_dot_grad.detach().cpu().numpy()
+        &#47&#47 Do not replace with non-alphanumeric tokens
+        neg_dir_dot_grad[:, :, self.invalid_replacement_indices] = -numpy.inf
+        best_at_each_step = neg_dir_dot_grad.argmax(2)</code></pre>

@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+train, val, test = datasets.SNLI.splits(inputs, answers)
+
+<a id="change">inputs.build_vocab(train)</a>
+answers.build_vocab(train)
+
+train_iter, val_iter, test_iter = data.BucketIterator.splits(
+            (train, val, test), batch_size=args.batch_size, device=args.gpu)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+train, val, test = datasets.SNLI.splits(inputs, answers)
+
+inputs.build_vocab(train, vectors=(<a id="change">args.data_cache</a>, <a id="change">args.word_vectors</a>, args.d_embed))
+answers.build_vocab(train)
+
+train_iter, val_iter, test_iter = data.BucketIterator.splits(
+            (train, val, test), batch_size=args.batch_size, device=args.gpu)
+
+config = args
+config.n_embed = len(inputs.vocab)
+config.d_out = len(answers.vocab)
+config.n_cells = config.n_layers
+if config.bidirectional:
+    config.n_cells *= 2
+
+model = SNLIClassifier(config)
+<a id="change">if args.wv_path:
+    model.embed.weight = inputs.vocab.vectors
+</a>model.cuda()
+criterion = nn.CrossEntropyLoss()
+opt = O.Adam(model.parameters(), lr=args.lr)
+</code></pre>

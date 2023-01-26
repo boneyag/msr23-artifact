@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        x = super(PositionalLookupTableEmbeddings, self).encode(x) * math.sqrt(self.dsz)
+        B, T, C = get_shape_as_list(x)
+        signal = get_timing_signal_1d(T, C, min_timescale=1.0, max_timescale=self.max_timescale, start_index=0)
+        <a id="change">return x + signal</a>
+
+    @classmethod
+    def create(cls, model, name, **kwargs):
+        return cls(name, vsz=model.vsz, dsz=model.dsz, weights=model.weights, **kwargs)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def encode(self, x):
+        x = super().encode(x) * tf.constant(self.scale)
+        T = tf.shape(x)[1]
+        <a id="change">pos = self.positional(T)</a>
+        <a id="change">return self.dropout(x + pos, training=TRAIN_FLAG())</a>
+
+
+class LearnedPositionalLookupTableEmbeddings(LearnedPositionalMixin, LookupTableEmbeddings):
+    def __init__(self, trainable=True, name=None, dtype=tf.float32, **kwargs):</code></pre>

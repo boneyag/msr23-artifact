@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def choose_action(self, curr_state, phase=RunPhase.TRAIN):
+        assert not self.env.discrete_controls, &quotDDPG works only for continuous control problems&quot
+        &#47&#47 convert to batch so we can run it through the network
+        <a id="change">observation = np.expand_dims(np.array(curr_state[&quotobservation&quot]), 0)</a>
+        result = self.actor_network.online_network.predict(observation)
+        action_values = result[0].squeeze()
+
+        if phase == RunPhase.TRAIN:</code></pre><h3>After Change</h3><pre><code class='java'>
+        if type(action) != np.ndarray:
+            action_batch = np.array([[action]])
+        inputs = self.tf_input_state(curr_state)
+        <a id="change">inputs[&quotaction&quot] = action_batch</a>
+        q_value = self.critic_network.online_network.predict(inputs)[0]
+        self.q_values.add_sample(q_value)
+        action_info = {"action_value": q_value}
+</code></pre>

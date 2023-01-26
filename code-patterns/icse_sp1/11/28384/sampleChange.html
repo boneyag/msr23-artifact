@@ -1,0 +1,119 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+&#47&#47 Create a template pipeline
+template_pp = (<a id="change">Pipeline</a>(config=config)
+                .init_variable("session", init=tf.Session)
+                .init_variable("loss history", init=list, init_on_each_run=True)
+                .init_model("static_model")
+)
+
+&#47&#47 Create another template
+<a id="change">pp2</a> = (template_pp
+        .init_variable("session", sess)
+        .init_variable("print lock", init=threading.Lock)
+        .init_model("dynamic", MyModel, "my_model", config=F(MyBatch.make_data_for_dynamic))
+        .init_model("dynamic", MyModel, "my_model2")
+        &#47&#47.init_model("MyModel")
+        .load(data)
+        &#47&#47.train_global()
+        .train_static()
+        &#47&#47.train_dynamic()
+        .train_in_batch("dynamic_model")
+        &#47&#47.train_model("MyModel")
+        .train_model("my_model")
+        .train_model("my_model2", save_to=V(&quotoutput&quot))
+        .run(K//10, n_epochs=1, shuffle=False, drop_last=False, lazy=True)
+)
+
+&#47&#47 Create another template
+t = time()
+&#47&#47res = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+
+print("-------------------------------------------")
+print("============== start run ==================")
+t = time()
+<a id="change">res</a> = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+&#47&#47ModelDirectory.print()
+
+
+print("-------------------------------------------------")
+print("============== start gen_batch ==================")
+<a id="change">res</a> = pp2 &lt;&lt; ds_data
+print("Start iterating...")
+t = time()
+t1 = t
+for batch in res.gen_batch(K, n_epochs=1, drop_last=True, prefetch=Q*0):
+    with res.get_variable("print lock"):
+        print("Batch", batch.indices, "is ready in", time() - t1)
+    t1 = time()
+
+print("Stop iterating:", time() - t)
+
+&#47&#47ModelDirectory.print()
+
+print("loss:", <a id="change">res</a>.get_variable("loss history"))
+
+print("global:", res.get_model_by_name("global_model"))
+
+print("dynamic:", res.get_model_by_name("dynamic_model"))
+
+<a id="change">pp3</a> = (Pipeline()
+           .init_variable("session", sess)
+           .import_model("my_model2", res)
+           .load(data)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+&#47&#47 Create a template pipeline
+template_pp = (<a id="change">Pipeline</a>(config=config)
+                .init_variable("loss history", init=list, init_on_each_run=True)
+                .init_model("static_model", MyModel)
+)
+
+&#47&#47 Create another template
+<a id="change">pp2</a> = (template_pp
+        .init_variable("print lock", init=threading.Lock)
+        .init_model("dynamic", MyModel, "my_model", config=F(MyBatch.make_data_for_dynamic))
+        .init_model("dynamic", MyModel, "my_model2")
+        .load(data)
+        .train_model("my_model")
+        .train_model("my_model2", save_to=V(&quotoutput&quot))
+        .run(K//10, n_epochs=1, shuffle=False, drop_last=False, lazy=True)
+)
+
+&#47&#47 Create another template
+t = time()
+&#47&#47res = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+
+print("-------------------------------------------")
+print("============== start run ==================")
+t = time()
+<a id="change">res</a> = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+
+
+print("-------------------------------------------------")
+print("============== start gen_batch ==================")
+<a id="change">res</a> = pp2 &lt;&lt; ds_data
+print("Start iterating...")
+t = time()
+t1 = t
+for batch in res.gen_batch(K, n_epochs=1, drop_last=True, prefetch=Q*0):
+    with res.get_variable("print lock"):
+        print("Batch", batch.indices, "is ready in", time() - t1)
+    t1 = time()
+
+print("Stop iterating:", time() - t)
+
+
+
+<a id="change">pp3</a> = (Pipeline()
+           .import_model("my_model2", res)
+           .load(data)
+           .train_model("my_model2")</code></pre>

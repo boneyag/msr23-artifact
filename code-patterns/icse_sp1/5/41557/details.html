@@ -1,0 +1,82 @@
+<html><h3>5685e22e05c353aec54e8cd12e4a646cde0ef0e4,optuna/storages/_rdb/storage.py,RDBStorage,_check_and_set_param_distribution,#RDBStorage#Any#Any#Any#Any#Any#,772
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        distribution: distributions.BaseDistribution,
+    ) -&gt; None:
+
+        <a id="change">session = self.scoped_session()</a>
+
+        &#47&#47 Acquire lock.
+        &#47&#47
+        &#47&#47 Assume that study exists.
+        models.StudyModel.find_by_id(study_id, session, for_update=True)
+
+        models.TrialModel.find_or_raise_by_id(trial_id, session)
+
+        previous_record = (
+            session.query(models.TrialParamModel)
+            .join(models.TrialModel)
+            .filter(models.TrialModel.study_id == study_id)
+            .filter(models.TrialParamModel.param_name == param_name)
+            .first()
+        )
+        if previous_record is not None:
+            distributions.check_distribution_compatibility(
+                distributions.json_to_distribution(previous_record.distribution_json),
+                distribution,
+            )
+
+        session.add(
+            models.TrialParamModel(
+                trial_id=trial_id,
+                param_name=param_name,
+                param_value=param_value_internal,
+                distribution_json=distributions.distribution_to_json(distribution),
+            )
+        )
+
+        &#47&#47 Release lock.
+        <a id="change">session.commit()</a>
+
+    def get_trial_param(self, trial_id: int, param_name: str) -&gt; float:
+
+        session = self.scoped_session()</code></pre><h3>After Change</h3><pre><code class='java'>
+        distribution: distributions.BaseDistribution,
+    ) -&gt; None:
+
+        <a id="change">with self._session_scope() as session:
+            &#47&#47 Acquire lock.
+            &#47&#47
+            &#47&#47 Assume that study exists.
+            models.StudyModel.find_by_id(study_id, session, for_update=True)
+
+            models.TrialModel.find_or_raise_by_id(trial_id, session)
+
+            previous_record = (
+                session.query(models.TrialParamModel)
+                .join(models.TrialModel)
+                .filter(models.TrialModel.study_id == study_id)
+                .filter(models.TrialParamModel.param_name == param_name)
+                .first()
+            )
+            if previous_record is not None:
+                distributions.check_distribution_compatibility(
+                    distributions.json_to_distribution(previous_record.distribution_json),
+                    distribution,
+                )
+
+            session.add(
+                models.TrialParamModel(
+                    trial_id=trial_id,
+                    param_name=param_name,
+                    param_value=param_value_internal,
+                    distribution_json=distributions.distribution_to_json(distribution),
+                )
+            )
+
+   </a> def get_trial_param(self, trial_id: int, param_name: str) -&gt; float:
+
+        with self._session_scope() as session:
+            trial = models.TrialModel.find_or_raise_by_id(trial_id, session)</code></pre><img src="195615336.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pfnet/optuna/commit/5685e22e05c353aec54e8cd12e4a646cde0ef0e4#diff-6048e6b64855f2df6bcd963dee2c988e671a2971a5aad48ef5e88c5f6d49b3adL735' target='_blank'>Link</a></div><div id='project'> Project Name: pfnet/optuna</div><div id='commit'> Commit Name: 5685e22e05c353aec54e8cd12e4a646cde0ef0e4</div><div id='time'> Time: 2020-10-21</div><div id='author'> Author: keisuke.umezawa@gmail.com</div><div id='file'> File Name: optuna/storages/_rdb/storage.py</div><div id='class'> Class Name: RDBStorage</div><div id='method'> Method Name: _check_and_set_param_distribution</div><BR><BR><div id='link'><a href='https://github.com/mlflow/mlflow/commit/a7272b7309b6d53e70afe7c19dc3ca383962261a#diff-66bc108304bc8b841aa356538c453a6e9a7c60d7a8ee60527996914bea65794eL140' target='_blank'>Link</a></div><div id='project'> Project Name: mlflow/mlflow</div><div id='commit'> Commit Name: a7272b7309b6d53e70afe7c19dc3ca383962261a</div><div id='time'> Time: 2019-03-13</div><div id='author'> Author: 39497902+dbczumar@users.noreply.github.com</div><div id='file'> File Name: mlflow/store/sqlalchemy_store.py</div><div id='class'> Class Name: SqlAlchemyStore</div><div id='method'> Method Name: create_experiment</div><BR><BR><div id='link'><a href='https://github.com/biolab/orange3/commit/ce3c375ad366e131b76c70e5d99dbd2af7c9cedf#diff-e50ded9c989e479ea3f4ebe486e8d7d702b268cb7eeca45ecfb789296bc45315L24' target='_blank'>Link</a></div><div id='project'> Project Name: biolab/orange3</div><div id='commit'> Commit Name: ce3c375ad366e131b76c70e5d99dbd2af7c9cedf</div><div id='time'> Time: 2014-03-04</div><div id='author'> Author: lan.zagar@fri.uni-lj.si</div><div id='file'> File Name: Orange/tests/sql/base.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: create_iris</div><BR>

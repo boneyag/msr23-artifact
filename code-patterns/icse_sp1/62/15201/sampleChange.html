@@ -1,0 +1,128 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            p.join()
+            &#47&#47 if the step says unknown target .... need to check if the target can
+            &#47&#47 be build dynamically.
+            <a id="change">if isinstance(res, UnknownTarget):
+                runnable._status = None
+                target = res.target
+                if self.resolve_dangling_targets(dag, [target]) == 0:
+                    raise RuntimeError(&quotFailed to resolve {}{}.&quot
+                        .format(target, dag.steps_depending_on(target, self.workflow)))
+                &#47&#47 now, there should be no dangling targets, let us connect nodes
+                &#47&#47 this can be done more efficiently
+                runnable._depends_targets.append(target)
+                dag._all_dependent_files[target].append(runnable)
+                dag.build(self.workflow.auxiliary_sections)
+                &#47&#47
+                cycle = dag.circular_dependencies()
+                if cycle:
+                    raise RuntimeError(&quotCircular dependency detected {}. It is likely a later step produces input of a previous step.&quot.format(cycle))
+                self.save_dag(dag)
+            elif isinstance(res, RemovedTarget):
+                runnable._status = None
+                target = res.target
+                if not dag.regenerate_target(target):
+                    if self.resolve_dangling_targets(dag, [target]) == 0:
+                        raise RuntimeError(&quotFailed to regenerate or resolve {}{}.&quot
+                            .format(target, dag.steps_depending_on(target, self.workflow)))
+                    runnable._depends_targets.append(target)
+                    dag._all_dependent_files[target].append(runnable)
+                    dag.build(self.workflow.auxiliary_sections)
+                    &#47&#47
+                    cycle = dag.circular_dependencies()
+                    if cycle:
+                        raise RuntimeError(&quotCircular dependency detected {}. It is likely a later step produces input of a previous step.&quot.format(cycle))
+                self.save_dag(dag)
+            elif isinstance(res, UnavailableLock):
+                runnable._status = &quotpending&quot
+                runnable._signature = (res.output, res.sig_file)
+                env.logger.info(&quotWaiting on another process for step {}&quot.format(section.step_name()))
+            &#47&#47 if the job is failed
+            elif isinstance(res, Exception):
+                runnable._status = &quotfailed&quot
+                exec_error.append(runnable._node_id, res)
+                prog.progress(1)
+            else:&#47&#47
+                for k, v in res.items():
+                    env.sos_dict.set(k, v)
+                &#47&#47
+                &#47&#47 set context to the next logic step.
+                for edge in dag.out_edges(runnable):
+                    node = edge[1]
+                    &#47&#47 if node is the logical next step...
+                    if node._node_index is not None and runnable._node_index is not None:
+                        &#47&#47and node._node_index == runnable._node_index + 1:
+                        node._context.update(env.sos_dict.clone_selected_vars(
+                            node._context[&quot__signature_vars__&quot] | node._context[&quot__environ_vars__&quot] \
+                            | {&quot_input&quot, &quot__step_output__&quot, &quot__default_output__&quot, &quot__args__&quot}))
+                runnable._status = &quotcompleted&quot
+                prog.progress(1)
+            &#47&#47env.logger.error(&quotcompleted&quot)
+       </a> prog.done()
+        if exec_error.errors:
+            failed_steps, pending_steps = dag.pending()
+            if failed_steps:</code></pre><h3>After Change</h3><pre><code class='java'>
+            p.join()
+            &#47&#47 if the step says unknown target .... need to check if the target can
+            &#47&#47 be build dynamically.
+            <a id="change">if isinstance(res, (UnknownTarget, RemovedTarget)):
+                runnable._status = None
+                target = res.target
+                if dag.regenerate_target(target):
+                    &#47&#47runnable._depends_targets.append(target)
+                    &#47&#47dag._all_dependent_files[target].append(runnable)
+                    dag.build(self.workflow.auxiliary_sections)
+                    &#47&#47
+                    cycle = dag.circular_dependencies()
+                    if cycle:
+                        raise RuntimeError(&quotCircular dependency detected {}. It is likely a later step produces input of a previous step.&quot.format(cycle))
+                else:
+                    if self.resolve_dangling_targets(dag, [target]) == 0:
+                        raise RuntimeError(&quotFailed to regenerate or resolve {}{}.&quot
+                            .format(target, dag.steps_depending_on(target, self.workflow)))
+                    runnable._depends_targets.append(target)
+                    dag._all_dependent_files[target].append(runnable)
+                    dag.build(self.workflow.auxiliary_sections)
+                    &#47&#47
+                    cycle = dag.circular_dependencies()
+                    if cycle:
+                        raise RuntimeError(&quotCircular dependency detected {}. It is likely a later step produces input of a previous step.&quot.format(cycle))
+                self.save_dag(dag)
+            elif isinstance(res, UnavailableLock):
+                runnable._status = &quotpending&quot
+                runnable._signature = (res.output, res.sig_file)
+                env.logger.info(&quotWaiting on another process for step {}&quot.format(section.step_name()))
+            &#47&#47 if the job is failed
+            elif isinstance(res, Exception):
+                runnable._status = &quotfailed&quot
+                exec_error.append(runnable._node_id, res)
+                prog.progress(1)
+            else:&#47&#47
+                for k, v in res.items():
+                    env.sos_dict.set(k, v)
+                &#47&#47
+                &#47&#47 set context to the next logic step.
+                for edge in dag.out_edges(runnable):
+                    node = edge[1]
+                    &#47&#47 if node is the logical next step...
+                    if node._node_index is not None and runnable._node_index is not None:
+                        &#47&#47and node._node_index == runnable._node_index + 1:
+                        node._context.update(env.sos_dict.clone_selected_vars(
+                            node._context[&quot__signature_vars__&quot] | node._context[&quot__environ_vars__&quot] \
+                            | {&quot_input&quot, &quot__step_output__&quot, &quot__default_output__&quot, &quot__args__&quot}))
+                &#47&#47 update node itself
+                dag.update_step(runnable, env.sos_dict[&quot__step_input__&quot],
+                    env.sos_dict[&quot__step_output__&quot],
+                    env.sos_dict[&quot__step_depends__&quot],
+                    env.sos_dict[&quot__step_local_input__&quot],
+                    env.sos_dict[&quot__step_local_output__&quot])
+                runnable._status = &quotcompleted&quot
+                prog.progress(1)
+            &#47&#47env.logger.error(&quotcompleted&quot)
+       </a> prog.done()
+        if exec_error.errors:
+            failed_steps, pending_steps = dag.pending()
+            if failed_steps:</code></pre>

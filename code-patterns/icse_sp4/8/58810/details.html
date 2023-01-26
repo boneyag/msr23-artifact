@@ -1,0 +1,102 @@
+<html><h3>87d1b5356187fb4a35aa11204223ed2c6586268d,perfkitbenchmarker/linux_packages/fio.py,,ParseResults,#Any#Any#Any#Any#Any#,141
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                          job[mode][&quotiops&quot], &quot&quot, parameters, timestamp))
+    if log_file_base and bin_vals:
+      &#47&#47 Parse histograms
+      <a id="change">hist_file_path = vm_util.PrependTempDir(
+          &quot%s_clat_hist.%s.log&quot % (log_file_base, str(idx + 1)))</a>
+      samples += _ParseHistogram(
+          hist_file_path, bin_vals[idx], job_name, parameters)
+  return samples
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  &#47&#47 clat_hist files are indexed sequentially by inner job.  If you have a job
+  &#47&#47 file with 2 jobs, each with numjobs=4 you will have 8 clat_hist files.
+  <a id="change">clat_hist_idx = 0</a>
+
+  for job in fio_json_result[&quotjobs&quot]:
+    job_name = job[&quotjobname&quot]
+    parameters = parameter_metadata[job_name]
+    parameters[&quotfio_job&quot] = job_name
+    if base_metadata:
+      parameters.update(base_metadata)
+    for mode in io_modes:
+      if job[mode][&quotio_bytes&quot]:
+        metric_name = &quot%s:%s&quot % (job_name, mode)
+        bw_metadata = {
+            &quotbw_min&quot: job[mode][&quotbw_min&quot],
+            &quotbw_max&quot: job[mode][&quotbw_max&quot],
+            &quotbw_dev&quot: job[mode][&quotbw_dev&quot],
+            &quotbw_agg&quot: job[mode][&quotbw_agg&quot],
+            &quotbw_mean&quot: job[mode][&quotbw_mean&quot]}
+        bw_metadata.update(parameters)
+        samples.append(
+            sample.Sample(&quot%s:bandwidth&quot % metric_name,
+                          job[mode][&quotbw&quot],
+                          &quotKB/s&quot, bw_metadata))
+
+        &#47&#47 There is one sample whose metric is &quot&lt;metric_name&gt;:latency&quot
+        &#47&#47 with all of the latency statistics in its metadata, and then
+        &#47&#47 a bunch of samples whose metrics are
+        &#47&#47 &quot&lt;metric_name&gt;:latency:min&quot through
+        &#47&#47 &quot&lt;metric_name&gt;:latency:p99.99&quot that hold the individual
+        &#47&#47 latency numbers as values. This is for historical reasons.
+        clat_section = job[mode][&quotclat&quot]
+        percentiles = clat_section[&quotpercentile&quot]
+        lat_statistics = [
+            (&quotmin&quot, clat_section[&quotmin&quot]),
+            (&quotmax&quot, clat_section[&quotmax&quot]),
+            (&quotmean&quot, clat_section[&quotmean&quot]),
+            (&quotstddev&quot, clat_section[&quotstddev&quot]),
+            (&quotp1&quot, percentiles[&quot1.000000&quot]),
+            (&quotp5&quot, percentiles[&quot5.000000&quot]),
+            (&quotp10&quot, percentiles[&quot10.000000&quot]),
+            (&quotp20&quot, percentiles[&quot20.000000&quot]),
+            (&quotp30&quot, percentiles[&quot30.000000&quot]),
+            (&quotp40&quot, percentiles[&quot40.000000&quot]),
+            (&quotp50&quot, percentiles[&quot50.000000&quot]),
+            (&quotp60&quot, percentiles[&quot60.000000&quot]),
+            (&quotp70&quot, percentiles[&quot70.000000&quot]),
+            (&quotp80&quot, percentiles[&quot80.000000&quot]),
+            (&quotp90&quot, percentiles[&quot90.000000&quot]),
+            (&quotp95&quot, percentiles[&quot95.000000&quot]),
+            (&quotp99&quot, percentiles[&quot99.000000&quot]),
+            (&quotp99.5&quot, percentiles[&quot99.500000&quot]),
+            (&quotp99.9&quot, percentiles[&quot99.900000&quot]),
+            (&quotp99.95&quot, percentiles[&quot99.950000&quot]),
+            (&quotp99.99&quot, percentiles[&quot99.990000&quot])]
+
+        lat_metadata = parameters.copy()
+        for name, val in lat_statistics:
+          lat_metadata[name] = val
+        samples.append(
+            sample.Sample(&quot%s:latency&quot % metric_name,
+                          job[mode][&quotclat&quot][&quotmean&quot],
+                          &quotusec&quot, lat_metadata, timestamp))
+
+        for stat_name, stat_val in lat_statistics:
+          samples.append(
+              sample.Sample(&quot%s:latency:%s&quot % (metric_name, stat_name),
+                            stat_val, &quotusec&quot, parameters, timestamp))
+
+        samples.append(
+            sample.Sample(&quot%s:iops&quot % metric_name,
+                          job[mode][&quotiops&quot], &quot&quot, parameters, timestamp))
+    if log_file_base and bin_vals:
+      &#47&#47 Parse histograms
+      aggregates = collections.defaultdict(collections.Counter)
+      <a id="change">for _ in xrange(int(job[&quotjob options&quot][&quotnumjobs&quot])):
+        clat_hist_idx += 1
+        hist_file_path = vm_util.PrependTempDir(
+            &quot%s_clat_hist.%s.log&quot % (log_file_base, str(clat_hist_idx)))
+        hists = _ParseHistogram(hist_file_path, bin_vals[clat_hist_idx - 1])
+
+        for key in hists:
+          aggregates[key].update(hists[key])
+     </a> samples += _BuildHistogramSamples(aggregates, job_name, parameters)
+
+  return samples
+</code></pre><img src="272458269.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GoogleCloudPlatform/PerfKitBenchmarker/commit/87d1b5356187fb4a35aa11204223ed2c6586268d#diff-9d07dccaa1bd316a8484f530919c7f59399d905888878d86bf7432d5214e28eaL157' target='_blank'>Link</a></div><div id='project'> Project Name: GoogleCloudPlatform/PerfKitBenchmarker</div><div id='commit'> Commit Name: 87d1b5356187fb4a35aa11204223ed2c6586268d</div><div id='time'> Time: 2017-10-04</div><div id='author'> Author: dlott@users.noreply.github.com</div><div id='file'> File Name: perfkitbenchmarker/linux_packages/fio.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: ParseResults</div><BR><BR><div id='link'><a href='https://github.com/nilearn/nilearn/commit/e227e8217c6e52d1be6389f8b86f8a31e886e6f1#diff-4bb46bbdd49e00a831d4208d14a6841a0acfc4c643563346c3fc46ae24343892L342' target='_blank'>Link</a></div><div id='project'> Project Name: nilearn/nilearn</div><div id='commit'> Commit Name: e227e8217c6e52d1be6389f8b86f8a31e886e6f1</div><div id='time'> Time: 2013-08-26</div><div id='author'> Author: philippe.gervais@inria.fr</div><div id='file'> File Name: nilearn/group_sparse_covariance.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _group_sparse_covariance</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/b955f6be526fd5226584b4cf4bffc4b3dff87beb#diff-e5e97e5cd344e3a994377749d6341f05c57f721006bf9f6c0ae58763b6e0d442L153' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: b955f6be526fd5226584b4cf4bffc4b3dff87beb</div><div id='time'> Time: 2016-04-17</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: deepchem/models/__init__.py</div><div id='class'> Class Name: Model</div><div id='method'> Method Name: predict</div><BR>

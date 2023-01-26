@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    else:
+      run_name = None
+      path = specification
+    if <a id="change">not (io_wrapper.IsGCSPath(path) or path.startswith(&quothdfs://&quot))</a>:
+      path = os.path.realpath(path)
+    files[path] = run_name
+  return files</code></pre><h3>After Change</h3><pre><code class='java'>
+  if logdir is None:
+    return files
+  &#47&#47 Make sure keeping consistent with ParseURI in core/lib/io/path.cc
+  <a id="change">uri_pattern = re.compile("[a-zA-Z][0-9a-zA-Z.]://.*")</a>
+  for specification in logdir.split(&quot,&quot):
+    &#47&#47 Check if the spec contains group. A spec start with xyz:// is regarded as
+    &#47&#47 URI path spec instead of group spec. If the spec looks like /foo:bar/baz,
+    &#47&#47 then we assume it&quots a path with a colon.
+    if <a id="change">uri_pattern.match(specification)</a> is None and \
+       &quot:&quot in specification and specification[0] != &quot/&quot:
+      &#47&#47 We split at most once so run_name:/path:with/a/colon will work.
+      run_name, _, path = specification.partition(&quot:&quot)</code></pre>

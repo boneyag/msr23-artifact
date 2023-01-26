@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            applied_data_augmentation.append({aug_type: apply_aug_strategy})
+
+            image = augmented[&quotimage&quot]
+            bboxes = <a id="change">augmented[&quotbboxes&quot]</a>
+
+        return image, bboxes, applied_data_augmentation
+
+    def _resize_image(self, image, bboxes):</code></pre><h3>After Change</h3><pre><code class='java'>
+                lambda: {&quotimage&quot: image, &quotbboxes&quot: bboxes}
+            )
+
+            update_condition = <a id="change">tf.greater(
+                tf.gather(tf.shape(augmented[&quotbboxes&quot]), 0),
+                0
+            )</a>
+            image = tf.cond(
+                update_condition,
+                lambda: augmented[&quotimage&quot],
+                lambda: image
+            )
+            &#47&#47 Hot fix. This works because bboxes is either always or never
+            &#47&#47 None in a single training session.
+            if bboxes is not None:
+                bboxes = <a id="change">tf.cond(
+                    update_condition,
+                    &#47&#47 TODO: find out why we&quotre sometimes getting float
+                    &#47&#47 bboxes.
+                    lambda: tf.to_int32(augmented[&quotbboxes&quot]),
+                    lambda: bboxes
+                )</a>
+
+            applied_data_augmentation.append({aug_type: apply_aug_strategy})
+
+        return image, bboxes, applied_data_augmentation</code></pre>

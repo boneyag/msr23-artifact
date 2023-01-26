@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tf_dir = os.path.dirname(tf.__file__)
+        script = os.path.join(tf_dir, &quotclassify_image.py&quot)
+
+        <a id="change">if stim.filename is None:
+            img_file = tempfile.mktemp() + &quot.jpg&quot
+            imsave(img_file, stim.data)
+            use_tmp = True
+        else:
+            img_file = stim.filename
+            use_tmp = False
+
+       </a> args = &quot --image_file %s --model_dir %s --num_top_prediction %d&quot % \
+            (img_file, self.model_dir, self.num_predictions)
+        cmd = (&quotpython &quot + script + args).split()
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        output, errors = process.communicate()
+        hits = output.decode(&quotutf-8&quot).splitlines()[-self.num_predictions:]
+
+        values, features = [], []
+        for i, h in enumerate(hits):
+            m = re.search(&quot(.*?)\s\(score\s\=\s([0-9\.]+)\)&quot, h.strip())
+            values.extend(m.groups())
+            ind = i + 1
+            features.extend([&quotlabel_%d&quot % ind, &quotscore_%d&quot % ind])
+
+        <a id="change">if use_tmp:
+            os.remove(img_file)
+
+       </a> return ExtractorResult([values], stim, self, features=features)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        tf_dir = os.path.dirname(tf.__file__)
+        script = os.path.join(tf_dir, &quotclassify_image.py&quot)
+
+        <a id="change">with stim.get_filename() as filename:
+            args = &quot --image_file %s --model_dir %s --num_top_prediction %d&quot % \
+                (filename, self.model_dir, self.num_predictions)
+            cmd = (&quotpython &quot + script + args).split()
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            output, errors = process.communicate()
+            hits = output.decode(&quotutf-8&quot).splitlines()[-self.num_predictions:]
+
+       </a> values, features = [], []
+        for i, h in enumerate(hits):
+            m = re.search(&quot(.*?)\s\(score\s\=\s([0-9\.]+)\)&quot, h.strip())
+            values.extend(m.groups())</code></pre>

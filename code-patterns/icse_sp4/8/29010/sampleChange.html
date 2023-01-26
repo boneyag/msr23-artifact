@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            output_tokens.masked_fill_(skeptical_mask, self.unk)
+            output_scores.masked_fill_(skeptical_mask, 0.0)
+
+        <a id="change">return {"output_tokens": output_tokens, "output_scores": output_scores}</a>
+
+
+@register_model_architecture("cmlm_transformer", "cmlm_transformer")
+def base_architecture(args):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def forward_decoder(self, decoder_out, encoder_out, decoding_format=None, **kwargs):
+
+        step = <a id="change">decoder_out.step</a>
+        max_step = <a id="change">decoder_out.max_step</a>
+
+        output_tokens = <a id="change">decoder_out.output_tokens</a>
+        output_scores = <a id="change">decoder_out.output_scores</a>
+
+        &#47&#47 execute the decoder
+        output_masks = output_tokens.eq(self.unk)
+        _scores, _tokens = self.decoder(
+            output_tokens, encoder_out=encoder_out, decoding_format=decoding_format
+        )
+        output_tokens.masked_scatter_(output_masks, _tokens[output_masks])
+        output_scores.masked_scatter_(output_masks, _scores[output_masks])
+
+        &#47&#47 skeptical decoding (depend on the maximum decoding steps.)
+        if (step + 1) &lt; max_step:
+            skeptical_mask = _skeptical_unmasking(
+                output_scores, output_tokens.ne(self.pad), 1 - (step + 1) / max_step
+            )
+
+            output_tokens.masked_fill_(skeptical_mask, self.unk)
+            output_scores.masked_fill_(skeptical_mask, 0.0)
+
+        <a id="change">return decoder_out._replace(
+            output_tokens=output_tokens,
+            output_scores=output_scores,
+            attn=None,
+        )</a>
+
+
+@register_model_architecture("cmlm_transformer", "cmlm_transformer")
+def base_architecture(args):</code></pre>

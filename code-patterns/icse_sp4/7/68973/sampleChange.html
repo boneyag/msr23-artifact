@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Note that we _cannot_ use a reshape here, because this tensor was created
+        &#47&#47 with num_heads being the first dimension, so reshaping naively would not
+        &#47&#47 throw an error, but give an incorrect result.
+        outputs = <a id="change">torch.cat(torch.split(outputs, batch_size, dim=0), dim=-1)</a>
+
+        &#47&#47 Project back to original input size.
+        &#47&#47 shape (batch_size, timesteps, input_size)
+        outputs = self._output_projection(outputs)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 shape (batch_size, num_heads, timesteps, values_dim/num_heads)
+        outputs = outputs.view(batch_size, num_heads, timesteps, int(self._values_dim / num_heads))
+        &#47&#47 shape (batch_size, timesteps, num_heads, values_dim/num_heads)
+        outputs = <a id="change">outputs.transpose(1, 2).contiguous()</a>
+        &#47&#47 shape (batch_size, timesteps, values_dim)
+        outputs = outputs.view(batch_size, timesteps, self._values_dim)
+
+        &#47&#47 Project back to original input size.</code></pre>

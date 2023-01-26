@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if operator.type in [&quotSklearnSVC&quot]:
+        check_input_and_output_numbers(operator, input_count_range=[1, None], output_count_range=[1, 2])
+
+        <a id="change">if N != 1 and N != &quotNone&quot:
+            &#47&#47 In this case, output probability map should be a sequence of dictionaries, which is not implemented yet.
+            raise RuntimeError(&quotCurrently batch size must be one&quot)
+       </a> if len(operator.outputs) != 2:
+            raise RuntimeError(&quotSupport vector classifier has two outputs&quot)
+        if all(isinstance(i, (six.string_types, six.text_type)) for i in op.classes_):
+            operator.outputs[0].type = StringTensorType([1, 1])</code></pre><h3>After Change</h3><pre><code class='java'>
+        if all(isinstance(i, (six.string_types, six.text_type)) for i in op.classes_):
+            operator.outputs[0].type = StringTensorType([N, 1])
+            if len(operator.outputs) == 2:
+                <a id="change">if operator.targeted_onnx_version &lt; StrictVersion(&quot1.2&quot):
+                    &#47&#47 Old ONNX ZipMap produces Map type
+                    operator.outputs[1].type = \
+                        DictionaryType(StringTensorType([1]), FloatTensorType([1]))
+                else:
+                    &#47&#47 New ONNX ZipMap produces Seq&lt;Map&gt; type
+                    operator.outputs[1].type = \
+                        SequenceType(DictionaryType(StringTensorType([1]), FloatTensorType([1])), N)
+       </a> elif all(isinstance(i, (numbers.Real, bool, np.bool_)) for i in op.classes_):
+            operator.outputs[0].type = Int64TensorType([N, 1])
+            if len(operator.outputs) == 2:
+                if operator.targeted_onnx_version &lt; StrictVersion(&quot1.2&quot):</code></pre>

@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        in_spatial_rank = infer_spatial_rank(inputs)
+
+        out_spatial_rank = infer_spatial_rank(sample_coords)
+        out_spatial_size = <a id="change">sample_coords.get_shape().as_list()[1:-1]</a>
+
+        self.power = 2
+        self.N = 2 ** in_spatial_rank
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        in_spatial_rank = infer_spatial_rank(inputs)
+
+        out_spatial_rank = infer_spatial_rank(sample_coords)
+        <a id="change">out_size</a> = <a id="change">sample_coords.get_shape().as_list()</a>
+        out_spatial_size = out_size[1:-1]
+
+        self.power = 2
+        self.N = 2 ** in_spatial_rank
+
+        binary_neighbour_ids = [
+            [int(c) for c in format(i, &quot0%ib&quot % in_spatial_rank)]
+            for i in range(self.N)]
+        weight_id = [[[c, i] for i, c in enumerate(bc)]
+                     for bc in binary_neighbour_ids]
+
+        floor_coord = self.boundary_func(
+            tf.floor(sample_coords), in_spatial_size)
+        ceil_coord = self.boundary_func(
+            tf.floor(sample_coords) + 1.0, in_spatial_size)
+        all_coords = tf.stack([floor_coord, ceil_coord], axis=0)
+        coords_shape = all_coords.get_shape().as_list()
+        floor_diff = tf.squared_difference(
+            sample_coords, tf.to_float(all_coords[0]))
+        ceil_diff = tf.squared_difference(
+            sample_coords, tf.to_float(all_coords[1]))
+        diff = tf.stack([floor_diff, ceil_diff], axis=0)
+        &#47&#47 transpose to shape inds: [0, -1, others]
+        diff = tf.transpose(
+            diff, [0, len(out_size)] + range(1, <a id="change">len(out_size)</a>))
+
+        point_weights = tf.gather_nd(diff, weight_id)
+        point_weights = tf.reduce_sum(point_weights, axis=1)
+        point_weights = tf.pow(point_weights, self.power / 2.0)
+        point_weights = tf.reciprocal(point_weights)
+        &#47&#47 workaround for zero weights
+        <a id="change">point_weights = tf.minimum(point_weights, 1e12)</a>
+
+        &#47&#47 transpose to shape inds: [0, -1, others]
+        all_coords = tf.transpose(
+            all_coords, [0, <a id="change">len(out_size)</a>] + range(1, len(out_size)))
+        knots_id = tf.gather_nd(all_coords, weight_id)
+        knots_id = tf.transpose(
+            knots_id, [0] + range(2, out_spatial_rank + 3) + [1])
+        knots_shape = knots_id.get_shape().as_list()
+        b_id = tf.reshape(
+            tf.range(batch_size),
+            [1] + [batch_size] + [1] * (len(knots_shape) - 2))
+        b_id = tf.tile(
+            b_id, [knots_shape[0]] + [1] + out_spatial_size + [1])
+        b_id = tf.concat([b_id, knots_id], axis=-1)
+
+        point_weights = tf.expand_dims(point_weights, axis=-1)
+        samples = tf.gather_nd(inputs, b_id)
+        <a id="change">samples = tf.reduce_sum(samples * point_weights, axis=0)</a>
+        samples = samples / tf.reduce_sum(point_weights, axis=0)
+        return samples
+
+</code></pre>

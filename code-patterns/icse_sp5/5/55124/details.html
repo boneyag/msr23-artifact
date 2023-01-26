@@ -1,0 +1,52 @@
+<html><h3>a4c4a4f2d33081806397784f96b113d5b3b32c9a,tensorforce/core/memories/prioritized_replay.py,PrioritizedReplay,tf_retrieve_timesteps,#PrioritizedReplay#Any#,149
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        indices = tf.zeros(shape=(n,), dtype=tf.int32)
+        &#47&#47 Only compute once outside loop.
+        sum_priorities = tf.reduce_sum(input_tensor=self.priorities, axis=0)
+        loop_index = <a id="change">tf.get_variable(
+            name=&quotloop-index&quot,
+            dtype=tf.int32,
+            initializer=0,
+            trainable=False
+        )</a>
+
+        def cond(sum_priorities, priorities, indices, loop_index, n):
+            return tf.less(loop_index, n)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            return tf.no_op()
+
+    def tf_retrieve_timesteps(self, n):
+        <a id="change">num_buffer_elems = min(self.buffer_index, n)</a>
+
+        buffer_indices = tf.range(
+            start=(self.buffer_index - 1 - num_buffer_elems),
+            limit=(self.buffer_index - 1)
+        )
+        num_priority_elements = n - num_buffer_elems
+
+        &#47&#47 Vectorized sampling.
+        sum_priorities = tf.reduce_sum(input_tensor=self.priorities, axis=0)
+        sample = tf.random_uniform(shape=(num_priority_elements,),dtype=tf.float32)
+        indices = <a id="change">tf.constant(value=0, shape=(num_priority_elements,))</a>
+
+        def cond(loop_index, sample, priorities):
+            return tf.reduce_all(input_tensor=(sample &lt;= 0))
+
+        def sampling_fn(loop_index, sample, priorities):
+            priority = self.priorities[loop_index]
+            sample -= priority / priorities
+
+            return (tf.add(loop_index, 1), sample, priorities)
+
+        <a id="change">priority_indices = tf.while_loop(
+            cond=cond,
+            body=sampling_fn,
+            loop_vars=(indices, sample, sum_priorities)
+        )[0]</a>
+
+        priority_terminal = tf.gather(params=self.terminal_memory, indices=priority_indices)
+        priority_indices = tf.boolean_mask(tensor=indices, mask=tf.logical_not(x=priority_terminal))
+</code></pre><img src="254572956.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/a4c4a4f2d33081806397784f96b113d5b3b32c9a#diff-2b5b02ad8a19e118893115b1958029b9857004526b6d0bd276f8e35a876dbeedL149' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: a4c4a4f2d33081806397784f96b113d5b3b32c9a</div><div id='time'> Time: 2018-02-08</div><div id='author'> Author: mi.schaarschmidt@gmail.com</div><div id='file'> File Name: tensorforce/core/memories/prioritized_replay.py</div><div id='class'> Class Name: PrioritizedReplay</div><div id='method'> Method Name: tf_retrieve_timesteps</div><BR><BR><div id='link'><a href='https://github.com/SPFlow/SPFlow/commit/50438cf6bdcd7a169c0aa46cbd54062a864081ab#diff-1b6f20bf44d6fd9129b59221c43882fe91945f5084fb8fdc9f8fca56fb5e1a0cL28' target='_blank'>Link</a></div><div id='project'> Project Name: SPFlow/SPFlow</div><div id='commit'> Commit Name: 50438cf6bdcd7a169c0aa46cbd54062a864081ab</div><div id='time'> Time: 2018-07-31</div><div id='author'> Author: molina@cs.tu-darmstadt.de</div><div id='file'> File Name: src/spn/structure/leaves/parametric/Tensorflow.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: categorical_to_tf_graph</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-tf/commit/d4808bcd7a6fc3a19d7a29d50c4e0702c47b7cc5#diff-299cedfabdb9dcad2336685ca00e1d8561c481c3029421852e98064050844549L123' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-tf</div><div id='commit'> Commit Name: d4808bcd7a6fc3a19d7a29d50c4e0702c47b7cc5</div><div id='time'> Time: 2017-08-08</div><div id='author'> Author: guillaume.klein@systrangroup.com</div><div id='file'> File Name: opennmt/embedders/text_embedder.py</div><div id='class'> Class Name: WordEmbedder</div><div id='method'> Method Name: _embed</div><BR>

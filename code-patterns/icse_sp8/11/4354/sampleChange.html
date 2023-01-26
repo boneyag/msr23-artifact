@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        sample_len = max(sample_len, src_size, dst_size)
+        num_tokens = (len(batch) + 1) * sample_len
+        if yield_batch(idx, num_tokens):
+            <a id="change">yield batch</a>
+            <a id="change">batch = []</a>
+            sample_len = max(src_size, dst_size)
+
+        batch.append(idx)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        sample_len = max(sample_len, src_size, dst_size)
+        num_tokens = (len(batch) + 1) * sample_len
+        while yield_batch(idx, num_tokens):
+            <a id="change">mod8_len = max(8 * (len(batch) // 8), len(batch) % 8)</a>
+            yield batch[:mod8_len]
+            batch = batch[mod8_len:]
+            sample_len = max([<a id="change">max(src.sizes[id], dst.sizes[id])</a> <a id="change">for</a> id in batch]) if len(batch) &gt; 0 else 0
+            sample_len = max(sample_len, src_size, dst_size)
+            <a id="change">num_tokens = (len(batch) + 1) * sample_len</a>
+
+        batch.append(idx)
+
+    if len(batch) &gt; 0:</code></pre>

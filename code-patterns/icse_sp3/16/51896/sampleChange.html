@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    else:
+      input_tensor_adapter_config = input_metadata
+
+    <a id="change">with tf.compat.v1.Graph().as_default() as graph:
+
+      with tf.compat.v1.name_scope(&quotinputs&quot):
+        specs = TensorAdapter(input_tensor_adapter_config).OriginalTypeSpecs()
+        input_signature = impl_helper.batched_placeholders_from_specs(specs)
+        &#47&#47 In order to avoid a bug where import_graph_def fails when the
+        &#47&#47 input_map and return_elements of an imported graph are the same
+        &#47&#47 (b/34288791), we avoid using the placeholder of an input column as an
+        &#47&#47 output of a graph. We do this by applying tf.identity to all inputs of
+        &#47&#47 the preprocessing_fn.  Note this applies at the level of raw tensors.
+        &#47&#47 TODO(b/34288791): Remove this workaround and use a shallow copy of
+        &#47&#47 inputs instead.  A shallow copy is needed in case
+        &#47&#47 self._preprocessing_fn mutates its input.
+        copied_inputs = impl_helper.copy_tensors(input_signature)
+
+      output_signature = self._preprocessing_fn(copied_inputs)
+
+    &#47&#47 At this point we check that the preprocessing_fn has at least one
+    &#47&#47 output. This is because if we allowed the output of preprocessing_fn to
+    &#47&#47 be empty, we wouldn&quott be able to determine how many instances to
+    &#47&#47 "unbatch" the output into.
+   </a> if not output_signature:
+      raise ValueError(&quotThe preprocessing function returned an empty dict&quot)
+
+    if graph.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    specs = TensorAdapter(input_tensor_adapter_config).OriginalTypeSpecs()
+    base_temp_dir = Context.create_base_temp_dir()
+    <a id="change">graph</a>, structured_inputs, structured_outputs = (
+        impl_helper.trace_preprocessing_function(self._preprocessing_fn, specs,
+                                                 self._use_tf_compat_v1,
+                                                 base_temp_dir))</code></pre>

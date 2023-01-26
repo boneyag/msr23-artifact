@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        output_id = self.node_to_id[self.model.outputs[0]]
+
+        id_to_tensor = {input_id: input_tensor}
+        q = <a id="change">Queue()</a>
+        q.put(input_id)
+        while not q.empty():
+            <a id="change">u = q.get()</a>
+            for v, edge_id in self.adj_list[u]:
+                layer = self.edge_list[edge_id]
+                if edge_id in self.old_edge_ids:
+                    copied_layer = copy_layer(layer, get_int_tuple(id_to_tensor[u].shape))</code></pre><h3>After Change</h3><pre><code class='java'>
+                layer = self.edge_list[edge_id]
+
+                if isinstance(layer, WeightedAdd):
+                    <a id="change">edge_input_tensor = list(map(lambda x: id_to_tensor[x], self.edge_id_to_input_ids[edge_id]))</a>
+                else:
+                    edge_input_tensor = id_to_tensor[u]
+
+                if edge_id in self.old_edge_ids:
+                    new_layer = copy_layer(layer)
+                else:
+                    new_layer = layer
+
+                <a id="change">temp_tensor = new_layer(edge_input_tensor)</a>
+                id_to_tensor[v] = temp_tensor
+        return Model(input_tensor, id_to_tensor[output_id])
+
+    def to_conv_wider_model(self, pre_layer, n_add):</code></pre>

@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for piece in sorted_pieces:
+        &#47&#47 If we are not using absolute paths, we need to convert the path to a relative path for
+        &#47&#47 looking up the number of row groups.
+        row_groups_key = piece.path if use_absolute_paths else <a id="change">os.path.relpath(piece.path, dataset.paths)</a>
+        for row_group in range(row_groups_per_file[row_groups_key]):
+            rowgroups.append(pq.ParquetDatasetPiece(piece.path, row_group, piece.partition_keys))
+    return rowgroups
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    num_row_groups = metadata.num_row_groups
+
+    <a id="change">if num_row_groups &gt; 0:
+        &#47&#47 Use the new metadata file
+        return _split_row_groups(dataset)
+
+    &#47&#47 If we don&quott have row groups in the common metadata we look for the old way of loading it
+   </a> logger.warning(&quotYou are using a deprecated metadata version. Please run petastorm.etl.metadata_index_run&quot
+                   &quot on spark to update.&quot)
+    dataset_metadata_dict = dataset.common_metadata.metadata
+    if ROW_GROUPS_PER_FILE_KEY not in dataset_metadata_dict:
+        raise ValueError(&quotCould not find row group metadata in _metadata file.&quot
+                         &quot Use materialize_dataset(..) in petastorm.etl.dataset_metadata.py to generate&quot
+                         &quot this file in your ETL code.&quot
+                         &quot You can generate it on an existing dataset using petastorm.etl.metadata_index_run&quot)
+    metadata_dict_key = ROW_GROUPS_PER_FILE_KEY
+    row_groups_per_file = json.loads(dataset_metadata_dict[metadata_dict_key].decode())
+
+    rowgroups = []
+    &#47&#47 Force order of pieces. The order is not deterministic since it depends on multithreaded directory
+    &#47&#47 listing implementation inside pyarrow. We stabilize order here, this way we get reproducable order
+    &#47&#47 when pieces shuffling is off. This also enables implementing piece shuffling given a seed
+    sorted_pieces = sorted(dataset.pieces, key=attrgetter(&quotpath&quot))
+    for piece in sorted_pieces:
+        &#47&#47 If we are not using absolute paths, we need to convert the path to a relative path for
+        &#47&#47 looking up the number of row groups.
+        row_groups_key = <a id="change">os.path.relpath(piece.path, dataset.paths)</a>
+        for row_group in range(row_groups_per_file[row_groups_key]):
+            rowgroups.append(pq.ParquetDatasetPiece(piece.path, row_group, piece.partition_keys))
+    return rowgroups
+</code></pre>

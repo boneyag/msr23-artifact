@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            features = F.normalize(backbone(img))
+            x_grad, loss_v = module_partial_fc.forward_backward(label, features, opt_pfc)
+            features.backward(x_grad)
+            <a id="change">clip_grad_norm_(backbone.parameters(), max_norm=5, norm_type=2)</a>
+            opt_backbone.step()
+            opt_pfc.step()
+            module_partial_fc.update()
+            opt_backbone.zero_grad()</code></pre><h3>After Change</h3><pre><code class='java'>
+            features = F.normalize(backbone(img))
+            x_grad, loss_v = module_partial_fc.forward_backward(label, features, opt_pfc)
+
+            <a id="change">if cfg.fp16:
+                features.backward(grad_scaler.scale(x_grad))
+                grad_scaler.unscale_(opt_backbone)
+                clip_grad_norm_(backbone.parameters(), max_norm=5, norm_type=2)
+                grad_scaler.step(opt_backbone)
+                grad_scaler.update()
+            else:
+                features.backward(x_grad)
+                clip_grad_norm_(backbone.parameters(), max_norm=5, norm_type=2)
+                opt_backbone.step()
+
+           </a> opt_pfc.step()
+            module_partial_fc.update()
+            opt_backbone.zero_grad()
+            opt_pfc.zero_grad()</code></pre>

@@ -1,0 +1,67 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        spec_layer_params.keepDims = keepdims
+        spec_layer_params.reduceAll = reduce_all
+
+        <a id="change">if keepdims:
+            self.rank_dict[output_name] = self.get_rank(input_name)
+        else:
+            if reduce_all:
+                self.rank_dict[output_name] = 1
+            else:
+                self.rank_dict[output_name] = self.get_rank(input_name) - 1
+       </a> return spec_layer
+
+    def add_reduce_min(self, name, input_name, output_name,
+                       axes=None, keepdims=True, reduce_all=False):</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.set_rank_for_reduce_op(input_name, output_name, keepdims, reduce_all)
+        return spec_layer
+
+    def add_reduce_max(<a id="change">self</a>, name, input_name, output_name,
+                       axes=None, keepdims=True, reduce_all=False):
+        
+        Add a reduce_max layer to the model that reduces the input tensor
+        using ``max(elements across given dimensions)``.
+        Refer to the **ReduceMaxLayerParams** message in specification
+        (NeuralNetwork.proto) for more details.
+
+        Parameters
+        ----------
+        name: str
+            The name of this layer.
+        input_name: str
+            The input blob name of this layer.
+        output_name: str
+            The output blob name of this layer.
+        axes: list of int or tuple of int, optional
+            List of dimensions for the reduce operations.
+            Each should be in range [-rank(input), rank(input)), default: None (reduce_all)
+        keepdims: bool, optional
+            Whether or not to retain the reduced dimensions with length 1, default: true.
+        reduce_all: bool, optional
+            Whether or not to reduce on all axes, default: false.
+
+        See Also
+        --------
+        add_reduce_l1, add_reduce_l2, add_reduce_sum, add_reduce_min, add_reduce_prod
+        add_reduce_mean, add_reduce_logsum, add_reduce_logsumexp, add_reduce_sumsquare
+        
+
+        spec_layer = self._add_generic_layer(name, [input_name], [output_name])
+        spec_layer_params = spec_layer.reduceMax
+
+        if axes and len(axes) != 0:
+            spec_layer_params.axes.extend(map(int, axes))
+        else:
+            <a id="change">reduce_all</a> = True
+
+        spec_layer_params.keepDims = keepdims
+        spec_layer_params.reduceAll = reduce_all
+
+        <a id="change">self.set_rank_for_reduce_op(input_name, output_name, keepdims, reduce_all)</a>
+        return spec_layer
+
+    def add_reduce_min(self, name, input_name, output_name,
+                       axes=None, keepdims=True, reduce_all=False):</code></pre>

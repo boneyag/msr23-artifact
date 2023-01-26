@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.model.train()
+
+        total_loss = 0
+        total_metrics = <a id="change">np.zeros(len(self.metrics))</a>
+        for batch_idx, (data, target) in enumerate(self.data_loader):
+            data, target = data.to(self.device), target.to(self.device)
+
+            self.optimizer.zero_grad()
+            output = self.model(data)
+            loss = self.criterion(output, target)
+            loss.backward()
+            self.optimizer.step()
+
+            self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
+            self.writer.add_scalar(&quotloss&quot, loss.item())
+            total_loss += loss.item()
+            total_metrics += self._eval_metrics(output, target)
+
+            if batch_idx % self.log_step == 0:
+                self.logger.debug(&quotTrain Epoch: {} {} Loss: {:.6f}&quot.format(
+                    epoch,
+                    self._progress(batch_idx),
+                    loss.item()))
+                self.writer.add_image(&quotinput&quot, make_grid(data.cpu(), nrow=8, normalize=True))
+
+            if batch_idx == self.len_epoch:
+                break
+
+        <a id="change">log = {
+            &quotloss&quot: total_loss / self.len_epoch,
+            &quotmetrics&quot: (total_metrics / self.len_epoch).tolist()
+        }</a>
+
+        if self.do_validation:
+            val_log = self._valid_epoch(epoch)
+            log.update(val_log)</code></pre><h3>After Change</h3><pre><code class='java'>
+        :return: A log that contains average loss and metric in this epoch.
+        
+        self.model.train()
+        <a id="change">self.train_metrics.reset()</a>
+        for batch_idx, (data, target) in enumerate(self.data_loader):
+            data, target = data.to(self.device), target.to(self.device)
+
+            self.optimizer.zero_grad()</code></pre>

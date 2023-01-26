@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for _ in range(self.bp_iters):
+            s = 1 / (p @ d)
+            d = 1 / (s @ p)
+        b = s[<a id="change">:, None</a>] * d * p
+
+        &#47&#47 Evaluate the Bethe free energy.
+        b = b.clamp(min=finfo.tiny ** 0.5)
+        b_ = (1 - b).clamp(min=finfo.tiny ** 0.5)
+        free_energy = (b * (b.log() - p.log())).sum() - (b_ * b_.log()).sum()
+        <a id="change">return shift.sum() - free_energy</a>
+
+    def log_prob(self, value):
+        if self._validate_args:
+            self._validate_sample(value)</code></pre><h3>After Change</h3><pre><code class='java'>
+        shift = self.logits.max(1, True).values
+        shift.data.clamp_(min=finfo.min, max=finfo.max)
+        logits = self.logits - shift
+        <a id="change">d = logits.logsumexp(0)</a>
+        for _ in range(self.bp_iters):
+            <a id="change">s = (logits - d).logsumexp(-1, True)</a>
+            d = (logits - s).logsumexp(0)
+        <a id="change">b = (logits - (d + s)).exp()</a>
+
+        def log(x):
+            return x.clamp(min=finfo.tiny).log()
+
+        &#47&#47 Evaluate the Bethe free energy.
+        b_ = (1 - b).clamp(min=0)
+        <a id="change">logits = logits.clamp(min=-1 / finfo.eps)</a>
+        free_energy = (b * (log(b) - logits)).sum() - (b_ * log(b_)).sum()
+        log_Z = shift.sum() - free_energy
+        assert torch.isfinite(log_Z)
+        <a id="change">return log_Z</a>
+
+    def log_prob(self, value):
+        if self._validate_args:
+            self._validate_sample(value)</code></pre>

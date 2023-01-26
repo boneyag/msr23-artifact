@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def test_inv_quad_logdet_many_vectors_improper(self):
+        &#47&#47 Forward pass
+        <a id="change">actual_inv_quad = self.mat_clone.inverse().matmul(self.vecs_clone).mul(self.vecs_clone).sum()</a>
+        <a id="change">actual_logdet = self.mat_clone.logdet()</a>
+        <a id="change">with gpytorch.settings.num_trace_samples(1000), gpytorch.settings.skip_logdet_forward(True):
+            non_lazy_tsr = NonLazyTensor(self.mat)
+            res_inv_quad, res_logdet = non_lazy_tsr.inv_quad_logdet(inv_quad_rhs=self.vecs, logdet=True)
+       </a> self.assertAlmostEqual(res_inv_quad.item(), actual_inv_quad.item(), places=1)
+        self.assertAlmostEqual(res_logdet.item(), torch.zeros(non_lazy_tsr.batch_shape), places=1)
+
+        &#47&#47 Backward
+        <a id="change">actual_inv_quad.backward()</a>
+        <a id="change">actual_logdet.backward()</a>
+        <a id="change">res_inv_quad.backward(retain_graph=True)</a>
+        <a id="change">res_logdet.backward()</a>
+
+        self.assertLess(torch.max((self.mat_clone.grad - self.mat.grad).abs()).item(), 1e-1)
+        self.assertLess(torch.max((self.vecs_clone.grad - self.vecs.grad).abs()).item(), 1e-1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self._test_inv_quad_logdet(inv_quad_rhs=rhs, logdet=True)
+
+    def test_inv_quad_logdet_many_vectors_improper(self):
+        <a id="change">rhs = torch.randn(*self.matrix_shape[:-1], 5)</a>
+        <a id="change">self._test_inv_quad_logdet(inv_quad_rhs=rhs, logdet=True, improper_logdet=True)</a>
+
+    def test_inv_quad_only_many_vectors(self):
+        rhs = torch.randn(*self.matrix_shape[:-1], 5)
+        self._test_inv_quad_logdet(inv_quad_rhs=rhs, logdet=False)</code></pre>

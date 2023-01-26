@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return MulLazyVariable(*(list(self.lazy_vars) + list(other.lazy_vars)), matmul_mode=self.matmul_mode)
+        elif isinstance(other, LazyVariable):
+            if self.added_diag is not None:
+                <a id="change">res = list((self, other))</a>
+                return MulLazyVariable(*res, matmul_mode=self.matmul_mode)
+            return MulLazyVariable(*(list(self.lazy_vars) + [other]), matmul_mode=self.matmul_mode)
+        else:
+            raise RuntimeError(&quotother must be a LazyVariable, int or float.&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+        return res
+
+    def mul(self, other):
+        if isinstance(other, int) or isinstance(other, float) or (isinstance(other, Variable) and <a id="change">other.numel() == 1):
+  </a>          lazy_vars = list(self.lazy_vars[:-1])
+            lazy_vars.append(self.lazy_vars[-1] * other)
+            return MulLazyVariable(*lazy_vars)
+        elif isinstance(other, MulLazyVariable):
+            <a id="change">res = list(self.lazy_vars) + list(other.lazy_vars)</a>
+            return MulLazyVariable(*res)
+        elif isinstance(other, LazyVariable):
+            return MulLazyVariable(*(list(self.lazy_vars) + [other]))
+        else:</code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self._current_filename = filename
+            self._current_data = {}
+            with self._filereader.open_cache(self._current_filename) as cache:
+                <a id="change">for k, v in cache.items():
+                    self._current_data[k] = v.value
+       </a> data = [self._current_data[v][index] for v in self.variables]
+        if self._normalize:
+            data = [d.astype(numpy.float32) * (1.0 / 255.0)
+                    if d.dtype == numpy.uint8 else d for d in data]</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _get_data(self, position):
+
+        self._position = position
+        <a id="change">if current_communicator():
+            try:
+                filename, index = self._order[position]
+            except IndexError:
+                logger.log(99, &quot_get_data() fails at worker {} retrying.&quot.format(
+                    current_communicator().rank))
+                sleep(0.01)
+                return self._get_data(position)
+        else:
+            filename, index = self._order[position]
+
+       </a> if filename != self._current_filename:
+            file_names_to_prefetch = None
+            if self._cache_type == ".npy" and self._num_of_threads &gt; 0:
+                file_names_to_prefetch = [o[0] for o in self._order[position + self._max_length:position + self._max_length *</code></pre>

@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      pex_info = binary_tgt.pexinfo.copy()
+      pex_info.build_properties = build_properties
+
+      builder = <a id="change">PEXBuilder(path=tmpdir, interpreter=interpreter, pex_info=pex_info, copy=True)</a>
+
+      if binary_tgt.shebang:
+        self.context.log.info(&quotFound Python binary target {} with customized shebang, using it: {}&quot
+                                .format(binary_tgt.name, binary_tgt.shebang))
+        builder.set_shebang(binary_tgt.shebang)
+      else:
+        self.context.log.debug(&quotNo customized shebang found for {}&quot.format(binary_tgt.name))
+
+      &#47&#47 Find which targets provide sources and which specify requirements.
+      source_tgts = []
+      req_tgts = []
+      for tgt in binary_tgt.closure(exclude_scopes=Scopes.COMPILE):
+        if has_python_sources(tgt) or has_resources(tgt):
+          source_tgts.append(tgt)
+        elif has_python_requirements(tgt):
+          req_tgts.append(tgt)
+        &#47&#47 Add target&quots interpreter compatibility constraints to pex info.
+        if is_python_target(tgt):
+          for constraint in tgt.compatibility:
+            builder.add_interpreter_constraint(constraint)
+
+      &#47&#47 Dump everything into the builder&quots chroot.
+      for tgt in source_tgts:
+        <a id="change">dump_sources(builder, tgt, self.context.log)</a>
+      &#47&#47 We need to ensure that we are resolving for only the current platform if we are
+      &#47&#47 including local python dist targets that have native extensions.
+      self._python_native_code_settings.check_build_for_current_platform_only(self.context.targets())
+      dump_requirement_libs(builder, interpreter, req_tgts, self.context.log,</code></pre><h3>After Change</h3><pre><code class='java'>
+      pex_info = binary_tgt.pexinfo.copy()
+      pex_info.build_properties = build_properties
+
+      pex_builder = <a id="change">PexBuilderWrapper(
+        PEXBuilder(path=tmpdir, interpreter=interpreter, pex_info=pex_info, copy=True),
+        PythonRepos.global_instance(),
+        PythonSetup.global_instance(),
+        self.context.log)</a>
+
+      if binary_tgt.shebang:
+        self.context.log.info(&quotFound Python binary target {} with customized shebang, using it: {}&quot
+          .format(binary_tgt.name, binary_tgt.shebang))
+        pex_builder.set_shebang(binary_tgt.shebang)
+      else:
+        self.context.log.debug(&quotNo customized shebang found for {}&quot.format(binary_tgt.name))
+
+      &#47&#47 Find which targets provide sources and which specify requirements.
+      source_tgts = []
+      req_tgts = []
+      constraint_tgts = []
+      for tgt in binary_tgt.closure(exclude_scopes=Scopes.COMPILE):
+        if has_python_sources(tgt) or has_resources(tgt):
+          source_tgts.append(tgt)
+        elif has_python_requirements(tgt):
+          req_tgts.append(tgt)
+        if is_python_target(tgt):
+          constraint_tgts.append(tgt)
+
+      &#47&#47 Add target&quots interpreter compatibility constraints to pex info.
+      pex_builder.add_interpreter_constraints_from(constraint_tgts)
+
+      &#47&#47 Dump everything into the builder&quots chroot.
+      for tgt in source_tgts:
+        <a id="change">pex_builder.add_sources_from(tgt)</a>
+
+      &#47&#47 We need to ensure that we are resolving for only the current platform if we are
+      &#47&#47 including local python dist targets that have native extensions.
+      self._python_native_code_settings.check_build_for_current_platform_only(self.context.targets())</code></pre>

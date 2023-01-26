@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def __setstate__(self, state):
+        if &quotmodule_&quot in state:
+            module_dump = state.pop(&quotmodule_&quot)
+            <a id="change">module_ = pickle.loads(module_dump)</a>
+            state[&quotmodule_&quot] = module_
+        self.__dict__.update(state)
+
+    def save_params(self, f):</code></pre><h3>After Change</h3><pre><code class='java'>
+        if &quotmodule_&quot in state:
+            module_dump = state.pop(&quotmodule_&quot)
+
+            <a id="change">with tempfile.SpooledTemporaryFile() as f:
+                f.write(module_dump)
+                f.seek(0)
+                if state[&quotuse_cuda&quot] and not torch.cuda.is_available():
+                    warnings.warn(
+                        "Model configured to use CUDA but no CUDA devices "
+                        "available. Loading on CPU instead.",
+                        ResourceWarning)
+                    module_ = torch.load(f, map_location=lambda storage, loc: storage)
+                else:
+                    module_ = torch.load(f)
+           </a> state[&quotmodule_&quot] = module_
+        self.__dict__.update(state)
+
+    def save_params(self, f):</code></pre>

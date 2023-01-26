@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if use_apex:
+            import apex
+            <a id="change">amp_params = get_default_params(
+                apex.amp.initialize, ["models", "optimizers"]
+            )</a>
+            amp_params["opt_level"] = "O0"
+            for dp in distributed_params:
+                if dp in amp_params:
+                    amp_params[dp] = distributed_params[dp]
+
+            <a id="change">amp_result = apex.amp.initialize(model, optimizer, **amp_params)</a>
+            if optimizer is not None:
+                model, optimizer = amp_result
+            else:
+                <a id="change">model = amp_result</a>
+
+            model = apex.parallel.DistributedDataParallel(model)
+
+            if syncbn:</code></pre><h3>After Change</h3><pre><code class='java'>
+            model = torch.nn.DataParallel(model)
+        elif isinstance(model, dict):
+            model = {k: torch.nn.DataParallel(v) for k, v in model.items()}
+    elif <a id="change">use_apex</a>:
+        model, optimizer = initialize_apex(
+            model, optimizer, **distributed_params
+        )</code></pre>

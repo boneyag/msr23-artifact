@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+class BeeCoder:
+    def __init__(self, params, model=None, runtime=False):
+        self.params = params
+        <a id="change">self.HIDDEN_LAYERS</a> = <a id="change">[256, 64]</a>
+        self.HISTORY = 80
+        self.sparse = False
+        self.upsample_count = int(12.5 * self.params.target_sample_rate / 1000)
+        if model is None:</code></pre><h3>After Change</h3><pre><code class='java'>
+class BeeCoder:
+    def __init__(self, params, model=None, runtime=False):
+        self.params = params
+        <a id="change">self.HIDDEN_LAYERS</a> = <a id="change">[512, 512, 4096, 512]</a>
+        self.FFT_SIZE = 513
+        self.sparse = False
+        if model is None:
+            self.model = dy.Model()
+        else:
+            self.model = model
+
+        input_size = self.FFT_SIZE * 2 + self.params.mgc_order
+        self.hidden_w = []
+        self.hidden_b = []
+        for layer_size in self.HIDDEN_LAYERS:
+            self.hidden_w.append(self.model.add_parameters((layer_size, input_size)))
+            self.hidden_b.append(self.model.add_parameters((layer_size)))
+            input_size = layer_size
+
+        self.output_real_w = self.model.add_parameters((self.FFT_SIZE, input_size))
+        self.output_real_b = self.model.add_parameters((self.FFT_SIZE))
+        <a id="change">self.output_imag_w = self.model.add_parameters((self.FFT_SIZE, input_size))</a>
+        <a id="change">self.output_imag_b = self.model.add_parameters((self.FFT_SIZE))</a>
+
+        self.trainer = dy.AdamTrainer(self.model, alpha=params.learning_rate)
+        self.dio = DatasetIO()
+        self.vocoder = MelVocoder()</code></pre>

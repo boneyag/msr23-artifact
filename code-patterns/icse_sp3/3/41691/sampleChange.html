@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                  INVALID_PARAMETER_VALUE)
+        with self.ManagedSessionMaker() as session:
+            runs = [run.to_mlflow_entity(session)
+                    <a id="change">for</a> exp in experiment_ids
+                    for run in self._list_runs(session, exp, run_view_type)]
+            filtered = SearchUtils.filter(runs, filter_string)
+            sorted_runs = SearchUtils.sort(filtered, order_by)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 tags. These run attributes are referenced during the invocation of
+            &#47&#47 ``run.to_mlflow_entity()``, so eager loading helps avoid additional database queries
+            &#47&#47 that are otherwise executed at attribute access time under a lazy loading model.
+            <a id="change">queried_runs = session \
+                .query(SqlRun) \
+                .options(*self._get_eager_run_query_options()) \
+                .filter(
+                    SqlRun.experiment_id.in_(experiment_ids),
+                    SqlRun.lifecycle_stage.in_(stages)) \
+                .all()</a>
+            runs = [run.to_mlflow_entity() for run in queried_runs]
+
+        filtered = SearchUtils.filter(runs, filter_string)
+        sorted_runs = SearchUtils.sort(filtered, order_by)</code></pre>

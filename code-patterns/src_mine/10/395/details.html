@@ -1,0 +1,54 @@
+<html><h3>c54f971f526cbbabde242473b54695701542cb0b,allennlp/interpret/attackers/hotflip.py,Hotflip,_first_order_taylor,#Hotflip#,317
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        function uses the grad, alongside the embedding_matrix to select the token that maximizes the
+        first-order taylor approximation of the loss.
+        
+        grad = <a id="change">torch.from_numpy(grad)</a>
+        if token_idx &gt;= self.embedding_matrix.size(0):
+            &#47&#47 This happens when we&quotve truncated our fake embedding matrix.  We need to do a dot
+            &#47&#47 product with the word vector of the current token; if that token is out of
+            &#47&#47 vocabulary for our truncated matrix, we need to run it through the embedding layer.
+            inputs = self._make_embedder_input([self.vocab.get_token_from_index(token_idx)])
+            word_embedding = self.embedding_layer(inputs)[0]
+        else:
+            word_embedding = torch.nn.functional.embedding(
+                torch.LongTensor([token_idx]), self.embedding_matrix
+            )
+        word_embedding = word_embedding.detach().unsqueeze(0)
+        grad = grad.unsqueeze(0).unsqueeze(0)
+        &#47&#47 solves equation (3) here https://arxiv.org/abs/1903.06620
+        new_embed_dot_grad = torch.einsum("bij,kj-&gt;bik", (grad, self.embedding_matrix))
+        prev_embed_dot_grad = torch.einsum("bij,bij-&gt;bi", (grad, word_embedding)).unsqueeze(-1)
+        <a id="change">neg_dir_dot_grad</a> = sign * (prev_embed_dot_grad - new_embed_dot_grad)
+        <a id="change">neg_dir_dot_grad</a> = neg_dir_dot_grad.detach().cpu().numpy()
+        &#47&#47 Do not replace with non-alphanumeric tokens
+        neg_dir_dot_grad[:, :, self.invalid_replacement_indices] = -numpy.inf
+        best_at_each_step = neg_dir_dot_grad.argmax(2)</code></pre><h3>After Change</h3><pre><code class='java'>
+        function uses the grad, alongside the embedding_matrix to select the token that maximizes the
+        first-order taylor approximation of the loss.
+        
+        grad = util.move_to_device(<a id="change">torch.from_numpy(grad)</a>, self.cuda_device)
+        if token_idx &gt;= self.embedding_matrix.size(0):
+            &#47&#47 This happens when we&quotve truncated our fake embedding matrix.  We need to do a dot
+            &#47&#47 product with the word vector of the current token; if that token is out of
+            &#47&#47 vocabulary for our truncated matrix, we need to run it through the embedding layer.
+            inputs = self._make_embedder_input([self.vocab.get_token_from_index(token_idx)])
+            word_embedding = self.embedding_layer(inputs)[0]
+        else:
+            word_embedding = torch.nn.functional.embedding(
+                util.move_to_device(torch.LongTensor([token_idx]), self.cuda_device),
+                self.embedding_matrix,
+            )
+        word_embedding = word_embedding.detach().unsqueeze(0)
+        grad = grad.unsqueeze(0).unsqueeze(0)
+        &#47&#47 solves equation (3) here https://arxiv.org/abs/1903.06620
+        new_embed_dot_grad = torch.einsum("bij,kj-&gt;bik", (grad, self.embedding_matrix))
+        prev_embed_dot_grad = torch.einsum("bij,bij-&gt;bi", (grad, word_embedding)).unsqueeze(-1)
+        <a id="change">neg_dir_dot_grad</a> = sign * (prev_embed_dot_grad - new_embed_dot_grad)
+        <a id="change">neg_dir_dot_grad</a> = neg_dir_dot_grad.detach().cpu().numpy()
+        &#47&#47 Do not replace with non-alphanumeric tokens
+        neg_dir_dot_grad[:, :, self.invalid_replacement_indices] = -numpy.inf
+        best_at_each_step = neg_dir_dot_grad.argmax(2)</code></pre><img src="1093776.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 2</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/c54f971f526cbbabde242473b54695701542cb0b#diff-b220a0add1a2be8cb06cf5f9ff39c551b8100e2893bddedbc7b5c1607d07cb2aL320' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: c54f971f526cbbabde242473b54695701542cb0b</div><div id='time'> Time: 2020-01-02</div><div id='author'> Author: udomc.can@gmail.com</div><div id='file'> File Name: allennlp/interpret/attackers/hotflip.py</div><div id='class'> Class Name: Hotflip</div><div id='method'> Method Name: _first_order_taylor</div><BR><BR><div id='link'><a href='https://github.com/maciejkula/spotlight/commit/be426ba9d5f569b5eab685d96bb418d11fbb5474#diff-131f889c37d2e25b680a4b2d9083b060e6b2bfe3ef04ca46b06a576bbd92c966L27' target='_blank'>Link</a></div><div id='project'> Project Name: maciejkula/spotlight</div><div id='commit'> Commit Name: be426ba9d5f569b5eab685d96bb418d11fbb5474</div><div id='time'> Time: 2018-05-20</div><div id='author'> Author: maciej.kula@gmail.com</div><div id='file'> File Name: tests/test_layers.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_embeddings</div><BR>

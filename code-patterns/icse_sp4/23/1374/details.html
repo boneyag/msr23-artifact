@@ -1,0 +1,98 @@
+<html><h3>775122950d145382146e9120308432a9faf9a9b8,fairseq/optim/adafactor.py,Adafactor,step,#Adafactor#Any#,143
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    else:
+                        state[&quotexp_avg_sq&quot] = state[&quotexp_avg_sq&quot].type_as(grad)
+
+                p_data_fp32 = <a id="change">p.data.float()</a>
+
+                state[&quotstep&quot] += 1
+                state[&quotRMS&quot] = self._rms(p_data_fp32)
+                group[&quotlr&quot] = self._get_lr(group, state)
+
+                beta2t = 1.0 - math.pow(state[&quotstep&quot], group[&quotdecay_rate&quot])
+                update = (grad**2) + group[&quoteps&quot][0]
+                if factored:
+                    exp_avg_sq_row = state[&quotexp_avg_sq_row&quot]
+                    exp_avg_sq_col = state[&quotexp_avg_sq_col&quot]
+
+                    exp_avg_sq_row.mul_(beta2t).add_(1.0 - beta2t, update.mean(dim=-1))
+                    exp_avg_sq_col.mul_(beta2t).add_(1.0 - beta2t, update.mean(dim=-2))
+
+                    &#47&#47 Approximation of exponential moving average of square of gradient
+                    self._approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col, update)
+                    update.mul_(grad)
+                else:
+                    exp_avg_sq = state[&quotexp_avg_sq&quot]
+
+                    exp_avg_sq.mul_(beta2t).add_(1.0 - beta2t, update)
+                    torch.rsqrt(exp_avg_sq, out=update).mul_(grad)
+
+                update.div_(max(1.0, self._rms(update) / group[&quotclip_threshold&quot]))
+                update.mul_(group[&quotlr&quot])
+
+                if use_first_moment:
+                    exp_avg = state[&quotexp_avg&quot]
+                    exp_avg.mul_(group[&quotbeta1&quot]).add_(1 - group[&quotbeta1&quot], update)
+                    update = exp_avg
+
+                if group[&quotweight_decay&quot] != 0:
+                    p_data_fp32.add_(-group[&quotweight_decay&quot] * group[&quotlr&quot], p_data_fp32)
+
+                p_data_fp32.add_(-update)
+
+                &#47&#47 TODO: remove check once pyTorch avoids a copy for this case
+                if <a id="change">p.data_ptr() != p_data_fp32.data_ptr()</a>:
+                    p.data.copy_(p_data_fp32)
+
+        return loss</code></pre><h3>After Change</h3><pre><code class='java'>
+                    else:
+                        state[&quotexp_avg_sq&quot] = state[&quotexp_avg_sq&quot].to(grad)
+
+                p_data_fp32 = <a id="change">p.data</a>
+                <a id="change">if p.data.dtype in {torch.float16, torch.bfloat16}:
+                    p_data_fp32 = p_data_fp32.float()
+
+               </a> state[&quotstep&quot] += 1
+                state[&quotRMS&quot] = self._rms(p_data_fp32)
+                group[&quotlr&quot] = self._get_lr(group, state)
+
+                beta2t = 1.0 - math.pow(state[&quotstep&quot], group[&quotdecay_rate&quot])
+                update = (grad**2) + group[&quoteps&quot][0]
+                if factored:
+                    exp_avg_sq_row = state[&quotexp_avg_sq_row&quot]
+                    exp_avg_sq_col = state[&quotexp_avg_sq_col&quot]
+
+                    exp_avg_sq_row.mul_(beta2t).add_(1.0 - beta2t, update.mean(dim=-1))
+                    exp_avg_sq_col.mul_(beta2t).add_(1.0 - beta2t, update.mean(dim=-2))
+
+                    &#47&#47 Approximation of exponential moving average of square of gradient
+                    update = self._approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col)
+                    update.mul_(grad)
+                else:
+                    exp_avg_sq = state[&quotexp_avg_sq&quot]
+
+                    exp_avg_sq.mul_(beta2t).add_(1.0 - beta2t, update)
+                    update = exp_avg_sq.rsqrt().mul_(grad)
+
+                update.div_(
+                    (self._rms(update) / group[&quotclip_threshold&quot]).clamp_(min=1.0)
+                )
+                update.mul_(group[&quotlr&quot])
+
+                if use_first_moment:
+                    exp_avg = state[&quotexp_avg&quot]
+                    exp_avg.mul_(group[&quotbeta1&quot]).add_(1 - group[&quotbeta1&quot], update)
+                    update = exp_avg
+
+                if group[&quotweight_decay&quot] != 0:
+                    p_data_fp32.add_(-group[&quotweight_decay&quot] * group[&quotlr&quot], p_data_fp32)
+
+                p_data_fp32.add_(-update)
+
+                if <a id="change">p.data.dtype in {torch.float16, torch.bfloat16}</a>:
+                    p.data.copy_(p_data_fp32)
+
+        return loss</code></pre><img src="10750916.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 20</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/775122950d145382146e9120308432a9faf9a9b8#diff-c8ff6e9ad677733577ae29b16bab6bcd5f2a83bdb9fb9e5e7f79ee3f42939b1cL158' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 775122950d145382146e9120308432a9faf9a9b8</div><div id='time'> Time: 2020-05-18</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/optim/adafactor.py</div><div id='class'> Class Name: Adafactor</div><div id='method'> Method Name: step</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/775122950d145382146e9120308432a9faf9a9b8#diff-d0f1814d2f162ba7c67209130e8a071048855102aa528fbdae9b64fe5a0ab649L146' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 775122950d145382146e9120308432a9faf9a9b8</div><div id='time'> Time: 2020-05-18</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/optim/adam.py</div><div id='class'> Class Name: Adam</div><div id='method'> Method Name: step</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/775122950d145382146e9120308432a9faf9a9b8#diff-4d9171175a0f1c4dd317d38b7189e54c34cab9fad3ee87b35a4d3388a9d3f212L78' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 775122950d145382146e9120308432a9faf9a9b8</div><div id='time'> Time: 2020-05-18</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/optim/nag.py</div><div id='class'> Class Name: NAG</div><div id='method'> Method Name: step</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/775122950d145382146e9120308432a9faf9a9b8#diff-c8ff6e9ad677733577ae29b16bab6bcd5f2a83bdb9fb9e5e7f79ee3f42939b1cL158' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 775122950d145382146e9120308432a9faf9a9b8</div><div id='time'> Time: 2020-05-18</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/optim/adafactor.py</div><div id='class'> Class Name: Adafactor</div><div id='method'> Method Name: step</div><BR>

@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    mask = np.ones((40, 40, 40))
+    for affine in (np.eye(4), np.diag((1, 1, -1, 1)),
+                   np.diag((.5, 1, .5, 1))):
+        series = <a id="change">masking.apply_mask(Nifti1Image(data, affine),
+                                    Nifti1Image(mask, affine), smooth=9)</a>
+        series = np.reshape(series[0, :], (40, 40, 40))
+        vmax = series.max()
+        &#47&#47 We are expecting a full-width at half maximum of
+        &#47&#47 9mm/voxel_size:</code></pre><h3>After Change</h3><pre><code class='java'>
+    data = np.zeros((40, 40, 40, 2))
+    data[20, 20, 20] = 1
+    mask = np.ones((40, 40, 40))
+    <a id="change">for create_files in (False, True):
+        for affine in (np.eye(4), np.diag((1, 1, -1, 1)),
+                       np.diag((.5, 1, .5, 1))):
+            data_img = Nifti1Image(data, affine)
+            mask_img = Nifti1Image(mask, affine)
+            with write_tmp_imgs(data_img, mask_img, create_files=create_files)\
+                     as filenames:
+                series = masking.apply_mask(filenames[0], filenames[1],
+                                            smooth=9)
+
+            series = np.reshape(series[0, :], (40, 40, 40))
+            vmax = series.max()
+            &#47&#47 We are expecting a full-width at half maximum of
+            &#47&#47 9mm/voxel_size:
+            above_half_max = series &gt; .5 * vmax
+            for axis in (0, 1, 2):
+                proj = np.any(np.any(np.rollaxis(above_half_max,
+                              axis=axis), axis=-1), axis=-1)
+                np.testing.assert_equal(proj.sum(),
+                                        9 / np.abs(affine[axis, axis]))
+
+    &#47&#47 Check that NaNs in the data do not propagate
+   </a> data[10, 10, 10] = np.NaN
+    data_img = Nifti1Image(data, affine)
+    mask_img = Nifti1Image(mask, affine)
+    series = masking.apply_mask(data_img, mask_img, smooth=9)</code></pre>

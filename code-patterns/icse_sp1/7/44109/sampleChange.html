@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 time.sleep(10.0)
+
+        for m_thread in self._tf_records_writer_threads:
+            <a id="change">m_thread.start()</a>
+
+        self._sample_info_queue.join()
+        self._sample_feature_io_queue.join()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        log.info(&quotStart write tensorflow records for {:s}...&quot.format(self._dataset_flag))
+
+        <a id="change">process_pool = []</a>
+        tfwriters = []
+        <a id="change">for i in range(self._writer_process_nums):
+            tfrecords_save_name = &quot{:s}_{:d}.tfrecords&quot.format(self._dataset_flag, i + 1)
+            tfrecords_save_path = ops.join(self._tfrecords_save_dir, tfrecords_save_name)
+
+            tfrecords_io_writer = tf.python_io.TFRecordWriter(path=tfrecords_save_path)
+            process = Process(
+                target=_write_tfrecords,
+                name=&quotSubprocess_{:d}&quot.format(i + 1),
+                args=(tfrecords_io_writer,)
+            )
+            process_pool.append(process)
+            tfwriters.append(tfrecords_io_writer)
+            process.start()
+
+       </a> <a id="change">for process in process_pool:
+            process.join()
+
+       </a> log.info(&quotFinished writing down the tensorflow records file&quot)
+</code></pre>

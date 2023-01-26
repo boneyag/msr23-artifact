@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            mpi_model.set_batch_iterator_func()
+
+        if &quotmonitor_test&quot in conf[&quotcallbacks&quot].keys() and conf[&quotcallbacks&quot][&quotmonitor_test&quot]:
+            conf_curr = <a id="change">deepcopy(conf)</a>
+            T_min_warn_orig = conf[&quotdata&quot][&quotT_min_warn&quot]
+            <a id="change">for T_min_curr in conf_curr[&quotcallbacks&quot][&quotmonitor_times&quot]:
+                conf_curr[&quotdata&quot][&quotT_min_warn&quot] = T_min_curr 
+                assert(conf[&quotdata&quot][&quotT_min_warn&quot] == T_min_warn_orig)
+                if shot_list_test is not None:
+                    _,_,_,roc_area_t,_ = mpi_make_predictions_and_evaluate(conf_curr,shot_list_test,loader)
+                    print_unique(&quotepoch {}, test_roc_{} = {}&quot.format(int(round(e)),T_min_curr,roc_area_t))
+                    &#47&#47epoch_logs[&quottest_roc_{}&quot.format(T_min_curr)] = roc_area_t
+                _,_,_,roc_area_v,_ = mpi_make_predictions_and_evaluate(conf_curr,shot_list_validate,loader)
+                print_unique(&quotepoch {}, val_roc_{} = {}&quot.format(int(round(e)),T_min_curr,roc_area_v))
+                &#47&#47epoch_logs[&quotval_roc_{}&quot.format(T_min_curr)] = roc_area_v
+       </a> epoch_logs[&quotval_roc&quot] = roc_area 
+        epoch_logs[&quotval_loss&quot] = loss
+        epoch_logs[&quottrain_loss&quot] = ave_loss
+        best_so_far = cmp_fn(epoch_logs[conf[&quotcallbacks&quot][&quotmonitor&quot]],best_so_far)</code></pre><h3>After Change</h3><pre><code class='java'>
+            if hasattr(mpi_model.model,&quotstop_training&quot):
+                stop_training = mpi_model.model.stop_training
+            if best_so_far != epoch_logs[conf[&quotcallbacks&quot][&quotmonitor&quot]]: &#47&#47only save model weights if quantity we are tracking is improving
+                <a id="change">if &quotmonitor_test&quot in conf[&quotcallbacks&quot].keys() and conf[&quotcallbacks&quot][&quotmonitor_test&quot]:
+
+                    print("No improvement, saving model weights anyways")
+                else:
+                    print("Not saving model weights")
+                    specific_builder.delete_model_weights(train_model,int(round(e)))
+
+            &#47&#47tensorboard
+           </a> if backend != &quottheano&quot:
+                val_generator = partial(loader.training_batch_generator,shot_list=shot_list_validate)()
+                val_steps = 1
+                tensorboard.on_epoch_end(val_generator,val_steps,int(round(e)),epoch_logs)</code></pre>

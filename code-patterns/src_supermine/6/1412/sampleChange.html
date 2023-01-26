@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 save variables that are GLOBAL, and either TRAINABLE or MODEL
+    var_to_dump = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+    <a id="change">var_to_dump.extend(tf.get_collection(tf.GraphKeys.MODEL_VARIABLES))</a>
+    if len(set(var_to_dump)) != len(var_to_dump):
+        logger.warn("TRAINABLE and MODEL variables have duplication!")
+    var_to_dump = list(set(var_to_dump))
+    globvarname = set([k.name for k in tf.global_variables()])</code></pre><h3>After Change</h3><pre><code class='java'>
+        dic = varmanip.load_chkpt_vars(input)
+    dic = {get_op_tensor_name(k)[1]: v for k, v in six.iteritems(dic)}
+
+    <a id="change">if args.meta is not None:
+        &#47&#47 save variables that are GLOBAL, and either TRAINABLE or MODEL
+        var_to_dump = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+        var_to_dump.extend(tf.get_collection(tf.GraphKeys.MODEL_VARIABLES))
+        if len(set(var_to_dump)) != len(var_to_dump):
+            logger.warn("TRAINABLE and MODEL variables have duplication!")
+        var_to_dump = list(set(var_to_dump))
+        globvarname = set([k.name for k in tf.global_variables()])
+        var_to_dump = set([k.name for k in var_to_dump if k.name in globvarname])
+
+        for name in var_to_dump:
+            assert name in dic, "Variable {} not found in the model!".format(name)
+    else:
+        var_to_dump = set(dic.keys())
+
+   </a> dic_to_dump = {k: v for k, v in six.iteritems(dic) if k in var_to_dump}
+    varmanip.save_chkpt_vars(dic_to_dump, args.output)
+</code></pre>

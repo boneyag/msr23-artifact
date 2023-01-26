@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            process_logs(build=self.build, temp=True)
+            log_path = stores.get_job_logs_path(job_name=job_name, temp=True)
+
+        <a id="change">filename = os.path.basename(log_path)</a>
+        <a id="change">chunk_size = 8192</a>
+        <a id="change">try:
+            wrapped_file = FileWrapper(open(log_path, &quotrb&quot), chunk_size)
+            response = StreamingHttpResponse(wrapped_file,
+                                             content_type=mimetypes.guess_type(log_path)[0])
+            response[&quotContent-Length&quot] = os.path.getsize(log_path)
+            response[&quotContent-Disposition&quot] = "attachment; filename={}".format(filename)
+            return response
+        except FileNotFoundError:
+            _logger.warning(&quotLog file not found: log_path=%s&quot, log_path)
+            return Response(status=status.HTTP_404_NOT_FOUND,
+                            data=&quotLog file not found: log_path={}&quot.format(log_path))
+
+
+</a>class BuildStopView(BuildEndpoint, CreateEndpoint):
+    Stop a build.
+    serializer_class = BuildJobSerializer
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        job_name = self.build.unique_name
+        if self.build.is_done:
+            log_path = stores.get_job_logs_path(job_name=job_name, temp=False)
+            <a id="change">log_path</a> = archive_logs_file(
+                log_path=log_path,
+                namepath=job_name)
+        else:
+            process_logs(build=self.build, temp=True)
+            log_path = stores.get_job_logs_path(job_name=job_name, temp=True)
+
+        <a id="change">return stream_file(file_path=log_path, logger=_logger)</a>
+
+
+class BuildStopView(BuildEndpoint, CreateEndpoint):
+    Stop a build.</code></pre>

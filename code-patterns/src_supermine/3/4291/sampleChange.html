@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    signal = SignalActor.remote()
+    outer_oid = return_an_id.remote()
+    inner_oid_binary = <a id="change">ray</a>.get(outer_oid)[0].binary()
+    pending_oid = pending.remote([outer_oid], signal)
+
+    &#47&#47 Remove the local reference to the returned ID.</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Check that the inner ID is pinned by the remote task ID.
+    _fill_object_store_and_get(pending_oid, succeed=False)
+    ray.get(signal.send.remote())
+    <a id="change">inner_oid = ray.get(pending_oid)</a>
+    inner_oid_binary = inner_oid.binary()
+    _fill_object_store_and_get(inner_oid_binary)
+
+    del pending_oid
+    <a id="change">del inner_oid</a>
+    _fill_object_store_and_get(inner_oid_binary, succeed=False)
+
+
+&#47&#47 Call a recursive chain of tasks that pass a serialized reference that was</code></pre>

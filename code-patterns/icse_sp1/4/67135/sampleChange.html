@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            work = self.flow_data[self.flow_data.triad_id == triad_id]
+            self.l_df.release()
+            work[&quotdelta&quot] = (pd.to_datetime(work[self.beacon_timestamp]).astype(int) / 1000000000 -
+                             <a id="change">pd.to_datetime(work[self.beacon_timestamp]).shift().astype(int)</a> / 1000000000).astype(int)
+
+            d = dict(work.delta.value_counts())
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.l_df.release()
+            work[self.beacon_timestamp] = pd.to_datetime(work[self.beacon_timestamp])
+            work[self.beacon_timestamp] = (work[self.beacon_timestamp].astype(int) / 1000000000).astype(int)
+            work = <a id="change">work.sort([self.beacon_timestamp])</a>
+            
+            work[&quotdelta&quot] = (work[self.beacon_timestamp] - work[self.beacon_timestamp].shift()).fillna(0)
+            <a id="change">work = work[1:]</a>
+
+            d = dict(work.delta.value_counts())
+            <a id="change">for key in d.keys():
+                if key &lt; self.min_interval:
+                    del d[key]
+            
+           </a> window, percent = self.percent_grouping(d)
+
+            if percent &gt; self.MIN_PERCENT:
+                PERCENT = str(int(percent))</code></pre>

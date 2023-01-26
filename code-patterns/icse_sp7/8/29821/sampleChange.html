@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if pil_image is None:
+        raise ImportError(&quotCould not import PIL.Image. &quot
+                          &quotThe use of `load_img` requires PIL.&quot)
+    <a id="change">with open(path, &quotrb&quot) as f:
+        img = pil_image.open(io.BytesIO(f.read()))
+        if color_mode == &quotgrayscale&quot:
+            &#47&#47 if image is not already an 8-bit, 16-bit or 32-bit grayscale image
+            &#47&#47 convert it to an 8-bit grayscale image.
+            if img.mode not in (&quotL&quot, &quotI;16&quot, &quotI&quot):
+                img = img.convert(&quotL&quot)
+        elif color_mode == &quotrgba&quot:
+            if img.mode != &quotRGBA&quot:
+                img = img.convert(&quotRGBA&quot)
+        elif color_mode == &quotrgb&quot:
+            if img.mode != &quotRGB&quot:
+                img = img.convert(&quotRGB&quot)
+        else:
+            raise ValueError(&quotcolor_mode must be "grayscale", "rgb", or "rgba"&quot)
+        if target_size is not None:
+            width_height_tuple = (target_size[1], target_size[0])
+            if img.size != width_height_tuple:
+                if interpolation not in _PIL_INTERPOLATION_METHODS:
+                    raise ValueError(
+                        &quotInvalid interpolation method {} specified. Supported &quot
+                        &quotmethods are {}&quot.format(
+                            interpolation,
+                            ", ".join(_PIL_INTERPOLATION_METHODS.keys())))
+                resample = _PIL_INTERPOLATION_METHODS[interpolation]
+
+                if keep_aspect_ratio:
+                    width, height = img.size
+                    target_width, target_height = width_height_tuple
+
+                    crop_height = (width * target_height) // target_width
+                    crop_width = (height * target_width) // target_height
+
+                    &#47&#47 Set back to input height / width
+                    &#47&#47 if crop_height / crop_width is not smaller.
+                    crop_height = min(height, crop_height)
+                    crop_width = min(width, crop_width)
+
+                    crop_box_hstart = (height - crop_height) // 2
+                    crop_box_wstart = (width - crop_width) // 2
+                    crop_box_wend = crop_box_wstart + crop_width
+                    crop_box_hend = crop_box_hstart + crop_height
+                    crop_box = [crop_box_wstart, crop_box_hstart,
+                                crop_box_wend, crop_box_hend]
+
+                    img = img.resize(width_height_tuple, resample,
+                                     box=crop_box)
+                else:
+                    img = img.resize(width_height_tuple, resample)
+        return img
+
+
+</a>def list_pictures(directory, ext=(&quotjpg&quot, &quotjpeg&quot, &quotbmp&quot, &quotpng&quot, &quotppm&quot, &quottif&quot,
+                                  &quottiff&quot)):
+    Lists all pictures in a directory, including all subdirectories.
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if pil_image is None:
+        raise ImportError(&quotCould not import PIL.Image. &quot
+                          &quotThe use of `load_img` requires PIL.&quot)
+    <a id="change">if isinstance(path, io.BytesIO):
+        img = pil_image.open(path)
+    elif isinstance(path, (Path, bytes, str)):
+        if isinstance(path, Path):
+            path = str(path.resolve())
+        with open(path, &quotrb&quot) as f:
+            img = pil_image.open(io.BytesIO(f.read()))
+    else:
+        raise TypeError(&quotpath should be path-like or io.BytesIO&quot
+                        &quot, not {}&quot.format(type(path)))
+
+   </a> if color_mode == &quotgrayscale&quot:
+        &#47&#47 if image is not already an 8-bit, 16-bit or 32-bit grayscale image
+        &#47&#47 convert it to an 8-bit grayscale image.
+        if img.mode not in (&quotL&quot, &quotI;16&quot, &quotI&quot):</code></pre>

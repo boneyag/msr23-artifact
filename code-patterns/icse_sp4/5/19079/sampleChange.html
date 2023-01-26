@@ -1,0 +1,77 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+psd_avg /= n_epochs
+freqs = stc.times  &#47&#47 the frequencies are stored here
+
+<a id="change">plt.figure()</a>
+plt.plot(freqs, psd_avg)
+plt.xlabel(&quotFreq (Hz)&quot)
+plt.ylabel(&quotPower Spectral Density&quot)
+plt.show()</code></pre><h3>After Change</h3><pre><code class='java'>
+fname_event = data_path + &quot/MEG/sample/sample_audvis_raw-eve.fif&quot
+label_name = &quotAud-lh&quot
+fname_label = data_path + &quot/MEG/sample/labels/%s.label&quot % label_name
+<a id="change">subjects_dir = data_path + &quot/subjects&quot</a>
+
+event_id, tmin, tmax = 1, -0.2, 0.5
+snr = 1.0  &#47&#47 use smaller SNR for raw data
+lambda2 = 1.0 / snr ** 2
+method = "dSPM"  &#47&#47 use dSPM method (could also be MNE or sLORETA)
+
+&#47&#47 Load data
+inverse_operator = read_inverse_operator(fname_inv)
+label = mne.read_label(fname_label)
+raw = mne.io.read_raw_fif(fname_raw)
+events = mne.read_events(fname_event)
+
+&#47&#47 Set up pick list
+include = []
+raw.info[&quotbads&quot] += [&quotEEG 053&quot]  &#47&#47 bads + 1 more
+
+&#47&#47 pick MEG channels
+picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=True,
+                       include=include, exclude=&quotbads&quot)
+&#47&#47 Read epochs
+epochs = mne.Epochs(raw, events, event_id, tmin, tmax, picks=picks,
+                    baseline=(None, 0), reject=dict(mag=4e-12, grad=4000e-13,
+                                                    eog=150e-6))
+
+&#47&#47 define frequencies of interest
+fmin, fmax = 0., 70.
+bandwidth = 4.  &#47&#47 bandwidth of the windows in Hz
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Compute source space PSD in label
+&#47&#47 ---------------------------------
+&#47&#47
+&#47&#47 ..note:: By using "return_generator=True" stcs will be a generator object
+&#47&#47          instead of a list. This allows us so to iterate without having to
+&#47&#47          keep everything in memory.
+
+n_epochs_use = 10
+stcs = compute_source_psd_epochs(epochs[:n_epochs_use], inverse_operator,
+                                 lambda2=lambda2,
+                                 method=method, fmin=fmin, fmax=fmax,
+                                 bandwidth=bandwidth, label=label,
+                                 return_generator=True, verbose=True)
+
+&#47&#47 compute average PSD over the first 10 epochs
+psd_avg = 0.
+for i, stc in enumerate(stcs):
+    psd_avg += stc.data
+psd_avg /= n_epochs_use
+freqs = stc.times  &#47&#47 the frequencies are stored here
+stc.data = psd_avg  &#47&#47 overwrite the last epoch&quots data with the average
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Visualize the 10 Hz PSD:
+
+brain = <a id="change">stc.plot(initial_time=10., hemi=&quotlh&quot, views=&quotlat&quot,  &#47&#47 10 HZ
+                 clim=dict(kind=&quotvalue&quot, lims=(20, 40, 60)),
+                 smoothing_steps=3, subjects_dir=subjects_dir)</a>
+brain.add_label(label, borders=True, color=&quotk&quot)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Visualize the entire spectrum:</code></pre>

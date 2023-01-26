@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            yield dict(zip(keys, shard_tensors))
+
+        &#47&#47 Assumed backprop&quotd
+        <a id="change">variables = ((state[k], v.grad.data) for k, v in non_none.items()
+                     if isinstance(v, Variable) and v.grad is not None)</a>
+        inputs, grads = zip(*variables)
+        torch.autograd.backward(inputs, grads)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 want a sequence of dictionaries of tensors.
+        &#47&#47 First, unzip the dictionary into a sequence of keys and a
+        &#47&#47 sequence of tensor-like sequences.
+        keys, values = zip(*((k, [v_chunk <a id="change">for</a> v_chunk in v_split])
+                             for k, (_, v_split) in non_none.items()))
+
+        &#47&#47 Now, yield a dictionary for each shard. The keys are always
+        &#47&#47 the same. values is a sequence of length &#47&#47keys where each
+        &#47&#47 element is a sequence of length &#47&#47shards. We want to iterate
+        &#47&#47 over the shards, not over the keys: therefore, the values need
+        &#47&#47 to be re-zipped by shard and then each shard can be paired
+        &#47&#47 with the keys.
+        for shard_tensors in zip(*values):
+            yield dict(zip(keys, shard_tensors))
+
+        &#47&#47 Assumed backprop&quotd
+        variables = []
+        for k, (v, v_split) in non_none.items():
+            <a id="change">if isinstance(v, torch.Tensor) and state[k].requires_grad:
+                variables.extend(zip(torch.split(state[k], shard_size),
+                                     [v_chunk.grad for v_chunk in v_split]))
+       </a> inputs, grads = zip(*variables)
+        torch.autograd.backward(inputs, grads)
+</code></pre>

@@ -1,0 +1,25 @@
+<html><h3>6c06a88957549b1405f43361e4aa911abc56ef66,se3cnn/kernel.py,SE3Kernel,combination,#SE3Kernel#Any#,296
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    basis_kernels_ij = kij.contiguous().view(b_el, -1)  &#47&#47 [beta, i*j*x*y*z]
+
+                    ker = torch.mm(w, basis_kernels_ij)  &#47&#47 [I*J, i*j*x*y*z]
+                    <a id="change">ker = ker.view(mi, mj, *b_size)</a>  &#47&#47 [I, J, i, j, x, y, z]
+                    <a id="change">ker = ker.transpose(1, 2).contiguous()</a>  &#47&#47 [I, i, J, j, x, y, z]
+                    ker = ker.view(mi * self.dims_out[i], mj * self.dims_in[j], *b_size[2:])  &#47&#47 [I*i, J*j, x, y, z]
+                    <a id="change">kernel[si, sj] = ker</a>
+                else:
+                    kernel[si, sj] = 0
+
+                begin_j += mj * self.dims_in[j]</code></pre><h3>After Change</h3><pre><code class='java'>
+                    w = weight[weight_index: weight_index + mi * mj * b_el].view(mi, mj, b_el)  &#47&#47 [u, v, beta]
+                    weight_index += mi * mj * b_el
+
+                    ker = <a id="change">torch.einsum("uvb,bijxyz-&gt;uivjxyz", (w, kij)).contiguous()</a>  &#47&#47 [u, i, v, j, x, y, z]
+                    <a id="change">kernel[si, sj] = ker.view_as(kernel[si, sj])</a>
+                else:
+                    kernel[si, sj] = 0
+
+                begin_j += mj * self.dims_in[j]</code></pre><img src="13498445.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mariogeiger/se3cnn/commit/6c06a88957549b1405f43361e4aa911abc56ef66#diff-e8c0fb45bd5e2d36e656a94f81905190b828f0c62cc805c05b36008bf564746dL296' target='_blank'>Link</a></div><div id='project'> Project Name: mariogeiger/se3cnn</div><div id='commit'> Commit Name: 6c06a88957549b1405f43361e4aa911abc56ef66</div><div id='time'> Time: 2018-10-04</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: se3cnn/kernel.py</div><div id='class'> Class Name: SE3Kernel</div><div id='method'> Method Name: combination</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/a7a12d157766b69cf4b1ddbb5fcdacfe485dc6fa#diff-5e62cba3ebde26a49ff47196d945cc061e3dfe53e7331b39abddbcab1346f64fL117' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: a7a12d157766b69cf4b1ddbb5fcdacfe485dc6fa</div><div id='time'> Time: 2019-04-03</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/kernels/grid_interpolation_kernel.py</div><div id='class'> Class Name: GridInterpolationKernel</div><div id='method'> Method Name: _compute_grid</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/f7afc7ae76ed2c328ed02f05e91ccceec8942e0b#diff-e9ca49dfce62c7314c62739aed9d61b482bb144c9cd1f234d2314560130b8264L121' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: f7afc7ae76ed2c328ed02f05e91ccceec8942e0b</div><div id='time'> Time: 2018-09-26</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: python/baseline/pytorch/seq2seq/model.py</div><div id='class'> Class Name: Seq2SeqModel</div><div id='method'> Method Name: make_input</div><BR>

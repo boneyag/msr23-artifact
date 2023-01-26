@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        src_len = torch.from_numpy(batch_dict[&quotsrc_lengths&quot])
+        src_len, perm_idx = src_len.sort(0, descending=True)
+        example[&quotsrc_len&quot] = src_len
+        <a id="change">example[&quotsrc&quot] = example[&quotsrc&quot][perm_idx].transpose(0, 1).contiguous()</a>
+        if self.gpu:
+            example[&quotsrc&quot] = example[&quotsrc&quot].cuda()
+            example[&quotsrc_len&quot] = <a id="change">example[&quotsrc_len&quot].cuda()</a>
+        if &quottgt&quot in batch_dict:
+            tgt = torch.from_numpy(batch_dict[&quottgt&quot])
+            example[&quotdst&quot] = tgt[:, :-1]
+            example[&quottgt&quot] = tgt[:, 1:]</code></pre><h3>After Change</h3><pre><code class='java'>
+        lengths = torch.from_numpy(batch_dict[self.src_lengths_key])
+        lengths, perm_idx = lengths.sort(0, descending=True)
+
+        if <a id="change">self.gpu</a>:
+            lengths = lengths.cuda()
+        example[&quotsrc_len&quot] = lengths
+        <a id="change">for key in self.src_embeddings.keys():
+            tensor = torch.from_numpy(batch_dict[key])
+            tensor = tensor[perm_idx]
+            example[key] = tensor.transpose(0, 1).contiguous()
+            if self.gpu:
+                example[key] = example[key].cuda()
+
+       </a> if &quottgt&quot in batch_dict:
+            tgt = torch.from_numpy(batch_dict[&quottgt&quot])
+            example[&quotdst&quot] = tgt[:, :-1]
+            example[&quottgt&quot] = tgt[:, 1:]</code></pre>

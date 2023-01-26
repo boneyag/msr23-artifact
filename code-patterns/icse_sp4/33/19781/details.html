@@ -1,0 +1,121 @@
+<html><h3>7b2ff2d8345738ca4a9857863f375049a335ee02,cistar-dev/cistar/core/base_env.py,SumoEnvironment,setup_initial_state,#SumoEnvironment#,205
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.sorted_ids = self.sort_by_position()
+
+        &#47&#47 collect headway, leader id, and follower id data
+        <a id="change">vehicles = self.get_headway_dict()</a>
+
+        for veh_id in self.ids:
+            <a id="change">self.vehicles[veh_id]["headway"] = vehicles[veh_id]["headway"]</a>
+            self.vehicles[veh_id]["leader"] = <a id="change">vehicles[veh_id]["leader"]</a>
+            self.vehicles[veh_id]["follower"] = <a id="change">vehicles[veh_id]["follower"]</a>
+
+        &#47&#47 dictionary of initial observations used while resetting vehicles after each rollout
+        self.initial_observations = deepcopy(dict(self.vehicles))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 so density in vehicles/km would be 1000 * self.density
+        self.density = self.scenario.num_vehicles / self.scenario.net_params[&quotlength&quot]
+
+    def setup_initial_state(<a id="change">self</a>):
+        
+        Store initial state so that simulation can be reset at the end.
+        TODO: Make traci calls as bulk as possible
+        Initial state is a dictionary: key = vehicle IDs, value = state describing car
+        
+        &#47&#47 collect ids and prepare id and vehicle lists
+        self.ids = self.traci_connection.vehicle.getIDList()
+        self.controlled_ids.clear()
+        self.sumo_ids.clear()
+        self.rl_ids.clear()
+        self.vehicles.clear()
+
+        &#47&#47 create the list of colors used to different between different types of
+        &#47&#47 vehicles visually on sumo&quots gui
+        self.colors = {}
+        key_index = 1
+        color_choice = np.random.choice(len(COLORS))
+        for key in self.scenario.type_params.keys():
+            self.colors[key] = COLORS[(color_choice + key_index) % len(COLORS)]
+            key_index += 1
+
+        for veh_id in self.ids:
+            &#47&#47 import initial state from traci and place in vehicle dict
+            vehicle = dict()
+            vehicle["id"] = veh_id
+            veh_type = self.traci_connection.vehicle.getTypeID(veh_id)
+            vehicle["type"] = veh_type
+            self.traci_connection.vehicle.setColor(veh_id, self.colors[veh_type])
+            vehicle["edge"] = self.traci_connection.vehicle.getRoadID(veh_id)
+            vehicle["position"] = self.traci_connection.vehicle.getLanePosition(veh_id)
+            vehicle["lane"] = self.traci_connection.vehicle.getLaneIndex(veh_id)
+            vehicle["speed"] = self.traci_connection.vehicle.getSpeed(veh_id)
+            vehicle["length"] = self.traci_connection.vehicle.getLength(veh_id)
+            vehicle["max_speed"] = self.traci_connection.vehicle.getMaxSpeed(veh_id)
+
+            &#47&#47 specify acceleration controller
+            controller_params = self.scenario.type_params[veh_type][1]
+            vehicle[&quotcontroller&quot] = controller_params[0](veh_id=veh_id, **controller_params[1])
+
+            if controller_params[0] == SumoController:
+                self.sumo_ids.append(veh_id)
+            elif controller_params[0] == RLController:
+                self.rl_ids.append(veh_id)
+            else:
+                self.controlled_ids.append(veh_id)
+
+            &#47&#47 specify lane-changing controller
+            lane_changer_params = self.scenario.type_params[veh_type][2]
+            if lane_changer_params is not None:
+                vehicle[&quotlane_changer&quot] = lane_changer_params[0](veh_id=veh_id, **lane_changer_params[1])
+            else:
+                vehicle[&quotlane_changer&quot] = None
+
+            self.vehicles[veh_id] = vehicle
+            self.vehicles[veh_id]["absolute_position"] = self.get_x_by_id(veh_id)
+            &#47&#47 the time step of the last lane change is always present in the environment,
+            &#47&#47 but only used by sub-classes that apply lane changing
+            self.vehicles[veh_id][&quotlast_lc&quot] = -1 * self.lane_change_duration
+
+            &#47&#47 set speed mode
+            self.set_speed_mode(veh_id)
+
+            &#47&#47 set lane change mode
+            self.set_lane_change_mode(veh_id)
+
+            &#47&#47 Saving initial state
+            &#47&#47 route_id = self.traci_connection.vehicle.getRouteID(veh_id)
+            route_id = "route" + vehicle["edge"]
+            pos = self.traci_connection.vehicle.getPosition(veh_id)
+
+            self.initial_state[veh_id] = (vehicle["type"], route_id, vehicle["lane"],
+                                          vehicle["position"], vehicle["speed"], pos)
+
+        &#47&#47 collect list of sorted vehicle ids
+        self.sorted_ids = self.sort_by_position()
+
+        &#47&#47 collect headway, leader id, and follower id data
+        &#47&#47 vehicles = self.get_headway_dict()
+
+        for veh_id in self.ids:
+            &#47&#47 self.vehicles[veh_id]["headway"] = vehicles[veh_id]["headway"]
+            &#47&#47 self.vehicles[veh_id]["leader"] = vehicles[veh_id]["leader"]
+            &#47&#47 self.vehicles[veh_id]["follower"] = vehicles[veh_id]["follower"]
+            
+            headway = self.traci_connection.vehicle.getLeader(veh_id, 200)
+            <a id="change">if headway is None:
+                self.vehicles[veh_id]["leader"] = &quot&quot
+                self.vehicles[veh_id]["follower"] = &quot&quot
+                self.vehicles[veh_id]["headway"] = self.scenario.length - self.vehicles[veh_id]["length"]
+            else:
+                self.vehicles[veh_id]["headway"] = headway[1]
+                self.vehicles[veh_id]["leader"] = headway[0]
+                self.vehicles[headway[0]]["follower"] = veh_id
+
+        &#47&#47 dictionary of initial observations used while resetting vehicles after each rollout
+       </a> self.initial_observations = deepcopy(dict(self.vehicles))
+
+        &#47&#47 contains the last lc before the current step
+        self.prev_last_lc = dict()</code></pre><img src="107635562.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 25</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/7b2ff2d8345738ca4a9857863f375049a335ee02#diff-4ef899ef2a0a276b2352f8c10aac8aae4451b72df8caac4f2a5a07d4fcf05626L205' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 7b2ff2d8345738ca4a9857863f375049a335ee02</div><div id='time'> Time: 2017-07-11</div><div id='author'> Author: eugenevinitsky@airbears2-10-142-36-33.airbears2.1918.berkeley.edu</div><div id='file'> File Name: cistar-dev/cistar/core/base_env.py</div><div id='class'> Class Name: SumoEnvironment</div><div id='method'> Method Name: setup_initial_state</div><BR><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/7b2ff2d8345738ca4a9857863f375049a335ee02#diff-4ef899ef2a0a276b2352f8c10aac8aae4451b72df8caac4f2a5a07d4fcf05626L418' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 7b2ff2d8345738ca4a9857863f375049a335ee02</div><div id='time'> Time: 2017-07-11</div><div id='author'> Author: eugenevinitsky@airbears2-10-142-36-33.airbears2.1918.berkeley.edu</div><div id='file'> File Name: cistar-dev/cistar/core/base_env.py</div><div id='class'> Class Name: SumoEnvironment</div><div id='method'> Method Name: reset</div><BR><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/7b2ff2d8345738ca4a9857863f375049a335ee02#diff-4ef899ef2a0a276b2352f8c10aac8aae4451b72df8caac4f2a5a07d4fcf05626L205' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 7b2ff2d8345738ca4a9857863f375049a335ee02</div><div id='time'> Time: 2017-07-11</div><div id='author'> Author: eugenevinitsky@airbears2-10-142-36-33.airbears2.1918.berkeley.edu</div><div id='file'> File Name: cistar-dev/cistar/core/base_env.py</div><div id='class'> Class Name: SumoEnvironment</div><div id='method'> Method Name: setup_initial_state</div><BR><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/349297d55712cdc952cc9d1dfc8444ed65cf0d4f#diff-4ef899ef2a0a276b2352f8c10aac8aae4451b72df8caac4f2a5a07d4fcf05626L310' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 349297d55712cdc952cc9d1dfc8444ed65cf0d4f</div><div id='time'> Time: 2017-07-27</div><div id='author'> Author: akreidieh@gmail.com</div><div id='file'> File Name: cistar-dev/cistar/core/base_env.py</div><div id='class'> Class Name: SumoEnvironment</div><div id='method'> Method Name: step</div><BR>

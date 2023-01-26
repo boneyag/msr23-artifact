@@ -1,0 +1,43 @@
+<html><h3>7e2ce3a6cd51b21218ccc281dc21626153221778,perfkitbenchmarker/scripts/spark_sql_runner.py,,main,#Any#,41
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  logging.info(&quotRunning %s&quot, args.sql_script)
+  with open(args.sql_script) as f:
+    <a id="change">sql = f.read()</a>
+
+  &#47&#47 spark-sql does not limit it&quots output. Replicate that here by setting limit
+  &#47&#47 to max Java Integer. Hopefully you limited the output in SQL or you are
+  &#47&#47 going to have a bad time.</code></pre><h3>After Change</h3><pre><code class='java'>
+    logging.info(&quotLoading %s&quot, name)
+    spark.read.format(fmt).options(**options).load().createTempView(name)
+
+  <a id="change">results = []</a>
+  <a id="change">for script in args.sql_scripts:
+    &#47&#47 Read script from object storage using rdd API
+    query = &quot\n&quot.join(spark.sparkContext.textFile(script).collect())
+
+    try:
+      logging.info(&quotRunning %s&quot, script)
+      start = time.time()
+      &#47&#47 spark-sql does not limit its output. Replicate that here by setting
+      &#47&#47 limit to max Java Integer. Hopefully you limited the output in SQL or
+      &#47&#47 you are going to have a bad time. Note this is not true of all TPC-DS or
+      &#47&#47 TPC-H queries and they may crash with small JVMs.
+      &#47&#47 pylint: disable=protected-access
+      spark.sql(query).show(spark._jvm.java.lang.Integer.MAX_VALUE)
+      &#47&#47 pylint: enable=protected-access
+      duration = time.time() - start
+      results.append(sql.Row(script=script, duration=duration))
+    &#47&#47 These correspond to errors in low level Spark Excecution.
+    &#47&#47 Let ParseException and AnalysisException fail the job.
+    except (sql.utils.QueryExecutionException,
+            py4j.protocol.Py4JJavaError) as e:
+      logging.error(&quotScript %s failed&quot, script, exc_info=e)
+
+ </a> logging.info(&quotWriting results to %s&quot, args.report_dir)
+  spark.createDataFrame(results).coalesce(1).write.json(args.report_dir)
+
+</code></pre><img src="231818272.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GoogleCloudPlatform/PerfKitBenchmarker/commit/7e2ce3a6cd51b21218ccc281dc21626153221778#diff-1f1cb796722feeeaf1743cab5d4a033dba5c45013b1168ee951a174c70db575dL42' target='_blank'>Link</a></div><div id='project'> Project Name: GoogleCloudPlatform/PerfKitBenchmarker</div><div id='commit'> Commit Name: 7e2ce3a6cd51b21218ccc281dc21626153221778</div><div id='time'> Time: 2020-11-19</div><div id='author'> Author: pclay@google.com</div><div id='file'> File Name: perfkitbenchmarker/scripts/spark_sql_runner.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/undertheseanlp/underthesea/commit/80ee39154b951c2c50ae2067f560aad81510a13f#diff-3e544c0137338092cfa0bf5ec6716dd2b56c4e8a0818ea5b0a7336fcf9583dbdL24' target='_blank'>Link</a></div><div id='project'> Project Name: undertheseanlp/underthesea</div><div id='commit'> Commit Name: 80ee39154b951c2c50ae2067f560aad81510a13f</div><div id='time'> Time: 2017-07-04</div><div id='author'> Author: brother.rain.1024@gmail.com</div><div id='file'> File Name: underthesea/corpus/plaintext.py</div><div id='class'> Class Name: PlainTextCorpus</div><div id='method'> Method Name: load</div><BR><BR><div id='link'><a href='https://github.com/GoogleCloudPlatform/PerfKitBenchmarker/commit/7e2ce3a6cd51b21218ccc281dc21626153221778#diff-1f1cb796722feeeaf1743cab5d4a033dba5c45013b1168ee951a174c70db575dL42' target='_blank'>Link</a></div><div id='project'> Project Name: GoogleCloudPlatform/PerfKitBenchmarker</div><div id='commit'> Commit Name: 7e2ce3a6cd51b21218ccc281dc21626153221778</div><div id='time'> Time: 2020-11-19</div><div id='author'> Author: pclay@google.com</div><div id='file'> File Name: perfkitbenchmarker/scripts/spark_sql_runner.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/hachmannlab/chemml/commit/dc6a6bcf9b38013bc685925ec142f57c8206f44b#diff-4e359b577e00a0ae56b8f8492908de0bec83a694d93b7ed3bf6c6bb5d14fe501L121' target='_blank'>Link</a></div><div id='project'> Project Name: hachmannlab/chemml</div><div id='commit'> Commit Name: dc6a6bcf9b38013bc685925ec142f57c8206f44b</div><div id='time'> Time: 2019-04-02</div><div id='author'> Author: mojtabah@buffalo.edu</div><div id='file'> File Name: chemml/datasets/base.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: load_xyz_polarizability</div><BR>

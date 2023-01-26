@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return FailedOperation(input_data=input_data.dict(), **ret_data)
+
+        if all_params is False:
+            <a id="change">ret_data["error"] = ComputeError(
+                error_type="input_error", error_message="run_rdkit did not match all parameters to molecule")</a>
+            return FailedOperation(input_data=input_data.dict(), **ret_data)
+
+        ff.Initialize()
+
+        ret_data["properties"] = {"return_energy": ff.CalcEnergy() * ureg.conversion_factor("kJ / mol", "hartree")}
+
+        if input_data.driver == "energy":
+            ret_data["return_result"] = ret_data["properties"]["return_energy"]
+        elif input_data.driver == "gradient":
+            coef = ureg.conversion_factor("kJ / mol", "hartree") * ureg.conversion_factor("angstrom", "bohr")
+            ret_data["return_result"] = [x * coef for x in ff.CalcGrad()]
+        else:
+            ret_data["error"] = ComputeError(
+                error_type="input_error",
+                error_message="run_rdkit did not understand driver method "
+                "&quot{}&quot.".format(ret_data["driver"]))
+            <a id="change">return FailedOperation(input_data=input_data.dict(), **ret_data)</a>
+
+        ret_data["provenance"] = Provenance(
+            creator="rdkit", version=rdkit.__version__, routine="rdkit.Chem.AllChem.UFFGetMoleculeForceField")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            raise InputError("RDKit does not currently support charged molecules.")
+
+        if not jmol.connectivity:  &#47&#47 Check for empty list
+            <a id="change">raise InputError("RDKit requires molecules to have a connectivity graph.")</a>
+
+        &#47&#47 Build out the base molecule
+        base_mol = Chem.Mol()
+        rw_mol = Chem.RWMol(base_mol)</code></pre>

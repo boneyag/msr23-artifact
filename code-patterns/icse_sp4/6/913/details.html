@@ -1,0 +1,51 @@
+<html><h3>e09e6dc678f9b9c198ed361eea0dffa7749bc553,src/garage/torch/algos/vpg.py,VPG,train_once,#VPG#Any#Any#,130
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                ids = shuffled_ids[start:start + step_size]
+                loss = self._train(obs_flat[ids], actions_flat[ids],
+                                   rewards_flat[ids], advantages_flat[ids])
+            logger.log(<a id="change">&quotMini epoch: {} | Loss: {}&quot.format(epoch, loss)</a>)
+
+        self._value_function.fit(paths)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        obs_flat = torch.cat(filter_valids(obs, valids))
+        actions_flat = torch.cat(filter_valids(actions, valids))
+        rewards_flat = torch.cat(filter_valids(rewards, valids))
+        <a id="change">returns_flat = torch.cat(filter_valids(returns, valids))</a>
+        advs_flat = self._compute_advantage(rewards, valids, baselines)
+
+        with torch.no_grad():
+            policy_loss_before = self._compute_loss_with_adv(
+                obs_flat, actions_flat, rewards_flat, advs_flat)
+            vf_loss_before = self._value_function.compute_loss(
+                obs_flat, returns_flat)
+            kl_before = self._compute_kl_constraint(obs)
+
+        self._train(obs_flat, actions_flat, rewards_flat, returns_flat,
+                    advs_flat)
+
+        with torch.no_grad():
+            policy_loss_after = self._compute_loss_with_adv(
+                obs_flat, actions_flat, rewards_flat, advs_flat)
+            vf_loss_after = self._value_function.compute_loss(
+                obs_flat, returns_flat)
+            kl_after = self._compute_kl_constraint(obs)
+            policy_entropy = self._compute_policy_entropy(obs)
+
+        with tabular.prefix(self.policy.name):
+            tabular.record(&quot/LossBefore&quot, policy_loss_before.item())
+            tabular.record(&quot/LossAfter&quot, policy_loss_after.item())
+            tabular.record(&quot/dLoss&quot,
+                           (policy_loss_before - policy_loss_after).item())
+            tabular.record(&quot/KLBefore&quot, kl_before.item())
+            tabular.record(&quot/KL&quot, kl_after.item())
+            tabular.record(&quot/Entropy&quot, policy_entropy.mean().item())
+
+        with tabular.prefix(self._value_function.name):
+            tabular.record(&quot/LossBefore&quot, <a id="change">vf_loss_before.item()</a>)
+            tabular.record(&quot/LossAfter&quot, <a id="change">vf_loss_after.item()</a>)
+            tabular.record(&quot/dLoss&quot,
+                           vf_loss_before.item() - vf_loss_after.item())
+</code></pre><img src="7001930.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/rlworkgroup/garage/commit/e09e6dc678f9b9c198ed361eea0dffa7749bc553#diff-1b1e48e29fbb8c40c7db1d5095248a1cc22d69affe302ed47c5dbf86c05e2230L127' target='_blank'>Link</a></div><div id='project'> Project Name: rlworkgroup/garage</div><div id='commit'> Commit Name: e09e6dc678f9b9c198ed361eea0dffa7749bc553</div><div id='time'> Time: 2020-05-01</div><div id='author'> Author: 43084978+yonghyuc@users.noreply.github.com</div><div id='file'> File Name: src/garage/torch/algos/vpg.py</div><div id='class'> Class Name: VPG</div><div id='method'> Method Name: train_once</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/d3795d6cd1c66ac05dc0f4861ce69ab4680bff3d#diff-d4588fc3718fca1ca01de4a78b71dea14a12c7a1ee2296e8c345277d081d3ad5L107' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: d3795d6cd1c66ac05dc0f4861ce69ab4680bff3d</div><div id='time'> Time: 2018-04-02</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/distributed_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: all_gather_list</div><BR>

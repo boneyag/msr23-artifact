@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    reduced_feat = _gen_send_reduce(call_type, graph,
+            message_func, reduce_func, (var_src, var_dst, var_eid), recv_nodes)
+    &#47&#47 generate optional apply
+    <a id="change">if apply_func:
+        &#47&#47 To avoid writing reduced features back to node frame and reading
+        &#47&#47 it again for apply phase. Instead, we first read the the node
+        &#47&#47 features and "merge" it with the reduced features.
+        v_nf = ir.READ_ROW(var_nf, var_recv_nodes)
+        v_nf = ir.UPDATE_DICT(v_nf, reduced_feat)
+        def _afunc_wrapper(node_data):
+            nb = NodeBatch(graph, recv_nodes, node_data)
+            return apply_func(nb)
+        afunc = var.FUNC(_afunc_wrapper)
+        applied_feat = ir.NODE_UDF(afunc, v_nf)
+        final_feat = ir.UPDATE_DICT(reduced_feat, applied_feat)
+    else:
+        final_feat = reduced_feat
+   </a> ir.WRITE_DICT_(var_nf, final_feat)
+
+def schedule_apply_nodes(graph, v, apply_func):
+    get apply nodes schedule</code></pre><h3>After Change</h3><pre><code class='java'>
+    if graph.number_of_edges() == 0:
+        &#47&#47 All the nodes are zero degree; downgrade to apply nodes
+        if apply_func is not None:
+            <a id="change">nodes = utils.toindex(slice(0, graph.number_of_nodes()))</a>
+            schedule_apply_nodes(graph, nodes, apply_func)
+    else:
+        call_type = &quotupdate_all&quot
+        src, dst, _ = graph._graph.edges()</code></pre>

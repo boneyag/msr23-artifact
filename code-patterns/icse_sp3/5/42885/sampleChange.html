@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 These invariants ensure that we can restore the source chroot to its original state
+    &#47&#47 during post-test cleanup, and that even if that cleanup fails for some reason, the
+    &#47&#47 next test run will be able to restore the correct state.
+    <a id="change">conftest = os.path.join(
+      self.context.products.get_data(GatherSources.PYTHON_SOURCES).path(), &quotconftest.py&quot)</a>
+    conftest_orig = None
+
+    &#47&#47 Note that on the first test run since the source chroot was created both invariants hold
+    &#47&#47 here: 1 holds because haven&quott ever created conftest_orig, and 2 holds trivially.
+    &#47&#47 See below for why both invariants hold here on subsequent runs that complete normally.
+    &#47&#47 Note that even if invariant 2 is violated here (say because the previous run crashed before
+    &#47&#47 executing the cleanup that restores it) it will be restored in this run&quots cleanup.
+    <a id="change">if os.path.exists(conftest):
+      conftest_orig = &quot{}.orig&quot.format(conftest)
+      if not os.path.exists(conftest_orig):
+        &#47&#47 Note that this preserves both invariants.
+        shutil.copy(conftest, conftest_orig)
+
+      with open(conftest_orig) as fp:
+        orig_conftest_content = fp.read()
+      conftest_content = orig_conftest_content + conftest_content
+
+   </a> try:
+      &#47&#47 Temporarily violate invariant 2!
+      with open(conftest, &quotw&quot) as fp:
+        fp.write(conftest_content)</code></pre><h3>After Change</h3><pre><code class='java'>
+      conftest = os.path.join(conftest_dir, &quotconftest.py&quot)
+      with open(conftest, &quotw&quot) as fp:
+        fp.write(conftest_content)
+      <a id="change">yield conftest</a>
+
+  @contextmanager
+  def _test_runner(self, targets, sources_map):
+    pex_info = PexInfo.default()</code></pre>

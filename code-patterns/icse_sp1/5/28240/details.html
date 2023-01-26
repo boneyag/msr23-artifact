@@ -1,0 +1,105 @@
+<html><h3>24b605e8ec48b9b67e507ca959eaed4ff4afc6a6,reframe/frontend/executors/policies.py,AsynchronousExecutionPolicy,run_check,#AsynchronousExecutionPolicy#Any#Any#Any#,205
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.printer.status(status, msg)
+
+    def run_check(self, check, partition, environ):
+        <a id="change">try:
+            executor = RegressionTestExecutor(check, self.strict_check)
+            testcase = TestCase(executor)
+
+            executor.setup(
+                partition=partition,
+                environ=environ,
+                sched_account=self.sched_account,
+                sched_partition=self.sched_partition,
+                sched_reservation=self.sched_reservation,
+                sched_nodelist=self.sched_nodelist,
+                sched_exclude_nodelist=self.sched_exclude_nodelist,
+                sched_options=self.sched_options
+            )
+
+            ready_testcase = RunningTestCase(testcase, EnvironmentSnapshot())
+            partname = partition.fullname
+            if self._running_cases_counts[partname] &gt;= partition.max_jobs:
+                &#47&#47 Make sure that we still exceeded the job limit
+                getlogger().debug(&quotreached job limit (%s) for partition %s&quot %
+                                  (partition.max_jobs, partname))
+                self._update_running_counts()
+
+            if self._running_cases_counts[partname] &lt; partition.max_jobs:
+                &#47&#47 Test&quots environment is already loaded; no need to be reloaded
+                self._reschedule(ready_testcase, load_env=False)
+            else:
+                self._print_executor_status(&quotHOLD&quot, executor)
+                self._ready_cases[partname].append(ready_testcase)
+
+        except (KeyboardInterrupt, ReframeFatalError, AssertionError):
+            if not testcase.failed():
+                &#47&#47 test case failed during setup
+                testcase.fail(sys.exc_info())
+            self._failall()
+            raise
+        except BaseException:
+            &#47&#47 Here we are sure that test case has failed during setup, since
+            &#47&#47 _compile_and_run() handles already non-fatal exceptions. Though
+            &#47&#47 we check again the testcase, just in case.
+            if not testcase.failed():
+                testcase.fail(sys.exc_info())
+        finally:
+            if testcase.valid() and testcase.failed_stage == &quotsetup&quot:
+                &#47&#47 We need to print the result here only if the setup stage has
+                &#47&#47 finished, since otherwise _compile_and_run() prints it
+                self.printer.result(executor.check, partition, environ,
+                                    not testcase.failed())
+
+            self._test_cases.append(testcase)
+            self.environ_snapshot.load()
+
+   </a> def _update_running_counts(self):
+        Update the counts of running checks per partition.
+        getlogger().debug(&quotupdating counts for running test cases&quot)
+        freed_slots = {}</code></pre><h3>After Change</h3><pre><code class='java'>
+        super().run_check(check, partition, environ)
+        task = RegressionTask(check, self.task_listeners)
+        self._tasks.append(task)
+        <a id="change">try:
+            task.setup(partition, environ,
+                       sched_account=self.sched_account,
+                       sched_partition=self.sched_partition,
+                       sched_reservation=self.sched_reservation,
+                       sched_nodelist=self.sched_nodelist,
+                       sched_exclude_nodelist=self.sched_exclude_nodelist,
+                       sched_options=self.sched_options)
+
+            self.printer.status(&quotRUN&quot, task.check.info())
+            partname = partition.fullname
+            if self._running_tasks_counts[partname] &gt;= partition.max_jobs:
+                &#47&#47 Make sure that we still exceeded the job limit
+                getlogger().debug(&quotreached job limit (%s) for partition %s&quot %
+                                  (partition.max_jobs, partname))
+                self._poll_tasks()
+
+            if self._running_tasks_counts[partname] &lt; partition.max_jobs:
+                &#47&#47 Test&quots environment is already loaded; no need to be reloaded
+                self._reschedule(task, load_env=False)
+            else:
+                self.printer.status(&quotHOLD&quot, task.check.info(), just=&quotright&quot)
+                self._ready_tasks[partname].append(task)
+        except TaskExit:
+            return
+        except ABORT_REASONS as e:
+            if not task.failed:
+                &#47&#47 Abort was caused due to failure elsewhere, abort current
+                &#47&#47 task as well
+                task.abort(e)
+
+            self._failall(e)
+            raise
+
+   </a> def _poll_tasks(self):
+        Update the counts of running checks per partition.
+        getlogger().debug(&quotupdating counts for running test cases&quot)
+        getlogger().debug(&quotpolling %s task(s)&quot % len(self._running_tasks))</code></pre><img src="143676530.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/eth-cscs/reframe/commit/24b605e8ec48b9b67e507ca959eaed4ff4afc6a6#diff-de540492f5886b22b6abb86c02058664e05983464474c45e01f0ae0bd60215d6L155' target='_blank'>Link</a></div><div id='project'> Project Name: eth-cscs/reframe</div><div id='commit'> Commit Name: 24b605e8ec48b9b67e507ca959eaed4ff4afc6a6</div><div id='time'> Time: 2018-02-14</div><div id='author'> Author: karakasis@cscs.ch</div><div id='file'> File Name: reframe/frontend/executors/policies.py</div><div id='class'> Class Name: AsynchronousExecutionPolicy</div><div id='method'> Method Name: run_check</div><BR><BR><div id='link'><a href='https://github.com/Qiskit/qiskit-aqua/commit/78bcfaa51aa59074492f011a4ff99e93a2b39c2f#diff-daa112f92160d649b21fd42abc40c3ef010a21bd7ce32c7927804c961aa33a6aL122' target='_blank'>Link</a></div><div id='project'> Project Name: Qiskit/qiskit-aqua</div><div id='commit'> Commit Name: 78bcfaa51aa59074492f011a4ff99e93a2b39c2f</div><div id='time'> Time: 2020-06-24</div><div id='author'> Author: manoel@us.ibm.com</div><div id='file'> File Name: test/finance/test_data_providers.py</div><div id='class'> Class Name: TestDataProviders</div><div id='method'> Method Name: test_exchangedata</div><BR><BR><div id='link'><a href='https://github.com/Qiskit/qiskit-aqua/commit/78bcfaa51aa59074492f011a4ff99e93a2b39c2f#diff-daa112f92160d649b21fd42abc40c3ef010a21bd7ce32c7927804c961aa33a6aL107' target='_blank'>Link</a></div><div id='project'> Project Name: Qiskit/qiskit-aqua</div><div id='commit'> Commit Name: 78bcfaa51aa59074492f011a4ff99e93a2b39c2f</div><div id='time'> Time: 2020-06-24</div><div id='author'> Author: manoel@us.ibm.com</div><div id='file'> File Name: test/finance/test_data_providers.py</div><div id='class'> Class Name: TestDataProviders</div><div id='method'> Method Name: test_nasdaq</div><BR>

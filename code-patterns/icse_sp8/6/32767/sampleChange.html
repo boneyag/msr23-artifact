@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            &#47&#47 calculate left right flanking factors
+            fl = np.kron(qi_Pi, qj_Pj)
+            <a id="change">fr = np.kron(Pi_inv_pi, Pj_inv_pj)</a>
+
+            &#47&#47 calculate D based on the method
+            Dij = np.kron(wi, wj)
+            if self.p is not None:
+                Q = np.diagflat(Dij)
+                D = np.eye(Q.shape[0])
+                S = self._mu[0] * Q
+                for k in self._mu[1:]:
+                    D *= Q
+                    S += k*D
+
+            else:
+                if self.kernel_type == "geometric":
+                    D = np.diagflat(1/(1-self.lamda*Dij))
+                elif self.kernel_type == "exponential":
+                    D = np.diagflat(np.exp(self.lamda*Dij))
+            <a id="change">return np.linalg.multi_dot((fl, D, fr))</a>
+
+
+class RandomWalkLabeled(RandomWalk):
+    The labeled random walk kernel class.</code></pre><h3>After Change</h3><pre><code class='java'>
+            Id = np.identity(s)
+
+            if self.p is not None:
+                <a id="change">P = np.eye(XY.shape[0])</a>
+                S = self._mu[0] * P
+                for k in self._mu[1:]:
+                    P *= XY
+                    S += k*P
+            else:
+                if self.kernel_type == "geometric":
+                    S = inv(Id - self.lamda*XY).T
+                elif self.kernel_type == "exponential":
+                    S = expm(self.lamda*XY).T
+
+            <a id="change">p = np.ones(shape=(1, s))</a>
+            <a id="change">return p.dot(S).dot(p.T)</a>
+        elif self.method_type == "fast":
+            &#47&#47 Spectral demoposition algorithm as presented in
+            &#47&#47 [Vishwanathan et al., 2006] p.13, s.4.4, with
+            &#47&#47 complexity of O((|E|+|V|)|E||V|^2) for graphs</code></pre>

@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 batch_dims and diag
+        res = kernel(a, b, batch_dims=(0, 2)).diag()
+        <a id="change">actual = torch.cat([actual[i].diag().unsqueeze(0) for i in range(actual.size(0))])</a>
+        self.assertLess(torch.norm(res - actual), 1e-5)
+
+    def test_initialize_outputscale(self):
+        kernel = ScaleKernel(RBFKernel())</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 batch_dims
+        double_batch_a = scaled_a.unsqueeze(0).transpose(0, -1)
+        <a id="change">double_batch_b = scaled_b.unsqueeze(0).transpose(0, -1)</a>
+        actual = double_batch_a.transpose(-1, -2).unsqueeze(-1) - double_batch_b.transpose(-1, -2).unsqueeze(-2)
+        actual = actual.pow(2).mul_(-0.5).exp().view(3, 2, 2, 2)
+        actual[:, 1, :, :].mul_(2)
+        res = kernel(a, b, batch_dims=(0, 2)).evaluate()
+        self.assertLess(torch.norm(res - actual), 1e-5)
+
+        &#47&#47 batch_dims and diag
+        res = kernel(a, b, batch_dims=(0, 2)).diag()
+        <a id="change">actual = actual.diagonal(dim1=-2, dim2=-1)</a>
+        self.assertLess(torch.norm(res - actual), 1e-5)
+
+    def test_initialize_outputscale(self):
+        kernel = ScaleKernel(RBFKernel())</code></pre>

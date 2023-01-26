@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      layer_repeat_fixed = convnet_layers[idx_convnet][&quotrepeat&quot]
+      layer_repeat_moving = layer_repeat_fixed
+
+      <a id="change">while layer_repeat_moving != 0:
+        layer_repeat_moving = layer_repeat_moving - 1
+        layer_name = self._get_layer(layer_type)
+        if layer_name == "conv":
+          ch_out = convnet_layers[idx_convnet][&quotnum_channels&quot]
+          conv_block = conv_bn_actv  &#47&#47 can add other type of convolutional blocks in future
+          kernel_size = convnet_layers[idx_convnet][&quotkernel_size&quot]
+          strides = convnet_layers[idx_convnet][&quotstride&quot]
+          padding = convnet_layers[idx_convnet][&quotpadding&quot]
+
+          conv_feats = conv_block(
+              type=layer_type,
+              name="conv{}{}".format(
+                  idx_convnet + 1, layer_repeat_fixed + 1 - layer_repeat_moving),
+              inputs=conv_feats,
+              filters=ch_out,
+              kernel_size=kernel_size,
+              activation_fn=self.params[&quotactivation_fn&quot],
+              strides=strides,
+              padding=padding,
+              regularizer=regularizer,
+              training=training,
+              data_format=data_format,
+              bn_momentum=bn_momentum,
+              bn_epsilon=bn_epsilon,
+          )
+
+          outputs = tf.nn.dropout(x=conv_feats, keep_prob=dropout_keep_prob)
+
+   </a> if data_format == &quotchannels_first&quot:
+      outputs = tf.transpose(outputs, [0, 2, 1])
+
+    return {</code></pre><h3>After Change</h3><pre><code class='java'>
+    dropout_keep_prob = self.params[&quotdropout_keep_prob&quot] if training else 1.0
+    regularizer = self.params.get(&quotregularizer&quot, None)
+    data_format = self.params.get(&quotdata_format&quot, &quotchannels_last&quot)
+    <a id="change">normalization = self.params.get(&quotnormalization&quot, &quotbatch_norm&quot)</a>
+
+    normalization_params = {}
+    <a id="change">if normalization == None:
+      conv_block = conv_actv
+    elif normalization == "batch_norm":
+      conv_block = conv_bn_actv
+      normalization_params[&quotbn_momentum&quot] = self.params.get(
+          &quotbn_momentum&quot, 0.99)
+      normalization_params[&quotbn_epsilon&quot] = self.params.get(&quotbn_epsilon&quot, 1e-3)
+
+   </a> conv_inputs = source_sequence
+    batch_size = conv_inputs.get_shape().as_list()[0]
+    if data_format == &quotchannels_last&quot:
+      conv_feats = conv_inputs  &#47&#47 B T F</code></pre>

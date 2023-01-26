@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 TODO: This should use an input file snapshot which should be provided on the Target object,
+    &#47&#47 rather than hackily re-snapshotting each of the input files.
+    &#47&#47 See https://github.com/pantsbuild/pants/issues/5762
+    <a id="change">input_pathglobs = PathGlobs(tuple(input_files))</a>
+    input_snapshot = <a id="change">self.context._scheduler.product_request(Snapshot, [input_pathglobs])[0]</a>
+
+    directory_digest = self.context._scheduler.merge_directories(<a id="change">(
+      cloc_snapshot.directory_digest,
+      input_snapshot.directory_digest,
+      list_file_snapshot.directory_digest,
+    )</a>)
+
+    cmd = (
+      &quot/usr/bin/perl&quot,</code></pre><h3>After Change</h3><pre><code class='java'>
+    if not self.get_options().transitive:
+      targets = self.context.target_roots
+
+    <a id="change">input_snapshots = tuple(
+      target.sources_snapshot(scheduler=self.context._scheduler) for target in targets
+    )</a>
+    input_files = set(f.path for snapshot in input_snapshots for f in snapshot.files)
+
+    &#47&#47 TODO: Work out a nice library-like utility for writing an argfile, as this will be common.
+    with temporary_dir() as tmpdir:</code></pre>

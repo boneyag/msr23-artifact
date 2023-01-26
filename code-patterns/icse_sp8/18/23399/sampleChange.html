@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def testTwoStepsDependenceOnTheFirst(self):
+    tf_env = TFEnvironmentMock()
+    <a id="change">_</a>, step_state = tf_env.current_time_step()
+    self.evaluate(tf.global_variables_initializer())
+    <a id="change">_</a>, step_state = tf_env.step(1, step_state)
+    time_step, _ = self.evaluate(tf_env.step(2, step_state))
+    self.assertEqual(LAST, time_step.step_type)
+    self.assertEqual(1., time_step.reward)</code></pre><h3>After Change</h3><pre><code class='java'>
+    tf_env = TFEnvironmentMock()
+    time_step = tf_env.current_time_step()
+    self.evaluate(tf.global_variables_initializer())
+    <a id="change">with tf.control_dependencies([time_step.step_type]):
+      action = tf.constant(1)
+   </a> <a id="change">time_step = tf_env.step(action)</a>
+    <a id="change">with tf.control_dependencies([time_step.step_type]):
+      action = tf.constant(2)
+   </a> time_step = self.evaluate(tf_env.step(action))
+    self.assertEqual(LAST, time_step.step_type)
+    self.assertEqual(1., time_step.reward)
+    self.assertEqual(0.0, time_step.discount)</code></pre>

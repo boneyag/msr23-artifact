@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        H = torch.zeros(1)
+        if torch.cuda.is_available() and gpu:
+            H = H.cuda()
+        <a id="change">H = Variable(H)</a>
+    algorithm.entropy.append(H)
+    return action.data
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    state_seq = body.memory.state_buffer.maxlen &gt; 0
+    torch_state = create_torch_state(state, body.memory.state_buffer, gpu, state_seq, body.memory.state_buffer.maxlen)
+    mu, sigma = algorithm.get_actor_output(torch_state, evaluate=False)
+    <a id="change">mu.squeeze_(dim=0)</a>
+    sigma.squeeze_(dim=0)
+    sigma = F.softplus(sigma) + 1e-5  &#47&#47 Ensures sigma &gt; 0
+    m = Normal(mu, sigma)
+    action = m.sample()</code></pre>

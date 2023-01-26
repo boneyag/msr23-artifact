@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def testShuffleOrderVariables(self, tau):
+    inputs = tf.constant([[1, 2], [3, 4]], dtype=tf.float32)
+    tf.contrib.layers.fully_connected(inputs, 2, scope=&quotsource&quot)
+    <a id="change">tf.contrib.layers.fully_connected(inputs, 2, scope=&quottarget&quot)</a>
+
+    source_vars = tf.contrib.framework.get_model_variables(&quotsource&quot)
+    target_vars = tf.contrib.framework.get_model_variables(&quottarget&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  def testShuffleOrderVariables(self, tau):
+    inputs = tf.constant([[1, 2], [3, 4]], dtype=tf.float32)
+    source_net = tf.keras.layers.Dense(2, name=&quotsource_net&quot)
+    target_net = <a id="change">tf.keras.layers.Dense(2, name=&quottarget_net&quot)</a>
+
+    &#47&#47 Force variable creation
+    source_net(inputs)
+    target_net(inputs)
+
+    source_vars = source_net.trainable_weights
+    <a id="change">target_vars = target_net.trainable_weights</a>
+
+    shuffled_source_vars = sorted(source_vars,
+                                  key=lambda x: random.random())
+    shuffled_target_vars = sorted(target_vars,</code></pre>

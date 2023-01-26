@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        td_loss = tf.reduce_sum(input_tensor=td_loss, axis=1)
+
+      if weights is not None:
+        <a id="change">td_loss *= weights</a>
+
+      &#47&#47 Average across the elements of the batch.
+      &#47&#47 Note: We use an element wise loss above to ensure each element is always
+      &#47&#47   weighted by 1/N where N is the batch size, even when some of the
+      &#47&#47   weights are zero due to boundary transitions. Weighting by 1/K where K
+      &#47&#47   is the actual number of non-zero weight would artificially increase
+      &#47&#47   their contribution in the loss. Think about what would happen as
+      &#47&#47   the number of boundary samples increases.
+      loss = tf.reduce_mean(input_tensor=td_loss)
+
+      &#47&#47 Add network loss (such as regularization loss)
+      if self._q_network.losses:
+        loss = loss + tf.reduce_mean(self._q_network.losses)
+
+      <a id="change">with tf.name_scope(&quotLosses/&quot):
+        tf.compat.v2.summary.scalar(
+            name=&quotloss&quot, data=loss, step=self.train_step_counter)
+
+     </a> if self._summarize_grads_and_vars:
+        with tf.name_scope(&quotVariables/&quot):
+          for var in self._q_network.trainable_weights:
+            tf.compat.v2.summary.histogram(</code></pre><h3>After Change</h3><pre><code class='java'>
+          per_example_loss=td_loss,
+          sample_weight=weights,
+          regularization_loss=self._q_network.losses)
+      <a id="change">total_loss = agg_loss.total_loss</a>
+
+      <a id="change">losses_dict = {&quottd_loss&quot: agg_loss.weighted,
+                     &quotreg_loss&quot: agg_loss.regularization,
+                     &quottotal_loss&quot: total_loss}</a>
+
+      <a id="change">common.summarize_scalar_dict(losses_dict,
+                                   step=self.train_step_counter,
+                                   name_scope=&quotLosses/&quot)</a>
+
+      if self._summarize_grads_and_vars:
+        with tf.name_scope(&quotVariables/&quot):
+          for var in self._q_network.trainable_weights:</code></pre>

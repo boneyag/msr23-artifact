@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        bg_inds_size = tf.size(bg_inds)
+        &#47&#47 Condition for check if we have too many positive labels.
+        subsample_negative_cond = (
+            tf.to_int32(bg_inds_size) &gt; <a id="change">tf.to_int32(num_bg)</a>)
+        &#47&#47 Check the condition and subsample positive labels.
+        labels = tf.cond(
+            subsample_negative_cond,</code></pre><h3>After Change</h3><pre><code class='java'>
+                x=tf.to_float(tf.fill(tf.shape(labels), -1)), y=labels
+            )
+
+        num_bg = <a id="change">tf.to_int32(self._minibatch_size - fg_inds_size)</a>
+        &#47&#47 Get background indices, get True in the indices where we have a cero.
+        bg_inds = tf.equal(labels, 0)
+        &#47&#47 We get only the indices where we have True.
+        bg_inds = tf.squeeze(tf.where(bg_inds), axis=1)
+        bg_inds_size = tf.size(bg_inds)
+        &#47&#47 Condition for check if we have too many positive labels.
+        subsample_negative_cond = bg_inds_size &gt; num_bg
+        &#47&#47 Check the condition and subsample positive labels.
+        labels = tf.cond(
+            subsample_negative_cond,
+            true_fn=subsample_negative, false_fn=lambda: labels
+        )
+
+        &#47&#47 Returns bbox targets with shape (anchors.shape[0], 4)
+
+        &#47&#47 Find the closest gt box for each anchor.
+        argmax_overlaps = tf.argmax(overlaps, axis=1)
+        &#47&#47 Eliminate duplicates.
+        argmax_overlaps_unique, _ = tf.unique(argmax_overlaps)
+        &#47&#47 Filter the gt_boxes.
+        &#47&#47 We get only the indices where we have "inside anchors".
+        anchor_filter_inds = tf.where(anchor_filter)
+        gt_boxes = tf.gather(gt_boxes, argmax_overlaps)
+
+        bbox_targets = encode_tf(anchors, gt_boxes)
+
+        &#47&#47 For the anchors that arent foreground, we ignore the bbox_targets
+        anchor_foreground_filter = tf.equal(labels, 1)
+        <a id="change">bbox_targets = tf.where(
+            condition=anchor_foreground_filter,
+            x=bbox_targets, y=tf.zeros_like(bbox_targets)
+        )</a>
+
+        &#47&#47 We unroll "inside anchors" value for all anchors (for shape
+        &#47&#47 compatibility).
+</code></pre>

@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    y = GluonBatchNormalization(name=name + "/s_conv_bn")(y)
+    y = nn.Activation("relu", name=name + "/s_conv_activ")(y)
+
+    y = <a id="change">conv1x1(
+        out_channels=mid_channels,
+        name=name + "/s_evolve_conv")(y)</a>
+    y = GluonBatchNormalization(name=name + "/s_evolve_bn")(y)
+    y = nn.Activation(&quotsigmoid&quot, name=name + "/s_evolve_activ")(y)
+
+    x = nn.multiply([x, y], name=name + "/mul")</code></pre><h3>After Change</h3><pre><code class='java'>
+        x=x,
+        in_channels=mid_channels,
+        out_channels=side_channels,
+        name=<a id="change">name + "/s_merge_conv"</a>)
+    y = GluonBatchNormalization(name=name + "/s_merge_bn")(y)
+    y = nn.Activation("relu", name=name + "/s_merge_activ")(y)
+
+    &#47&#47 depthwise convolution (bottleneck)
+    x = depthwise_conv3x3(
+        x=x,
+        channels=mid_channels,
+        strides=(2 if downsample else 1),
+        name=name + "/dw_conv2")
+    x = GluonBatchNormalization(name=name + "/dw_bn2")(x)
+
+    &#47&#47 evolution
+    y = conv3x3(
+        x=y,
+        in_channels=side_channels,
+        out_channels=side_channels,
+        strides=(2 if downsample else 1),
+        name=name + "/s_conv")
+    y = GluonBatchNormalization(name=name + "/s_conv_bn")(y)
+    y = nn.Activation("relu", name=name + "/s_conv_activ")(y)
+
+    y = <a id="change">conv1x1(
+        x=y,
+        in_channels=side_channels,
+        out_channels=mid_channels,
+        name=name + "/s_evolve_conv")</a>
+    y = GluonBatchNormalization(name=name + "/s_evolve_bn")(y)
+    y = nn.Activation(&quotsigmoid&quot, name=name + "/s_evolve_activ")(y)
+
+    x = nn.multiply([x, y], name=name + "/mul")</code></pre>

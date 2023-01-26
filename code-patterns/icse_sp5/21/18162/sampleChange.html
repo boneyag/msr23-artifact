@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def _call_batch_hook_helper(self, hook_name, batch, logs):
+    Helper function for `on_*_batch_*` methods.
+    <a id="change">logs = logs or {}</a>
+    <a id="change">numpy_logs = None</a>
+    if self._check_timing:
+      start_time = time.time()
+
+    for callback in self.callbacks:
+      hook = getattr(callback, hook_name)
+      <a id="change">if getattr(callback, &quot_supports_tf_logs&quot, False):
+        hook(batch, logs)
+      else:
+        if numpy_logs is None:  &#47&#47 Only convert once.
+          numpy_logs = tf_utils.sync_to_numpy_or_python_type(logs)
+        hook(batch, numpy_logs)
+
+   </a> if self._check_timing:
+      if hook_name not in self._hook_times:
+        self._hook_times[hook_name] = []
+      self._hook_times[hook_name].append(time.time() - start_time)</code></pre><h3>After Change</h3><pre><code class='java'>
+    if self._check_timing:
+      start_time = time.time()
+
+    <a id="change">logs = self._process_logs(logs, is_batch_hook=True)</a>
+    for callback in self.callbacks:
+      hook = getattr(callback, hook_name)
+      hook(batch, logs)
+</code></pre>

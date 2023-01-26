@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        state_a = np.array(new_data, dtype=np.float).flatten()
+
+        state = torch.from_numpy(state_a).float().unsqueeze_(dim=0)
+        if torch.cuda.is_available() and <a id="change">self.net_spec[&quotgpu&quot]</a>:
+            state = state.cuda()
+        pdparam = self.calc_pdparam(state, evaluate=False)
+        &#47&#47 use multi-policy. note arg change</code></pre><h3>After Change</h3><pre><code class='java'>
+        &quot&quot&quotNon-atomizable act to override agent.act(), do a single pass on the entire state_a instead of composing body_act&quot&quot&quot
+        &#47&#47 gather and flatten
+        states = []
+        <a id="change">for (e, b), body in util.ndenumerate_nonan(self.agent.body_a):
+            state = state_a[(e, b)]
+            states.append(state)
+       </a> state = torch.tensor(states).view(-1).unsqueeze_(0).float()
+        if torch.cuda.is_available() and self.net.gpu:
+            state = state.cuda()
+        pdparam = self.calc_pdparam(state, evaluate=False)</code></pre>

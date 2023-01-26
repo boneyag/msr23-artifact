@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if mostRecentStackImageFile is not None:
+            defaultDirectory = os.path.split(mostRecentStackImageFile)[0]
+        else:
+            <a id="change">defaultDirectory = os.path.expanduser(&quot~&quot)</a>
+
+        &#47&#47 Launch the "Open File" dialog
+        fileNames = self.getImageFileNamesToOpen(defaultDirectory)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        stackDlg = StackFileSelectionWidget(self)
+        stackDlg.exec_()
+        <a id="change">if stackDlg.result() != QDialog.Accepted :
+            return
+       </a> files = stackDlg.selectedFiles
+        if len(files) == 0:
+            return
+
+        info = DatasetInfo()
+        <a id="change">info.filePath = "//".join( files )</a>
+
+        &#47&#47 Allow labels by default if this gui isn&quott being used for batch data.
+        info.allowLabels = ( self.guiMode == GuiMode.Normal )
+
+        laneIndex = self._findFirstEmptyLane(roleIndex)
+        if len(self.topLevelOperator.DatasetGroup) &lt; laneIndex+1:
+            self.topLevelOperator.DatasetGroup.resize(laneIndex+1)
+
+        def importStack():
+            self.guiControlSignal.emit( ControlCommand.DisableAll )
+            &#47&#47 Serializer will update the operator for us, which will propagate to the GUI.
+            try:
+                self.serializer.importStackAsLocalDataset( info )
+                self.topLevelOperator.DatasetGroup[laneIndex][roleIndex].setValue(info)
+            
+            finally:
+                self.guiControlSignal.emit( ControlCommand.Pop )
+
+        <a id="change">req = Request( importStack )</a>
+        req.notify_failed( partial(self.handleFailedStackLoad, files ) )
+        req.submit()
+
+    @threadRouted</code></pre>

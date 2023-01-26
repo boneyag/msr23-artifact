@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+tl.layers.initialize_global_variables(sess)
+
+<a id="change">if OUTPUT_GRAPH:
+    tf.summary.FileWriter("logs/", sess.graph)
+
+</a>for i_episode in range(MAX_EPISODE):
+    episode_time = time.time()
+    s = env.reset()
+    t = 0  &#47&#47 number of step in this episode</code></pre><h3>After Change</h3><pre><code class='java'>
+        a = actor.choose_action(s)
+
+        s_new, r, done, info = env.step(a)
+        <a id="change">s_new = s_new.astype(np.float32)</a>
+
+        if done: r = -20
+        &#47&#47 these may helpful in some tasks
+        &#47&#47 if abs(s_new[0]) &gt;= env.observation_space.high[0]:
+        &#47&#47 &#47&#47  cart moves more than 2.4 units from the center
+        &#47&#47     r = -20
+        &#47&#47 reward for the distance between cart to the center
+        &#47&#47 r -= abs(s_new[0])  * .1
+
+        all_r.append(r)
+
+        td_error = critic.learn(s, r, s_new)  &#47&#47 learn Value-function : gradient = grad[r + lambda * V(s_new) - V(s)]
+        actor.learn(s, a, td_error)  &#47&#47 learn Policy         : true_gradient = grad[logPi(s, a) * td_error]
+
+        s = s_new
+        t += 1
+
+        if done or t &gt;= MAX_EP_STEPS:
+            ep_rs_sum = sum(all_r)
+
+            if &quotrunning_reward&quot not in globals():
+                running_reward = ep_rs_sum
+            else:
+                running_reward = running_reward * 0.95 + ep_rs_sum * 0.05
+            &#47&#47 start rending if running_reward greater than a threshold
+            &#47&#47 if running_reward &gt; DISPLAY_REWARD_THRESHOLD: RENDER = True
+            print("Episode: %d reward: %f running_reward %f took: %.5f" % \
+                (i_episode, ep_rs_sum, running_reward, time.time() - episode_time))
+
+            &#47&#47 Early Stopping for quick check
+            if t &gt;= MAX_EP_STEPS:
+                print("Early Stopping")
+                s = <a id="change">env.reset().astype(np.float32)</a>
+                rall = 0
+                while True:
+                    env.render()
+                    &#47&#47 a = actor.choose_action(s)</code></pre>

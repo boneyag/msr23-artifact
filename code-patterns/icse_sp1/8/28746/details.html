@@ -1,0 +1,49 @@
+<html><h3>73c3c787abbe1ca71b900f11bb880e1de09c6d2a,src/python/pants/engine/process.py,,find_binary,#Any#,376
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        CreateDigest([FileContent(script_path, script_content.encode(), is_executable=True)]),
+    )
+
+    <a id="change">paths = []</a>
+    search_path = create_path_env_var(request.search_path)
+    result = await Get(
+        FallibleProcessResult,
+        &#47&#47 We use a volatile process to force re-run since any binary found on the host system today
+        &#47&#47 could be gone tomorrow. Ideally we&quotd only do this for local processes since all known
+        &#47&#47 remoting configurations include a static container image as part of their cache key which
+        &#47&#47 automatically avoids this problem.
+        UncacheableProcess(
+            Process(
+                description=f"Searching for `{request.binary_name}` on PATH={search_path}",
+                level=LogLevel.DEBUG,
+                input_digest=script_digest,
+                argv=[script_path, request.binary_name],
+                env={"PATH": search_path},
+            )
+        ),
+    )
+    <a id="change">if result.exit_code == 0:
+        paths.extend(result.stdout.decode().splitlines())
+
+   </a> return BinaryPaths(binary_name=request.binary_name, paths=paths)
+
+
+def rules():</code></pre><h3>After Change</h3><pre><code class='java'>
+        Get(
+            FallibleProcessResult,
+            UncacheableProcess(
+                Process(argv=<a id="change">[path, *request.test_args]</a>, description=f"Test binary {path}.")
+            ),
+        )
+        for path in found_paths
+    )
+    return dataclasses.replace(
+        binary_paths,
+        paths=[
+            BinaryPath.fingerprinted(path, result.stdout)
+            <a id="change">for</a> path, result in zip(found_paths, results)
+            if result.exit_code == 0
+        ],
+    )</code></pre><img src="145868562.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/73c3c787abbe1ca71b900f11bb880e1de09c6d2a#diff-6e47200e83368b7eaa57199888d136fa9f4c37cad73b4c268c06c1c932b56f69L401' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 73c3c787abbe1ca71b900f11bb880e1de09c6d2a</div><div id='time'> Time: 2020-09-13</div><div id='author'> Author: john.sirois@gmail.com</div><div id='file'> File Name: src/python/pants/engine/process.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: find_binary</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/ac932c665b0a06ea9e222136351f52b5d6772ed0#diff-4c99672a35858577b784e5b3d3845bf03b4f3d1b7d0318f2d6839090cea59647L119' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: ac932c665b0a06ea9e222136351f52b5d6772ed0</div><div id='time'> Time: 2018-12-02</div><div id='author'> Author: coin2028@hotmail.com</div><div id='file'> File Name: examples/pytorch/jtnn/jtnn/jtnn_vae.py</div><div id='class'> Class Name: DGLJTNNVAE</div><div id='method'> Method Name: assm</div><BR><BR><div id='link'><a href='https://github.com/RaRe-Technologies/gensim/commit/29d1092d3012b399e9aef0513b13b763ebdf1726#diff-60f61ab7a8d1910d86d9fda2261620314edcae5894d5aaa236b821c7256badd7L253' target='_blank'>Link</a></div><div id='project'> Project Name: RaRe-Technologies/gensim</div><div id='commit'> Commit Name: 29d1092d3012b399e9aef0513b13b763ebdf1726</div><div id='time'> Time: 2020-04-30</div><div id='author'> Author: radimrehurek@seznam.cz</div><div id='file'> File Name: setup.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

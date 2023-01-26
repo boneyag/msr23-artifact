@@ -1,0 +1,88 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Calculate degrees from slopes
+        segment_angles.append(np.arctan(slope[0]) * 180 / np.pi)
+
+    angle_header = <a id="change">[&quotHEADER_ANGLE&quot]</a>
+    <a id="change">angle_data = [&quotANGLE_DATA&quot]</a>
+    for i, cnt in enumerate(objects):
+        &#47&#47 Label slope lines
+        w = label_coord_x[i]
+        h = label_coord_y[i]
+        text = "{:.2f}".format(segment_angles[i])
+        cv2.putText(img=labeled_img, text=text, org=(w, h), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=.55, color=(150, 150, 150), thickness=2)
+        segment_label = "ID" + str(i)
+        angle_header.append(segment_label)
+    <a id="change">angle_data.extend(segment_angles)</a>
+
+    <a id="change">if &quotmorphology_data&quot not in outputs.measurements:
+        outputs.measurements[&quotmorphology_data&quot] = {}
+   </a> <a id="change">outputs.measurements[&quotmorphology_data&quot][&quotsegment_angles&quot] = segment_angles</a>
+
+    &#47&#47 Auto-increment device
+    params.device += 1
+
+    if params.debug == &quotprint&quot:
+        print_image(labeled_img, os.path.join(params.debug_outdir, str(params.device) + &quot_segmented_angles.png&quot))
+    elif params.debug == &quotplot&quot:
+        plot_image(labeled_img)
+
+    <a id="change">return angle_header, angle_data, labeled_img</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    label_coord_x = []
+    label_coord_y = []
+    <a id="change">segment_angles</a> = []
+
+    labeled_img = segmented_img.copy()
+
+    rand_color = color_palette(len(objects))
+
+    for i, cnt in enumerate(objects):
+        &#47&#47 Find bounds for regression lines to get drawn
+        rect = cv2.minAreaRect(cnt)
+        pts = cv2.boxPoints(rect)
+        df = pd.DataFrame(pts, columns=(&quotx&quot, &quoty&quot))
+        x_max = int(df[&quotx&quot].max())
+        x_min = int(df[&quotx&quot].min())
+
+        &#47&#47 Find line fit to each segment
+        [vx, vy, x, y] = cv2.fitLine(objects[i], cv2.DIST_L2, 0, 0.01, 0.01)
+        slope = -vy / vx
+        left_list = int(((x - x_min) * slope) + y)
+        right_list = int(((x - x_max) * slope) + y)
+
+        if slope &gt; 1000000 or slope &lt; -1000000:
+            print("Slope of contour with ID&#47&#47", i, "is", slope, "and cannot be plotted.")
+        else:
+            &#47&#47 Draw slope lines
+            cv2.line(labeled_img, (x_max - 1, right_list), (x_min, left_list), rand_color[i], 1)
+
+        &#47&#47 Store coordinates for labels
+        label_coord_x.append(objects[i][0][0][0])
+        label_coord_y.append(objects[i][0][0][1])
+
+        &#47&#47 Calculate degrees from slopes
+        segment_angles.append(np.arctan(slope[0]) * 180 / np.pi)
+
+    segment_ids = <a id="change">[]</a>
+    for i, cnt in enumerate(objects):
+        &#47&#47 Label slope lines
+        w = label_coord_x[i]
+        h = label_coord_y[i]
+        text = "{:.2f}".format(segment_angles[i])
+        cv2.putText(img=labeled_img, text=text, org=(w, h), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=.55, color=(150, 150, 150), thickness=2)
+        segment_label = "ID" + str(i)
+        segment_ids.append(i)
+
+    <a id="change">outputs.add_measurement(variable=&quotsegment_angles&quot, trait=&quotsegment_angles&quot,
+                            method=&quotplantcv.plantcv.morphology.segment_angles&quot, scale=&quotdegrees&quot, datatype=list,
+                            value=segment_angles, label=segment_ids)</a>
+
+    &#47&#47 Auto-increment device
+    params.device += 1
+</code></pre>

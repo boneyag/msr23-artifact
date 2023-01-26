@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        val_input_fn, train_input_fn = self.input_pipeline._get_train_input_fns(Xs, Y, batch_size=batch_size,
+                                                                                       val_size=val_size)
+
+        eval_spec = <a id="change">tf.estimator.EvalSpec(input_fn=val_input_fn)</a>
+        estimator = self.get_estimator()
+        saver_hook = SaverHookFinetune(
+            self.estimator_dir,
+            save_secs=None,
+            save_steps=val_interval
+        )
+        <a id="change">train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, hooks=[saver_hook])</a>
+        <a id="change">tf.estimator.train_and_evaluate(estimator=estimator, train_spec=train_spec, eval_spec=eval_spec)</a>
+
+
+    def get_estimator(self, force_build_lm=False):
+        if self.estimator_ is None or self.input_pipeline.rebuild or force_build_lm:</code></pre><h3>After Change</h3><pre><code class='java'>
+        train_hooks = [self.saver.get_saver_hook()]
+        if val_size &gt; 0:
+            train_hooks.append(tf.contrib.estimator.InMemoryEvaluatorHook(estimator, val_input_fn, every_n_iter=val_interval, steps=val_size//batch_size))
+        <a id="change">estimator.train(train_input_fn, hooks=train_hooks, max_steps=num_steps)</a>
+
+    def get_estimator(self, force_build_lm=False):
+        if self.estimator_ is None or self.input_pipeline.rebuild or force_build_lm:
+            import threading</code></pre>

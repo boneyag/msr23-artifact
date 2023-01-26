@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    targets = self._prepare_for_publishing()
+
+    &#47&#47confirm that we fail if we have too many failed push attempts
+    <a id="change">task = self.prepare_task(config=self._get_config(),
+                             args=[&quot--no-test-dryrun&quot,
+                                   &quot--test-scm-push-attempts=3&quot],
+                             build_graph=self.build_graph,
+                             build_file_parser=self.build_file_parser,
+                             targets=[targets[0]])</a>
+    self._prepare_mocks(task)
+    task.scm.push = Mock()
+    task.scm.push.side_effect = FailNTimes(3, Scm.RemoteException)
+    with self.assertRaises(Scm.RemoteException):</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Two failures, one success
+    self.assertEquals(2 + 1, task.scm.push.call_count)
+
+  def test_publish_retry_eventually_fails(<a id="change">self</a>):
+    targets = self._prepare_for_publishing()
+
+    &#47&#47confirm that we fail if we have too many failed push attempts
+    <a id="change">self.set_options(dryrun=False, scm_push_attempts=3, repos=self._get_repos())</a>
+    <a id="change">task = self.create_task(self.context(target_roots=targets[0:1]))</a>
+    self._prepare_mocks(task)
+    task.scm.push = Mock()
+    task.scm.push.side_effect = FailNTimes(3, Scm.RemoteException)
+    with self.assertRaises(Scm.RemoteException):</code></pre>

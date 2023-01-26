@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def call(self, inputs):
+    if self._key_dtype == dtypes.int64 and inputs.dtype == dtypes.int32:
+      inputs = math_ops.cast(inputs, dtypes.int64)
+    <a id="change">return self._table_handler.lookup(inputs)</a>
+
+  def _use_v1_apis(self):
+    return False
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    self.set_vocabulary(updates[_VOCAB_NAME])
+
+  def call(self, inputs):
+    if not <a id="change">self.max_tokens</a>:
+      raise ValueError("You must set the layer&quots vocabulary before calling it. "
+                       "Either pass a `vocabulary` argument to the layer, or "
+                       "call `layer.adapt(dataset)` with some sample data.")
+    if self._key_dtype == dtypes.int64 and inputs.dtype == dtypes.int32:
+      inputs = math_ops.cast(inputs, dtypes.int64)
+    lookup_result = <a id="change">self._table_handler.lookup(inputs)</a>
+    <a id="change">if self.output_mode == INT:
+      return lookup_result
+
+   </a> <a id="change">binary_output = (self.output_mode == BINARY)</a>
+    <a id="change">if self.sparse:
+      return category_encoding.sparse_bincount(
+          lookup_result, self.max_tokens, binary_output)
+    else:
+      return category_encoding.dense_bincount(
+          lookup_result, self.max_tokens, binary_output)
+
+ </a> def _use_v1_apis(self):
+    return False
+
+</code></pre>

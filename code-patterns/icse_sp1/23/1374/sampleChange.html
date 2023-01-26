@@ -1,0 +1,115 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    raise RuntimeError(&quotAdam does not support sparse gradients, please consider SparseAdam instead&quot)
+                amsgrad = group[&quotamsgrad&quot]
+
+                p_data_fp32 = <a id="change">p.data.float()</a>
+
+                state = self.state[p]
+
+                &#47&#47 State initialization
+                if len(state) == 0:
+                    state[&quotstep&quot] = 0
+                    &#47&#47 Exponential moving average of gradient values
+                    state[&quotexp_avg&quot] = torch.zeros_like(p_data_fp32)
+                    &#47&#47 Exponential moving average of squared gradient values
+                    state[&quotexp_avg_sq&quot] = torch.zeros_like(p_data_fp32)
+                    if amsgrad:
+                        &#47&#47 Maintains max of all exp. moving avg. of sq. grad. values
+                        state[&quotmax_exp_avg_sq&quot] = torch.zeros_like(p_data_fp32)
+                else:
+                    state[&quotexp_avg&quot] = state[&quotexp_avg&quot].type_as(p_data_fp32)
+                    state[&quotexp_avg_sq&quot] = state[&quotexp_avg_sq&quot].type_as(p_data_fp32)
+                    if amsgrad:
+                        state[&quotmax_exp_avg_sq&quot] = state[&quotmax_exp_avg_sq&quot].type_as(p_data_fp32)
+
+                exp_avg, exp_avg_sq = state[&quotexp_avg&quot], state[&quotexp_avg_sq&quot]
+                if amsgrad:
+                    max_exp_avg_sq = state[&quotmax_exp_avg_sq&quot]
+                beta1, beta2 = group[&quotbetas&quot]
+
+                state[&quotstep&quot] += 1
+
+                &#47&#47 Decay the first and second moment running average coefficient
+                exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
+                exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
+                if amsgrad:
+                    &#47&#47 Maintains the maximum of all 2nd moment running avg. till now
+                    torch.max(max_exp_avg_sq, exp_avg_sq, out=max_exp_avg_sq)
+                    &#47&#47 Use the max. for normalizing running avg. of gradient
+                    denom = max_exp_avg_sq.sqrt().add_(group[&quoteps&quot])
+                else:
+                    denom = exp_avg_sq.sqrt().add_(group[&quoteps&quot])
+
+                bias_correction1 = 1 - beta1 ** state[&quotstep&quot]
+                bias_correction2 = 1 - beta2 ** state[&quotstep&quot]
+                step_size = group[&quotlr&quot] * math.sqrt(bias_correction2) / bias_correction1
+
+                if group[&quotweight_decay&quot] != 0:
+                    p_data_fp32.add_(p_data_fp32, alpha=-group[&quotweight_decay&quot] * group[&quotlr&quot])
+
+                p_data_fp32.addcdiv_(exp_avg, denom, value=-step_size)
+
+                &#47&#47 TODO: remove check once pyTorch avoids a copy for this case
+                if <a id="change">p.data_ptr() != p_data_fp32.data_ptr()</a>:
+                    p.data.copy_(p_data_fp32)
+
+        return loss</code></pre><h3>After Change</h3><pre><code class='java'>
+                    raise RuntimeError(&quotAdam does not support sparse gradients, please consider SparseAdam instead&quot)
+                amsgrad = group[&quotamsgrad&quot]
+
+                p_data_fp32 = <a id="change">p.data</a>
+                <a id="change">if p.data.dtype in {torch.float16, torch.bfloat16}:
+                    p_data_fp32 = p_data_fp32.float()
+
+               </a> state = self.state[p]
+
+                &#47&#47 State initialization
+                if len(state) == 0:
+                    state[&quotstep&quot] = 0
+                    &#47&#47 Exponential moving average of gradient values
+                    state[&quotexp_avg&quot] = torch.zeros_like(p_data_fp32)
+                    &#47&#47 Exponential moving average of squared gradient values
+                    state[&quotexp_avg_sq&quot] = torch.zeros_like(p_data_fp32)
+                    if amsgrad:
+                        &#47&#47 Maintains max of all exp. moving avg. of sq. grad. values
+                        state[&quotmax_exp_avg_sq&quot] = torch.zeros_like(p_data_fp32)
+                else:
+                    state[&quotexp_avg&quot] = state[&quotexp_avg&quot].to(p_data_fp32)
+                    state[&quotexp_avg_sq&quot] = state[&quotexp_avg_sq&quot].to(p_data_fp32)
+                    if amsgrad:
+                        state[&quotmax_exp_avg_sq&quot] = state[&quotmax_exp_avg_sq&quot].to(p_data_fp32)
+
+                exp_avg, exp_avg_sq = state[&quotexp_avg&quot], state[&quotexp_avg_sq&quot]
+                if amsgrad:
+                    max_exp_avg_sq = state[&quotmax_exp_avg_sq&quot]
+                beta1, beta2 = group[&quotbetas&quot]
+
+                state[&quotstep&quot] += 1
+
+                &#47&#47 Decay the first and second moment running average coefficient
+                exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
+                exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
+                if amsgrad:
+                    &#47&#47 Maintains the maximum of all 2nd moment running avg. till now
+                    torch.max(max_exp_avg_sq, exp_avg_sq, out=max_exp_avg_sq)
+                    &#47&#47 Use the max. for normalizing running avg. of gradient
+                    denom = max_exp_avg_sq.sqrt().add_(group[&quoteps&quot])
+                else:
+                    denom = exp_avg_sq.sqrt().add_(group[&quoteps&quot])
+
+                bias_correction1 = 1 - beta1 ** state[&quotstep&quot]
+                bias_correction2 = 1 - beta2 ** state[&quotstep&quot]
+                step_size = group[&quotlr&quot] * math.sqrt(bias_correction2) / bias_correction1
+
+                if group[&quotweight_decay&quot] != 0:
+                    p_data_fp32.add_(p_data_fp32, alpha=-group[&quotweight_decay&quot] * group[&quotlr&quot])
+
+                p_data_fp32.addcdiv_(exp_avg, denom, value=-step_size)
+
+                if <a id="change">p.data.dtype in {torch.float16, torch.bfloat16}</a>:
+                    p.data.copy_(p_data_fp32)
+
+        return loss</code></pre>

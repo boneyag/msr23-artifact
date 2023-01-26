@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        logger.debug("Setting traffic for endpoint %s to %s", endpoint,
+                     traffic_dict)
+        self.traffic[endpoint] = traffic_dict
+        await <a id="change">self</a>.flush()
+
+    async def remove_endpoint(self, endpoint):
+        logger.debug("Removing endpoint {}".format(endpoint))</code></pre><h3>After Change</h3><pre><code class='java'>
+    async def set_traffic(self, endpoint, traffic_dict):
+        logger.debug("Setting traffic for endpoint %s to %s", endpoint,
+                     traffic_dict)
+        <a id="change">async with self.flush_lock:
+            self.traffic[endpoint] = self.policy(traffic_dict,
+                                                 **self.policy_kwargs)
+            await self.flush_endpoint_queue(endpoint)
+
+   </a> async def remove_endpoint(self, endpoint):
+        logger.debug("Removing endpoint {}".format(endpoint))
+        async with self.flush_lock:
+            await self.flush_endpoint_queue(endpoint)</code></pre>

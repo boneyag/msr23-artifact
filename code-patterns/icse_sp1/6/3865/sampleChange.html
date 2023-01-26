@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      address = SyntheticAddress.parse(spec, relative_to=self.address.spec_path)
+      target = self._build_graph.get_target(address)
+      if target:
+        <a id="change">target.walk(add_jars, predicate=lambda tgt: tgt.is_jar_library)</a>
+    self._imports = set(import_jars)
+    return self._imports
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  @property
+  def imports(self):
+    Returns the set of JarDependencys to be included when compiling this target.
+    <a id="change">if self._imports is None:
+      libraries = OrderedSet(self._library_imports)
+      import_jars = self.raw_imports - libraries
+      for spec in libraries:
+        address = SyntheticAddress.parse(spec, relative_to=self.address.spec_path)
+        target = self._build_graph.get_target(address)
+        if isinstance(target, (JarLibrary, JvmTarget)):
+          import_jars.update(target.jar_dependencies)
+        else:
+          raise self.PrematureImportPokeError(
+              "{address}: Failed to resolve import &quot{spec}&quot.".format(
+                  address=self.address.spec,
+                  spec=address.spec))
+      self._imports = import_jars
+   </a> return self._imports
+</code></pre>

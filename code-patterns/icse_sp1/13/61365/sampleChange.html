@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if isinstance(A, Variable) or isinstance(b, Variable):
+            raise RuntimeError(&quotLinearCG is not intended to operate directly on Variables or be used with autograd.&quot)
+
+        <a id="change">if not isinstance(A, torch.Tensor) or not isinstance(b, torch.Tensor):
+            raise RuntimeError(&quotLinearCG is intended to operate on tensors.&quot)
+
+       </a> if x is None:
+            x = self.precondition_closure(b)
+
+        residual = b - A.mv(x)</code></pre><h3>After Change</h3><pre><code class='java'>
+            mv_closure = lambda v: A.mv(v)
+        else:
+            &#47&#47 Probably fairly difficult to implement a default preconditioner for an arbitrary mv closure.
+            <a id="change">if self.precondition_closure is None:
+                self.precondition_closure = lambda v: v
+           </a> mv_closure = A
+            <a id="change">self._reset_precond</a> = True
+
+        if b.ndimension() &gt; 1:
+            return self._solve_batch(A, b, x)</code></pre>

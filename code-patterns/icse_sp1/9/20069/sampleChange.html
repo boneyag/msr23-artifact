@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    jacobian = group.jacobian_translation(
+                                      point=base_point,
+                                      left_or_right=&quotleft&quot)
+    tangent_vec_at_id = <a id="change">np.dot(np.linalg.inv(jacobian),
+                               tangent_vec)</a>
+    tangent_vec_at_id = group.regularize(
+                                        tangent_vec_at_id)
+    regularized_tangent_vec = np.dot(jacobian, tangent_vec_at_id)
+    return regularized_tangent_vec</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    base_point = group.regularize(base_point)
+    if tangent_vec.ndim == 1:
+        <a id="change">tangent_vec = np.expand_dims(tangent_vec, axis=0)</a>
+    assert tangent_vec.ndim == 2
+    jacobian = group.jacobian_translation(
+                                      point=base_point,
+                                      left_or_right=&quotleft&quot)
+    inv_jacobian = np.linalg.inv(jacobian)
+    tangent_vec_at_id = np.dot(tangent_vec,
+                               np.transpose(inv_jacobian, axes=(0, 2, 1)))
+    <a id="change">tangent_vec_at_id = np.squeeze(tangent_vec_at_id, axis=1)</a>
+    tangent_vec_at_id = group.regularize(tangent_vec_at_id)
+
+    regularized_tangent_vec = np.dot(tangent_vec_at_id,
+                                     np.transpose(jacobian, axes=(0, 2, 1)))
+    <a id="change">regularized_tangent_vec = np.squeeze(regularized_tangent_vec, axis=1)</a>
+    return regularized_tangent_vec
+</code></pre>

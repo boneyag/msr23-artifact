@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        (ParametricDQNTrainer, ContinuousActionDQNTrainer)):
+            predictions = predictions.reshape([-1, self._env.action_dim])
+
+        estimated_reward_values = <a id="change">np.ones(
+            shape=[len(self.logged_states), self._env.action_dim],
+            dtype=np.float32
+        )</a>
+
+        error_sum = 0.0
+        for i in range(len(self.logged_states)):
+            logged_value = self.logged_values[i][0]</code></pre><h3>After Change</h3><pre><code class='java'>
+    def evaluate(self, predictor):
+        &#47&#47 test only float features
+        predictions = predictor.predict(self.logged_states)
+        <a id="change">estimated_reward_values = predictor.estimate_reward(self.logged_states)</a>
+        if isinstance(predictor.trainer,
+        (ParametricDQNTrainer, ContinuousActionDQNTrainer)):
+            predictions = predictions.reshape(
+                [-1, self._env.action_dim])
+            estimated_reward_values = estimated_reward_values.reshape(
+                [-1, self._env.action_dim])
+
+        value_error_sum = 0.0
+        reward_error_sum = 0.0
+        for i in range(len(self.logged_states)):
+            logged_action = self.logged_actions[i]
+            logged_value = self.logged_values[i][0]
+            target_value = predictions[i][logged_action]
+            value_error_sum += abs(logged_value - target_value)
+            logged_reward = self.logged_rewards[i][0]
+            <a id="change">estimated_reward = estimated_reward_values[i][logged_action]</a>
+            <a id="change">reward_error_sum += abs(logged_reward - estimated_reward)</a>
+        value_error_mean = value_error_sum / float(len(self.logged_states))
+        reward_error_mean = reward_error_sum / float(len(self.logged_states))
+
+        logger.info("EVAL Q-Value MAE ERROR: {0:.3f}".format(value_error_mean))</code></pre>

@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        init_bias = 0.
+        with tf.variable_scope(self.generate_name()):
+            &#47&#47 filter : [height, width, output_channels, in_channels]
+            w = <a id="change">tf.get_variable(&quotw&quot, [filter_h, filter_w, output_shape[-1], net.get_shape()[-1]], dtype=self.dtype, initializer=initializer)</a>
+
+            try:
+                deconv = tf.nn.conv2d_transpose(net, w, output_shape=output_shape,
+                                    strides=[1, stride_h, stride_w, 1])
+
+            &#47&#47 Support for versions of TensorFlow before 0.7.0
+            except AttributeError:
+                deconv = tf.nn.deconv2d(net, w, output_shape=output_shape,
+                                    strides=[1, stride_h, stride_w, 1])
+
+            biases = tf.get_variable(&quotbiases&quot, [output_shape[-1]], dtype=<a id="change">self.dtype</a>,initializer=tf.constant_initializer(init_bias, dtype=<a id="change">self.dtype</a>))
+            deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
+
+            return deconv</code></pre><h3>After Change</h3><pre><code class='java'>
+            conv = tf.nn.bias_add(conv, biases)
+            return conv
+
+    def deconv2d(<a id="change">self</a>, net, filter_w, filter_h, stride_w, stride_h, output_dim):
+        self.assert_tensor(net)
+        initializer = self.initializer()
+        shape = self.shape(net)
+        output_shape = [shape[0], shape[1]*stride_h, shape[2]*stride_w, output_dim]
+        init_bias = 0.
+        with tf.variable_scope(self.generate_name()):
+            &#47&#47 filter : [height, width, output_channels, in_channels]
+            w = <a id="change">self.get_weight([filter_h, filter_w, output_dim, output_dim])</a>
+
+            deconv = tf.nn.conv2d_transpose(net, w, output_shape=output_shape,
+                                    strides=[1, stride_h, stride_w, 1])
+
+            biases = <a id="change">self.get_bias([output_shape[-1]])</a>
+            deconv = tf.reshape(tf.nn.bias_add(deconv, biases), deconv.get_shape())
+
+            return deconv
+</code></pre>

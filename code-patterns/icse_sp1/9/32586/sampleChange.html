@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+      encoder_outputs, encoder_states, encoder_sequence_length = self.encoder.encode(
+        inputs,
+        sequence_length=self._features_length(<a id="change">features</a>),
+        mode=mode)
+
+    with tf.variable_scope("generator"):
+      logits = tf.layers.dense(
+        encoder_outputs,
+        self.num_labels)
+
+    if mode != tf.estimator.ModeKeys.PREDICT:
+      if self.crf_decoding:
+        log_likelihood, transition_params = tf.contrib.crf.crf_log_likelihood(
+          logits,
+          tf.cast(labels, tf.int32),
+          self._features_length(features))
+        loss = tf.reduce_mean(-log_likelihood)
+      else:
+        loss = masked_sequence_loss(
+          logits,
+          labels,
+          <a id="change">self.embedder.get_data_field(features, "length")</a>)
+
+      return tf.estimator.EstimatorSpec(
+        mode,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+      encoder_outputs, encoder_states, encoder_sequence_length = self.encoder.encode(
+        inputs,
+        sequence_length=<a id="change">features["length"]</a>,
+        mode=mode)
+
+    with tf.variable_scope("generator"):
+      logits = tf.layers.dense(
+        encoder_outputs,
+        self.num_labels)
+
+    if mode != tf.estimator.ModeKeys.PREDICT:
+      if self.crf_decoding:
+        log_likelihood, transition_params = tf.contrib.crf.crf_log_likelihood(
+          logits,
+          tf.cast(labels, tf.int32),
+          features["length"])
+        loss = tf.reduce_mean(-log_likelihood)
+      else:
+        loss = masked_sequence_loss(
+          logits,
+          labels,
+          <a id="change">features["length"]</a>)
+
+      return tf.estimator.EstimatorSpec(
+        mode,</code></pre>

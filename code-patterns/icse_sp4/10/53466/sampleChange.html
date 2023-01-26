@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    fdict = features.FeaturesDict(
+        {exp.name: exp.feature for exp in expectations})
+
+    <a id="change">decoded_sample = features_encode_decode(
+        fdict, dict([(exp.name, exp.value) for exp in expectations]))</a>
+
+    for exp in expectations:
+      self.assertAllEqual(decoded_sample[exp.name], exp.expected)
+      &#47&#47 TODO(rsepassi): test shape and dtype against exp.feature</code></pre><h3>After Change</h3><pre><code class='java'>
+  def test_encode_decode(self):
+    &#47&#47 Maybe should try to use metaclass instead and dynamically generate one
+    &#47&#47 method per feature expectation.
+    <a id="change">for exp in self.expectations:
+      tf.logging.info("Testing feature %s", exp.name)
+
+      &#47&#47 Check the shape/dtype
+      self.assertEqual(exp.feature.shape, exp.shape)
+      self.assertEqual(exp.feature.dtype, exp.dtype)
+
+      &#47&#47 Check the serialized features
+      if exp.serialized_features is not None:
+        self.assertEqual(
+            exp.serialized_features,
+            exp.feature.get_serialized_features(),
+        )
+
+      &#47&#47 Create the feature dict
+      fdict = features.FeaturesDict({exp.name: exp.feature})
+      for test in exp.tests:
+        input_value = {exp.name: test.value}
+
+        if test.raise_cls is not None:
+          if not test.raise_msg:
+            raise ValueError(
+                "test.raise_msg should be set with {}for test {}".format(
+                    test.raise_cls, exp.name))
+          with self.assertRaisesWithPredicateMatch(
+              test.raise_cls, test.raise_msg):
+            features_encode_decode(fdict, input_value)
+        else:
+          &#47&#47 Test the serialization only
+          if test.expected_serialized is not None:
+            self.assertEqual(
+                test.expected_serialized,
+                exp.feature.encode_sample(test.value),
+            )
+
+          &#47&#47 Test serialization + decoding from disk
+          decoded_samples = features_encode_decode(fdict, input_value)
+          self.assertAllEqual(test.expected, decoded_samples[exp.name])
+          &#47&#47 TODO(rsepassi): test shape and dtype against exp.feature
+
+
+</a>def features_encode_decode(features_dict, sample):
+  Runs the full pipeline: encode &gt; write &gt; tmp files &gt; read &gt; decode.
+  &#47&#47 Encode sample
+  encoded_sample = features_dict.encode_sample(sample)</code></pre>

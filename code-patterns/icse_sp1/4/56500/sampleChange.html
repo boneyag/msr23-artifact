@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        nx.set_node_attributes(G, name=col, values=gdf_nodes[col].dropna())
+
+    &#47&#47 add each edge and its non-null attributes
+    for (u, v, k), row in <a id="change">gdf_edges</a>.set_index(["u", "v", "key"]).iterrows():
+        d = {label: val for label, val in row.items() if isinstance(val, list) or pd.notnull(val)}
+        G.add_edge(u, v, k, **d)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    G = nx.MultiDiGraph(**graph_attrs)
+
+    attr_col_headings = [c for c in gdf_edges.columns if c not in ["u", "v"]]
+    attribute_data = zip(*[gdf_edges[col] <a id="change">for</a> col in attr_col_headings])
+
+    multigraph_edge_keys = gdf_edges["key"]
+    attribute_data = zip(attribute_data, multigraph_edge_keys)
+
+    &#47&#47 Generate graph edges
+    <a id="change">for s, t, attrs in zip(gdf_edges["u"], gdf_edges["v"], attribute_data):
+
+        attrs, multigraph_edge_key = attrs
+        key = G.add_edge(s, t, key=multigraph_edge_key)
+
+        G[s][t][key].update(zip(attr_col_headings, attrs))
+
+    &#47&#47 Add nodes attributes
+   </a> for col in gdf_nodes.columns:
+        nx.set_node_attributes(G, name=col, values=gdf_nodes[col].dropna())
+
+    utils.log("Created graph from node/edge GeoDataFrames")</code></pre>

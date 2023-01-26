@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+class CnnPolicy(object):
+
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False, **conv_kwargs): &#47&#47pylint: disable=W0613
+        <a id="change">nh</a>, <a id="change">nw</a>, <a id="change">nc</a> = ob_space.shape
+        <a id="change">ob_shape = (nbatch, nh, nw, nc)</a>
+        self.pdtype = make_pdtype(ac_space)
+        <a id="change">X = tf.placeholder(tf.uint8, ob_shape)</a> &#47&#47obs
+        with tf.variable_scope("model", reuse=reuse):
+            h = nature_cnn(X, **conv_kwargs)
+            vf = fc(h, &quotv&quot, 1)[:,0]
+            self.pd, self.pi = self.pdtype.pdfromlatent(h, init_scale=0.01)
+
+        a0 = self.pd.sample()
+        neglogp0 = self.pd.neglogp(a0)
+        self.initial_state = None
+
+        def step(ob, *_args, **_kwargs):
+            a, v, neglogp = sess.run([a0, vf, neglogp0], {X:ob})
+            return a, v, self.initial_state, neglogp
+
+        def value(ob, *_args, **_kwargs):
+            return sess.run(vf, {X:ob})
+
+        <a id="change">self.X</a> = X
+        self.vf = vf
+        self.step = step
+        self.value = value</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False, **conv_kwargs): &#47&#47pylint: disable=W0613
+        self.pdtype = make_pdtype(ac_space)
+        <a id="change">X</a>, <a id="change">processed_x</a> = observation_input(ob_space, nbatch)
+        with tf.variable_scope("model", reuse=reuse):
+            h = nature_cnn(processed_x, **conv_kwargs)
+            vf = fc(h, &quotv&quot, 1)[:,0]</code></pre>

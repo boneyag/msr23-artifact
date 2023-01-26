@@ -1,0 +1,43 @@
+<html><h3>d533214900cea56a4ec0be87577e97d3807b6bc5,keras_ssd_loss.py,SSD_Loss,compute_loss,#SSD_Loss#Any#Any#,89
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &quot&quot&quot
+        batch_size = tf.shape(y_pred)[0] &#47&#47 tf.int32
+        n_boxes = tf.shape(y_pred)[1] &#47&#47 tf.int32
+        <a id="change">depth = tf.shape(y_pred)[2]</a> &#47&#47 tf.int32
+
+        &#47&#47 1: Compute the losses for class and box predictions for each default box
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        positives = tf.to_float(tf.reduce_max(y_true[:,:,1:-8], axis=-1)) &#47&#47 Tensor of shape (batch_size, n_boxes)
+
+        &#47&#47 Count the number of positive boxes (classes 1 to n) in y_true across the whole batch
+        n_positive = <a id="change">tf.reduce_sum(positives)</a>
+
+        &#47&#47 Now mask all negative boxes and sum up the losses for the positive boxes PER batch item
+        &#47&#47 (Keras loss functions must output one scalar loss value PER batch item, rather than just
+        &#47&#47 one scalar for the entire batch, that&quots why we&quotre not summing across all axes)
+        pos_class_loss = tf.reduce_sum(classification_loss * positives, axis=-1) &#47&#47 Tensor of shape (batch_size,)
+
+        &#47&#47 Compute the classification loss for the negative default boxes (if there are any)
+
+        &#47&#47 First, compute the classification loss for all negative boxes
+        neg_class_loss_all = classification_loss * negatives &#47&#47 Tensor of shape (batch_size, n_boxes)
+        n_neg_losses = tf.count_nonzero(neg_class_loss_all, dtype=tf.int32) &#47&#47 The number of non-zero loss entries in `neg_class_loss_all`
+        &#47&#47 What&quots the point of `n_neg_losses`? For the next step, which will be to compute which negative boxes enter the classification
+        &#47&#47 loss, we don&quott just want to know how many negative ground truth boxes there are, but for how many of those there actually is
+        &#47&#47 a positive (i.e. non-zero) loss. This is necessary because `tf.nn.top-k()` in the function below will pick the top k boxes with
+        &#47&#47 the highest losses no matter what, even if it receives a vector where all losses are zero. In the unlikely event that all negative
+        &#47&#47 classification losses ARE actually zero though, this behavior might lead to `tf.nn.top-k()` returning the indices of positive
+        &#47&#47 boxes, leading to an incorrect negative classification loss computation, and hence an incorrect overall loss computation.
+        &#47&#47 We therefore need to make sure that `n_negative_keep`, which assumes the role of the `k` argument in `tf.nn.top-k()`,
+        &#47&#47 is at most the number of negative boxes for which there is a positive classification loss.
+
+        &#47&#47 Compute the number of negative examples we want to account for in the loss
+        &#47&#47 We&quotll keep at most `self.neg_pos_ratio` times the number of positives in `y_true`, but at least `self.n_neg_min` (unless `n_neg_loses` is smaller)
+        <a id="change">n_negative_keep = tf.minimum(tf.maximum(self.neg_pos_ratio * tf.to_int32(n_positive), self.n_neg_min), n_neg_losses)</a>
+
+        &#47&#47 In the unlikely case when either (1) there are no negative ground truth boxes at all
+        &#47&#47 or (2) the classification loss for all negative boxes is zero, return zero as the `neg_class_loss`
+        def f1():</code></pre><img src="249078282.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pierluigiferrari/ssd_keras/commit/d533214900cea56a4ec0be87577e97d3807b6bc5#diff-790cf51c0d5d22ef628ebe9dddd54ef83527134dffe81d4564228196ec8420deL81' target='_blank'>Link</a></div><div id='project'> Project Name: pierluigiferrari/ssd_keras</div><div id='commit'> Commit Name: d533214900cea56a4ec0be87577e97d3807b6bc5</div><div id='time'> Time: 2017-04-06</div><div id='author'> Author: pierluigi.ferrari@gmx.com</div><div id='file'> File Name: keras_ssd_loss.py</div><div id='class'> Class Name: SSD_Loss</div><div id='method'> Method Name: compute_loss</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/1d3e25c3ad4835ee298675f557e4c78bc8501c74#diff-55546770e440d3a3b29c284215d11d38b254f916c2a4634c4dc8047857282249L33' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: 1d3e25c3ad4835ee298675f557e4c78bc8501c74</div><div id='time'> Time: 2017-03-06</div><div id='author'> Author: james.hensman@gmail.com</div><div id='file'> File Name: GPflow/ekernels.py</div><div id='class'> Class Name: RBF</div><div id='method'> Method Name: eKxz</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-tf/commit/4d49910b3f0696102f813fb5ba451b934a4a579c#diff-8c7f98683f5ef91be9406e516f5925d2002f0223931b2bfd660a29805118587bL51' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-tf</div><div id='commit'> Commit Name: 4d49910b3f0696102f813fb5ba451b934a4a579c</div><div id='time'> Time: 2021-03-25</div><div id='author'> Author: guillaumekln@users.noreply.github.com</div><div id='file'> File Name: opennmt/utils/losses.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: cross_entropy_sequence_loss</div><BR>

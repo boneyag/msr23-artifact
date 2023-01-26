@@ -1,0 +1,81 @@
+<html><h3>80cfb0e5f889c65a972ebde6c6dae4278b5e28c1,foolbox/attacks/base.py,MinimizationAttack,__call__,#MinimizationAttack#Any#Any#Any#,340
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        was_iterable = True
+        if not isinstance(epsilons, Iterable):
+            <a id="change">epsilons = [epsilons]</a>
+            was_iterable = False
+
+        N = len(x)
+        K = len(epsilons)
+
+        &#47&#47 None means: just minimize, no early stopping, no limit on the perturbation size
+        if any(eps is None for eps in epsilons):
+            early_stop = None
+        else:
+            early_stop = min(epsilons)
+        limit_epsilons = <a id="change">[eps if eps is not None else ep.inf for eps in epsilons]</a>
+        del epsilons
+
+        &#47&#47 run the actual attack
+        xp = self.run(model, x, criterion, early_stop=early_stop, **kwargs)
+        &#47&#47 TODO: optionally improve using a binary search?
+        &#47&#47 TODO: optionally reduce size to the different epsilons and recompute is_adv
+
+        is_adv = is_adversarial(xp)
+        assert is_adv.shape == (N,)
+
+        distances = self.distance(x, xp)
+        assert distances.shape == (N,)
+
+        in_limits = ep.stack(
+            <a id="change">[distances &lt;= epsilon for epsilon in limit_epsilons]</a>, axis=0
+        )
+        assert in_limits.shape == (K, N)
+
+        <a id="change">success = ep.logical_and(in_limits, is_adv)</a>
+        assert success.shape == (K, N)
+
+        xp_ = restore_type(xp)
+
+        if was_iterable:
+            return [xp_] * K, restore_type(success)
+        else:
+            <a id="change">return xp_, restore_type(success.squeeze(axis=0))</a>
+
+
+class FlexibleDistanceMinimizationAttack(MinimizationAttack):
+    def __init__(self, *, distance: Optional[Distance] = None):</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 run the actual attack
+        xp = self.run(model, x, criterion, early_stop=early_stop, **kwargs)
+
+        <a id="change">xpcs = []</a>
+        success = []
+        for epsilon in epsilons:
+            if epsilon is None:
+                xpc = xp
+            else:
+                xpc = self.distance.clip_perturbation(x, xp, epsilon)
+            is_adv = is_adversarial(xpc)
+
+            xpcs.append(xpc)
+            success.append(is_adv)
+
+        <a id="change">success_ = ep.stack(success)</a>
+        assert success_.shape == (K, N)
+
+        xp_ = restore_type(xp)
+        <a id="change">xpcs_ = [restore_type(xpc) for xpc in xpcs]</a>
+
+        if was_iterable:
+            return [xp_] * K, xpcs_, restore_type(success)
+        else:
+            assert len(xpcs_) == 1
+            <a id="change">return xp_, xpcs_[0], restore_type(success_.squeeze(axis=0))</a>
+
+
+class FlexibleDistanceMinimizationAttack(MinimizationAttack):
+    def __init__(self, *, distance: Optional[Distance] = None):</code></pre><img src="324571993.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 15</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/bethgelab/foolbox/commit/80cfb0e5f889c65a972ebde6c6dae4278b5e28c1#diff-2e76868a2403842075a80eb5d839820a2539b393891dacd357ee4541788b4e5dL341' target='_blank'>Link</a></div><div id='project'> Project Name: bethgelab/foolbox</div><div id='commit'> Commit Name: 80cfb0e5f889c65a972ebde6c6dae4278b5e28c1</div><div id='time'> Time: 2020-02-14</div><div id='author'> Author: git@jonasrauber.de</div><div id='file'> File Name: foolbox/attacks/base.py</div><div id='class'> Class Name: MinimizationAttack</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/ecf13b0e5f0d47d60b0eedb15e7944327969a1fb#diff-c1a3d0e2e371ad1fc4bc02b9b968b02b08abcbd86b8446d024fe5b662fd9fc84L91' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: ecf13b0e5f0d47d60b0eedb15e7944327969a1fb</div><div id='time'> Time: 2020-06-23</div><div id='author'> Author: gardener@tensorflow.org</div><div id='file'> File Name: official/nlp/transformer/compute_bleu.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: bleu_wrapper</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/69e5a2d56cefd3774a5d4a4a6f77b0af3357a206#diff-c1a3d0e2e371ad1fc4bc02b9b968b02b08abcbd86b8446d024fe5b662fd9fc84L91' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 69e5a2d56cefd3774a5d4a4a6f77b0af3357a206</div><div id='time'> Time: 2020-06-23</div><div id='author'> Author: gardener@tensorflow.org</div><div id='file'> File Name: official/nlp/transformer/compute_bleu.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: bleu_wrapper</div><BR>

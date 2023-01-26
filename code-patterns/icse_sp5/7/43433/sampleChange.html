@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.checkScriptable(qlinear, [[X]], check_save_load=True)
+
+        &#47&#47 Test from_float
+        <a id="change">float_linear = torch.nn.Linear(in_features, out_features).float()</a>
+        if use_default_observer:
+            float_linear.qconfig = torch.quantization.default_dynamic_qconfig
+        prepare_dynamic(float_linear)
+        float_linear(X.float())</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Test JIT
+        self.checkScriptable(qlinear, [[X]], check_save_load=True)
+
+        <a id="change">modules_under_test = [torch.nn.Linear, torch.nn.modules.linear._LinearWithBias]</a>
+        <a id="change">for mut in modules_under_test:
+            &#47&#47 Test from_float
+            float_linear = mut(in_features, out_features).float()
+            if use_default_observer:
+                float_linear.qconfig = torch.quantization.default_dynamic_qconfig
+            prepare_dynamic(float_linear)
+            float_linear(X.float())
+            quantized_float_linear = nnqd.Linear.from_float(float_linear)
+
+            &#47&#47 Smoke test to make sure the module actually runs
+            quantized_float_linear(X)
+
+        &#47&#47 Smoke test extra_repr
+       </a> self.assertTrue(&quotQuantizedLinear&quot in str(quantized_float_linear))
+
+    @given(
+        dtype=st.sampled_from([torch.qint8, torch.float16]),</code></pre>

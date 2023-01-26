@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            raise ValueError("X and y must share first dimension")
+        elif X.chunks[0] != y.chunks[0]:
+            raise ValueError("X and y chunks must be aligned")
+    <a id="change">if y is not None and y is not False:
+        X_is_dask = isinstance(X, Base)
+        if X_is_dask != isinstance(y, Base):
+            raise TypeError("X and y may not be mix of "
+                            "non-dask and dask objects.)
+        if X_is_dask and type(X) != type(y):
+            raise TypeError("Dask type of X and y must match")
+   </a> if y is False:
+        return X
+    return X, y
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if has_y and (x_is_collection != y_is_collection):
+        raise TypeError("X and y may not be mix of "
+                        "non-dask and dask objects.)
+    <a id="change">if not x_is_collection and not y_is_collection:
+        if has_y:
+            sklearn.utils.check_consistent_length(X, y)
+        return X, y
+
+   </a> x_is_array = isinstance(X, da.Array)
+    y_is_array = isinstance(y, da.Array)
+
+    if has_y and x_is_array != y_is_array:
+        <a id="change">raise ValueError("If X is a da.Array, y must also be a da.Array")</a>
+    if x_is_array and y_is_array:
+        if X.ndim != 2:
+            raise ValueError("X must be 2 dimensional")
+        if y.ndim not in (1, 2):
+            raise ValueError("y must be 1 or 2 dimensional")
+        if X.shape[0] != y.shape[0]:
+            raise ValueError("X and y must share first dimension")
+        if X.chunks[0] != y.chunks[0]:
+            raise ValueError("X and y chunks must be aligned")
+    elif <a id="change">x_is_collection and y_is_collection</a>:
+        if X.npartitions != y.npartitions:
+            <a id="change">raise ValueError("x and y must have the same number of partitions")</a>
+
+    if y is False:
+        return X
+    return X, y</code></pre>

@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        -------
+        y : array-like
+        
+        <a id="change">predict = self._check_method("predict")</a>
+        X = self._check_array(X)
+
+        if isinstance(X, da.Array):
+            return X.map_blocks(predict, dtype="int", drop_axis=1)
+
+        elif isinstance(X, dd._Frame):
+            <a id="change">return _apply_partitionwise(X, predict)</a>
+
+        else:
+            return predict(X)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        -------
+        y : array-like
+        
+        <a id="change">self._check_method("predict")</a>
+        X = self._check_array(X)
+
+        if isinstance(X, da.Array):
+            result = X.map_blocks(
+                _predict, dtype="int", estimator=<a id="change">self._postfit_estimator</a>, drop_axis=1
+            )
+            return result
+
+        elif isinstance(X, dd._Frame):
+            <a id="change">return X.map_partitions(
+                _predict, estimator=self._postfit_estimator, meta=np.array([1])
+            )</a>
+
+        else:
+            return _predict(X, estimator=<a id="change">self._postfit_estimator</a>)
+
+    def predict_proba(self, X):
+        Predict for X.</code></pre>

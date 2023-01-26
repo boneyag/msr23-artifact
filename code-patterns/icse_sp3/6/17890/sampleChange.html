@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        nccl.all_reduce(flat_grads)
+
+        &#47&#47 normalize grads
+        <a id="change">if grad_denom != 0:
+            flat_grads.div_(grad_denom)
+
+        &#47&#47 clip grads
+       </a> grad_norm = self._clip_grads_(flat_grads, self.args.clip_norm)
+
+        &#47&#47 copy reduced grads back
+        self._set_model_grads_(flat_grads)</code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 backward pass
+                self.loss.backward()
+            except RuntimeError as e:
+                <a id="change">if &quotout of memory&quot in str(e):
+                    print(&quot| WARNING: ran out of memory on GPU &#47&#47{}, skipping batch&quot.format(device_id))
+                    oom = True
+                    if hasattr(torch.cuda, &quotempty_cache&quot):
+                        torch.cuda.empty_cache()
+                    self.optimizer.zero_grad()
+                else:
+                    raise e
+
+        &#47&#47 all-reduce grads and rescale by grad_denom
+       </a> self._all_reduce_and_rescale_grads(grad_denom)
+
+        &#47&#47 clip grads
+        grad_norm = torch.nn.utils.clip_grad_norm(self.model.parameters(), self.args.clip_norm)</code></pre>

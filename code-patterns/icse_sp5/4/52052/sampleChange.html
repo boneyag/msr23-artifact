@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    mask = np.pad(mask, pad_width, mode=&quotconstant&quot)
+    markers = np.pad(markers, pad_width, mode=&quotconstant&quot)
+
+    c_image = <a id="change">image.astype(np.float64)</a>
+    c_mask = np.ascontiguousarray(mask, dtype=np.int8).ravel()
+    c_output = np.array(markers, dtype=np.int32).ravel()
+
+    flat_neighborhood = _compute_neighbors(image, c_connectivity, offset)
+
+    marker_locations = np.flatnonzero(markers).astype(np.int32)
+    image_strides = np.array(image.strides, dtype=np.int32) // image.itemsize
+    if len(marker_locations) &gt; 0:
+        _watershed.watershed(c_image.ravel(),
+                             marker_locations, flat_neighborhood,
+                             c_mask, image_strides, compactness,
+                             c_output)
+    <a id="change">c_output = c_output.reshape(c_image.shape)[[slice(1, -1, None)] *
+                                               image.ndim]</a>
+    try:
+        return c_output.astype(markers.dtype)
+    except:
+        return c_output</code></pre><h3>After Change</h3><pre><code class='java'>
+    _watershed.watershed(image.ravel(),
+                         marker_locations, flat_neighborhood,
+                         mask, image_strides, compactness,
+                         <a id="change">output.ravel()</a>)
+
+    output = crop(output, pad_width, copy=True)
+</code></pre>

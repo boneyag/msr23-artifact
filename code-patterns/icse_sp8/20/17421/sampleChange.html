@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def _transform(args, cell):
+  <a id="change">env = google.datalab.utils.commands.notebook_environment()</a>
+  <a id="change">cell_data = google.datalab.utils.commands.parse_config(cell, env)</a>
+  <a id="change">google.datalab.utils.commands.validate_config(cell_data,
+                                                required_keys=[&quottraining_data&quot],
+                                                optional_keys=[&quotcloud&quot])</a>
+  training_data = cell_data[&quottraining_data&quot]
+  cmd_args = [&quotpython&quot, &quottransform.py&quot,
+              &quot--output&quot, _abs_path(args[&quotoutput&quot]),
+              &quot--analysis&quot, _abs_path(args[&quotanalysis&quot]),
+              &quot--prefix&quot, args[&quotprefix&quot]]
+  if args[&quotcloud&quot]:
+    cmd_args.append(&quot--cloud&quot)
+    cmd_args.append(&quot--async&quot)
+  if args[&quotshuffle&quot]:
+    cmd_args.append(&quot--shuffle&quot)
+  if args[&quotbatch_size&quot]:
+    cmd_args.extend([&quot--batch-size&quot, str(args[&quotbatch_size&quot])])
+
+  if isinstance(training_data, dict):
+    if &quotcsv&quot in training_data:
+      cmd_args.extend([&quot--csv&quot, _abs_path(training_data[&quotcsv&quot])])
+    elif &quotbigquery_table&quot in training_data:
+      cmd_args.extend([&quot--bigquery&quot, training_data[&quotbigquery_table&quot]])
+    elif &quotbigquery_sql&quot in training_data:
+        &#47&#47 see https://cloud.google.com/bigquery/querying-data&#47&#47temporary_and_permanent_tables
+        print(&quotCreating temporary table that will be deleted in 24 hours&quot)
+        r = bq.Query(training_data[&quotbigquery_sql&quot]).execute().result()
+        cmd_args.extend([&quot--bigquery&quot, r.full_name])
+    else:
+      raise ValueError(&quotInvalid training_data dict. &quot +
+                       &quotRequires either "csv" and "schema", or "bigquery".&quot)
+  elif isinstance(training_data, google.datalab.ml.CsvDataSet):
+    for file_name in training_data.input_files:
+      cmd_args.append(&quot--csv=&quot + _abs_path(file_name))
+  elif isinstance(training_data, google.datalab.ml.BigQueryDataSet):
+    cmd_args.extend([&quot--bigquery&quot, training_data.table])
+  else:
+    raise ValueError(&quotInvalid training data. Requires either a dict, &quot +
+                     &quota google.datalab.ml.CsvDataSet, or a google.datalab.ml.BigQueryDataSet.&quot)
+
+  if &quotcloud&quot in cell_data:
+    cloud_config = <a id="change">cell_data[&quotcloud&quot]</a>
+    google.datalab.utils.commands.validate_config(
+        cloud_config,
+        required_keys=[],
+        optional_keys=[&quotnum_workers&quot, &quotworker_machine_type&quot, &quotproject_id&quot])</code></pre><h3>After Change</h3><pre><code class='java'>
+    raise ValueError(&quotInvalid training data. Requires either a dict, &quot +
+                     &quota google.datalab.ml.CsvDataSet, or a google.datalab.ml.BigQueryDataSet.&quot)
+
+  cloud_config = <a id="change">args[&quotcloud_config&quot]</a>
+  if cloud_config:
+    google.datalab.utils.commands.validate_config(
+        cloud_config,
+        required_keys=[],</code></pre>

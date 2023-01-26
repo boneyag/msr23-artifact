@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def build_model(self):
+    if self._hub_module:
+      encoder_from_hub = utils.get_encoder_from_hub(self._hub_module)
+      <a id="change">return bert.instantiate_bertpretrainer_from_cfg(
+          self.task_config.model, encoder_network=encoder_from_hub)</a>
+    else:
+      return bert.instantiate_bertpretrainer_from_cfg(self.task_config.model)
+
+  def build_losses(self, labels, model_outputs, aux_losses=None) -&gt; tf.Tensor:</code></pre><h3>After Change</h3><pre><code class='java'>
+    if self._hub_module:
+      encoder_network = utils.get_encoder_from_hub(self._hub_module)
+    else:
+      <a id="change">encoder_network = encoders.instantiate_encoder_from_cfg(
+          self.task_config.model.encoder)</a>
+
+    &#47&#47 Currently, we only supports bert-style sentence prediction finetuning.
+    <a id="change">return models.BertClassifier(
+        network=encoder_network,
+        num_classes=self.task_config.model.num_classes,
+        initializer=tf.keras.initializers.TruncatedNormal(
+            stddev=self.task_config.model.encoder.initializer_range),
+        use_encoder_pooler=self.task_config.model.use_encoder_pooler)</a>
+
+  def build_losses(self, labels, model_outputs, aux_losses=None) -&gt; tf.Tensor:
+    loss = tf.keras.losses.sparse_categorical_crossentropy(
+        labels, tf.cast(model_outputs, tf.float32), from_logits=True)</code></pre>

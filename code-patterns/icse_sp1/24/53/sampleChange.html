@@ -1,0 +1,82 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def test_get_non_synthetic_scala_targets(self):
+    &#47&#47 scala_library - should remain.
+    <a id="change">scala_target_address = BuildFileAddress(
+      self.add_to_build_file(
+        &quota/scala/BUILD&quot, &quotscala_library(name="s", sources=["Source.scala"])&quot),
+      &quots&quot)</a>
+    <a id="change">self.build_graph.inject_address_closure(scala_target_address)</a>
+    <a id="change">scala_target = self.build_graph.get_target(scala_target_address)</a>
+
+    &#47&#47 scala_library but with java sources - should be filtered
+    scala_target_java_source_address = BuildFileAddress(
+      self.add_to_build_file(
+        &quota/scala_java/BUILD&quot, &quotscala_library(name="sj", sources=["Source.java"])&quot),
+      &quotsj&quot)
+    self.build_graph.inject_address_closure(scala_target_java_source_address)
+    scala_target_with_java_source = self.build_graph.get_target(
+      scala_target_java_source_address)
+
+    &#47&#47 java_library - should be filtered
+    java_target_address = BuildFileAddress(
+      self.add_to_build_file(
+        &quota/java/BUILD&quot, &quotjava_library(name="j", sources=["Source.java"])&quot),
+      &quotj&quot)
+    self.build_graph.inject_address_closure(java_target_address)
+    java_target = self.build_graph.get_target(java_target_address)
+
+    &#47&#47 synthetic scala_library - should be filtered
+    synthetic_scala_target = self.make_target(&quota/synthetic_scala:ss&quot, ScalaLibrary)
+
+    &#47&#47 Create a custom context so we can manually inject multiple targets of different source types
+    &#47&#47 and synthetic vs non-synthetic to test the target filtering logic.
+    <a id="change">context = self._create_context(
+      target_roots=[
+        java_target,
+        scala_target,
+        scala_target_with_java_source,
+        synthetic_scala_target
+      ])</a>
+
+    &#47&#47 scala_library would bring in &quotscala-library defined in BUILD.tools
+    &#47&#47 so we have an extra target here.
+    self.assertEqual(5, len(context.targets()))</code></pre><h3>After Change</h3><pre><code class='java'>
+      self.set_options_for_scope(ScalaPlatform.options_scope, scalac=&quot:scala-compiler&quot)
+      yield
+
+  def test_get_non_synthetic_scala_targets(<a id="change">self</a>):
+    <a id="change">with self.scala_platform_setup():
+      &#47&#47 scala_library - should remain.
+      scala_target = self.make_target(&quota/scala:s&quot, ScalaLibrary, sources=[&quotSource.scala&quot])
+
+      &#47&#47 scala_library but with java sources - should be filtered
+      scala_target_with_java_source = self.make_target(&quota/scala_java:sj&quot,
+                                                       ScalaLibrary,
+                                                       sources=[&quotSource.java&quot])
+
+      &#47&#47 java_library - should be filtered
+      java_target = self.make_target(&quota/java:j&quot, JavaLibrary, sources=[&quotSource.java&quot])
+
+      &#47&#47 synthetic scala_library - should be filtered
+      synthetic_scala_target = self.make_target(&quota/synthetic_scala:ss&quot,
+                                                ScalaLibrary,
+                                                sources=[&quotSourceGenerated.scala&quot],
+                                                derived_from=scala_target)
+
+      result_targets = Scalastyle.get_non_synthetic_scala_targets([java_target,
+                                                                   scala_target,
+                                                                   scala_target_with_java_source,
+                                                                   synthetic_scala_target])
+
+      &#47&#47 Only the scala target should remain
+      self.assertEquals(1, len(result_targets))
+      self.assertEqual(scala_target, result_targets[0])
+
+ </a> def test_get_non_excluded_scala_sources(self):
+    with self.scala_platform_setup():
+      &#47&#47 this scala target has mixed *.scala and *.java sources.
+      &#47&#47 the *.java source should be filtered out.</code></pre>

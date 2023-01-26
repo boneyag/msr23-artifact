@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        elif size_tup[-len(broadcast_shape):] != broadcast_shape:
+            samples = generator(size=size_tup + broadcast_shape, *args, **kwargs)
+        else:
+            samples = <a id="change">generator(size=size_tup + dist_shape, *args, **kwargs)</a>
+    &#47&#47 Args have been broadcast correctly, can just ask for the right shape out
+    elif dist_shape[-len(broadcast_shape):] == broadcast_shape:
+        samples = generator(size=size_tup + dist_shape, *args, **kwargs)
+    &#47&#47 Inputs have the right size, have to manually broadcast to the right dist_shape</code></pre><h3>After Change</h3><pre><code class='java'>
+        elif dist_shape == broadcast_shape:
+            samples = generator(size=size_tup + dist_shape, *args, **kwargs)
+        else:
+            <a id="change">samples = None</a>
+    &#47&#47 Args have been broadcast correctly, can just ask for the right shape out
+    elif dist_shape[-len(broadcast_shape):] == broadcast_shape:
+        samples = generator(size=size_tup + dist_shape, *args, **kwargs)
+    &#47&#47 Inputs have the right size, have to manually broadcast to the right dist_shape
+    elif broadcast_shape[:len(size_tup)] == size_tup:
+        suffix = broadcast_shape[len(size_tup):] + dist_shape
+        samples = [generator(*args, **kwargs).reshape(size_tup + (1,)) for _ in range(np.prod(suffix, dtype=int))]
+        samples = np.hstack(samples).reshape(size_tup + suffix)
+    else:
+        samples = None
+
+    <a id="change">if samples is None:
+        raise TypeError(&quot&quot&quotAttempted to generate values with incompatible shapes:
+            size: {size}
+            dist_shape: {dist_shape}
+            broadcast_shape: {broadcast_shape}
+        &quot&quot&quot.format(size=size, dist_shape=dist_shape, broadcast_shape=broadcast_shape))
+
+    &#47&#47 reshape samples here
+   </a> if samples.shape[0] == 1 and size == 1:
+        if len(samples.shape) &gt; len(dist_shape) and samples.shape[-len(dist_shape):] == dist_shape:
+            samples = samples.reshape(samples.shape[1:])
+</code></pre>

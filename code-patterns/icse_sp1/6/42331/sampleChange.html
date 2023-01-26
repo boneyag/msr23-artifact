@@ -1,0 +1,94 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                  }
+        location_id = gtable.insert(**record)
+        record["id"] = location_id
+        <a id="change">if callable(location_onaccept):
+            gform = Storage(vars = record)
+            location_onaccept(gform)
+
+       </a> record = {"pe_id": pe_id,
+                  "location_id": location_id,
+                  "realm_entity": realm_entity,
+                  }</code></pre><h3>After Change</h3><pre><code class='java'>
+                        email = custom["email2"],
+                        password = custom["password2"],
+                        )
+        <a id="change">try:
+            user_id = db.auth_user.insert(**user2)
+        except:
+            import sys
+            error = sys.exc_info()[1]
+            current.log.error = "Unable to add 2nd Leader to database: %s" % error
+        else:
+            user2.id = user_id
+            &#47&#47 Approve User (Creates Person & Email)
+            auth.s3_approve_user(user2)
+
+            pe_id = auth.s3_user_pe_id(user_id)
+
+            &#47&#47 Add Address
+            record = {"addr_street": custom["addr_street2"],
+                      "addr_postcode": custom["addr_postcode2"],
+                      }
+            location_id = gtable.insert(**record)
+            record["id"] = location_id
+            if callable(location_onaccept):
+                gform = Storage(vars = record)
+                location_onaccept(gform)
+
+            record = {"pe_id": pe_id,
+                      "location_id": location_id,
+                      "realm_entity": realm_entity,
+                      }
+            address_id = atable.insert(**record)
+            record["id"] = address_id
+            if callable(address_onaccept):
+                aform = Storage(vars = record)
+                address_onaccept(aform)
+
+            &#47&#47 Add Contacts
+            ctable = s3db.pr_contact
+            &#47&#47 Currently no need to onaccept as none defined
+            record = {"pe_id": pe_id,
+                      "contact_method": "SMS",
+                      "value": custom["mobile2"],
+                      "realm_entity": realm_entity,
+                      }
+            ctable.insert(**record)
+            home_phone = custom["home2"]
+            if home_phone:
+                record = {"pe_id": pe_id,
+                          "contact_method": "HOME_PHONE",
+                          "value": home_phone,
+                          "realm_entity": realm_entity,
+                          }
+                ctable.insert(**record)
+
+            &#47&#47 Add Leader to Group
+            person = db(ptable.pe_id == pe_id).select(ptable.id,
+                                                      limitby = (0, 1),
+                                                      ).first()
+            record = {"group_id": group_id,
+                      "person_id": person.id,
+                      "group_head": True,
+                      }
+            membership_id = mtable.insert(**record)
+            record["id"] = membership_id
+            if callable(membership_onaccept):
+                mform = Storage(vars = record)
+                membership_onaccept(mform)
+
+            &#47&#47 Assign correct Role
+            auth.add_membership(user_id = user_id,
+                                role = "Volunteer Group Leader",
+                                entity = realm_entity,
+                                )
+
+        &#47&#47 Create Group Skills
+       </a> ctable = s3db.pr_group_competency
+        for skill_id in custom["skill_id"]:
+            record = {"group_id": group_id,
+                      "skill_id": skill_id,</code></pre>

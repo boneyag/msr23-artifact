@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    shared_module_key = getattr(module_config, "shared_module_key", None)
+    typed_shared_module_key = (shared_module_key, type(module_config))
+    load_path = getattr(module_config, "load_path", None)
+    is_torchscript_load_path = <a id="change">load_path and zipfile.is_zipfile(
+        PathManager.get_local_path(load_path)
+    )</a>
+    module = SHARED_MODULE_REGISTRY.get(typed_shared_module_key)
+    if not module:
+        if is_torchscript_load_path:
+            with PathManager.open(load_path, "rb") as load_file:
+                module = torch.jit.load(load_file)
+        else:
+            module = create_fn(module_config, *args, **kwargs)
+
+    name = type(module).__name__
+    <a id="change">if load_path and not is_torchscript_load_path:
+        print(f"Loading state of module {name} from {load_path} ...")
+        with PathManager.open(load_path, "rb") as load_file:
+            module.load_state_dict(torch.load(load_file, map_location="cpu"))
+   </a> if getattr(module_config, "freeze", False):
+        print(f"Freezing the parameters of module {name} ...")
+        module.freeze()
+    if shared_module_key:</code></pre><h3>After Change</h3><pre><code class='java'>
+            with PathManager.open(load_path, "rb") as load_file:
+                loaded_module = torch.load(load_file, map_location="cpu")
+
+            <a id="change">if isinstance(loaded_module, dict):
+                &#47&#47 Loaded module is a state dict
+                module = create_fn(module_config, *args, **kwargs)
+                module.load_state_dict(loaded_module)
+            else:
+                &#47&#47 Loaded module is a torchscripted module
+                module = loaded_module
+
+           </a> name = type(module).__name__
+            print(f"Loaded state of module {name} from {load_path} ...")
+
+        else:</code></pre>

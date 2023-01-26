@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    mcoe_out[&quottotal_fuel_cost&quot] = \
+        mcoe_out.total_mmbtu * mcoe_out.fuel_cost_per_mmbtu
+
+    simplified_gens_eia860 = pudl_out.gens_eia860().drop(<a id="change">[
+        &quotplant_id_pudl&quot,
+        &quotplant_name_eia&quot,
+        &quotutility_id_eia&quot,
+        &quotutility_id_pudl&quot,
+        &quotutility_name_eia&quot,
+        &quotfuel_type_count&quot,
+        &quotfuel_type_code_pudl&quot
+    ]</a>, axis=1)
+    mcoe_out = pudl.helpers.merge_on_date_year(
+        mcoe_out, simplified_gens_eia860, on=[&quotplant_id_eia&quot, &quotgenerator_id&quot])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    drop_cols = [x for x in pudl_out.gens_eia860().columns
+                 if x in pudl_out.fuel_cost().columns and x not in merge_cols]
+    &#47&#47 start with the generators table so we have all of the generators
+    mcoe_out = <a id="change">pudl.helpers.merge_on_date_year(
+        pudl_out.fuel_cost().drop(drop_cols, axis=1),
+        pudl_out.gens_eia860(),
+        on=[x for x in merge_cols if x != &quotreport_date&quot],
+        how=&quotinner&quot,
+    )</a>
+    &#47&#47 Bring together the fuel cost and capacity factor dataframes, which
+    &#47&#47 also include heat rate information.
+    mcoe_out = pd.merge(
+        mcoe_out,</code></pre>

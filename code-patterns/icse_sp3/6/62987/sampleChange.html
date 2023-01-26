@@ -1,0 +1,115 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                heap_updates, heap_update_counts, offsets, chunk_size, n_vertices, index
+            )
+
+        for _ in <a id="change">executor.map(shuffle, range(n_tasks))</a>:
+            pass
+
+        &#47&#47 then run reduce functions</code></pre><h3>After Change</h3><pre><code class='java'>
+    if rng_state is None:
+        rng_state = new_rng_state()
+
+    <a id="change">with Parallel(prefer="threads", n_jobs=n_jobs) as parallel:
+
+        n_vertices = data.shape[0]
+        n_tasks = int(math.ceil(float(n_vertices) / chunk_size))
+
+        current_graph = init_current_graph(
+            data,
+            dist,
+            dist_args,
+            n_neighbors,
+            chunk_size,
+            rng_state,
+            parallel,
+            seed_per_row=seed_per_row,
+        )
+
+        if rp_tree_init:
+            init_rp_tree(
+                data, dist, dist_args, current_graph, leaf_array, chunk_size, parallel
+            )
+
+        &#47&#47 store the updates in an array
+        &#47&#47 note that the factor here is `n_neighbors * n_neighbors`, not `max_candidates * max_candidates`
+        &#47&#47 since no more than `n_neighbors` candidates are added for each row
+        max_heap_update_count = chunk_size * n_neighbors * n_neighbors * 4
+        heap_updates = np.zeros((n_tasks, max_heap_update_count, 4))
+        heap_update_counts = np.zeros((n_tasks,), dtype=np.int64)
+
+        nn_descent_map_jit = make_nn_descent_map_jit(dist, dist_args)
+
+        for n in range(n_iters):
+            if verbose:
+                print("\t", n, " / ", n_iters)
+
+            (new_candidate_neighbors, old_candidate_neighbors) = new_build_candidates(
+                current_graph,
+                n_vertices,
+                n_neighbors,
+                max_candidates,
+                chunk_size,
+                rng_state,
+                rho,
+                parallel,
+                seed_per_row=seed_per_row,
+            )
+
+            def nn_descent_map(index):
+                rows = chunk_rows(chunk_size, index, n_vertices)
+                return (
+                    index,
+                    nn_descent_map_jit(
+                        rows,
+                        max_candidates,
+                        data,
+                        new_candidate_neighbors,
+                        old_candidate_neighbors,
+                        heap_updates[index],
+                        offset=0,
+                    ),
+                )
+
+            def nn_decent_reduce(index):
+                return nn_decent_reduce_jit(
+                    n_tasks, current_graph, heap_updates, offsets, index
+                )
+
+            &#47&#47 run map functions
+            for index, count in parallel(parallel_calls(nn_descent_map, n_tasks)):
+                heap_update_counts[index] = count
+
+            &#47&#47 sort and chunk heap updates so they can be applied in the reduce
+            max_count = heap_update_counts.max()
+            offsets = np.zeros((n_tasks, max_count), dtype=np.int64)
+
+            def shuffle(index):
+                return shuffle_jit(
+                    heap_updates,
+                    heap_update_counts,
+                    offsets,
+                    chunk_size,
+                    n_vertices,
+                    index,
+                )
+
+            parallel(parallel_calls(shuffle, n_tasks))
+
+            &#47&#47 then run reduce functions
+            c = 0
+            for c_part in parallel(parallel_calls(nn_decent_reduce, n_tasks)):
+                c += c_part
+
+            if c &lt;= delta * n_neighbors * data.shape[0]:
+                break
+
+        def deheap_sort_map(index):
+            rows = chunk_rows(chunk_size, index, n_vertices)
+            return index, deheap_sort_map_jit(rows, current_graph)
+
+        parallel(parallel_calls(deheap_sort_map, n_tasks))
+        return current_graph[0].astype(np.int64), current_graph[1]</a>
+</code></pre>

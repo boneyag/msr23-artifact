@@ -1,0 +1,116 @@
+<html><h3>165918a4ef7c6394567d77d51ebc56ab140befe4,osmnx/projection.py,,project_graph,#Any#Any#,144
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+
+    G_proj = G.copy()
+    <a id="change">start_time = time.time()</a>
+
+    &#47&#47 create a GeoDataFrame of the nodes, name it, convert osmid to str
+    nodes, data = zip(*G_proj.nodes(data=True))
+    gdf_nodes = gpd.GeoDataFrame(list(data), index=nodes)
+    gdf_nodes.crs = G_proj.graph[&quotcrs&quot]
+    gdf_nodes.gdf_name = &quot{}_nodes&quot.format(G_proj.name)
+
+    &#47&#47 create new lat/lon columns just to save that data for later reference
+    &#47&#47 if they do not already exist (i.e., don&quott overwrite in subsequent re-projections)
+    if &quotlon&quot not in gdf_nodes.columns or &quotlat&quot not in gdf_nodes.columns:
+    	gdf_nodes[&quotlon&quot] = gdf_nodes[&quotx&quot]
+    	gdf_nodes[&quotlat&quot] = gdf_nodes[&quoty&quot]
+    
+    &#47&#47 create a geometry column from x/y columns
+    gdf_nodes[&quotgeometry&quot] = gdf_nodes.apply(lambda row: Point(row[&quotx&quot], row[&quoty&quot]), axis=1)
+    gdf_nodes.set_geometry(&quotgeometry&quot, inplace=True)
+    <a id="change">utils.log(&quotCreated a GeoDataFrame from graph in {:,.2f} seconds&quot.format(time.time()-start_time))</a>
+
+    &#47&#47 project the nodes GeoDataFrame to UTM
+    gdf_nodes_utm = project_gdf(gdf_nodes, to_crs=to_crs)
+
+    &#47&#47 extract data for all edges that have geometry attribute
+    edges_with_geom = []
+    for u, v, key, data in G_proj.edges(keys=True, data=True):
+        if &quotgeometry&quot in data:
+            edges_with_geom.append({&quotu&quot:u, &quotv&quot:v, &quotkey&quot:key, &quotgeometry&quot:data[&quotgeometry&quot]})
+
+    &#47&#47 create an edges GeoDataFrame and project to UTM, if there were any edges
+    &#47&#47 with a geometry attribute. geom attr only exists if graph has been
+    &#47&#47 simplified, otherwise you don&quott have to project anything for the edges
+    &#47&#47 because the nodes still contain all spatial data
+    if len(edges_with_geom) &gt; 0:
+        gdf_edges = gpd.GeoDataFrame(edges_with_geom)
+        gdf_edges.crs = G_proj.graph[&quotcrs&quot]
+        gdf_edges.gdf_name = &quot{}_edges&quot.format(G_proj.name)
+        gdf_edges_utm = project_gdf(gdf_edges, to_crs=to_crs)
+
+    &#47&#47 extract projected x and y values from the nodes&quot geometry column
+    <a id="change">start_time = time.time()</a>
+    gdf_nodes_utm[&quotx&quot] = gdf_nodes_utm[&quotgeometry&quot].map(lambda point: point.x)
+    gdf_nodes_utm[&quoty&quot] = gdf_nodes_utm[&quotgeometry&quot].map(lambda point: point.y)
+    gdf_nodes_utm = gdf_nodes_utm.drop(&quotgeometry&quot, axis=1)
+    <a id="change">utils.log(&quotExtracted projected node geometries from GeoDataFrame in {:,.2f} seconds&quot.format(time.time()-start_time))</a>
+
+    &#47&#47 clear the graph to make it a blank slate for the projected data
+    start_time = time.time()
+    edges = list(G_proj.edges(keys=True, data=True))</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 create a geometry column from x/y columns
+    gdf_nodes[&quotgeometry&quot] = gdf_nodes.apply(lambda row: Point(row[&quotx&quot], row[&quoty&quot]), axis=1)
+    gdf_nodes.set_geometry(&quotgeometry&quot, inplace=True)
+    <a id="change">utils.log(&quotCreated a GeoDataFrame from graph&quot)</a>
+
+    &#47&#47 project the nodes GeoDataFrame to UTM
+    gdf_nodes_utm = project_gdf(gdf_nodes, to_crs=to_crs)
+
+    &#47&#47 extract data for all edges that have geometry attribute
+    edges_with_geom = []
+    for u, v, key, data in G_proj.edges(keys=True, data=True):
+        if &quotgeometry&quot in data:
+            edges_with_geom.append({&quotu&quot:u, &quotv&quot:v, &quotkey&quot:key, &quotgeometry&quot:data[&quotgeometry&quot]})
+
+    &#47&#47 create an edges GeoDataFrame and project to UTM, if there were any edges
+    &#47&#47 with a geometry attribute. geom attr only exists if graph has been
+    &#47&#47 simplified, otherwise you don&quott have to project anything for the edges
+    &#47&#47 because the nodes still contain all spatial data
+    if len(edges_with_geom) &gt; 0:
+        gdf_edges = gpd.GeoDataFrame(edges_with_geom)
+        gdf_edges.crs = G_proj.graph[&quotcrs&quot]
+        gdf_edges.gdf_name = &quot{}_edges&quot.format(G_proj.name)
+        gdf_edges_utm = project_gdf(gdf_edges, to_crs=to_crs)
+
+    &#47&#47 extract projected x and y values from the nodes&quot geometry column
+    gdf_nodes_utm[&quotx&quot] = gdf_nodes_utm[&quotgeometry&quot].map(lambda point: point.x)
+    gdf_nodes_utm[&quoty&quot] = gdf_nodes_utm[&quotgeometry&quot].map(lambda point: point.y)
+    gdf_nodes_utm = gdf_nodes_utm.drop(&quotgeometry&quot, axis=1)
+    utils.log(&quotExtracted projected node geometries from GeoDataFrame&quot)
+
+    &#47&#47 clear the graph to make it a blank slate for the projected data
+    edges = list(G_proj.edges(keys=True, data=True))
+    graph_name = G_proj.graph[&quotname&quot]
+    G_proj.clear()
+
+    &#47&#47 add the projected nodes and all their attributes to the graph
+    G_proj.add_nodes_from(gdf_nodes_utm.index)
+    attributes = gdf_nodes_utm.to_dict()
+    for label in gdf_nodes_utm.columns:
+        nx.set_node_attributes(G_proj, name=label, values=attributes[label])
+
+    &#47&#47 add the edges and all their attributes (including reconstructed geometry,
+    &#47&#47 when it exists) to the graph
+    for u, v, key, attributes in edges:
+        if &quotgeometry&quot in attributes:
+            row = gdf_edges_utm[(gdf_edges_utm[&quotu&quot]==u) & (gdf_edges_utm[&quotv&quot]==v) & (gdf_edges_utm[&quotkey&quot]==key)]
+            attributes[&quotgeometry&quot] = row[&quotgeometry&quot].iloc[0]
+
+        &#47&#47 attributes dict contains key, so we don&quott need to explicitly pass it here
+        G_proj.add_edge(u, v, **attributes)
+
+    &#47&#47 set the graph&quots CRS attribute to the new, projected CRS and return the
+    &#47&#47 projected graph
+    G_proj.graph[&quotcrs&quot] = gdf_nodes_utm.crs
+    G_proj.graph[&quotname&quot] = &quot{}_UTM&quot.format(graph_name)
+    if &quotstreets_per_node&quot in G.graph:
+        G_proj.graph[&quotstreets_per_node&quot] = G.graph[&quotstreets_per_node&quot]
+    <a id="change">utils.log(&quotRebuilt projected graph&quot)</a>
+    return G_proj
+</code></pre><img src="5104493.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 15</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/gboeing/osmnx/commit/165918a4ef7c6394567d77d51ebc56ab140befe4#diff-ccdbe216793e9bfbeac9521807c7f6a82d0d2429bd1094577ea2354680f8c070L162' target='_blank'>Link</a></div><div id='project'> Project Name: gboeing/osmnx</div><div id='commit'> Commit Name: 165918a4ef7c6394567d77d51ebc56ab140befe4</div><div id='time'> Time: 2020-05-14</div><div id='author'> Author: boeing@usc.edu</div><div id='file'> File Name: osmnx/projection.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: project_graph</div><BR><BR><div id='link'><a href='https://github.com/gboeing/osmnx/commit/165918a4ef7c6394567d77d51ebc56ab140befe4#diff-4d1cb7a3b92a9723895aff9d49658c8afd9b1c8019b26085baa3d1fbba6537f3L294' target='_blank'>Link</a></div><div id='project'> Project Name: gboeing/osmnx</div><div id='commit'> Commit Name: 165918a4ef7c6394567d77d51ebc56ab140befe4</div><div id='time'> Time: 2020-05-14</div><div id='author'> Author: boeing@usc.edu</div><div id='file'> File Name: osmnx/stats.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: extended_stats</div><BR><BR><div id='link'><a href='https://github.com/gboeing/osmnx/commit/165918a4ef7c6394567d77d51ebc56ab140befe4#diff-25c3d861b2725a6fbabb6479bb832f8f08282bf34553160f15c0847494c68328L244' target='_blank'>Link</a></div><div id='project'> Project Name: gboeing/osmnx</div><div id='commit'> Commit Name: 165918a4ef7c6394567d77d51ebc56ab140befe4</div><div id='time'> Time: 2020-05-14</div><div id='author'> Author: boeing@usc.edu</div><div id='file'> File Name: osmnx/plot.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: save_and_show</div><BR><BR><div id='link'><a href='https://github.com/gboeing/osmnx/commit/165918a4ef7c6394567d77d51ebc56ab140befe4#diff-ccdbe216793e9bfbeac9521807c7f6a82d0d2429bd1094577ea2354680f8c070L162' target='_blank'>Link</a></div><div id='project'> Project Name: gboeing/osmnx</div><div id='commit'> Commit Name: 165918a4ef7c6394567d77d51ebc56ab140befe4</div><div id='time'> Time: 2020-05-14</div><div id='author'> Author: boeing@usc.edu</div><div id='file'> File Name: osmnx/projection.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: project_graph</div><BR>

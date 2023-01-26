@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  :param str|None fallback:
+  :rtype: str
+  
+  <a id="change">if os.path.exists("%s/PKG-INFO" % _my_dir):
+    if verbose:
+      print("Found existing src PKG-INFO.")
+    info = parse_pkg_info("%s/PKG-INFO" % _my_dir)
+    version = info["Version"]
+    if verbose:
+      print("Version via src PKG-INFO:", version)
+    return version
+  elif os.path.exists("%s/PKG-INFO" % _root_dir):
+    if verbose:
+      print("Found existing PKG-INFO.")
+    info = parse_pkg_info("%s/PKG-INFO" % _root_dir)
+    version = info["Version"]
+    if verbose:
+      print("Version via PKG-INFO:", version)
+    return version
+  elif os.path.exists("%s/.git" % _root_dir):
+    try:
+      version = git_head_version(git_dir=_root_dir)
+      if verbose:
+        print("Version via Git:", version)
+      return version
+    except Exception as exc:
+      if verbose:
+        print("Exception while getting Git version:", exc)
+        sys.excepthook(*sys.exc_info())
+      if not allow_current_time and not fallback:
+        raise  &#47&#47 no fallback
+
+ </a> if allow_current_time:
+    version = time.strftime("1.%Y%m%d.%H%M%S", time.gmtime())
+    if verbose:
+      print("Version via current time:", version)</code></pre><h3>After Change</h3><pre><code class='java'>
+  &#47&#47 Only check _setup_info_generated in the current dir, not in the root-dir,
+  &#47&#47 because we want to only use it if this was installed via a package.
+  &#47&#47 Otherwise we want the current Git version.
+  <a id="change">if os.path.exists("%s/_setup_info_generated.py" % _my_dir):
+    &#47&#47 noinspection PyUnresolvedReferences
+    from . import _setup_info_generated as info
+    if verbose:
+      print("Found _setup_info_generated.py, long version %r, version %r." % (info.long_version, info.version))
+    if long:
+      assert "+" in info.long_version
+      return info.long_version
+    return info.version
+
+ </a> if os.path.exists("%s/.git" % _root_dir):
+    try:
+      version = git_head_version(git_dir=_root_dir, long=long)
+      if verbose:</code></pre>

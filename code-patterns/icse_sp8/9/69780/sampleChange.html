@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+if __name__ == &quot__main__&quot:
+    &#47&#47rg = region_graph.RegionGraph(range(28 * 28))
+    rg = region_graph.RegionGraph(range(<a id="change">3 * 3</a>))
+    for _ in range(0, 2):
+        rg.random_split(2, 2)
+
+    args = RAT_SPN.SpnArgs()
+    args.normalized_sums = True
+    spn = RAT_SPN.RatSpn(10, region_graph=rg, name=&quotobj-spn&quot, args=args)
+    print(&quotnum_params&quot, spn.num_params())
+
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+    dummy_input = <a id="change">np</a>.random.normal(0.0, 1.2, [10, 9])
+    input_ph = tf.placeholder(tf.float32, [10, 9])
+    output_tensor = spn.forward(input_ph)
+    tf_output = sess.run(output_tensor, feed_dict={input_ph: dummy_input})
+
+    output_nodes = spn.get_simple_spn(sess)
+    simple_output = []
+    for node in output_nodes:
+        simple_output.append(inference.likelihood(node, dummy_input))
+    simple_output = np.stack(simple_output)
+    relative_error = <a id="change">simple_output / np.exp(tf_output)</a>
+    print(np.average(relative_error) - 1)
+
+
+    &#47&#47 (train_im, train_labels), _ = load_mnist()</code></pre><h3>After Change</h3><pre><code class='java'>
+    train_spn(spn, train_im, train_labels, num_epochs=3, sess=sess)
+
+    &#47&#47 dummy_input = np.random.normal(0.0, 1.2, [10, 9])
+    <a id="change">dummy_input = train_im[:5]</a>
+    input_ph = tf.placeholder(tf.float32, dummy_input.shape)
+    output_tensor = spn.forward(input_ph)
+    tf_output = sess.run(output_tensor, feed_dict={input_ph: dummy_input})
+
+    output_nodes = spn.get_simple_spn(sess)
+    simple_output = []
+    for node in output_nodes:
+        simple_output.append(inference.log_likelihood(node, dummy_input)[:, 0])
+    &#47&#47 graphics.plot_spn2(output_nodes[0])
+    &#47&#47 graphics.plot_spn_to_svg(output_nodes[0])
+    simple_output = np.stack(simple_output, axis=-1)
+    print(tf_output, simple_output)
+    simple_output = softmax(simple_output, axis=1)
+    <a id="change">tf_output = softmax(tf_output, axis=1) + 1e-100</a>
+    print(tf_output, simple_output)
+    relative_error = <a id="change">np.abs(simple_output / tf_output - 1)</a>
+    print(np.average(relative_error))
+
+
+</code></pre>

@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        outputs = output.transpose(0, 1).contiguous()
+        if state.previous_input is not None:
+            outputs = outputs[state.previous_input.size(0):]
+            <a id="change">attn = attn[:, state.previous_input.size(0):].squeeze()</a>
+            <a id="change">attn = torch.stack([attn])</a>
+        attns["std"] = attn
+        if self._copy:
+            attns["copy"] = attn
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        tgt_pad_mask = tgt_words.data.eq(padding_idx).unsqueeze(1) \
+            .expand(tgt_batch, tgt_len, tgt_len)
+
+        <a id="change">saved_inputs = []</a>
+        for i in range(self.num_layers):
+            prev_layer_input = None
+            <a id="change">if state.previous_input is not None:
+                prev_layer_input = state.previous_layer_inputs[i]
+           </a> output, attn, all_input \
+                = self.transformer_layers[i](output, src_memory_bank,
+                                             src_pad_mask, tgt_pad_mask,
+                                             previous_input=prev_layer_input)
+            <a id="change">saved_inputs.append(all_input)</a>
+
+        <a id="change">saved_inputs = torch.stack(saved_inputs)</a>
+        output = self.layer_norm(output)
+        
+        &#47&#47 Process the result and update the attentions.
+        outputs = output.transpose(0, 1).contiguous()</code></pre>

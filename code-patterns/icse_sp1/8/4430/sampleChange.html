@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    if int(msg_len) &gt; self.max_batch_size:
+                        seqs = jsonapi.loads(msg)
+                        &#47&#47 partition the large batch into small batches
+                        <a id="change">s_idx = 0</a>
+                        <a id="change">while s_idx &lt; int(msg_len):
+                            tmp = seqs[s_idx: (s_idx + self.max_batch_size)]
+                            if tmp:
+                                partial_job_id = job_id + b&quot@%d&quot % s_idx
+                                backend.send_multipart([partial_job_id, jsonapi.dumps(tmp)])
+                            s_idx += len(tmp)
+                   </a> else:
+                        backend.send_multipart([job_id, msg])
+            except ValueError:
+                self.logger.error(&quotreceived a wrongly-formatted request (expected 4 frames, got %d)&quot % len(request))</code></pre><h3>After Change</h3><pre><code class='java'>
+                    job_id = client + b&quot&#47&#47&quot + req_id
+                    if int(msg_len) &gt; self.max_batch_size:
+                        seqs = jsonapi.loads(msg)
+                        <a id="change">job_gen = ((job_id + b&quot@%d&quot % i, seqs[i:(i + self.max_batch_size)]) for i in
+                                   range(0, int(msg_len), self.max_batch_size))</a>
+                        for partial_job_id, job in job_gen:
+                            backend.send_multipart([partial_job_id, jsonapi.dumps(job)])
+                    else:
+                        backend.send_multipart([job_id, msg])</code></pre>

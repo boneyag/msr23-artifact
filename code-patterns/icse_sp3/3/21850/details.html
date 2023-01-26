@@ -1,0 +1,124 @@
+<html><h3>746653d9311be6c2b9841758990d3997d07dfa2a,umap/umap_.py,,nearest_neighbors,#Any#Any#Any#Any#Any#Any#Any#,191
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            &#47&#47 TODO: Hacked values for now
+            n_trees = 5 + int(round((X.shape[0]) ** 0.5 / 20.0))
+            n_iters = max(5, int(<a id="change">round(np.log2(X.shape[0]))</a>))
+            if verbose:
+                print(ts(), "Building RP forest with",  str(n_trees), "trees")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        n_trees = 5 + int(round((X.shape[0]) ** 0.5 / 20.0))
+        n_iters = max(5, int(round(np.log2(X.shape[0]))))
+
+        <a id="change">try:
+            &#47&#47 Use pynndescent, if installed (python 3 only)
+            from pynndescent import NNDescent
+            nnd = NNDescent(
+                X,
+                n_neighbors=n_neighbors,
+                metric=metric,
+                metric_kwds=metric_kwds,
+                random_state=random_state,
+                n_trees=n_trees,
+                n_iters=n_iters,
+                max_candidates=60,
+                verbose=verbose,
+            )
+            knn_indices, knn_dists = nnd._neighbor_graph
+            rp_forest = nnd._rp_forest
+        except ImportError:
+            &#47&#47 Otherwise fall back to nn descent in umap
+            if callable(metric):
+                distance_func = metric
+            elif metric in dist.named_distances:
+                distance_func = dist.named_distances[metric]
+            else:
+                raise ValueError("Metric is neither callable, " + "nor a recognised string")
+
+            if metric in (
+                "cosine",
+                "correlation",
+                "dice",
+                "jaccard",
+                "ll_dirichlet",
+                "hellinger",
+            ):
+                angular = True
+
+            rng_state = random_state.randint(INT32_MIN, INT32_MAX, 3).astype(np.int64)
+
+            if scipy.sparse.isspmatrix_csr(X):
+                if metric in sparse.sparse_named_distances:
+                    distance_func = sparse.sparse_named_distances[metric]
+                    if metric in sparse.sparse_need_n_features:
+                        metric_kwds["n_features"] = X.shape[1]
+                elif callable(metric):
+                    distance_func = metric
+                else:
+                    raise ValueError(
+                        "Metric {} not supported for sparse " + "data".format(metric)
+                    )
+                &#47&#47 metric_nn_descent = sparse.make_sparse_nn_descent(
+                &#47&#47     distance_func, tuple(metric_kwds.values())
+                &#47&#47 )
+
+                if verbose:
+                    print(ts(), "Building RP forest with",  str(n_trees), "trees")
+
+                rp_forest = make_forest(X, n_neighbors, n_trees, rng_state, angular)
+                leaf_array = rptree_leaf_array(rp_forest)
+
+                if verbose:
+                    print(ts(), "NN descent for", str(n_iters), "iterations")
+                knn_indices, knn_dists = sparse_nn.sparse_nn_descent(
+                    X.indices,
+                    X.indptr,
+                    X.data,
+                    X.shape[0],
+                    n_neighbors,
+                    rng_state,
+                    distance_func,
+                    tuple(metric_kwds.values()),
+                    max_candidates=60,
+                    rp_tree_init=True,
+                    leaf_array=leaf_array,
+                    n_iters=n_iters,
+                    verbose=verbose,
+                )
+            else:
+                &#47&#47 metric_nn_descent = make_nn_descent(
+                &#47&#47     distance_func, tuple(metric_kwds.values())
+                &#47&#47 )
+
+                if verbose:
+                    print(ts(), "Building RP forest with", str(n_trees), "trees")
+                rp_forest = make_forest(X, n_neighbors, n_trees, rng_state, angular)
+                leaf_array = rptree_leaf_array(rp_forest)
+                if verbose:
+                    print(ts(), "NN descent for", str(n_iters), "iterations")
+                knn_indices, knn_dists = nn_descent(
+                    X,
+                    n_neighbors,
+                    rng_state,
+                    distance_func,
+                    tuple(metric_kwds.values()),
+                    max_candidates=60,
+                    rp_tree_init=True,
+                    leaf_array=leaf_array,
+                    n_iters=n_iters,
+                    verbose=verbose,
+                )
+
+            if np.any(knn_indices &lt; 0):
+                warn(
+                    "Failed to correctly find n_neighbors for some samples."
+                    "Results may be less than ideal. Try re-running with"
+                    "different parameters."
+                )
+   </a> if verbose:
+        print(ts(), "Finished Nearest Neighbor Search")
+    return knn_indices, knn_dists, rp_forest
+</code></pre><img src="117264316.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/lmcinnes/umap/commit/746653d9311be6c2b9841758990d3997d07dfa2a#diff-76b9e4281d30d7034d783b95b0089ef171c63f765a9d6242e36a7957d2fbe437L246' target='_blank'>Link</a></div><div id='project'> Project Name: lmcinnes/umap</div><div id='commit'> Commit Name: 746653d9311be6c2b9841758990d3997d07dfa2a</div><div id='time'> Time: 2019-08-15</div><div id='author'> Author: tom.e.white@gmail.com</div><div id='file'> File Name: umap/umap_.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: nearest_neighbors</div><BR><BR><div id='link'><a href='https://github.com/dPys/PyNets/commit/449ce796e6f506a28075f16099c986e298141569#diff-2f244ffbc42c88ec77d89af9f756e8a02e5650dfd1ed9c4c0de95cf0988c4ab1L264' target='_blank'>Link</a></div><div id='project'> Project Name: dPys/PyNets</div><div id='commit'> Commit Name: 449ce796e6f506a28075f16099c986e298141569</div><div id='time'> Time: 2017-11-12</div><div id='author'> Author: dpisner@utexas.edu</div><div id='file'> File Name: pynets/nodemaker.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_names_and_coords_of_parcels</div><BR><BR><div id='link'><a href='https://github.com/home-assistant/home-assistant/commit/6a665ffb84a4da39b3eb6e3ec0f107f910ead9df#diff-e7d73682229b12b0339375400bc9c96c22d71007838fec67d7c028389cc30dd9L24' target='_blank'>Link</a></div><div id='project'> Project Name: home-assistant/home-assistant</div><div id='commit'> Commit Name: 6a665ffb84a4da39b3eb6e3ec0f107f910ead9df</div><div id='time'> Time: 2018-02-26</div><div id='author'> Author: 30130371+cdce8p@users.noreply.github.com</div><div id='file'> File Name: homeassistant/components/homekit/sensors.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: calc_temperature</div><BR>

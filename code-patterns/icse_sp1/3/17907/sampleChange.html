@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    with fixed lengthscale is equivalent with normal GP regression.
+    
+    def setUp(self):
+        <a id="change">tf.reset_default_graph()</a>
+        rng = np.random.RandomState(0)
+        X = [rng.rand(10, 2)*10, rng.rand(20, 2)*10]
+        Y = [np.sin(x) + 0.9 * np.cos(x*1.6) + rng.randn(*x.shape) * 0.8 for x in X]
+        label = [np.zeros((10, 1)), np.ones((20, 1))]</code></pre><h3>After Change</h3><pre><code class='java'>
+    with fixed lengthscale is equivalent with normal GP regression.
+    
+    def setUp(self):
+        <a id="change">with self.test_session():
+            rng = np.random.RandomState(0)
+            X = [rng.rand(10, 2)*10, rng.rand(20, 2)*10]
+            Y = [np.sin(x) + 0.9 * np.cos(x*1.6) + rng.randn(*x.shape) * 0.8 for x in X]
+            label = [np.zeros((10, 1)), np.ones((20, 1))]
+            perm = list(range(30))
+            rng.shuffle(perm)
+            self.Xtest = rng.rand(10, 2)*10
+
+            X_augumented = np.hstack([np.concatenate(X), np.concatenate(label)])
+            Y_augumented = np.hstack([np.concatenate(Y), np.concatenate(label)])
+
+            &#47&#47 two independent vgps for two sets of data
+            k0 = GPflow.kernels.RBF(2)
+            k0.lengthscales.fixed = True
+            self.vgp0 = GPflow.vgp.VGP(X[0], Y[0], kern=k0,
+                                       mean_function=GPflow.mean_functions.Constant(),
+                                       likelihood=GPflow.likelihoods.Gaussian())
+            k1 = GPflow.kernels.RBF(2)
+            k1.lengthscales.fixed = True
+            self.vgp1 = GPflow.vgp.VGP(X[1], Y[1], kern=k1,
+                                       mean_function=GPflow.mean_functions.Constant(),
+                                       likelihood=GPflow.likelihoods.Gaussian())
+            &#47&#47 coregionalized gpr
+            lik = GPflow.likelihoods.SwitchedLikelihood(
+                [GPflow.likelihoods.Gaussian(), GPflow.likelihoods.Gaussian()])
+
+            kc = GPflow.kernels.RBF(2)
+            kc.fixed = True  &#47&#47 lengthscale and variance is fixed.
+            coreg = GPflow.kernels.Coregion(1, output_dim=2, rank=1, active_dims=[2])
+            coreg.W.fixed = True
+
+            mean_c = GPflow.mean_functions.SwitchedMeanFunction(
+                [GPflow.mean_functions.Constant(), GPflow.mean_functions.Constant()])
+            self.cvgp = GPflow.vgp.VGP(X_augumented, Y_augumented,
+                                       kern=kc*coreg,
+                                       mean_function=mean_c,
+                                       likelihood=lik,
+                                       num_latent=2)
+
+            self.vgp0.optimize(disp=False, maxiter=300)
+            self.vgp1.optimize(disp=False, maxiter=300)
+            self.cvgp.optimize(disp=False, maxiter=300)
+
+   </a> def test_all(self):
+        with self.test_session():
+            &#47&#47 check variance
+            self.assertTrue(np.allclose(</code></pre>

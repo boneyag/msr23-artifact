@@ -1,0 +1,33 @@
+<html><h3>0ac2b33e8c63304a50db7d2b484368299706b58b,slm_lab/agent/net/recurrent.py,RecurrentNet,training_step,#RecurrentNet#Any#Any#Any#Any#Any#,164
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.clip_grad:
+            logger.debug(f&quotClipping gradient: {self.clip_grad_val}&quot)
+            torch.nn.utils.clip_grad_norm_(self.parameters(), self.clip_grad_val)
+        if <a id="change">global_net is None:
+</a>            <a id="change">self.optim.step()</a>
+        else:  &#47&#47 distributed training with global net
+            net_util.push_global_grad(self, global_net)
+            self.optim.step()
+            net_util.pull_global_param(self, global_net)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def training_step(self, x=None, y=None, loss=None, retain_graph=False, lr_t=None):
+        &quot&quot&quotTakes a single training step: one forward and one backwards pass&quot&quot&quot
+        <a id="change">if hasattr(self, &quotmodel_tails&quot) and x is not None:
+            raise ValueError(&quotLoss computation from x,y not supported for multitails&quot)
+       </a> <a id="change">self.lr_scheduler.step(epoch=lr_t)</a>
+        self.train()
+        self.optim.zero_grad()
+        if loss is None:
+            out = self(x)
+            loss = self.loss_fn(out, y)
+        assert not torch.isnan(loss).any(), loss
+        if net_util.to_assert_trained():
+            assert_trained = net_util.gen_assert_trained(self.rnn_model)
+        loss.backward(retain_graph=retain_graph)
+        if <a id="change">self.clip_grad_val is not No</a>ne:
+            nn.utils.clip_grad_norm_(self.parameters(), self.clip_grad_val)
+        self.optim.step()
+        if net_util.to_assert_trained():</code></pre><img src="283927989.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/kengz/SLM-Lab/commit/0ac2b33e8c63304a50db7d2b484368299706b58b#diff-54189061d60564151db3a95e988fca02848fed6bf25221c04ab5283d4d20e69fL164' target='_blank'>Link</a></div><div id='project'> Project Name: kengz/SLM-Lab</div><div id='commit'> Commit Name: 0ac2b33e8c63304a50db7d2b484368299706b58b</div><div id='time'> Time: 2018-11-14</div><div id='author'> Author: kengzwl@gmail.com</div><div id='file'> File Name: slm_lab/agent/net/recurrent.py</div><div id='class'> Class Name: RecurrentNet</div><div id='method'> Method Name: training_step</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/415be78cc0d1275a29d0ceda550d0d7a7a5224ea#diff-bea13076b845a3015641b50ff2b30aeaaba3a9def5305256f91628777d494e5dL120' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 415be78cc0d1275a29d0ceda550d0d7a7a5224ea</div><div id='time'> Time: 2020-09-08</div><div id='author'> Author: amogkam@users.noreply.github.com</div><div id='file'> File Name: python/ray/util/sgd/torch/training_operator.py</div><div id='class'> Class Name: TrainingOperator</div><div id='method'> Method Name: train_epoch</div><BR><BR><div id='link'><a href='https://github.com/kengz/SLM-Lab/commit/0ac2b33e8c63304a50db7d2b484368299706b58b#diff-320990264044727ba6864580bc7379bcde13a7ba9d68ccf57468857ee2a08076L130' target='_blank'>Link</a></div><div id='project'> Project Name: kengz/SLM-Lab</div><div id='commit'> Commit Name: 0ac2b33e8c63304a50db7d2b484368299706b58b</div><div id='time'> Time: 2018-11-14</div><div id='author'> Author: kengzwl@gmail.com</div><div id='file'> File Name: slm_lab/agent/net/mlp.py</div><div id='class'> Class Name: MLPNet</div><div id='method'> Method Name: training_step</div><BR>

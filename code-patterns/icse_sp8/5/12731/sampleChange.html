@@ -1,0 +1,80 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    optimizer = init_optimizer(model.parameters(), **optimizer_kwargs(args))
+    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=args.stepsize, gamma=args.gamma)
+
+    <a id="change">if args.fixbase_epoch &gt; 0:
+        if hasattr(model, &quotclassifier&quot) and isinstance(model.classifier, nn.Module):
+            optimizer_tmp = init_optimizer(model.classifier.parameters(), **optimizer_kwargs(args))
+        else:
+            print("Warn: model has no attribute &quotclassifier&quot and fixbase_epoch is reset to 0")
+            args.fixbase_epoch = 0
+        raise NotImplementedError
+
+   </a> if args.load_weights and check_isfile(args.load_weights):
+        &#47&#47 load pretrained weights but ignore layers that don&quott match in size
+        checkpoint = torch.load(args.load_weights)
+        pretrain_dict = checkpoint[&quotstate_dict&quot]
+        model_dict = model.state_dict()
+        pretrain_dict = {k: v for k, v in pretrain_dict.items() if k in model_dict and model_dict[k].size() == v.size()}
+        model_dict.update(pretrain_dict)
+        model.load_state_dict(model_dict)
+        print("Loaded pretrained weights from &quot{}&quot".format(args.load_weights))
+
+    if args.resume and check_isfile(args.resume):
+        checkpoint = torch.load(args.resume)
+        model.load_state_dict(checkpoint[&quotstate_dict&quot])
+        args.start_epoch = checkpoint[&quotepoch&quot] + 1
+        print("Loaded checkpoint from &quot{}&quot".format(args.resume))
+        print("- start_epoch: {}\n- rank1: {}".format(args.start_epoch, checkpoint[&quotrank1&quot]))
+
+    if use_gpu:
+        model = nn.DataParallel(model).cuda()
+
+    if args.evaluate:
+        print("Evaluate only")
+
+        for name in args.target_names:
+            print("Evaluating {} ...".format(name))
+            queryloader = testloader_dict[name][&quotquery&quot]
+            galleryloader = testloader_dict[name][&quotgallery&quot]
+            distmat = test(model, queryloader, galleryloader, args.pool_tracklet_features, use_gpu, return_distmat=True)
+        
+            if args.visualize_ranks:
+                visualize_ranked_results(
+                    distmat, dm.return_testdataset_by_name(name),
+                    save_dir=osp.join(args.save_dir, &quotranked_results&quot, name),
+                    topk=20
+                )
+        return
+
+    start_time = time.time()
+    ranklogger = RankLogger(args.source_names, args.target_names)
+    train_time = 0
+    print("==&gt; Start training")
+
+    if args.fixbase_epoch &gt; 0:
+        print("Train classifier for {} epochs while keeping base network frozen".format(args.fixbase_epoch))
+
+        for epoch in range(args.fixbase_epoch):
+            start_train_time = time.time()
+            train(epoch, model, criterion, optimizer_tmp, trainloader, use_gpu, freeze_bn=True)
+            train_time += round(time.time() - start_train_time)
+
+        del optimizer_tmp
+        print("Now open all layers for training")
+        <a id="change">raise NotImplementedError</a>
+
+    for epoch in range(args.start_epoch, args.max_epoch):
+        start_train_time = time.time()
+        train(epoch, model, criterion, optimizer, trainloader, use_gpu)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        for epoch in range(args.fixbase_epoch):
+            start_train_time = time.time()
+            <a id="change">train(epoch, model, criterion, optimizer, trainloader, use_gpu, fixbase=True)</a>
+            train_time += round(time.time() - start_train_time)
+
+        print("Done. All layers are open to train for {} epochs".format(args.max_epoch))
+        optimizer.load_state_dict(initial_optim_state)</code></pre>

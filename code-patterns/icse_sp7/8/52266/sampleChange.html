@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    else:
+        clusters = data.c[0].values
+
+    <a id="change">clusters = clusters.T</a>
+    retain = mod.not_null
+    clusters = clusters.ravel()[retain, None]
+    <a id="change">clusters = pd.DataFrame(clusters, mod.dependent.dataframe.index, columns=[&quotids&quot])</a>
+    clusters[&quotentity_clusters&quot] = entity_clusters
+
+    res = mod.fit(cov_type=&quotclustered&quot, clusters=clusters)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_two_way_clustering(data):
+    mod = PooledOLS(data.y, data.x)
+
+    <a id="change">y = PanelData(data.y)</a>
+    entity_clusters = pd.DataFrame(y.entity_ids, index=y.index)
+    <a id="change">vc1 = PanelData(data.vc1)</a>
+    clusters = vc1.copy()
+    <a id="change">clusters.dataframe[&quotvar.cluster.entity&quot]</a> = entity_clusters
+    <a id="change">clusters._frame = clusters._frame.astype(np.int64)</a>
+    res = mod.fit(cov_type=&quotclustered&quot, clusters=clusters)
+
+    y = mod.dependent.dataframe.copy()
+    x = mod.exog.dataframe.copy()
+    y.index = np.arange(len(y))
+    x.index = y.index
+    <a id="change">clusters = mod.reformat_clusters(clusters)</a>
+
+    ols_mod = IV2SLS(y, x, None, None)
+    ols_res = ols_mod.fit(&quotclustered&quot, clusters=clusters.dataframe)
+    assert_results_equal(res, ols_res)</code></pre>

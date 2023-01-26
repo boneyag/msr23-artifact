@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    output_values = input_values | &quotMapInstances&quot &gt;&gt; beam.ParDo(
+        _RunMetaGraphDoFn(input_schema, output_schema),
+        transform_fn_def=beam.pvalue.AsSingleton(transform_fn))
+    <a id="change">return (output_values, output_schema)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if self._exclude_outputs is not None:
+      schema = output_metadata.schema
+      output_metadata = dataset_metadata.DatasetMetadata(
+          schema=<a id="change">dataset_schema.Schema(
+              {key: column_schema
+               for key, column_schema in schema.column_schemas.items()
+               if key not in self._exclude_outputs})</a>)
+
+    output_instances = (
+        input_values
+        | &quotBatchInstances&quot &gt;&gt; beam.ParDo(_BatchDoFn())
+        | &quotTransformBatches&quot &gt;&gt; beam.ParDo(
+            _RunMetaGraphDoFn(input_metadata.schema,
+                              output_metadata.schema,
+                              self._exclude_outputs),
+            saved_model_dir=beam.pvalue.AsSingleton(transform_fn))
+        | &quotUnbatch&quot &gt;&gt; beam.FlatMap(lambda batch: batch))
+    <a id="change">return (output_instances, output_metadata)</a>
+</code></pre>

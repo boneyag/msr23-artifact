@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for b in range(batch_size):
+            value = samples[b].value[0]
+            min = samples[b].distribution.prior_min
+            l -= <a id="change">log_weights[b, int(value) - min]</a> &#47&#47 Should we average this over dimensions? See http://pytorch.org/docs/nn.html&#47&#47torch.nn.KLDivLoss
+        return l
+
+class ProposalNormal(nn.Module):</code></pre><h3>After Change</h3><pre><code class='java'>
+        log_weights = torch.log(proposal_output + util.epsilon)
+        l = 0
+        for b in range(batch_size):
+            value = <a id="change">Variable(samples[b].value, requires_grad=False)</a> &#47&#47 value is one-hot
+            l -= <a id="change">torch.sum(log_weights[b] * value)</a> &#47&#47 Should we average this over dimensions? See http://pytorch.org/docs/nn.html&#47&#47torch.nn.KLDivLoss
+        return l
+
+class ProposalNormal(nn.Module):</code></pre>

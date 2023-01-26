@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            [3, 6, 6, 9, 9],  &#47&#47 Inside matD
+        ])
+        &#47&#47 Construct the pretrained map with four matrix.
+        matA = <a id="change">np.ones((5, 5))</a>
+        matB = np.ones((5, 5)) + 1
+        matC = np.ones(<a id="change">(5, 5)</a>) + 2
+        matD = np.ones((5, 5)) + 3
+        pretrained = np.bmat(<a id="change">[[matA, matB], [matC, matD]]</a>)
+        &#47&#47 Expand the dimensions to be compatible with ROIPoolingLayer.
+        pretrained = np.expand_dims(pretrained, axis=0)
+        <a id="change">pretrained = np.expand_dims(pretrained, axis=3)</a>
+
+        results = self._run_roi_pooling(roi_proposals, pretrained, self.config)
+        print(results[&quotcrops&quot].shape)
+        print(results[&quotroi_pool&quot][0])</code></pre><h3>After Change</h3><pre><code class='java'>
+            [2, 1, 6, 4, 9],  &#47&#47 Inside mat_C
+            [3, 6, 6, 9, 9],  &#47&#47 Inside mat_D
+        ])
+        <a id="change">pretrained = self.pretrained</a>
+
+        results = self._run_roi_pooling(roi_proposals, pretrained, self.config)
+
+        &#47&#47 Check that crops has the correct shape. This is (4, 4, 4, 1)
+        &#47&#47 because we have 4 proposals, &quotpool size&quot = 2x2 then the
+        &#47&#47 tf.image.crop_and_resize function duplicates that size.
+        self.assertEqual(
+            results[&quotcrops&quot].shape,
+            (4, 4, 4, 1)
+        )
+
+        &#47&#47 Check that roi_pool has the correct shape. This is (4, 2, 2, 1)
+        &#47&#47 because we have 4 proposals, &quotpool size&quot = 2x2.
+        self.assertEqual(
+            results[&quotroi_pool&quot].shape,
+            (4, 2, 2, 1)
+        )
+
+        results[&quotroi_pool&quot] = np.squeeze(<a id="change">results[&quotroi_pool&quot]</a>, axis=3)
+        &#47&#47 Check that max polling returns only &quotmultiplier_a&quot
+        self.assertAllEqual(
+            results[&quotroi_pool&quot][0],</code></pre>

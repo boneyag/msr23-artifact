@@ -1,0 +1,95 @@
+<html><h3>9f7bdb29dfdc554632ba447fbedf648415d927f0,src/python/pants/backend/python/tasks/python_eval.py,PythonEval,_compile_target,#PythonEval#Any#,82
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      else:
+        pexinfo, platforms = None, None
+
+      with <a id="change">self.temporary_pex_builder(interpreter=interpreter, pex_info=pexinfo)</a> as builder:
+        with self.context.new_workunit(name=&quotresolve&quot):
+          <a id="change">chroot = PythonChroot(
+              context=self.context,
+              targets=[target],
+              builder=builder,
+              platforms=platforms,
+              interpreter=interpreter)</a>
+
+          <a id="change">chroot.dump()</a>
+
+        with temporary_file() as imports_file:
+          generator = Generator(pkgutil.get_data(__name__, self._EVAL_TEMPLATE_PATH),
+                                chroot=chroot.path(),</code></pre><h3>After Change</h3><pre><code class='java'>
+
+      return compiled
+
+  def _compile_target(<a id="change">self</a>, target):
+    &#47&#47 "Compiles" a target by forming an isolated chroot of its sources and transitive deps and then
+    &#47&#47 attempting to import each of the target&quots sources in the case of a python library or else the
+    &#47&#47 entry point in the case of a python binary.
+    &#47&#47
+    &#47&#47 For a library with sources lib/core.py and lib/util.py a "compiler" main file would look like:
+    &#47&#47
+    &#47&#47   if __name__ == &quot__main__&quot:
+    &#47&#47     import lib.core
+    &#47&#47     import lib.util
+    &#47&#47
+    &#47&#47 For a binary with entry point lib.bin:main the "compiler" main file would look like:
+    &#47&#47
+    &#47&#47   if __name__ == &quot__main__&quot:
+    &#47&#47     from lib.bin import main
+    &#47&#47
+    &#47&#47 In either case the main file is executed within the target chroot to reveal missing BUILD
+    &#47&#47 dependencies.
+
+    with self.context.new_workunit(name=target.address.spec):
+      modules = []
+      if isinstance(target, PythonBinary):
+        source = &quotentry_point {}&quot.format(target.entry_point)
+        components = target.entry_point.rsplit(&quot:&quot, 1)
+        module = components[0]
+        if len(components) == 2:
+          function = components[1]
+          data = TemplateData(source=source,
+                              import_statement=&quotfrom {} import {}&quot.format(module, function))
+        else:
+          data = TemplateData(source=source, import_statement=&quotimport {}&quot.format(module))
+        modules.append(data)
+      else:
+        for path in target.sources_relative_to_source_root():
+          if path.endswith(&quot.py&quot):
+            if os.path.basename(path) == &quot__init__.py&quot:
+              module_path = os.path.dirname(path)
+            else:
+              module_path, _ = os.path.splitext(path)
+            source = &quotfile {}&quot.format(os.path.join(target.target_base, path))
+            module = module_path.replace(os.path.sep, &quot.&quot)
+            data = TemplateData(source=source, import_statement=&quotimport {}&quot.format(module))
+            modules.append(data)
+
+      if not modules:
+        &#47&#47 Nothing to eval, so a trivial compile success.
+        return 0
+
+      interpreter = self.select_interpreter_for_targets([target])
+
+      if isinstance(target, PythonBinary):
+        pexinfo, platforms = target.pexinfo, target.platforms
+      else:
+        pexinfo, platforms = None, None
+
+      with temporary_file() as imports_file:
+        def pre_freeze(chroot):
+          generator = Generator(pkgutil.get_data(__name__, self._EVAL_TEMPLATE_PATH),
+                                chroot=chroot.path(),
+                                modules=modules)
+          generator.write(imports_file)
+          imports_file.close()
+          chroot.builder.set_executable(imports_file.name, &quot__pants_python_eval__.py&quot)
+
+        with <a id="change">self.temporary_chroot(interpreter=interpreter, pex_info=pexinfo,
+                                   targets=[target], platforms=platforms,
+                                   pre_freeze=pre_freeze)</a> as chroot:
+          pex = PEX(chroot.builder.path(), interpreter=interpreter)
+          with self.context.new_workunit(name=&quoteval&quot,
+                                         labels=[WorkUnit.COMPILER, WorkUnit.RUN, WorkUnit.TOOL],</code></pre><img src="194040310.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/9f7bdb29dfdc554632ba447fbedf648415d927f0#diff-e7035a380c716b128fcffa92df6beb7be18010b3f318380c207b43a0362c37faL81' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 9f7bdb29dfdc554632ba447fbedf648415d927f0</div><div id='time'> Time: 2015-03-23</div><div id='author'> Author: benjyw@gmail.com</div><div id='file'> File Name: src/python/pants/backend/python/tasks/python_eval.py</div><div id='class'> Class Name: PythonEval</div><div id='method'> Method Name: _compile_target</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/9f7bdb29dfdc554632ba447fbedf648415d927f0#diff-9588c2658df2cc7abf6fe372580dcffd88a333f8d4f6429fba81a96cc133f72eL33' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 9f7bdb29dfdc554632ba447fbedf648415d927f0</div><div id='time'> Time: 2015-03-23</div><div id='author'> Author: benjyw@gmail.com</div><div id='file'> File Name: src/python/pants/backend/python/tasks/python_run.py</div><div id='class'> Class Name: PythonRun</div><div id='method'> Method Name: execute</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/9f7bdb29dfdc554632ba447fbedf648415d927f0#diff-1d615d192167440804edcf78b62c18e96a6963b27b9554847ed342ee82b1f10fL41' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 9f7bdb29dfdc554632ba447fbedf648415d927f0</div><div id='time'> Time: 2015-03-23</div><div id='author'> Author: benjyw@gmail.com</div><div id='file'> File Name: src/python/pants/backend/python/tasks/python_binary_create.py</div><div id='class'> Class Name: PythonBinaryCreate</div><div id='method'> Method Name: create_binary</div><BR>

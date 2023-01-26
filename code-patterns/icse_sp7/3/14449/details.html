@@ -1,0 +1,39 @@
+<html><h3>303217b34070dc47a86622b62764098999b0d7f5,gpytorch/lazy/lazy_tensor.py,LazyTensor,_quad_form_derivative,#LazyTensor#Any#Any#,378
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        toggled = [False] * len(args)
+
+        for i, arg in enumerate(args):
+            <a id="change">if not arg.requires_grad:
+                arg.requires_grad = True
+                toggled[i] = True
+
+       </a> loss = (left_vecs * self._matmul(right_vecs)).sum()
+        loss.requires_grad_(True)
+        grads = torch.autograd.grad(loss, args, allow_unused=True)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        from collections import deque
+
+        args = tuple(self.representation())
+        <a id="change">args_with_grads = tuple(arg for arg in args if arg.requires_grad)</a>
+
+        &#47&#47 Easy case: if we don&quott require any gradients, then just return!
+        if not len(args_with_grads):
+            return tuple(None for _ in args)
+
+        &#47&#47 Normal case: we&quotll use the autograd to get us a derivative
+        with torch.autograd.enable_grad():
+            loss = (left_vecs * self._matmul(right_vecs)).sum()
+            loss.requires_grad_(True)
+            actual_grads = deque(torch.autograd.grad(loss, args_with_grads, allow_unused=True))
+
+        &#47&#47 Now make sure that the object we return has one entry for every item in args
+        grads = []
+        for arg in args:
+            if arg.requires_grad:
+                grads.append(<a id="change">actual_grads.popleft()</a>)
+            else:
+                grads.append(None)
+</code></pre><img src="85834655.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/303217b34070dc47a86622b62764098999b0d7f5#diff-0a5f1b492443f1d45fea644563c842fd31a4a480824e8ed0c9f9ce825fe7f039L392' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 303217b34070dc47a86622b62764098999b0d7f5</div><div id='time'> Time: 2018-12-12</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/lazy_tensor.py</div><div id='class'> Class Name: LazyTensor</div><div id='method'> Method Name: _quad_form_derivative</div><BR><BR><div id='link'><a href='https://github.com/deepgram/kur/commit/b2d8ee42f12c7d033bdeb929c9f38b3c90e48582#diff-90bb9bc6f7311c43291bb9c8a1062e81fe7a59cc806d38a573bb96fcfa5f0d99L650' target='_blank'>Link</a></div><div id='project'> Project Name: deepgram/kur</div><div id='commit'> Commit Name: b2d8ee42f12c7d033bdeb929c9f38b3c90e48582</div><div id='time'> Time: 2017-03-23</div><div id='author'> Author: ajsyp@syptech.net</div><div id='file'> File Name: kur/kurfile.py</div><div id='class'> Class Name: Kurfile</div><div id='method'> Method Name: _parse_model</div><BR><BR><div id='link'><a href='https://github.com/Theano/Theano/commit/996d737eaad2a85cda13954efa5b066ade1e678d#diff-8ac14b8e41f57c0c243bad301693e91658c66dc27c641322d035249e89d87265L1343' target='_blank'>Link</a></div><div id='project'> Project Name: Theano/Theano</div><div id='commit'> Commit Name: 996d737eaad2a85cda13954efa5b066ade1e678d</div><div id='time'> Time: 2017-02-09</div><div id='author'> Author: nouiz@nouiz.org</div><div id='file'> File Name: theano/scan_module/scan_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: forced_replace</div><BR>

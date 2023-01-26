@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 use the old version of the op
+    if ((dilation == [1] * spatial_size) and (not ceil_mode)) or \
+       (pooling_type[:3] != "MAX"):
+      return <a id="change">cls.pool(node, input_dict, pool_func, pooling_type, strict)</a>
+
+    if x_rank != 4:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    need_trans = storage_format.startswith("NC")
+    if need_trans:
+      compute_format = <a id="change">"N" + storage_format[2:] + "C"</a>
+      x = tf.transpose(x, perm=get_perm_from_formats(storage_format,
+                                                     compute_format))
+
+    dp = DilatedPooling(input=x, kernel_shape=kernel_shape, strides=strides,
+                        dilations=dilations, padding=pads, ceil_mode=ceil_mode)
+
+    result = []
+    if pooling_type == "MAX":
+      <a id="change">pooled = dp.dilated_maxpool()</a>
+
+      if need_trans:
+        pooled = tf.transpose(
+            pooled, perm=get_perm_from_formats(compute_format, storage_format))</code></pre>

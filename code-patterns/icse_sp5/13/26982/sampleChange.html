@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            logger.info(&quotUsing manually specified state updater: %r&quot % method)
+            return method
+        
+        <a id="change">if method is not None:
+            method = method.lower()  &#47&#47 normalize name to lower case
+            stateupdater = None
+            for name, registered_stateupdater in StateUpdateMethod.stateupdaters:
+                if name == method:
+                    stateupdater = registered_stateupdater
+                    break
+            if stateupdater is None:
+                raise ValueError(&quotNo state updater with the name "%s" &quot
+                                 &quotis known&quot % method)
+            if not stateupdater.can_integrate(equations, variables):
+                raise ValueError((&quotThe state updater "%s" cannot be used for &quot
+                                  &quotthe given equations&quot % method))
+            return stateupdater
+
+        &#47&#47 determine the best suitable state updater
+       </a> best_stateupdater = None
+        for name, stateupdater in StateUpdateMethod.stateupdaters:
+            try:
+                if stateupdater.can_integrate(equations, variables):
+                    <a id="change">best_stateupdater = (name, stateupdater)</a>
+                    break
+            except KeyError:
+                logger.debug((&quotIt could not be determined whether state &quot
+                             &quotupdater "%s" is able to integrate the equations, &quot</code></pre><h3>After Change</h3><pre><code class='java'>
+            return stateupdater
+        elif isinstance(method, collections.Iterable):
+            for name in method:
+                <a id="change">if name not in StateUpdateMethod.stateupdaters:
+                    logger.warn(&quotNo state updater with the name "%s" &quot
+                                &quotis known&quot % name, &quotunkown_stateupdater&quot)
+                else:
+                    stateupdater = StateUpdateMethod.stateupdaters[name]
+                    try:
+                        if stateupdater.can_integrate(equations, variables):
+                            logger.info(&quotUsing stateupdater "%s"&quot % name)
+                            return stateupdater
+                    except KeyError:
+                        logger.debug((&quotIt could not be determined whether state &quot
+                                      &quotupdater "%s" is able to integrate the equations, &quot
+                                      &quotit appears the namespace is not yet complete.&quot
+                                      % name))
+
+           </a> raise ValueError((&quotNo stateupdater that is suitable for the given &quot
+                              &quotequations has been found&quot))
+</code></pre>

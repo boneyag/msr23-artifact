@@ -1,0 +1,30 @@
+<html><h3>b4d57c6d49682094efe22fbe2c03fa2c4973869f,fairseq/trainer.py,Trainer,train_step,#Trainer#Any#Any#,496
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        overflow = False
+        try:
+            <a id="change">if self.tpu and self.data_parallel_world_size &gt; 1:
+                import torch_xla.core.xla_model as xm
+
+                gradients = xm._fetch_gradients(self.optimizer.optimizer)
+                xm.all_reduce(
+                    "sum", gradients, scale=1.0 / self.data_parallel_world_size
+                )
+
+           </a> with torch.autograd.profiler.record_function("multiply-grads"):
+                &#47&#47 multiply gradients by (&#47&#47 GPUs / sample_size) since DDP
+                &#47&#47 already normalizes by the number of GPUs. Thus we get
+                &#47&#47 (sum_of_gradients / sample_size).</code></pre><h3>After Change</h3><pre><code class='java'>
+        try:
+            with torch.autograd.profiler.record_function("reduce-grads"):
+                self.optimizer.all_reduce_grads(self.model)
+                <a id="change">if utils.has_parameters(self.criterion):
+                    self.optimizer.all_reduce_grads(self.criterion)
+
+           </a> with torch.autograd.profiler.record_function("multiply-grads"):
+                &#47&#47 multiply gradients by (data_parallel_size / sample_size) since
+                &#47&#47 DDP already normalizes by the number of data parallel workers.
+                &#47&#47 Thus we get (sum_of_gradients / sample_size) at the end.</code></pre><img src="251543262.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/b4d57c6d49682094efe22fbe2c03fa2c4973869f#diff-1d9c528283eebce84124f45bd2f04e9c1b50dc4d3f63e867776eb89dc55dd95fL496' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: b4d57c6d49682094efe22fbe2c03fa2c4973869f</div><div id='time'> Time: 2020-11-05</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/trainer.py</div><div id='class'> Class Name: Trainer</div><div id='method'> Method Name: train_step</div><BR><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/87a61ad92a9e0129e5c81c242f0ea96d77e6b0af#diff-c71b8de1b2186fa412b72d67cca4d84f53802947496fe96281ac06a67951beb9L71' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: 87a61ad92a9e0129e5c81c242f0ea96d77e6b0af</div><div id='time'> Time: 2020-08-19</div><div id='author'> Author: akshita23bhagia@gmail.com</div><div id='file'> File Name: allennlp/training/metrics/pearson_correlation.py</div><div id='class'> Class Name: PearsonCorrelation</div><div id='method'> Method Name: get_metric</div><BR><BR><div id='link'><a href='https://github.com/open-mmlab/mmcv/commit/50a33950a4b23c614152696e6f979ae978233432#diff-1bb879910a7f917665bacde722d4fccc82801566ad98e7aca95a152f9d7e0f09L21' target='_blank'>Link</a></div><div id='project'> Project Name: open-mmlab/mmcv</div><div id='commit'> Commit Name: 50a33950a4b23c614152696e6f979ae978233432</div><div id='time'> Time: 2020-10-14</div><div id='author'> Author: swanxinjiang@gmail.com</div><div id='file'> File Name: mmcv/runner/hooks/sync_buffer.py</div><div id='class'> Class Name: SyncBuffersHook</div><div id='method'> Method Name: after_epoch</div><BR>

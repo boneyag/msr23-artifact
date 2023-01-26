@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    model.train_on_batch(X_train[:32], y_train[:32])
+
+    gen_loss = model.evaluate_generator(<a id="change">data_generator(True)</a>, 256)
+    loss = model.evaluate(X_test, y_test)
+
+    model.predict(X_test, verbose=0)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    loss = model.evaluate(X_test, y_test)
+
+    prediction = model.predict_generator(<a id="change">data_generator(X_test, y_test)</a>, X_test.shape[0])
+    gen_loss = model.evaluate_generator(data_generator(X_test, y_test, 50), X_test.shape[0])
+    <a id="change">pred_loss = K.eval(K.mean(objectives.get(model.loss)(K.variable(y_test), K.variable(prediction))))</a>
+
+    assert(np.isclose(pred_loss, loss))
+    assert(np.isclose(gen_loss, loss))
+</code></pre>

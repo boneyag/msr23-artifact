@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        mu, var = self.predict_f(Xnew, full_cov=full_cov)  &#47&#47 [N, P], [P, N, N]
+        num_latent_gps = var.shape[0]
+        num_elems = <a id="change">tf.shape(var)[1]</a>
+        var_jitter = ops.add_to_diagonal(var, default_jitter())
+        L = tf.linalg.cholesky(var_jitter)  &#47&#47 [P, N, N]
+        V = <a id="change">tf</a>.random.normal([num_latent_gps, num_elems, num_samples], dtype=mu.dtype)  &#47&#47 [P, N, S]
+        LV = L @ V  &#47&#47 [P, N, S]
+        mu_t = tf.linalg.adjoint(mu)  &#47&#47 [P, N]
+        return tf.transpose(mu_t[..., np.newaxis] + LV)  &#47&#47 [S, N, P]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        Currently, the method does not support `full_output_cov=True` and `full_cov=True`.
+        
+        <a id="change">if full_cov and full_output_cov:
+            raise NotImplementedError(
+                "The combination of both `full_cov` and `full_output_cov` is not supported."
+            )
+
+        &#47&#47 check below for shape info
+       </a> mean, cov = self.predict_f(Xnew, full_cov=full_cov, full_output_cov=full_output_cov)
+        if full_cov:
+            &#47&#47 mean: [..., N, P]
+            &#47&#47 cov: [..., P, N, N]
+            mean_for_sample = tf.linalg.adjoint(mean)  &#47&#47 [..., P, N]
+            <a id="change">samples = sample_mvn(
+                mean_for_sample, cov, "full", num_samples=num_samples
+            )</a>  &#47&#47 [..., (S), P, N]
+            samples = tf.linalg.adjoint(samples)  &#47&#47 [..., (S), N, P]
+        else:
+            &#47&#47 mean: [..., N, P]
+            &#47&#47 cov: [..., N, P] or [..., N, P, P]
+            cov_structure = "full" if full_output_cov else "diag"
+            <a id="change">samples = sample_mvn(
+                mean, cov, cov_structure, num_samples=num_samples
+            )</a>  &#47&#47 [..., (S), N, P]
+        return samples  &#47&#47 [..., (S), N, P]
+
+    def predict_y(</code></pre>

@@ -1,0 +1,97 @@
+<html><h3>7c6e84bbf65bcbade78e78d6120ca0997dff7c28,examples/pendulum_sac.py,,experiment,#Any#Any#Any#Any#,67
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        dataset = core.evaluate(n_steps=n_steps_test, render=False)
+        J = compute_J(dataset, gamma)
+        s, *_ = parse_dataset(dataset)
+        <a id="change">print(&quotJ:&quot, np.mean(J), &quotE:&quot, agent.policy.entropy(s))</a>
+
+    print(&quotPress a button to visualize pendulum&quot)
+    input()
+    core.evaluate(n_episodes=5, render=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+def experiment(alg, n_epochs, n_steps, n_steps_test):
+    np.random.seed()
+
+    <a id="change">logger = Logger(alg.__name__, results_dir=None)</a>
+    <a id="change">logger.strong_line()</a>
+    <a id="change">logger.info(&quotExperiment Algorithm: &quot + alg.__name__)</a>
+
+    &#47&#47 MDP
+    horizon = 200
+    gamma = 0.99
+    mdp = Gym(&quotPendulum-v0&quot, horizon, gamma)
+
+    &#47&#47 Settings
+    initial_replay_size = 64
+    max_replay_size = 50000
+    batch_size = 64
+    n_features = 64
+    warmup_transitions = 100
+    tau = 0.005
+    lr_alpha = 3e-4
+
+    use_cuda = torch.cuda.is_available()
+
+    &#47&#47 Approximator
+    actor_input_shape = mdp.info.observation_space.shape
+    actor_mu_params = dict(network=ActorNetwork,
+                           n_features=n_features,
+                           input_shape=actor_input_shape,
+                           output_shape=mdp.info.action_space.shape,
+                           use_cuda=use_cuda)
+    actor_sigma_params = dict(network=ActorNetwork,
+                              n_features=n_features,
+                              input_shape=actor_input_shape,
+                              output_shape=mdp.info.action_space.shape,
+                              use_cuda=use_cuda)
+
+    actor_optimizer = {&quotclass&quot: optim.Adam,
+                       &quotparams&quot: {&quotlr&quot: 3e-4}}
+
+    critic_input_shape = (actor_input_shape[0] + mdp.info.action_space.shape[0],)
+    critic_params = dict(network=CriticNetwork,
+                         optimizer={&quotclass&quot: optim.Adam,
+                                    &quotparams&quot: {&quotlr&quot: 3e-4}},
+                         loss=F.mse_loss,
+                         n_features=n_features,
+                         input_shape=critic_input_shape,
+                         output_shape=(1,),
+                         use_cuda=use_cuda)
+
+    &#47&#47 Agent
+    agent = alg(mdp.info, actor_mu_params, actor_sigma_params,
+                actor_optimizer, critic_params, batch_size, initial_replay_size,
+                max_replay_size, warmup_transitions, tau, lr_alpha,
+                critic_fit_params=None)
+
+    &#47&#47 Algorithm
+    core = Core(agent, mdp)
+
+    &#47&#47 RUN
+    dataset = core.evaluate(n_steps=n_steps_test, render=False)
+    s, *_ = parse_dataset(dataset)
+
+    J = np.mean(compute_J(dataset, mdp.info.gamma))
+    R = np.mean(compute_J(dataset))
+    E = agent.policy.entropy(s)
+
+    <a id="change">logger.epoch_info(0, J=J, R=R, entropy=E)</a>
+
+    core.learn(n_steps=initial_replay_size, n_steps_per_fit=initial_replay_size)
+
+    for n in trange(n_epochs, leave=False):
+        core.learn(n_steps=n_steps, n_steps_per_fit=1)
+        dataset = core.evaluate(n_steps=n_steps_test, render=False)
+        s, *_ = parse_dataset(dataset)
+
+        J = np.mean(compute_J(dataset, mdp.info.gamma))
+        R = np.mean(compute_J(dataset))
+        E = agent.policy.entropy(s)
+
+        <a id="change">logger.epoch_info(n+1, J=J, R=R, entropy=E)</a>
+
+    logger.info(&quotPress a button to visualize pendulum&quot)
+    input()
+    core.evaluate(n_episodes=5, render=True)</code></pre><img src="282536295.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/7c6e84bbf65bcbade78e78d6120ca0997dff7c28#diff-47e28c50dd8de89e9ea9bab94b5533b66cdae0bebfaaf0002fab1fe6d419ea03L72' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 7c6e84bbf65bcbade78e78d6120ca0997dff7c28</div><div id='time'> Time: 2021-01-11</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/pendulum_sac.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/7c6e84bbf65bcbade78e78d6120ca0997dff7c28#diff-47e28c50dd8de89e9ea9bab94b5533b66cdae0bebfaaf0002fab1fe6d419ea03L72' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 7c6e84bbf65bcbade78e78d6120ca0997dff7c28</div><div id='time'> Time: 2021-01-11</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/pendulum_sac.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/8896f02f94da16afe5b3ea5330e4f99245b75d6b#diff-e9f36076e7ead3a1c33d593d4a18427b0098b8a42d02649a46b325788616fc15L27' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 8896f02f94da16afe5b3ea5330e4f99245b75d6b</div><div id='time'> Time: 2021-01-08</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/lqr_pg.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/7c6e84bbf65bcbade78e78d6120ca0997dff7c28#diff-5bcaf45a4dae5e934ef82175d10ae489850d2bd8fffa0588c0305c96e11c1201L73' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 7c6e84bbf65bcbade78e78d6120ca0997dff7c28</div><div id='time'> Time: 2021-01-11</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/pendulum_ddpg.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR>

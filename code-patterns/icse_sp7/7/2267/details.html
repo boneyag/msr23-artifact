@@ -1,0 +1,50 @@
+<html><h3>fcde897b8e2f7e9380035e4fa8c53f9d1382d0ca,onnxutils/onnxconverter_common/onnx_ops.py,,apply_upsample,#Any#Any#Any#Any#Any#Any#Any#,532
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            inputs = [input_name[0], scales_tensor_name]
+            op_version = 9
+
+    <a id="change">container.add_node(&quotUpsample&quot, inputs, output_name, op_version=op_version, **attrs)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    :param mode: nearest or linear
+    :param scales: an integer list of scaling-up rate of all input dimensions
+    &quot&quot&quot
+    <a id="change">if container.target_opset &lt; 10:
+        name = _create_name_or_use_existing_one(scope, &quotUpsample&quot, operator_name)
+        inputs = input_name
+        attrs = {&quotname&quot: name}
+        if container.target_opset &lt; 7:
+            if len(scales) != 4:
+                raise ValueError(&quotNeed to specify a 4-element list the the scales of N-, C-, H-, and W-axes&quot)
+            attrs[&quotheight_scale&quot] = float(scales[2])
+            attrs[&quotwidth_scale&quot] = float(scales[3])
+            attrs[&quotmode&quot] = mode.upper()
+            op_version = 1
+        else:
+            attrs[&quotmode&quot] = mode.lower()
+            if container.target_opset &lt; 9:
+                attrs[&quotscales&quot] = list(map(float, scales))
+                op_version = 7
+            else:
+                &#47&#47 scales moved from attribute to input in opset 9
+                scales_tensor_name = scope.get_unique_variable_name(name + &quot_scales&quot)
+                container.add_initializer(scales_tensor_name, onnx_proto.TensorProto.FLOAT, [len(scales)], scales)
+                inputs = [input_name[0], scales_tensor_name]
+                op_version = 9
+
+        container.add_node(&quotUpsample&quot, inputs, output_name, op_version=op_version, **attrs)
+    else:
+        &#47&#47 TODO, we need verify this after onnx opset 10 release
+        name = _create_name_or_use_existing_one(scope, &quotResize&quot, operator_name)
+        attrs = {&quotname&quot: name}
+        attrs[&quotmode&quot] = mode.lower()
+
+        scales_tensor_name = scope.get_unique_variable_name(name + &quot_scales&quot)
+        container.add_initializer(scales_tensor_name, onnx_proto.TensorProto.FLOAT, [len(scales)], scales)
+        inputs = [input_name[0], scales_tensor_name]
+        op_version = 10
+
+        container.add_node(&quotResize&quot, inputs, output_name, op_version=op_version, **attrs)</a>
+</code></pre><img src="18274612.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/onnx/onnxmltools/commit/fcde897b8e2f7e9380035e4fa8c53f9d1382d0ca#diff-ab3d6c72ee04e56b7494fdc2880e72c5480e337a77a1a30308cfa35c803dfbabL1' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnxmltools</div><div id='commit'> Commit Name: fcde897b8e2f7e9380035e4fa8c53f9d1382d0ca</div><div id='time'> Time: 2019-04-12</div><div id='author'> Author: vinitras@gmail.com</div><div id='file'> File Name: onnxutils/onnxconverter_common/onnx_ops.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: apply_upsample</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/08c9040e236373f305773e0fb46990d0d9757572#diff-cca4a44efe93a4bbee1e6f75929712e98afe00c34ad60461e814772a002510f2L68' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 08c9040e236373f305773e0fb46990d0d9757572</div><div id='time'> Time: 2016-02-11</div><div id='author'> Author: evan.n.feinberg@gmail.com</div><div id='file'> File Name: deepchem/models/deep.py</div><div id='class'> Class Name: MultiTaskDNN</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/fc7e600185ccd1c451dd5db987737f4659889f7b#diff-cca4a44efe93a4bbee1e6f75929712e98afe00c34ad60461e814772a002510f2L68' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: fc7e600185ccd1c451dd5db987737f4659889f7b</div><div id='time'> Time: 2016-02-05</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: deepchem/models/deep.py</div><div id='class'> Class Name: MultiTaskDNN</div><div id='method'> Method Name: __init__</div><BR>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 These are the metrics we&quotll pass up the way, and their new names
+        train_metrics = {"train_loss", "ups", "wps", "gnorm", "clip"}
+        valid_metrics = <a id="change">{"valid_loss"}</a>
+
+        metrics = train_metrics if self.is_training else valid_metrics
+
+        m = {k: self.trainer.meters[k].avg <a id="change">for</a> k in metrics}
+
+        &#47&#47 additionally output perplexity. note that fairseq models use base 2
+        &#47&#47 in cross_entropy:</code></pre><h3>After Change</h3><pre><code class='java'>
+        if not hasattr(self, "trainer"):
+            return {}
+
+        <a id="change">output = {k: v.avg for k, v in self.meters.items()}</a>
+
+        if "nll_loss" in self.meters:
+            &#47&#47 special case, we used sentence averaging so ppl comes from nll_loss
+            output["ppl"] = np.exp2(self.meters["nll_loss"].avg)
+        else:
+            &#47&#47 normal case, just use loss
+            output["ppl"] = np.exp2(self.meters["loss"].avg)
+
+        &#47&#47 Fairseq trainer metrics we&quotll pass up the way
+        trainer_metrics = {"ups", "wps", "gnorm", "clip"}
+        if self.is_training:
+            for k in trainer_metrics:
+                output[k] = self.trainer.meters[k].avg
+
+        &#47&#47 for display purposes
+        <a id="change">output = {k: round_sigfigs(v, 4) for k, v in output.items()}</a>
+        return output
+
+    def reset_metrics(self):
+        Reset metrics calculated by the model back to zero.</code></pre>

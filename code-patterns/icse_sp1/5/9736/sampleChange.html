@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+
+        &#47&#47 Transformer Encoder
+        <a id="change">encoded_layers = self.transformer.encoder(
+            embedding_output,  &#47&#47 combined embedding
+            extended_attention_mask,  &#47&#47 combined attention mask
+            [None] * len(self.transformer.encoder.layer),  &#47&#47 head masks
+        )</a>
+
+        &#47&#47 Transformer Heads
+        head_output = self.classifier(encoded_layers[0])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 concat the attention masks for all modalities
+        masks = []
+        for modality in self.modality_keys:
+            masks.append(<a id="change">output</a>[<a id="change">"masks"</a>][modality])
+        attention_mask = torch.cat(masks, dim=-1)
+        extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
+        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0</code></pre>

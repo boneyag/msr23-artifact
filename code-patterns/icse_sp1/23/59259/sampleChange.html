@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 prepare calculation
+        kj = 2j*pi*self.freq_data.fftfreq()/self.c
+        numchannels = int(self.freq_data.numchannels)
+        <a id="change">e = zeros((numchannels), &quotD&quot)</a>
+        h = empty((1, self.grid.size), &quotd&quot)
+        &#47&#47 function
+        beamfunc = self.get_beamfunc(&quot_os&quot)
+        if self.r_diag:
+            <a id="change">adiv = sqrt(1.0/(numchannels*numchannels-numchannels))</a>
+            scalefunc = lambda h : adiv*(multiply(adiv*h, (sign(h)+1-1e-35)/2))**self.gamma
+        else:
+            <a id="change">adiv = 1.0/(numchannels)</a>
+            scalefunc = lambda h : adiv*(adiv*h)**self.gamma
+        for i in self.freq_data.indices:        
+            if not fr[i]:
+                eva = array(self.freq_data.eva[i][newaxis], dtype=&quotfloat64&quot)**(1.0/self.gamma)</code></pre><h3>After Change</h3><pre><code class='java'>
+        if self.r_diag:
+            normFactor = sqrt(1.0 / (nMics * nMics - nMics))
+        elif not self.r_diag:
+            <a id="change">normFactor = 1.0 / nMics</a>
+        for i in self.freq_data.indices:        
+            if not fr[i]:
+                eva = array(self.freq_data.eva[i][newaxis], dtype=&quotfloat64&quot) ** (1.0 / self.gamma)
+                eve = array(self.freq_data.eve[i][newaxis], dtype=&quotcomplex128&quot)
+                kji = kj[i, newaxis]
+                <a id="change">beamformerOutput = beamformerFreq(True, steerVecFormulation, self.r_diag, normFactor * nMics**2, (self.r0, self.rm, kji, eva, eve))</a>  &#47&#47 takes all EigVal into account
+                <a id="change">if self.r_diag:  &#47&#47 set (unphysical) negative output values to 0
+                    indNegSign = sign(beamformerOutput) &lt; 0
+                    beamformerOutput[indNegSign] = 0.0
+               </a> ac[i] = (beamformerOutput ** self.gamma) * normFactor
+                fr[i] = True
+            
+class BeamformerCapon( BeamformerBase ):</code></pre>

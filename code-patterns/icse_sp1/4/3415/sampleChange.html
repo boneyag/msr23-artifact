@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                .all()
+            runs = [run.to_mlflow_entity() for run in queried_runs]
+
+        sorted_runs = <a id="change">SearchUtils.sort(runs, order_by)</a>
+        runs, next_page_token = SearchUtils.paginate(sorted_runs, page_token, max_results)
+        return runs, next_page_token
+
+    def log_batch(self, run_id, metrics, params, tags):</code></pre><h3>After Change</h3><pre><code class='java'>
+            for j in _get_sqlalchemy_filter_clauses(parsed_filters, session) + sorting_joins:
+                query = query.join(j)
+
+            <a id="change">offset = SearchUtils.parse_start_offset_from_page_token(page_token)</a>
+            queried_runs = query.distinct() \
+                .options(*self._get_eager_run_query_options()) \
+                .filter(
+                    SqlRun.experiment_id.in_(experiment_ids),
+                    SqlRun.lifecycle_stage.in_(stages),
+                    *_get_attributes_filtering_clauses(parsed_filters)) \
+                .order_by(*parsed_orderby) \
+                .offset(offset).limit(max_results).all()
+
+            runs = [run.to_mlflow_entity() for run in queried_runs]
+            <a id="change">next_page_token = compute_next_token(len(runs))</a>
+
+        return runs, next_page_token
+
+    def log_batch(self, run_id, metrics, params, tags):</code></pre>

@@ -1,0 +1,57 @@
+<html><h3>8bafae2ee7044529543768eec63d8460d894f5c6,fairseq/multiprocessing_trainer.py,MultiprocessingTrainer,_async_train_step,#MultiprocessingTrainer#Any#Any#Any#,154
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            net_output = self.model(**self._sample[&quotnet_input&quot])
+            loss_ = self.criterion(net_output, self._sample)
+            if grad_denom is not None:
+                <a id="change">loss_ /= grad_denom</a>
+            <a id="change">loss_.backward()</a>
+            <a id="change">loss = loss_.data[0]</a>
+
+        &#47&#47 flatten grads into a contiguous block of memory
+        if self.flat_grads is None:
+            self.flat_grads = self._flatten_grads_(self.model)
+
+        &#47&#47 all-reduce grads
+        nccl.all_reduce(self.flat_grads)
+
+        &#47&#47 clip grads
+        grad_norm = self._clip_grads_(self.flat_grads, self.args.clip_norm)
+
+        &#47&#47 take an optimization step
+        self.optimizer.step()
+
+        <a id="change">return loss, grad_norm</a>
+
+    def _flatten_grads_(self, model):
+        num_params = sum(p.data.numel() for p in model.parameters())
+        flat_grads = next(model.parameters()).data.new(num_params)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 calculate loss and grads
+        loss = 0
+        <a id="change">loss_dict = {}</a>
+        if self._sample is not None:
+            loss_dict = self.criterion(self.model, self._sample, grad_denom)
+            loss_dict[&quotloss&quot].backward()
+            loss = loss_dict[&quotloss&quot].data[0]
+
+        &#47&#47 flatten grads into a contiguous block of memory
+        if self.flat_grads is None:
+            self.flat_grads = self._flatten_grads_(self.model)
+
+        &#47&#47 all-reduce grads
+        nccl.all_reduce(self.flat_grads)
+
+        &#47&#47 clip grads
+        loss_dict[&quotgnorm&quot] = self._clip_grads_(self.flat_grads, self.args.clip_norm)
+
+        &#47&#47 take an optimization step
+        self.optimizer.step()
+
+        <a id="change">return loss_dict</a>
+
+    def _flatten_grads_(self, model):
+        num_params = sum(p.data.numel() for p in model.parameters())
+        flat_grads = next(model.parameters()).data.new(num_params)</code></pre><img src="134093918.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/8bafae2ee7044529543768eec63d8460d894f5c6#diff-36ec1cd879930255f947df92f12a0d19d01c01c5d90f4e16fde1c566ae4af15aL154' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 8bafae2ee7044529543768eec63d8460d894f5c6</div><div id='time'> Time: 2017-10-19</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/multiprocessing_trainer.py</div><div id='class'> Class Name: MultiprocessingTrainer</div><div id='method'> Method Name: _async_train_step</div><BR><BR><div id='link'><a href='https://github.com/kengz/SLM-Lab/commit/ec849adaf4ceb42ed52ca142c839f627c34b9434#diff-e91a8c3c77501ae2a41fa3b2d2eaf8a4a1c951f8d2c29c48d871cdb09596681dL95' target='_blank'>Link</a></div><div id='project'> Project Name: kengz/SLM-Lab</div><div id='commit'> Commit Name: ec849adaf4ceb42ed52ca142c839f627c34b9434</div><div id='time'> Time: 2018-05-21</div><div id='author'> Author: kengzwl@gmail.com</div><div id='file'> File Name: slm_lab/agent/algorithm/reinforce.py</div><div id='class'> Class Name: Reinforce</div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/8bafae2ee7044529543768eec63d8460d894f5c6#diff-36ec1cd879930255f947df92f12a0d19d01c01c5d90f4e16fde1c566ae4af15aL154' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 8bafae2ee7044529543768eec63d8460d894f5c6</div><div id='time'> Time: 2017-10-19</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/multiprocessing_trainer.py</div><div id='class'> Class Name: MultiprocessingTrainer</div><div id='method'> Method Name: _async_train_step</div><BR>

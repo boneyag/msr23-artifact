@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        versions in the stage will be atomically moved to the "archived" stage.
+        :return: A single :py:class:`mlflow.entities.model_registry.ModelVersion` object.
+        
+        <a id="change">if archive_existing_versions:
+            raise MlflowException("&quotarchive_existing_versions&quot flag is not supported in "
+                                  "SqlAlchemyStore. Set it to &quotFalse&quot")
+       </a> with self.ManagedSessionMaker() as session:
+            sql_model_version = self._get_sql_model_version(session=session,
+                                                            name=name,
+                                                            version=version)</code></pre><h3>After Change</h3><pre><code class='java'>
+            model_versions = []
+            if archive_existing_versions:
+                conditions = [
+                    <a id="change">SqlModelVersion.name == name,
+</a>                    SqlModelVersion.version != version,
+                    SqlModelVersion.current_stage == stage,
+                ]
+                model_versions = <a id="change">session.query(SqlModelVersion).filter(*conditions).all()</a>
+                <a id="change">for mv in model_versions:
+                    mv.current_stage = STAGE_ARCHIVED
+                    mv.last_updated_time = last_updated_time
+
+           </a> sql_model_version = self._get_sql_model_version(session=session,
+                                                            name=name,
+                                                            version=version)
+            sql_model_version.current_stage = get_canonical_stage(stage)</code></pre>

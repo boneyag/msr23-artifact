@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self._num_classes * self._anchors_per_location,
+        kernel_size=(3, 3),
+        bias_initializer=tf.constant_initializer(-np.log((1 - 0.01) / 0.01)),
+        kernel_initializer=<a id="change">tf.random_normal_initializer(stddev=1e-5)</a>,
+        padding=&quotsame&quot,
+        name=&quotclass-predict&quot)
+    return classes</code></pre><h3>After Change</h3><pre><code class='java'>
+            tf.layers.separable_conv2d, depth_multiplier=1)
+      else:
+        conv2d_op = functools.partial(
+            <a id="change">tf.layers.conv2d</a>, kernel_initializer=tf.random_normal_initializer(
+                stddev=0.01))
+      features = conv2d_op(
+          features,
+          self._num_filters,
+          kernel_size=(3, 3),
+          bias_initializer=tf.zeros_initializer(),
+          activation=None,
+          padding=&quotsame&quot,
+          name=&quotclass-&quot+str(i))
+      &#47&#47 The convolution layers in the class net are shared among all levels, but
+      &#47&#47 each level has its batch normlization to capture the statistical
+      &#47&#47 difference among different levels.
+      features = self._batch_norm_relu(features, is_training=is_training,
+                                       name=&quotclass-%d-%d&quot%(i, level),)
+    if self._use_separable_conv:
+      conv2d_op = functools.partial(
+          tf.layers.separable_conv2d, depth_multiplier=1)
+    else:
+      <a id="change">conv2d_op = functools.partial(
+          tf.layers.conv2d, kernel_initializer=tf.random_normal_initializer(
+              stddev=1e-5))</a>
+    classes = conv2d_op(
+        features,
+        self._num_classes * self._anchors_per_location,
+        kernel_size=(3, 3),</code></pre>

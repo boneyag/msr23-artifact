@@ -1,0 +1,112 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def convert_lst_to_features(lst_str, seq_length, tokenizer):
+    Loads a data file into a list of `InputBatch`s.
+
+    <a id="change">features = []</a>
+    <a id="change">examples = read_examples(lst_str)</a>
+    for (ex_index, example) in enumerate(examples):
+        tokens_a = tokenizer.tokenize(example.text_a)
+
+        tokens_b = None
+        if example.text_b:
+            tokens_b = tokenizer.tokenize(example.text_b)
+
+        if tokens_b:
+            &#47&#47 Modifies `tokens_a` and `tokens_b` in place so that the total
+            &#47&#47 length is less than the specified length.
+            &#47&#47 Account for [CLS], [SEP], [SEP] with "- 3"
+            _truncate_seq_pair(tokens_a, tokens_b, seq_length - 3)
+        else:
+            &#47&#47 Account for [CLS] and [SEP] with "- 2"
+            if len(tokens_a) &gt; seq_length - 2:
+                tokens_a = tokens_a[0:(seq_length - 2)]
+
+        &#47&#47 The convention in BERT is:
+        &#47&#47 (a) For sequence pairs:
+        &#47&#47  tokens:   [CLS] is this jack &#47&#47&#47&#47son &#47&#47&#47&#47ville ? [SEP] no it is not . [SEP]
+        &#47&#47  type_ids: 0     0  0    0    0     0       0 0     1  1  1  1   1 1
+        &#47&#47 (b) For single sequences:
+        &#47&#47  tokens:   [CLS] the dog is hairy . [SEP]
+        &#47&#47  type_ids: 0     0   0   0  0     0 0
+        &#47&#47
+        &#47&#47 Where "type_ids" are used to indicate whether this is the first
+        &#47&#47 sequence or the second sequence. The embedding vectors for `type=0` and
+        &#47&#47 `type=1` were learned during pre-training and are added to the wordpiece
+        &#47&#47 embedding vector (and position vector). This is not *strictly* necessary
+        &#47&#47 since the [SEP] token unambiguously separates the sequences, but it makes
+        &#47&#47 it easier for the model to learn the concept of sequences.
+        &#47&#47
+        &#47&#47 For classification tasks, the first vector (corresponding to [CLS]) is
+        &#47&#47 used as as the "sentence vector". Note that this only makes sense because
+        &#47&#47 the entire model is fine-tuned.
+        tokens = []
+        input_type_ids = []
+        tokens.append("[CLS]")
+        input_type_ids.append(0)
+        for token in tokens_a:
+            tokens.append(token)
+            input_type_ids.append(0)
+        tokens.append("[SEP]")
+        input_type_ids.append(0)
+
+        if tokens_b:
+            for token in tokens_b:
+                tokens.append(token)
+                input_type_ids.append(1)
+            tokens.append("[SEP]")
+            input_type_ids.append(1)
+
+        input_ids = tokenizer.convert_tokens_to_ids(tokens)
+
+        &#47&#47 The mask has 1 for real tokens and 0 for padding tokens. Only real
+        &#47&#47 tokens are attended to.
+        input_mask = [1] * len(input_ids)
+
+        &#47&#47 Zero-pad up to the sequence length.
+        while len(input_ids) &lt; seq_length:
+            input_ids.append(0)
+            input_mask.append(0)
+            input_type_ids.append(0)
+
+        assert len(input_ids) == seq_length
+        assert len(input_mask) == seq_length
+        assert len(input_type_ids) == seq_length
+
+        if ex_index &lt; 5:
+            tf.logging.info("*** Example ***")
+            tf.logging.info("unique_id: %s" % (example.unique_id))
+            tf.logging.info("tokens: %s" % " ".join(
+                [tokenization.printable_text(x) for x in tokens]))
+            tf.logging.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+            tf.logging.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
+            tf.logging.info(
+                "input_type_ids: %s" % " ".join([str(x) for x in input_type_ids]))
+
+        <a id="change">features.append(
+            InputFeatures(
+                unique_id=example.unique_id,
+                tokens=tokens,
+                input_ids=input_ids,
+                input_mask=input_mask,
+                input_type_ids=input_type_ids))</a>
+    <a id="change">return features</a>
+
+
+def _truncate_seq_pair(tokens_a, tokens_b, max_length):
+    Truncates a sequence pair in place to the maximum length.</code></pre><h3>After Change</h3><pre><code class='java'>
+            tf.logging.info(
+                "input_type_ids: %s" % " ".join([str(x) for x in input_type_ids]))
+
+        <a id="change">yield InputFeatures(
+            unique_id=example.unique_id,
+            tokens=tokens,
+            input_ids=input_ids,
+            input_mask=input_mask,
+            input_type_ids=input_type_ids)</a>
+
+
+def _truncate_seq_pair(tokens_a, tokens_b, max_length):
+    Truncates a sequence pair in place to the maximum length.</code></pre>

@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 organized by the previously reported columns:
+    categorized_pis = pd.DataFrame()
+    for category in pis_df.columns.levels[0]:
+        <a id="change">tmp_df = pis_df.loc[:, category].copy()</a>
+        tmp_df["amount_type"] = category
+        categorized_pis = pd.concat([categorized_pis, tmp_df])
+    categorized_pis.columns.name = None
+    pis_df = (</code></pre><h3>After Change</h3><pre><code class='java'>
+        dict: The dictionary of the transformed DataFrames.
+
+    
+    pis_df = <a id="change">(
+        unpack_table(
+            ferc1_df=ferc1_raw_dfs["plant_in_service_ferc1"],
+            table_name="f1_plant_in_srvce",
+            data_rows=slice(None),  &#47&#47 Gotta catch &quotem all!
+            data_cols=[
+                "begin_yr_bal",
+                "addition",
+                "retirements",
+                "adjustments",
+                "transfers",
+                "yr_end_bal"
+            ])
+        .pipe(  &#47&#47 Convert top level of column index into a categorical column:
+            cols_to_cats,
+            cat_name="amount_type",
+            col_cats={
+                "begin_yr_bal": "starting_balance",
+                "addition": "additions",
+                "retirements": "retirements",
+                "adjustments": "adjustments",
+                "transfers": "transfers",
+                "yr_end_bal": "ending_balance",
+            })
+        .rename_axis(columns=None)
+        .pipe(_clean_cols, "f1_plant_in_srvce")
+        .set_index([
+            "utility_id_ferc1",
+            "report_year",
+            "amount_type",
+            "record_id"])
+        .reset_index()
+    )</a>
+
+    &#47&#47 Get rid of the columns corresponding to "header" rows in the FERC
+    &#47&#47 form, which should *never* contain data... but in about 2 dozen cases,
+    &#47&#47 they do. See this issue on Github for more information:</code></pre>

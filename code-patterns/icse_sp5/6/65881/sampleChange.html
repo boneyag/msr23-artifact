@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
+        valid = valid_xx & valid_yy
+        valid = valid[:,
+                      None].expand(<a id="change">valid.size(0)</a>,
+                                   self.num_base_anchors).contiguous().view(-1)
+        return valid
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        assert self.num_levels == len(featmap_sizes)
+        multi_level_flags = []
+        for i in range(self.num_levels):
+            <a id="change">anchor_stride = self.strides[i]</a>
+            feat_h, feat_w = featmap_sizes[i]
+            h, w = pad_shape[:2]
+            valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
+            valid_feat_w = min(<a id="change">int(np.ceil(w / anchor_stride))</a>, feat_w)
+            <a id="change">flags = self.single_level_valid_flags((feat_h, feat_w),
+                                                  (valid_feat_h, valid_feat_w),
+                                                  self.num_base_anchors[i],
+                                                  device=device)</a>
+            multi_level_flags.append(flags)
+        return multi_level_flags
+
+    def single_level_valid_flags(self,</code></pre>

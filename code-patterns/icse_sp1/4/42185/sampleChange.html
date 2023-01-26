@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+@jax_jit()
+def _lstm_stepper(t, state):
+    (W, b, hidden, cell, X), (Y, gates) = state 
+    <a id="change">next_hiddens</a>, next_cells, next_gates = lstm(W, b, hidden, cell, X[t])
+    Y = index_update(Y, index[t], next_hiddens)
+    gates = index_update(gates, index[t], next_gates)
+    return (W, b, next_hiddens, next_cells, X), (Y, gates)</code></pre><h3>After Change</h3><pre><code class='java'>
+    yt, ct, gt = lstm(W, b, Y[t], C[t], X[t])
+    &#47&#47 The offsets here are a bit unintuitive, because Y and C are 1-offset.
+    Y = index_update(Y, index[t+1], yt)
+    <a id="change">C = index_update(C, index[t+1], ct)</a>
+    G = index_update(G, index[t], gt)
+    return (W, b, X), (Y, C, G)
+
+</code></pre>

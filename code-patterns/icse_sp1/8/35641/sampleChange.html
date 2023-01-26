@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _observation(self, obs):
+        obs = imresize(obs, (110, 84))
+        obs = <a id="change">obs.mean(axis=-1, keepdims=True)</a>
+
+        obs = obs[self.X_OFS:self.X_OFS+84, :, :]
+        <a id="change">obs = np.moveaxis(obs, 2, 0)</a>
+        return obs.astype(np.float32) / 255.0
+
+
+class BufferWrapper(gym.ObservationWrapper):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def _observation(self, obs):
+        img = Image.fromarray(obs)
+        <a id="change">img = img.convert("YCbCr")</a>
+        img = img.resize((self.TARGET_SIZE, self.TARGET_SIZE))
+        <a id="change">data = np.asarray(img.getdata(0), np.uint8).reshape(img.size)</a>
+        return <a id="change">np.expand_dims(data, 0)</a>
+
+
+class BufferWrapper(gym.ObservationWrapper):
+    def __init__(self, env, n_steps, dtype=np.uint8):</code></pre>

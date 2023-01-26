@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  step_boundaries = tf.constant(boundaries, tf.int64)
+  learning_rates = tf.constant(rates, tf.float32)
+  unreached_boundaries = tf.reshape(
+      tf.where(<a id="change">tf.greater(step_boundaries, global_step)</a>), [-1])
+  unreached_boundaries = tf.concat([unreached_boundaries, [len(boundaries)]], 0)
+  index = tf.reshape(tf.reduce_min(unreached_boundaries), [1])
+  return tf.reshape(tf.slice(learning_rates, index, [1]), [])</code></pre><h3>After Change</h3><pre><code class='java'>
+  step_boundaries = tf.constant(boundaries, tf.int32)
+  num_boundaries = len(boundaries)
+  learning_rates = tf.constant(rates, tf.float32)
+  <a id="change">index = tf.reduce_min(
+      tf.where(
+          &#47&#47 Casting global step to tf.int32 is dangerous, but necessary to be
+          &#47&#47 compatible with TPU.
+          tf.greater(step_boundaries, tf.cast(global_step, tf.int32)),
+          tf.constant(range(num_boundaries), dtype=tf.int32),
+          tf.constant([num_boundaries] * num_boundaries, dtype=tf.int32)))</a>
+  return tf.reduce_sum(learning_rates * tf.one_hot(index, len(rates),
+                                                   dtype=tf.float32))
+</code></pre>

@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        limits = limits + tf.where(condition=(limits &lt; starts), x=capacity, y=zero)
+
+        &#47&#47 Randomly sampled episode indices ranges
+        <a id="change">indices = [tf.range(start=starts[i], limit=limits[i]) for i in range(n)]</a>
+        indices = tf.concat(values=indices, axis=0)
+        indices = tf.mod(x=indices, y=capacity)
+
+        &#47&#47 Retrieve episode indices</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        zero = tf.constant(value=0, dtype=util.tf_dtype(dtype=&quotlong&quot))
+        indices = tf.zeros(shape=(0,), dtype=util.tf_dtype(dtype=&quotlong&quot))
+        <a id="change">indices, _ = tf.while_loop(
+            cond=cond, body=reduce_range_concat, loop_vars=(indices, zero),
+            shape_invariants=(tf.TensorShape(dims=(None,)), zero.get_shape()), back_prop=False
+        )</a>
+        indices = tf.mod(x=indices, y=capacity)
+
+        &#47&#47 Retrieve episode indices
+        episodes = self.retrieve_indices(indices=indices)</code></pre>

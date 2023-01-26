@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            W[i, index_matrix[i, j]] = value_matrix[i, j].
+    
+    num_target_points, num_coefficients = value_matrix.size()
+    <a id="change">index_list = [[], []]</a>
+    value_list = []
+    for i in range(num_target_points):
+        for j in range(num_coefficients):
+            if value_matrix[i, j] == 0:
+                continue
+            <a id="change">index_list</a>[<a id="change">0</a>].append(i)
+            <a id="change">index_list</a>[<a id="change">1</a>].append(index_matrix[i, j])
+            value_list.append(value_matrix[i, j])
+
+    index_tensor = torch.LongTensor(index_list)</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    num_target_points, num_coefficients = value_matrix.size()
+
+    <a id="change">row_tensor = torch.arange(0, num_target_points).unsqueeze(1)</a>
+    <a id="change">row_tensor = row_tensor.repeat(1, num_coefficients).type_as(index_matrix)</a>
+    index_tensor = torch.cat([row_tensor.view(1, -1), <a id="change">index_matrix.view(1, -1)</a>], 0)
+    value_tensor = value_matrix.view(-1)
+
+    nonzero_indices = value_tensor.nonzero()
+    if nonzero_indices.storage():
+        nonzero_indices.squeeze_()
+        <a id="change">index_tensor = index_tensor.index_select(1, nonzero_indices)</a>
+        value_tensor = value_tensor.index_select(0, nonzero_indices)
+    else:
+        index_tensor = index_tensor.resize_(2, 1).zero_()
+        value_tensor = value_tensor.resize_(1).zero_()</code></pre>

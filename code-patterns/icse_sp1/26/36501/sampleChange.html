@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        skip_output_id = conv_block_input_id
+        for index, layer_id in enumerate(layer_list):
+            layer = self.layer_list[layer_id]
+            <a id="change">new_node_id = self._add_new_node()</a>
+            self._add_edge(deepcopy(layer), skip_output_id, new_node_id)
+            skip_output_id = new_node_id
+
+        &#47&#47 Add the conv layer
+        layer2 = StubConv(self.layer_list[start_id].filters, self.layer_list[end_id].filters, 1)
+        new_node_id = self._add_new_node()
+        <a id="change">self._add_edge(layer2, skip_output_id, new_node_id)</a>
+        <a id="change">skip_output_id = new_node_id</a>
+
+        &#47&#47 Set weights to the additional conv layer.
+        if self.weighted:
+            filters_end = self.layer_list[end_id].filters
+            filters_start = self.layer_list[start_id].filters
+            filter_shape = (1,) * (len(self.layer_list[end_id].get_weights()[0].shape) - 2)
+            weights = np.zeros((filters_end, filters_start) + filter_shape)
+            bias = np.zeros(filters_end)
+            layer2.set_weights((add_noise(weights, np.array([0, 1])), add_noise(bias, np.array([0, 1]))))
+
+        &#47&#47 Add the add layer.
+        <a id="change">new_node_id = self._add_new_node()</a>
+        layer = StubAdd()
+
+        dropout_output_id = self.adj_list[dropout_input_id][0][0]
+        self._redirect_edge(dropout_input_id, dropout_output_id, new_node_id)
+        self._add_edge(layer, new_node_id, dropout_output_id)
+        <a id="change">self._add_edge(layer, skip_output_id, dropout_output_id)</a>
+
+    def to_concat_skip_model(self, start_id, end_id):
+        Add a weighted add concatenate connection from after start node to end node.
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Add the add layer.
+        dropout_output_id = self.adj_list[dropout_input_id][0][0]
+        <a id="change">add_input_node_id = self._add_node(deepcopy(self.node_list[dropout_output_id]))</a>
+        add_layer = StubAdd()
+
+        self._redirect_edge(dropout_input_id, dropout_output_id, add_input_node_id)
+        self._add_edge(add_layer, add_input_node_id, dropout_output_id)
+        <a id="change">self._add_edge(add_layer, skip_output_id, dropout_output_id)</a>
+        <a id="change">add_layer.input = [self.node_list[add_input_node_id], self.node_list[skip_output_id]]</a>
+        <a id="change">add_layer.output = self.node_list[dropout_output_id]</a>
+        self.node_list[dropout_output_id].shape = add_layer.output_shape
+
+        &#47&#47 Set weights to the additional conv layer.
+        if self.weighted:</code></pre>

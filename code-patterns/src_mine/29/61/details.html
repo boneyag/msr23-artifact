@@ -1,0 +1,115 @@
+<html><h3>f7c759ca562303127a9991574d5a985d4dff99e8,sonnet/python/modules/gated_rnn_test.py,LSTMTest,testPeephole,#LSTMTest#,168
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Initialize the rnn and verify the number of parameter sets.
+    inputs = tf.placeholder(tf.float32, shape=[batch_size, hidden_size])
+    prev_cell = <a id="change">tf.placeholder(tf.float32, shape=[batch_size, hidden_size])</a>
+    prev_hidden = tf.placeholder(tf.float32, shape=[batch_size, hidden_size])
+    lstm = snt.LSTM(hidden_size, use_peepholes=True)
+    _, next_state = lstm(inputs, (prev_hidden, prev_cell))
+    next_hidden, next_cell = next_state
+    lstm_variables = lstm.get_variables()
+    self.assertEqual(len(lstm_variables), 5, "LSTM should have 5 variables")
+
+    &#47&#47 Unpack parameters into dict and check their sizes.
+    param_map = {param.name.split("/")[-1].split(":")[0]:
+                 param for param in lstm_variables}
+    self.assertShapeEqual(np.ndarray(4 * hidden_size),
+                          param_map[snt.LSTM.B_GATES].initial_value)
+    self.assertShapeEqual(np.ndarray((2 * hidden_size, 4 * hidden_size)),
+                          param_map[snt.LSTM.W_GATES].initial_value)
+    self.assertShapeEqual(np.ndarray(hidden_size),
+                          param_map[snt.LSTM.W_F_DIAG].initial_value)
+    self.assertShapeEqual(np.ndarray(hidden_size),
+                          param_map[snt.LSTM.W_I_DIAG].initial_value)
+    self.assertShapeEqual(np.ndarray(hidden_size),
+                          param_map[snt.LSTM.W_O_DIAG].initial_value)
+
+    &#47&#47 With random data, check the TF calculation matches the Numpy version.
+    input_data = np.random.randn(batch_size, hidden_size)
+    prev_hidden_data = np.random.randn(batch_size, hidden_size)
+    <a id="change">prev_cell_data</a> = <a id="change">np.random.randn(batch_size, hidden_size)</a>
+
+    with self.test_session() as session:
+      tf.global_variables_initializer().run()
+      fetches = [(next_hidden, next_cell),
+                 param_map[snt.LSTM.W_GATES],
+                 param_map[snt.LSTM.B_GATES],
+                 param_map[snt.LSTM.W_F_DIAG],
+                 param_map[snt.LSTM.W_I_DIAG],
+                 param_map[snt.LSTM.W_O_DIAG]]
+      output = session.run(fetches,
+                           {inputs: input_data,
+                            prev_cell: prev_cell_data,
+                            prev_hidden: prev_hidden_data})
+
+    next_state_ex, w_ex, b_ex, wfd_ex, wid_ex, wod_ex = output
+    in_and_hid = np.concatenate((input_data, prev_hidden_data), axis=1)
+    real_gate = np.dot(in_and_hid, w_ex) + b_ex
+    &#47&#47 i = input_gate, j = next_input, f = forget_gate, o = output_gate
+    i, j, f, o = np.hsplit(real_gate, 4)
+    <a id="change">real_cell</a> = (prev_cell_data /
+                 (1 + np.exp(-(f + lstm._forget_bias +
+                               wfd_ex * prev_cell_data))) +
+                 1 / (1 + np.exp(-(i + wid_ex * prev_cell_data))) * np.tanh(j))
+    <a id="change">real_hidden</a> = (np.tanh(real_cell + wod_ex * real_cell) *
+                   1 / (1 + np.exp(-o)))
+
+    self.assertAllClose(real_hidden, next_state_ex[0])</code></pre><h3>After Change</h3><pre><code class='java'>
+    input_data = np.random.randn(batch_size, hidden_size).astype(np.float32)
+    prev_hidden_data = np.random.randn(batch_size,
+                                       hidden_size).astype(np.float32)
+    <a id="change">prev_cell_data</a> = <a id="change">np.random.randn(batch_size, hidden_size).astype(np.float32)</a>
+
+    &#47&#47 Initialize the rnn and verify the number of parameter sets.
+    inputs = tf.constant(input_data)
+    prev_cell = <a id="change">tf.constant(prev_cell_data)</a>
+    prev_hidden = tf.constant(prev_hidden_data)
+
+    lstm = snt.LSTM(hidden_size, use_peepholes=True)
+    _, next_state = lstm(inputs, (prev_hidden, prev_cell))
+    next_hidden, next_cell = next_state
+    lstm_variables = lstm.get_variables()
+    self.assertEqual(len(lstm_variables), 5, "LSTM should have 5 variables")
+
+    &#47&#47 Unpack parameters into dict and check their sizes.
+    param_map = {param.name.split("/")[-1].split(":")[0]:
+                 param for param in lstm_variables}
+    self.assertShapeEqual(
+        np.ndarray(4 * hidden_size),
+        tf.convert_to_tensor(param_map[snt.LSTM.B_GATES]))
+    self.assertShapeEqual(
+        np.ndarray((2 * hidden_size, 4 * hidden_size)),
+        tf.convert_to_tensor(param_map[snt.LSTM.W_GATES]))
+    self.assertShapeEqual(
+        np.ndarray(hidden_size),
+        tf.convert_to_tensor(param_map[snt.LSTM.W_F_DIAG]))
+    self.assertShapeEqual(
+        np.ndarray(hidden_size),
+        tf.convert_to_tensor(param_map[snt.LSTM.W_I_DIAG]))
+    self.assertShapeEqual(
+        np.ndarray(hidden_size),
+        tf.convert_to_tensor(param_map[snt.LSTM.W_O_DIAG]))
+
+    self.evaluate(tf.global_variables_initializer())
+    fetches = [(next_hidden, next_cell), param_map[snt.LSTM.W_GATES],
+               param_map[snt.LSTM.B_GATES], param_map[snt.LSTM.W_F_DIAG],
+               param_map[snt.LSTM.W_I_DIAG], param_map[snt.LSTM.W_O_DIAG]]
+    output = self.evaluate(fetches)
+
+    next_state_ex, w_ex, b_ex, wfd_ex, wid_ex, wod_ex = output
+    in_and_hid = np.concatenate((input_data, prev_hidden_data), axis=1)
+    real_gate = np.dot(in_and_hid, w_ex) + b_ex
+    &#47&#47 i = input_gate, j = next_input, f = forget_gate, o = output_gate
+    i, j, f, o = np.hsplit(real_gate, 4)
+    <a id="change">real_cell</a> = (prev_cell_data /
+                 (1 + np.exp(-(f + lstm._forget_bias +
+                               wfd_ex * prev_cell_data))) +
+                 1 / (1 + np.exp(-(i + wid_ex * prev_cell_data))) * np.tanh(j))
+    <a id="change">real_hidden</a> = (np.tanh(real_cell + wod_ex * real_cell) *
+                   1 / (1 + np.exp(-o)))
+
+    self.assertAllClose(real_hidden, next_state_ex[0])</code></pre><img src="307204.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 6</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/deepmind/sonnet/commit/f7c759ca562303127a9991574d5a985d4dff99e8#diff-531b696be93e8421ce017c91ed780effe1d3fa677522d074ddc8282862267abeL168' target='_blank'>Link</a></div><div id='project'> Project Name: deepmind/sonnet</div><div id='commit'> Commit Name: f7c759ca562303127a9991574d5a985d4dff99e8</div><div id='time'> Time: 2018-07-17</div><div id='author'> Author: tomhennigan@google.com</div><div id='file'> File Name: sonnet/python/modules/gated_rnn_test.py</div><div id='class'> Class Name: LSTMTest</div><div id='method'> Method Name: testPeephole</div><BR><BR><div id='link'><a href='https://github.com/deepmind/sonnet/commit/f7c759ca562303127a9991574d5a985d4dff99e8#diff-531b696be93e8421ce017c91ed780effe1d3fa677522d074ddc8282862267abeL122' target='_blank'>Link</a></div><div id='project'> Project Name: deepmind/sonnet</div><div id='commit'> Commit Name: f7c759ca562303127a9991574d5a985d4dff99e8</div><div id='time'> Time: 2018-07-17</div><div id='author'> Author: tomhennigan@google.com</div><div id='file'> File Name: sonnet/python/modules/gated_rnn_test.py</div><div id='class'> Class Name: LSTMTest</div><div id='method'> Method Name: testComputation</div><BR><BR><div id='link'><a href='https://github.com/deepmind/sonnet/commit/f7c759ca562303127a9991574d5a985d4dff99e8#diff-531b696be93e8421ce017c91ed780effe1d3fa677522d074ddc8282862267abeL168' target='_blank'>Link</a></div><div id='project'> Project Name: deepmind/sonnet</div><div id='commit'> Commit Name: f7c759ca562303127a9991574d5a985d4dff99e8</div><div id='time'> Time: 2018-07-17</div><div id='author'> Author: tomhennigan@google.com</div><div id='file'> File Name: sonnet/python/modules/gated_rnn_test.py</div><div id='class'> Class Name: LSTMTest</div><div id='method'> Method Name: testPeephole</div><BR>

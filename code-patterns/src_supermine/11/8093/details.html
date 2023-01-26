@@ -1,0 +1,124 @@
+<html><h3>144b5afdd5d9262a5a9a9fdd9afa56a14b629ba1,texar/modules/decoders/transformer_decoders.py,TransformerDecoder,_build,#TransformerDecoder#Any#Any#Any#Any#,78
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for i in range(self._hparams.num_blocks):
+            with tf.variable_scope("num_blocks_{}".format(i)):
+                with tf.variable_scope("self_attention"):
+                    dec = <a id="change">layers.layer_normalize(self.dec)</a>
+                    dec = layers.multihead_attention(
+                        queries=dec,
+                        keys=dec,
+                        queries_valid_length=tgt_length,
+                        keys_valid_length=tgt_length,
+                        num_units=self._hparams.embedding.dim,
+                        num_heads=self._hparams.num_heads,
+                        dropout_rate=self._hparams.dropout,
+                        causality=True,
+                        scope="self_attention")
+                    dec = tf.layers.dropout(
+                        dec,
+                        rate=self._hparams.dropout,
+                        training=context.is_train())
+                    self.dec += dec
+
+                with tf.variable_scope(&quotencdec_attention&quot):
+                    dec = layers.layer_normalize(self.dec)
+                    <a id="change">dec = layers.multihead_attention(
+                        queries=dec,
+                        keys=encoder_output,
+                        queries_valid_length=tgt_length,
+                        keys_valid_length=src_length,
+                        num_units=self._hparams.embedding.dim,
+                        num_heads=self._hparams.num_heads,
+                        dropout_rate=self._hparams.dropout,
+                        causality=False,
+                        scope="multihead_attention")</a>
+                    <a id="change">dec = tf.layers.dropout(
+                        dec,
+                        rate=self._hparams.dropout,
+                        training=context.is_train())</a>
+                    self.dec += dec
+
+                poswise_network = FeedForwardNetwork(hparams=self._hparams[&quotposwise_feedforward&quot])
+                with tf.variable_scope(poswise_network.variable_scope):
+                    dec = layers.layer_normalize(self.dec)
+                    dec = poswise_network(dec)
+                    dec = tf.layers.dropout(
+                        dec,
+                        rate=self._hparams.dropout,
+                        training=context.is_train())
+                    self.dec += dec
+
+        &#47&#47 share the projection weight with word embedding
+
+        if self._hparams.share_embed_and_transform:
+            batch_size, length= tf.shape(self.dec)[0], tf.shape(self.dec)[1]
+            depth = self.dec.get_shape()[2]
+            <a id="change">self.dec</a> = tf.reshape(self.dec, [-1, depth])
+            self.logits = tf.matmul(self.dec, self._output_transform)
+            self.logits = tf.reshape(self.logits, [batch_size, length, self._vocab_size])
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.dec += tf.nn.embedding_lookup(self.position_dec_embedding,\
+                tf.tile(tf.expand_dims(tf.range(tf.shape(inputs)[1]), 0), [tf.shape(inputs)[0], 1]))
+
+        <a id="change">self.dec</a> = tf.layers.dropout(
+            self.dec,
+            rate=self._hparams.dropout,
+            training=context.is_train()
+        )
+
+        for i in range(self._hparams.num_blocks):
+            with tf.variable_scope("num_blocks_{}".format(i)):
+                with tf.variable_scope("self_attention"):
+                    selfatt_output = layers.multihead_attention(
+                        queries=<a id="change">layers.layer_normalize(self.dec)</a>,
+                        keys=None,
+                        queries_valid_length=tgt_length,
+                        keys_valid_length=tgt_length,
+                        num_units=self._hparams.embedding.dim,
+                        num_heads=self._hparams.num_heads,
+                        dropout_rate=self._hparams.dropout,
+                        causality=True,
+                        scope="self_attention")
+                    self.dec = self.dec + tf.layers.dropout(
+                        selfatt_output,
+                        rate=self._hparams.dropout,
+                        training=context.is_train()
+                    )
+
+                with tf.variable_scope(&quotencdec_attention&quot):
+                    <a id="change">encdec_output = layers.multihead_attention(
+                        queries=layers.layer_normalize(self.dec),
+                        keys=encoder_output,
+                        queries_valid_length=tgt_length,
+                        keys_valid_length=src_length,
+                        num_units=self._hparams.embedding.dim,
+                        num_heads=self._hparams.num_heads,
+                        dropout_rate=self._hparams.dropout,
+                        causality=False,
+                        scope="multihead_attention")</a>
+                    <a id="change">self.dec = self.dec + tf.layers.dropout(encdec_output, \
+                        rate=self._hparams.dropout,
+                        training=context.is_train()
+                    )</a>
+                poswise_network = FeedForwardNetwork(hparams=self._hparams[&quotposwise_feedforward&quot])
+                with tf.variable_scope(poswise_network.variable_scope):
+                    sub_output = tf.layers.dropout(
+                        poswise_network(layers.layer_normalize(self.dec)),
+                        rate=self._hparams.dropout,
+                        training=context.is_train()
+                    )
+                    self.dec = self.dec + sub_output
+
+        self.dec = layers.layer_normalize(self.dec)
+        &#47&#47 share the projection weight with word embedding
+
+        if self._hparams.share_embed_and_transform:
+            batch_size, length= tf.shape(self.dec)[0], tf.shape(self.dec)[1]
+            depth = self.dec.get_shape()[2]
+            <a id="change">self.dec</a> = tf.reshape(self.dec, [-1, depth])
+            self.logits = tf.matmul(self.dec, self._output_transform)
+            self.logits = tf.reshape(self.logits, [batch_size, length, self._vocab_size])
+        else:</code></pre><img src="38409162.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/asyml/texar/commit/144b5afdd5d9262a5a9a9fdd9afa56a14b629ba1#diff-503bcdf232acbf72c937e1f5dc030a70d6b8090987f9b11e3e25650f962b56f4L78' target='_blank'>Link</a></div><div id='project'> Project Name: asyml/texar</div><div id='commit'> Commit Name: 144b5afdd5d9262a5a9a9fdd9afa56a14b629ba1</div><div id='time'> Time: 2018-03-19</div><div id='author'> Author: zhiting.hu@petuum.com</div><div id='file'> File Name: texar/modules/decoders/transformer_decoders.py</div><div id='class'> Class Name: TransformerDecoder</div><div id='method'> Method Name: _build</div><BR><BR><div id='link'><a href='https://github.com/asyml/texar/commit/144b5afdd5d9262a5a9a9fdd9afa56a14b629ba1#diff-503bcdf232acbf72c937e1f5dc030a70d6b8090987f9b11e3e25650f962b56f4L78' target='_blank'>Link</a></div><div id='project'> Project Name: asyml/texar</div><div id='commit'> Commit Name: 144b5afdd5d9262a5a9a9fdd9afa56a14b629ba1</div><div id='time'> Time: 2018-03-19</div><div id='author'> Author: zhiting.hu@petuum.com</div><div id='file'> File Name: texar/modules/decoders/transformer_decoders.py</div><div id='class'> Class Name: TransformerDecoder</div><div id='method'> Method Name: _build</div><BR><BR><div id='link'><a href='https://github.com/asyml/texar/commit/144b5afdd5d9262a5a9a9fdd9afa56a14b629ba1#diff-57b358e2377df55898b694d81b4dd8de312c035e2ef9bff0d0f5429a1368596fL119' target='_blank'>Link</a></div><div id='project'> Project Name: asyml/texar</div><div id='commit'> Commit Name: 144b5afdd5d9262a5a9a9fdd9afa56a14b629ba1</div><div id='time'> Time: 2018-03-19</div><div id='author'> Author: zhiting.hu@petuum.com</div><div id='file'> File Name: texar/modules/encoders/transformer_encoders.py</div><div id='class'> Class Name: TransformerEncoder</div><div id='method'> Method Name: _build</div><BR><BR><div id='link'><a href='https://github.com/asyml/texar/commit/b5b06c0f262413ef62c4bfff996f3189673507b1#diff-57b358e2377df55898b694d81b4dd8de312c035e2ef9bff0d0f5429a1368596fL126' target='_blank'>Link</a></div><div id='project'> Project Name: asyml/texar</div><div id='commit'> Commit Name: b5b06c0f262413ef62c4bfff996f3189673507b1</div><div id='time'> Time: 2018-03-23</div><div id='author'> Author: zhiting.hu@petuum.com</div><div id='file'> File Name: texar/modules/encoders/transformer_encoders.py</div><div id='class'> Class Name: TransformerEncoder</div><div id='method'> Method Name: _build</div><BR>

@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        noise_src = load_audio(noise_path)
+        noise_offset_fraction = np.random.rand()
+        noise_dst = np.zeros_like(data)
+        <a id="change">src_offset = int(len(noise_src) * noise_offset_fraction)</a>
+        src_left = len(noise_src) - src_offset
+        dst_offset = 0
+        dst_left = len(data)
+        while dst_left &gt; 0:
+            <a id="change">copy_size = min(dst_left, src_left)</a>
+            np.copyto(noise_dst[dst_offset:dst_offset + copy_size],
+                      noise_src[src_offset:src_offset + copy_size])
+            if src_left &gt; dst_left:
+                dst_left = 0</code></pre><h3>After Change</h3><pre><code class='java'>
+        noise_len = get_audio_length(noise_path)
+        data_len = len(data) / self.sample_rate
+        noise_start = np.random.rand() * (noise_len - data_len)
+        <a id="change">noise_end = noise_start + data_len</a>
+        noise_dst = audio_with_sox(noise_path, self.sample_rate, noise_start, noise_end)
+        assert len(data) == len(noise_dst)
+        noise_energy = np.sqrt(<a id="change">noise_dst.dot(noise_dst)</a>/noise_dst.size)
+        data_energy = np.sqrt(data.dot(data)/data.size)
+        data += noise_level * noise_dst * data_energy / noise_energy
+        return data</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            policy_loss = self.calc_policy_loss(batch, advs)  &#47&#47 from actor
+            val_loss = self.calc_val_loss(batch, v_targets)  &#47&#47 from critic
+            loss = policy_loss + val_loss
+            <a id="change">self.net.training_step(loss=loss, lr_clock=self.body.env.clock)</a>
+            &#47&#47 reset
+            self.to_train = 0
+            self.body.entropies = []
+            self.body.log_probs = []</code></pre><h3>After Change</h3><pre><code class='java'>
+        Trains the network when the actor and critic share parameters
+        loss = self.policy_loss_coef * policy_loss + self.val_loss_coef * val_loss
+        &quot&quot&quot
+        <a id="change">clock = self.body.env.clock</a>
+        if self.to_train == 1:
+            batch = self.sample()
+            with torch.no_grad():
+                advs, v_targets = self.calc_advs_v_targets(batch)
+            policy_loss = self.calc_policy_loss(batch, advs)  &#47&#47 from actor
+            val_loss = self.calc_val_loss(batch, v_targets)  &#47&#47 from critic
+            loss = policy_loss + val_loss
+            <a id="change">self.net.training_step(loss=loss, lr_clock=clock)</a>
+            &#47&#47 reset
+            self.to_train = 0
+            self.body.entropies = []
+            self.body.log_probs = []</code></pre>

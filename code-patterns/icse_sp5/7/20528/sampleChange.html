@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def fit(self, hp, data):
+        axis = tuple(range(len(data.shape) - 1))
+        self.mean = <a id="change">np.me</a>an(data,
+                            axis=axis,
+                            keepdims=True).flatten()
+        self.std = <a id="change">np.st</a>d(data,
+                          axis=axis,
+                          keepdims=True).flatten()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.std = None
+
+    def fit(self, hp, data):
+        <a id="change">shape = utils.dataset_shape(data)</a>
+        axis = tuple(range(len(shape) - 1))
+
+        def sum_up(old_state, new_elem):
+            return old_state + new_elem
+
+        def sum_up_square(old_state, new_elem):
+            return old_state + tf.square(new_elem)
+
+        num_instance = data.reduce(np.float64(0), lambda x, _: x + 1)
+        total_sum = data.reduce(np.float64(0), sum_up) / num_instance
+        self.mean = tf.reduce_mean(total_sum, axis=axis)
+
+        <a id="change">total_sum_square = data.reduce(np.float64(0), sum_up_square) / num_instance</a>
+        <a id="change">square_mean = tf.reduce_mean(total_sum_square, axis=axis)</a>
+        self.std = <a id="change">tf.sqrt(square_mean - tf.square(self.mean))</a>
+
+    def transform(self, hp, data):
+         Transform the test data, perform normalization.
+</code></pre>

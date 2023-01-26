@@ -1,0 +1,110 @@
+<html><h3>870e17a6857365bec3035bfece2e77b525288b01,exp.py,,train,#Any#,50
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                eval_results = evaluation.evaluate(dev_set.examples, model, args,
+                                                   verbose=True, eval_top_pred_only=args.eval_top_pred_only)
+                dev_score = eval_results[&quotbleu&quot] if args.lang == &quotconala&quot else eval_results[&quotaccuracy&quot]
+                <a id="change">if args.lang == &quotconala&quot:
+                    print(&quot[Epoch %d] evaluate details: %s took %ds&quot % (
+                                        epoch, eval_results, time.time() - eval_start), file=sys.stderr)
+                else:
+                    print(&quot[Epoch %d] code generation accuracy=%.5f took %ds&quot % (
+                                        epoch, dev_score, time.time() - eval_start), file=sys.stderr)
+               </a> is_better = history_dev_scores == [] or dev_score &gt; max(history_dev_scores)
+                history_dev_scores.append(dev_score)
+        else:
+            is_better = True</code></pre><h3>After Change</h3><pre><code class='java'>
+    parser_cls = get_parser_class(args.lang)
+    model = parser_cls(args, vocab, transition_system)
+    model.train()
+    evaluator = <a id="change">Registrable.by_name(args.evaluator)(transition_system)</a>
+    if args.cuda: model.cuda()
+
+    optimizer_cls = eval(&quottorch.optim.%s&quot % args.optimizer)  &#47&#47 FIXME: this is evil!
+    optimizer = optimizer_cls(model.parameters(), lr=args.lr)
+
+    if args.uniform_init:
+        print(&quotuniformly initialize parameters [-%f, +%f]&quot % (args.uniform_init, args.uniform_init), file=sys.stderr)
+        nn_utils.uniform_init(-args.uniform_init, args.uniform_init, model.parameters())
+    elif args.glorot_init:
+        print(&quotuse glorot initialization&quot, file=sys.stderr)
+        nn_utils.glorot_init(model.parameters())
+
+    &#47&#47 load pre-trained word embedding (optional)
+    if args.glove_embed_path:
+        print(&quotload glove embedding from: %s&quot % args.glove_embed_path, file=sys.stderr)
+        glove_embedding = GloveHelper(args.glove_embed_path)
+        glove_embedding.load_to(model.src_embed, vocab.source)
+
+    print(&quotbegin training, %d training examples, %d dev examples&quot % (len(train_set), len(dev_set)), file=sys.stderr)
+    print(&quotvocab: %s&quot % repr(vocab), file=sys.stderr)
+
+    epoch = train_iter = 0
+    report_loss = report_examples = report_sup_att_loss = 0.
+    history_dev_scores = []
+    num_trial = patience = 0
+    while True:
+        epoch += 1
+        epoch_begin = time.time()
+
+        for batch_examples in train_set.batch_iter(batch_size=args.batch_size, shuffle=True):
+            batch_examples = [e for e in batch_examples if len(e.tgt_actions) &lt;= args.decode_max_time_step]
+            train_iter += 1
+            optimizer.zero_grad()
+
+            ret_val = model.score(batch_examples)
+            loss = -ret_val[0]
+
+            &#47&#47 print(loss.data)
+            loss_val = torch.sum(loss).data[0]
+            report_loss += loss_val
+            report_examples += len(batch_examples)
+            loss = torch.mean(loss)
+
+            if args.sup_attention:
+                att_probs = ret_val[1]
+                if att_probs:
+                    sup_att_loss = -torch.log(torch.cat(att_probs)).mean()
+                    sup_att_loss_val = sup_att_loss.data[0]
+                    report_sup_att_loss += sup_att_loss_val
+
+                    loss += sup_att_loss
+
+            loss.backward()
+
+            &#47&#47 clip gradient
+            if args.clip_grad &gt; 0.:
+                grad_norm = torch.nn.utils.clip_grad_norm(model.parameters(), args.clip_grad)
+
+            optimizer.step()
+
+            if train_iter % args.log_every == 0:
+                log_str = &quot[Iter %d] encoder loss=%.5f&quot % (train_iter, report_loss / report_examples)
+                if args.sup_attention:
+                    log_str += &quot supervised attention loss=%.5f&quot % (report_sup_att_loss / report_examples)
+                    report_sup_att_loss = 0.
+
+                print(log_str, file=sys.stderr)
+                report_loss = report_examples = 0.
+
+        print(&quot[Epoch %d] epoch elapsed %ds&quot % (epoch, time.time() - epoch_begin), file=sys.stderr)
+
+        if args.save_all_models:
+            model_file = args.save_to + &quot.iter%d.bin&quot % train_iter
+            print(&quotsave model to [%s]&quot % model_file, file=sys.stderr)
+            model.save(model_file)
+
+        &#47&#47 perform validation
+        if args.dev_file:
+            if epoch % args.valid_every_epoch == 0:
+                print(&quot[Epoch %d] begin validation&quot % epoch, file=sys.stderr)
+                eval_start = time.time()
+                eval_results = evaluation.evaluate(dev_set.examples, model, evaluator, args,
+                                                   verbose=True, eval_top_pred_only=args.eval_top_pred_only)
+                <a id="change">dev_score = eval_results[evaluator.default_metric]</a>
+
+                print(&quot[Epoch %d] evaluate details: %s, dev %s: %.5f (took %ds)&quot % (
+                                    epoch, eval_results,
+                                    evaluator.default_metric,</code></pre><img src="307390033.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pcyin/tranX/commit/870e17a6857365bec3035bfece2e77b525288b01#diff-6909998071fbb4a13571f10c14898b93288614db292ec6f6deb7330ffd0aa060L54' target='_blank'>Link</a></div><div id='project'> Project Name: pcyin/tranX</div><div id='commit'> Commit Name: 870e17a6857365bec3035bfece2e77b525288b01</div><div id='time'> Time: 2018-11-20</div><div id='author'> Author: pcyin@cs.cmu.edu</div><div id='file'> File Name: exp.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/pcyin/tranX/commit/870e17a6857365bec3035bfece2e77b525288b01#diff-6909998071fbb4a13571f10c14898b93288614db292ec6f6deb7330ffd0aa060L607' target='_blank'>Link</a></div><div id='project'> Project Name: pcyin/tranX</div><div id='commit'> Commit Name: 870e17a6857365bec3035bfece2e77b525288b01</div><div id='time'> Time: 2018-11-20</div><div id='author'> Author: pcyin@cs.cmu.edu</div><div id='file'> File Name: exp.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test</div><BR><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/72cc9dd414ee4befbadf9bd3e4804cb2e0908e9c#diff-729ce7be391812e450db5209f45f904e291b729309b1b1ff01f67d921dccbbe6L120' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: 72cc9dd414ee4befbadf9bd3e4804cb2e0908e9c</div><div id='time'> Time: 2017-08-07</div><div id='author'> Author: mattg@allenai.org</div><div id='file'> File Name: allennlp/nn/initializers.py</div><div id='class'> Class Name: InitializerApplicator</div><div id='method'> Method Name: from_params</div><BR>

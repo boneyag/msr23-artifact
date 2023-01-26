@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            weight_expanded = weight_expanded.narrow(2, self.padding_l, T)
+            &#47&#47 normalize the weight over valid positions like self-attention
+            weight_expanded = F.softmax(weight_expanded, dim=2)
+            <a id="change">weight_expanded = F.dropout(weight_expanded, self.weight_dropout, training=self.training, inplace=False)</a>
+        else:
+            P = self.padding_l
+            &#47&#47 For efficieny, we cut the kernel size and reduce the padding when the kernel is larger than the length
+            if K &gt; T and P == K-1:</code></pre><h3>After Change</h3><pre><code class='java'>
+        output = output.view(T, B, C)
+        return output
+
+    def _forward_expanded(<a id="change">self</a>, x, incremental_stat, query):
+        &quot&quot&quotTurn the convolution filters into band matrices and do matrix multiplication.
+        This is faster when the sequence is short, but less memory efficient.
+        This is not used in the decoder during inference.
+        &quot&quot&quot
+        T, B, C = x.size()
+        K, H = self.kernel_size, self.num_heads
+        R = C // H
+        assert R * H == C == self.input_size
+        if self.in_proj:
+            proj = self.weight_linear(x)
+            x = proj.narrow(2, 0, self.input_size).contiguous()
+            weight = proj.narrow(2, self.input_size, H*K).contiguous().view(T*B*H, -1)
+        else:
+            weight = self.weight_linear(query).view(T*B*H, -1)
+
+        if not self.renorm_padding:
+            if self.weight_softmax:
+                weight = F.softmax(weight, dim=1)
+            weight = <a id="change">self.weight_dropout_module(weight, inplace=False)</a>
+        weight = weight.narrow(1, 0, K).contiguous()
+        weight = weight.view(T, B*H, K).transpose(0, 1)
+
+        x = x.view(T, B*H, R).transpose(0, 1)
+        if self.weight_softmax and self.renorm_padding:
+            &#47&#47 turn the convolution filters into band matrices
+            weight_expanded = weight.new(B*H, T, T+K-1).fill_(float(&quot-inf&quot))
+            weight_expanded.as_strided((B*H, T, K), (T*(T+K-1), T+K, 1)).copy_(weight)
+            weight_expanded = weight_expanded.narrow(2, self.padding_l, T)
+            &#47&#47 normalize the weight over valid positions like self-attention
+            weight_expanded = F.softmax(weight_expanded, dim=2)
+            <a id="change">weight_expanded = self.weight_dropout_module(weight_expanded, inplace=False)</a>
+        else:
+            P = self.padding_l
+            &#47&#47 For efficieny, we cut the kernel size and reduce the padding when the kernel is larger than the length
+            if K &gt; T and P == K-1:</code></pre>

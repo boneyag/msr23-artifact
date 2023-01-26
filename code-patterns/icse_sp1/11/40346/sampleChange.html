@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def setup_platform(hass, config, add_devices, discovery_info=None):
+    Setup the Nest Sensor.
+    logger = logging.getLogger(__name__)
+    <a id="change">try:
+        for structure in nest.NEST.structures:
+            for device in structure.devices:
+                for variable in config[&quotmonitored_conditions&quot]:
+                    if variable in SENSOR_TYPES:
+                        add_devices([NestBasicSensor(structure,
+                                                     device,
+                                                     variable)])
+                    elif variable in SENSOR_TEMP_TYPES:
+                        add_devices([NestTempSensor(structure,
+                                                    device,
+                                                    variable)])
+                    elif variable in WEATHER_VARIABLES:
+                        json_variable = JSON_VARIABLE_NAMES.get(variable, None)
+                        add_devices([NestWeatherSensor(structure,
+                                                       device,
+                                                       json_variable)])
+                    else:
+                        logger.error(&quotNest sensor type: "%s" does not exist&quot,
+                                     variable)
+    except socket.error:
+        logger.error(
+            "Connection error logging into the nest web service."
+        )
+
+
+</a>class NestSensor(Entity):
+    Representation of a Nest sensor.
+
+    def __init__(self, structure, device, variable):</code></pre><h3>After Change</h3><pre><code class='java'>
+def setup_platform(hass, config, add_devices, discovery_info=None):
+    Setup the Nest Sensor.
+    for structure, device in nest.devices():
+        sensors = <a id="change">[NestBasicSensor(structure, device, variable)
+                   for variable in config[CONF_MONITORED_CONDITIONS]
+                   if variable in SENSOR_TYPES]</a>
+        sensors += [NestTempSensor(structure, device, variable)
+                    for variable in config[CONF_MONITORED_CONDITIONS]
+                    if variable in SENSOR_TEMP_TYPES]
+        <a id="change">sensors += [NestWeatherSensor(structure, device,
+                                      WEATHER_VARS[variable])
+                    for variable in config[CONF_MONITORED_CONDITIONS]
+                    if variable in WEATHER_VARS]</a>
+        add_devices(sensors)
+
+
+class NestSensor(Entity):</code></pre>

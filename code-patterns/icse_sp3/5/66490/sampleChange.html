@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                          nlp=nlp).build()
+
+term_freq_df = corpus.get_term_freq_df()
+<a id="change">frequencies_scaled = scale(np.log(term_freq_df.sum(axis=1).values))</a>
+zeta_i_j = (LogOddsRatioUninformativeDirichletPrior()
+            .get_zeta_i_j_given_separate_counts(term_freq_df[&quotdemocrat freq&quot],
+                                                term_freq_df[&quotrepublican freq&quot]))
+zeta_scaled_for_charting = scale_neg_1_to_1_with_zero_mean_abs_max(zeta_i_j)</code></pre><h3>After Change</h3><pre><code class='java'>
+                                    y_label=&quotLog Odds Ratio w/ Prior (a_w=0.01)&quot)
+&quot&quot&quot
+
+<a id="change">bg_df = (corpus
+	.get_term_and_background_counts()
+	.where(lambda x: x.corpus &gt; 0).dropna()
+)</a>
+bg_df.background += bg_df.corpus
+corpus_bg = corpus.remove_terms(set(corpus.get_terms()) - set(bg_df.index))
+priors = (corpus_bg
+	.get_term_and_background_counts()
+	.reindex(corpus_bg.get_terms())[&quotbackground&quot]
+)
+term_scorer = LogOddsRatioInformativeDirichletPrior(priors.values, 10)
+
+
+tooltip_context = &quot&quot&quot(function(d) {
+	return d.term+"&lt;br/&gt;Count ratio (per 25k): "+d.cat25k+":"+d.ncat25k+"&lt;br/&gt;Z-score: "+ Number(Math.round(d.os+&quote3&quot)+&quote-3&quot);
+})&quot&quot&quot
+
+<a id="change">html = produce_fightin_words_explorer(corpus_bg,
+                                      category=&quotdemocrat&quot,
+                                      category_name=&quotDemocratic&quot,
+                                      not_category_name=&quotRepublican&quot,
+                                      minimum_term_frequency=5,
+                                      get_tooltip_content = tooltip_context,
+                                      term_scorer=term_scorer)</a>
+
+file_name = &quotdemo_log_odds_ratio_prior_10.html&quot
+open(file_name, &quotwb&quot).write(html.encode(&quotutf-8&quot))
+print(&quotOpen %s in Chrome or Firefox.&quot % file_name)</code></pre>

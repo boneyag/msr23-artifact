@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def testHiddenClipping(self):
+    core = snt.LSTM(hidden_size=5, hidden_clip_value=1.0)
+    obs = tf.constant(np.random.rand(3, 10), dtype=tf.float32)
+    <a id="change">hidden = tf.placeholder(tf.float32, shape=[3, 5])</a>
+    <a id="change">cell = tf.placeholder(tf.float32, shape=[3, 5])</a>
+    output = core(obs, [hidden, cell])
+    <a id="change">with self.test_session() as sess:
+      sess.run(tf.global_variables_initializer())
+      unclipped = np.random.rand(3, 5) - 0.5
+      unclipped *= 2.0 / unclipped.max()
+      clipped = unclipped.clip(-1., 1.)
+      output1, (hidden1, cell1) = sess.run(output, feed_dict={hidden: unclipped,
+                                                              cell: unclipped})
+      output2, (hidden2, cell2) = sess.run(output, feed_dict={hidden: clipped,
+                                                              cell: unclipped})
+      self.assertAllClose(output1, output2)
+      self.assertAllClose(hidden1, hidden2)
+      self.assertAllClose(cell1, cell2)
+
+ </a> def testCellClipping(self):
+    core = snt.LSTM(hidden_size=5, cell_clip_value=1.0)
+    obs = tf.constant(np.random.rand(3, 10), dtype=tf.float32)
+    hidden = tf.placeholder(tf.float32, shape=[3, 5])</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    unclipped = np.random.rand(3, 5) - 0.5
+    unclipped *= 2.0 / unclipped.max()
+    unclipped = <a id="change">unclipped.astype(np.float32)</a>
+    clipped = unclipped.clip(-1., 1.)
+
+    <a id="change">hidden = tf.constant(unclipped)</a>
+    <a id="change">cell = tf.constant(unclipped)</a>
+    output = core(obs, [hidden, cell])
+    self.evaluate(tf.global_variables_initializer())
+    <a id="change">output1, (hidden1, cell1) = self.evaluate(output)</a>
+
+    hidden = tf.constant(clipped)
+    output = core(obs, [hidden, cell])
+</code></pre>

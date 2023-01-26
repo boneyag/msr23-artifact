@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    raise RuntimeError(&quotAdam does not support sparse gradients, please consider SparseAdam instead&quot)
+                amsgrad = group[&quotamsgrad&quot]
+
+                p_data_fp32 = <a id="change">p.data.float()</a>
+
+                state = self.state[p]
+
+                &#47&#47 State initialization
+                if len(state) == 0:
+                    state[&quotstep&quot] = 0
+                    &#47&#47 Exponential moving average of gradient values
+                    <a id="change">state[&quotexp_avg&quot]</a> = torch.zeros_like(p_data_fp32)
+                    &#47&#47 Exponential moving average of squared gradient values
+                    <a id="change">state[&quotexp_avg_sq&quot]</a> = torch.zeros_like(p_data_fp32)
+                    if amsgrad:
+                        &#47&#47 Maintains max of all exp. moving avg. of sq. grad. values
+                        state[&quotmax_exp_avg_sq&quot] = torch.zeros_like(p_data_fp32)
+                else:
+                    <a id="change">state[&quotexp_avg&quot]</a> = state[&quotexp_avg&quot].type_as(p_data_fp32)
+                    state[&quotexp_avg_sq&quot] = state[&quotexp_avg_sq&quot].type_as(p_data_fp32)
+                    if amsgrad:
+                        <a id="change">state[&quotmax_exp_avg_sq&quot]</a> = state[&quotmax_exp_avg_sq&quot].type_as(p_data_fp32)
+
+                exp_avg, exp_avg_sq = state[&quotexp_avg&quot], state[&quotexp_avg_sq&quot]
+                if amsgrad:</code></pre><h3>After Change</h3><pre><code class='java'>
+                amsgrad = group[&quotamsgrad&quot]
+
+                p_data_fp32 = p.data
+                <a id="change">if p.data.dtype in {torch.float16, torch.bfloat16}:
+                    p_data_fp32 = p_data_fp32.float()
+
+               </a> state = self.state[p]
+
+                &#47&#47 State initialization
+                if len(state) == 0:
+                    state[&quotstep&quot] = 0
+                    &#47&#47 Exponential moving average of gradient values
+                    <a id="change">state[&quotexp_avg&quot]</a> = torch.zeros_like(p_data_fp32)
+                    &#47&#47 Exponential moving average of squared gradient values
+                    <a id="change">state[&quotexp_avg_sq&quot]</a> = torch.zeros_like(p_data_fp32)
+                    if amsgrad:
+                        &#47&#47 Maintains max of all exp. moving avg. of sq. grad. values
+                        state[&quotmax_exp_avg_sq&quot] = torch.zeros_like(p_data_fp32)
+                else:
+                    <a id="change">state[&quotexp_avg&quot]</a> = state[&quotexp_avg&quot].to(p_data_fp32)
+                    state[&quotexp_avg_sq&quot] = state[&quotexp_avg_sq&quot].to(p_data_fp32)
+                    if amsgrad:
+                        <a id="change">state[&quotmax_exp_avg_sq&quot]</a> = state[&quotmax_exp_avg_sq&quot].to(p_data_fp32)
+
+                exp_avg, exp_avg_sq = state[&quotexp_avg&quot], state[&quotexp_avg_sq&quot]
+                if amsgrad:</code></pre>

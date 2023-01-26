@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          count = target.new_tensor([target.shape[0]],dtype=torch.long)
+          for meter,val in (losses,loss), (top1,prec1), (top5,prec5):
+            if dist.is_initialized():
+              <a id="change">dist.all_reduce(val, dist.reduce_op.SUM)</a>
+              dist.all_reduce(count, dist.reduce_op.SUM)
+            val /= count.item()
+            meter.update(val.item(), count.item())
+</code></pre><h3>After Change</h3><pre><code class='java'>
+          if dist.is_initialized():
+            dist.all_reduce(count, dist.reduce_op.SUM)
+          for meter,val in (losses,loss), (top1,prec1), (top5,prec5):
+            <a id="change">if dist.is_initialized():
+              dist.all_reduce(val, dist.reduce_op.SUM)
+           </a> val /= count.item()
+            meter.update(val.item(), count.item())
+
+</code></pre>

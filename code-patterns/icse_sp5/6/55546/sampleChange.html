@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        user = User.objects.get(pk=self.user_id)
+        r = redis.Redis(connection_pool=settings.REDIS_PUBSUB_POOL)
+        r.publish(user.username, &quotsearch_index_complete:start&quot)
+        <a id="change">throttle = time.time()</a>
+        
+        subscriptions = UserSubscription.objects.filter(user=user)
+        total = subscriptions.count()
+        logging.user(user, "~FCIndexing ~SB%s feeds~SN for ~SB~FB%s~FC~SN..." % </code></pre><h3>After Change</h3><pre><code class='java'>
+            except Feed.DoesNotExist:
+                continue
+        
+        <a id="change">feed_id_chunks = [c for c in chunks(feed_ids, 6)]</a>
+        logging.user(user, "~FCIndexing ~SB%s feeds~SN in %s chunks..." % 
+                     (total, len(feed_id_chunks)))
+        
+        <a id="change">tasks = [IndexSubscriptionsChunkForSearch().s(feed_ids=feed_id_chunk,
+                                                      user_id=self.user_id
+                                                      ).set(queue=&quotsearch_indexer&quot)
+                 for feed_id_chunk in feed_id_chunks]</a>
+        group = celery.group(*tasks)
+        res = group.apply_async(queue=&quotsearch_indexer&quot)
+        res.join_native()
+        </code></pre>

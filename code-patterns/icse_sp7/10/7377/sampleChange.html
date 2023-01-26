@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def testApplyFunctionWithCheckpointTwoInputs(self):
+    checkpoint = os.path.join(self.get_temp_dir(), &quotcheckpoint_two&quot)
+    self.save_checkpoint_with_two_inputs(checkpoint)
+    <a id="change">with self.test_session(graph=tf.Graph()) as sess:
+      input1 = tf.compat.v1.placeholder(
+          dtype=tf.int64, shape=[3], name=&quotinput1&quot)
+      input2 = tf.compat.v1.placeholder(
+          dtype=tf.int64, shape=[3], name=&quotinput2&quot)
+      output_tensor = pretrained_models.apply_function_with_checkpoint(
+          self.make_tensor_fn_two_inputs(), [input1, input2], checkpoint)
+      feed_dict = {input1: [1, 2, 3], input2: [3, 2, 1]}
+      output_value = sess.run(output_tensor, feed_dict=feed_dict)
+      &#47&#47 [1, 2, 3] + [1, 2, 3] - [3, 2, 1] = [-1, 2, 5]
+      self.assertAllEqual(output_value, [-1, 2, 5])
+
+
+</a>if __name__ == &quot__main__&quot:
+  &#47&#47 TODO(b/133440043): Remove this once TFT supports eager execution.
+  tf.compat.v1.disable_eager_execution()
+  tf.test.main()</code></pre><h3>After Change</h3><pre><code class='java'>
+  def testApplyFunctionWithCheckpointTwoInputs(self):
+    checkpoint = os.path.join(self.get_temp_dir(), &quotcheckpoint_two&quot)
+    self.save_checkpoint_with_two_inputs(checkpoint)
+    <a id="change">with tf.compat.v1.Graph().as_default() as graph:
+      with self.test_session(graph=graph) as sess:
+        input1 = tf.compat.v1.placeholder(
+            dtype=tf.int64, shape=[3], name=&quotinput1&quot)
+        input2 = tf.compat.v1.placeholder(
+            dtype=tf.int64, shape=[3], name=&quotinput2&quot)
+        output_tensor = pretrained_models.apply_function_with_checkpoint(
+            self.make_tensor_fn_two_inputs(), [input1, input2], checkpoint)
+        feed_dict = {input1: [1, 2, 3], input2: [3, 2, 1]}
+        output_value = sess.run(output_tensor, feed_dict=feed_dict)
+        &#47&#47 [1, 2, 3] + [1, 2, 3] - [3, 2, 1] = [-1, 2, 5]
+        self.assertAllEqual(output_value, [-1, 2, 5])
+
+
+</a>if __name__ == &quot__main__&quot:
+  tf.test.main()
+</code></pre>

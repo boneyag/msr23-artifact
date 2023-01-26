@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      tests = list(self.normalize_test_classes() if self.test_classes
+                                                 else self.calculate_tests(targets))
+      if tests:
+        junit_classpath = self.classpath(<a id="change">binary_util.profile_classpath(self.junit_profile,
+                            workunit_factory=self.context.new_workunit)</a>, confs=self.confs,
+                            exclusives_classpath=self.get_base_classpath_for_target(targets[0]))
+
+        def run_tests(classpath, main, jvmargs=None):
+          def test_workunit_factory(name, labels=list(), cmd=&quot&quot):
+            return self.context.new_workunit(name=name, labels=[WorkUnit.TEST] + labels, cmd=cmd)
+
+          &#47&#47 TODO(John Sirois): Integrated batching with the test runner.  As things stand we get
+          &#47&#47 results summaries for example for each batch but no overall summary.
+          &#47&#47 http://jira.local.twitter.com/browse/AWESOME-1114
+          result = 0
+          for batch in self._partition(tests):
+            with binary_util.safe_args(batch) as batch_tests:
+              result += abs(binary_util.runjava_indivisible(
+                jvmargs=(jvmargs or []) + self.java_args,
+                classpath=classpath,
+                main=main,
+                opts=self.opts,
+                args=batch_tests,
+                workunit_factory=test_workunit_factory,
+                workunit_name=&quotrun&quot
+              ))
+              if result != 0 and self.fail_fast:
+                break
+          if result != 0:
+            raise TaskError()
+
+        if self.coverage:
+          emma_classpath = binary_util.profile_classpath(<a id="change">self.emma_profile</a>)
+
+          def instrument_code():
+            safe_mkdir(self.coverage_instrument_dir, clean=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+      tests = list(self.normalize_test_classes() if self.test_classes
+                                                 else self.calculate_tests(targets))
+      if tests:
+        <a id="change">bootstrapped_cp = self._bootstrap_utils.get_jvm_build_tools_classpath(self._bootstrap_tools)</a>
+        junit_classpath = self.classpath(bootstrapped_cp,
+                                         confs=self.confs,
+                                         exclusives_classpath=self.get_base_classpath_for_target(targets[0]))
+
+        def run_tests(classpath, main, jvmargs=None):
+          def test_workunit_factory(name, labels=list(), cmd=&quot&quot):
+            return self.context.new_workunit(name=name, labels=[WorkUnit.TEST] + labels, cmd=cmd)
+
+          &#47&#47 TODO(John Sirois): Integrated batching with the test runner.  As things stand we get
+          &#47&#47 results summaries for example for each batch but no overall summary.
+          &#47&#47 http://jira.local.twitter.com/browse/AWESOME-1114
+          result = 0
+          for batch in self._partition(tests):
+            with binary_util.safe_args(batch) as batch_tests:
+              result += abs(binary_util.runjava_indivisible(
+                jvmargs=(jvmargs or []) + self.java_args,
+                classpath=classpath,
+                main=main,
+                opts=self.opts,
+                args=batch_tests,
+                workunit_factory=test_workunit_factory,
+                workunit_name=&quotrun&quot
+              ))
+              if result != 0 and self.fail_fast:
+                break
+          if result != 0:
+            raise TaskError()
+
+        if self.coverage:
+          emma_classpath = <a id="change">self._bootstrap_utils.get_jvm_build_tools_classpath(self._emma_bootstrap_tools)</a>
+
+          def instrument_code():
+            safe_mkdir(self.coverage_instrument_dir, clean=True)
+            with binary_util.safe_args(self.get_coverage_patterns(targets)) as patterns:</code></pre>

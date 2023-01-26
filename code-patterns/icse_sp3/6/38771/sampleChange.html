@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                       {self.s: s[np.newaxis, :], self.s_: s_[np.newaxis, :]})
+        error = r + np.max(q_next, axis=1) - q_eval[0, a]
+
+        <a id="change">self.memory.store(abs(error[0]), transition)</a>
+
+    def choose_action(self, observation):
+        observation = observation[np.newaxis, :]
+        if np.random.uniform() &lt; self.epsilon:</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.q_next = build_layers(self.s_, c_names, n_l1, w_initializer, b_initializer)
+
+    def store_transition(self, s, a, r, s_):
+        <a id="change">if self.prioritized:    &#47&#47 prioritized replay
+            transition = np.hstack((s, [a, r], s_))
+            q_next, q_eval = self.sess.run([self.q_next, self.q_eval],
+                                           {self.s: s[np.newaxis, :], self.s_: s_[np.newaxis, :]})
+            error = r + np.max(q_next, axis=1) - q_eval[0, a]
+            self.memory.store(abs(error[0]), transition)
+        else:       &#47&#47 random replay
+            if not hasattr(self, &quotmemory_counter&quot):
+                self.memory_counter = 0
+            transition = np.hstack((s, [a, r], s_))
+            index = self.memory_counter % self.memory_size
+            self.memory.iloc[index, :] = transition
+            self.memory_counter += 1
+
+   </a> def choose_action(self, observation):
+        observation = observation[np.newaxis, :]
+        if np.random.uniform() &lt; self.epsilon:
+            actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})</code></pre>

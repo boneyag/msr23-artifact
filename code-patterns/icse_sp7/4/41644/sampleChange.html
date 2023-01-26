@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                pass
+            fullname = _make_name(self._pyro_name, name)
+            if fullname in _PYRO_PARAM_STORE:
+                <a id="change">del _PYRO_PARAM_STORE[fullname]</a>
+            _pyro_params = self.__dict__[&quot_pyro_params&quot]
+            constrained_value, constraint, event_dim = value
+            _pyro_params[name] = constraint, event_dim
+            pyro.param(fullname, constrained_value, constraint=constraint, event_dim=event_dim)</code></pre><h3>After Change</h3><pre><code class='java'>
+            if self._pyro_context.active:
+                fullname = _make_name(self._pyro_name, name)
+                value = pyro.param(fullname, value)
+                <a id="change">if not isinstance(value, torch.nn.Parameter):
+                    &#47&#47 Update PyroModule ---&gt; ParamStore (type only; data is preserved).
+                    value = torch.nn.Parameter(value)
+                    _PYRO_PARAM_STORE._params[fullname] = value
+                    _PYRO_PARAM_STORE._param_to_name[value] = fullname
+           </a> super().__setattr__(name, value)
+            return
+
+        if isinstance(value, torch.Tensor):</code></pre>

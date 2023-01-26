@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def run(self):
+        &#47&#47 print(&quotworker %s running&quot % self.name)
+        while True:
+            <a id="change">next_task, task_kwargs = self.tasks_queue.get()</a>
+            &#47&#47 print(&quotworker %s got task `%s`&quot % (self.name, next_task))
+            if next_task is None:  &#47&#47 a task of None means shutdown
+                self.tasks_queue.task_done()
+                break</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def run(self):
+        &#47&#47 print(&quotworker %s running&quot % self.name)
+        <a id="change">for next_task, task_kwargs in iter(self.tasks_queue.get, None):
+            &#47&#47next_task, task_kwargs = self.tasks_queue.get()
+            &#47&#47 print(&quotworker %s got task `%s`&quot % (self.name, next_task))
+            &#47&#47 if next_task is None:  &#47&#47 a task of None means shutdown
+            &#47&#47     self.tasks_queue.task_done()
+            &#47&#47     break
+
+            exec_task_fn = getattr(self, &quot_task_&quot + next_task)
+            if exec_task_fn:
+                exec_task_fn(**task_kwargs)
+            else:
+                raise NotImplementedError("Task not implemented: `%s`" % next_task)
+
+            &#47&#47 print(&quotworker %s has tokens from `%s`&quot % (self.name, list(self._tokens.keys())))
+            self.tasks_queue.task_done()
+
+       </a> self.tasks_queue.task_done()
+
+    def load_tokenizer(self, custom_tokenizer):
+        self.tokenizer = custom_tokenizer</code></pre>

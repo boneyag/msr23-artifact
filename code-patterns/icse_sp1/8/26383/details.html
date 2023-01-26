@@ -1,0 +1,40 @@
+<html><h3>c40305a954f3335c22cb98a42c8daa2ca9ca4a0a,onnxmltools/convert/keras/operator_converters/Conv.py,,convert_keras_conv_core,#Any#Any#Any#Any#Any#Any#Any#Any#,18
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if is_transpose:  &#47&#47 bypass onnx engine issue on convtranpose support.
+            attrs[&quotauto_pad&quot] = &quotSAME_LOWER&quot
+            shape = [-1 if i is None else i for i in op.output_shape]
+            <a id="change">if channels_first:
+                attrs[&quotoutput_shape&quot] = shape
+            else:
+                attrs[&quotoutput_shape&quot] = shape[0:1] + shape[-1:] + shape[1:-1]
+
+       </a> else:
+            attrs[&quotauto_pad&quot] = &quotSAME_LOWER&quot
+    else:
+        raise RuntimeError("Unsupported padding type &quot{}&quot".format(op.padding))</code></pre><h3>After Change</h3><pre><code class='java'>
+    if op.padding == &quotvalid&quot:
+        attrs[&quotauto_pad&quot] = &quotVALID&quot
+    elif op.padding == &quotsame&quot:
+        <a id="change">if op.input_shape.count(None) &gt; 1:
+            if is_transpose:
+                attrs[&quotauto_pad&quot] = &quotSAME_LOWER&quot  &#47&#47 the controversial def in onnx spec.
+            else:
+                attrs[&quotauto_pad&quot] = &quotSAME_UPPER&quot
+        else:
+            output_padding = [0] * len(op.kernel_size)
+            if hasattr(op, &quotoutput_padding&quot) and op.output_padding is not None:
+                output_padding = op.output_padding
+            attrs[&quotpads&quot] = _calc_explicit_padding(op.output_shape if is_transpose else op.input_shape,
+                                                   op.input_shape if is_transpose else op.output_shape,
+                                                   output_padding,
+                                                   op.kernel_size,
+                                                   op.strides,
+                                                   op.dilation_rate,
+                                                   list(range(len(op.input_shape))) if channels_first else input_perm_axes)
+   </a> else:
+        raise RuntimeError("Unsupported padding type &quot{}&quot".format(op.padding))
+
+    intermediate_output_name = scope.get_unique_variable_name(&quotconvolution_output&quot)</code></pre><img src="135173448.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/onnx/onnxmltools/commit/c40305a954f3335c22cb98a42c8daa2ca9ca4a0a#diff-8d00f44e593ba63d870a01071eab32abe94dcc42a33b55013dd37bbb58520d84L22' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnxmltools</div><div id='commit'> Commit Name: c40305a954f3335c22cb98a42c8daa2ca9ca4a0a</div><div id='time'> Time: 2018-12-13</div><div id='author'> Author: wenbingl@outlook.com</div><div id='file'> File Name: onnxmltools/convert/keras/operator_converters/Conv.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: convert_keras_conv_core</div><BR><BR><div id='link'><a href='https://github.com/AlexsLemonade/refinebio/commit/a971f44300932557e9a806c991c5e81eedf62e4e#diff-3a0ded1519d32db1ceac3dd963b367b7d090499a5d234b935d1886e116d73be7L606' target='_blank'>Link</a></div><div id='project'> Project Name: AlexsLemonade/refinebio</div><div id='commit'> Commit Name: a971f44300932557e9a806c991c5e81eedf62e4e</div><div id='time'> Time: 2020-06-16</div><div id='author'> Author: willvauclain.dev@gmail.com</div><div id='file'> File Name: api/data_refinery_api/serializers.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: validate_dataset</div><BR><BR><div id='link'><a href='https://github.com/AlexsLemonade/refinebio/commit/e71409990c4bebd972dc4e5f3da711bda5a2dc65#diff-3a0ded1519d32db1ceac3dd963b367b7d090499a5d234b935d1886e116d73be7L653' target='_blank'>Link</a></div><div id='project'> Project Name: AlexsLemonade/refinebio</div><div id='commit'> Commit Name: e71409990c4bebd972dc4e5f3da711bda5a2dc65</div><div id='time'> Time: 2020-07-01</div><div id='author'> Author: willvauclain.dev@gmail.com</div><div id='file'> File Name: api/data_refinery_api/serializers.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: validate_dataset</div><BR>

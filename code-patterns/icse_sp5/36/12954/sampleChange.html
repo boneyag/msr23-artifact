@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    except ApiException:
+        _logger.error(&quotCould not start tensorboard, please check your polyaxon spec.&quot,
+                      exc_info=True)
+        <a id="change">tensorboard.set_status(
+            JobLifeCycle.FAILED,
+            message=&quotCould not start tensorboard, encountered a Kubernetes ApiException.&quot)</a>
+        return
+    except VolumeNotFoundError as e:
+        _logger.error(&quotCould not start the tensorboard, please check your volume definitions.&quot,
+                      exc_info=True)
+        <a id="change">tensorboard.set_status(
+            JobLifeCycle.FAILED,
+            message=&quotCould not start the tensorboard, &quot
+                    &quotencountered a volume definition problem. %s&quot % e)</a>
+        return False
+    except Exception as e:
+        _logger.error(&quotCould not start tensorboard, please check your polyaxon spec.&quot,
+                      exc_info=True)
+        <a id="change">tensorboard.set_status(
+            JobLifeCycle.FAILED,
+            message=&quotCould not start tensorboard encountered an {} exception.&quot.format(
+                e.__class__.__name__
+            ))</a>
+        return
+    tensorboard.definition = get_job_definition(results)
+    tensorboard.save()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        namespace=settings.K8S_NAMESPACE,
+        in_cluster=True)
+
+    <a id="change">error = {}</a>
+    try:
+        results = spawner.start_tensorboard(
+            image=tensorboard.image,
+            outputs_path=tensorboard.outputs_path,
+            persistence_outputs=tensorboard.persistence_outputs,
+            outputs_refs_jobs=tensorboard.outputs_refs_jobs,
+            outputs_refs_experiments=tensorboard.outputs_refs_experiments,
+            resources=tensorboard.resources,
+            node_selector=tensorboard.node_selector,
+            affinity=tensorboard.affinity,
+            tolerations=tensorboard.tolerations)
+        tensorboard.definition = get_job_definition(results)
+        tensorboard.save()
+        return
+    except ApiException:
+        _logger.error(&quotCould not start tensorboard, please check your polyaxon spec.&quot,
+                      exc_info=True)
+        <a id="change">error = {
+            &quotraised&quot: True,
+            &quottraceback&quot: traceback.format_exc(),
+            &quotmessage&quot: &quotCould not start the job, encountered a Kubernetes ApiException.&quot,
+        }</a>
+    except VolumeNotFoundError as e:
+        _logger.error(&quotCould not start the tensorboard, please check your volume definitions.&quot,
+                      exc_info=True)
+        <a id="change">error = {
+            &quotraised&quot: True,
+            &quottraceback&quot: traceback.format_exc(),
+            &quotmessage&quot: &quotCould not start the job, encountered a volume definition problem. %s&quot % e,
+        }</a>
+    except Exception as e:
+        _logger.error(&quotCould not start tensorboard, please check your polyaxon spec.&quot,
+                      exc_info=True)
+        <a id="change">error = {
+            &quotraised&quot: True,
+            &quottraceback&quot: traceback.format_exc(),
+            &quotmessage&quot: &quotCould not start tensorboard encountered an {} exception.&quot.format(
+                e.__class__.__name__)
+        }</a>
+    finally:
+        if error.get(&quotraised&quot):
+            tensorboard.set_status(
+                JobLifeCycle.FAILED,</code></pre>

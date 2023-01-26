@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        flat = numpy.array(list(im.getpalette())) / 255.0  &#47&#47 float values now
+        rgb_palette = [flat[i:i + 3] for i in range(0, len(flat), 3)]  &#47&#47 group by 3
+        <a id="change">lab_palette = convert_color(rgb_palette, &quotRGB&quot, &quotLAB&quot, False)</a>
+        palette = [numpy.array(x) for x in lab_palette]
+
+        bins = numpy.bincount(numpy.array(list(im.getdata())), minlength=len(rgb_palette))
+        num_pixels = im.size[0] * im.size[1]
+
+        from mathics.algorithm.clusters import agglomerate, PrecomputedDistances, FixedDistanceCriterion
+
+        norm = numpy.linalg.norm
+
+        def df(i, j):
+            return norm(palette[i] - palette[j])
+
+        lab_distances = [df(i, j) for i in range(len(lab_palette)) for j in range(i)]
+
+        dominant = agglomerate(
+            (rgb_palette, bins),
+            (FixedDistanceCriterion, {&quotmerge_limit&quot: py_min_color_distance}),
+            PrecomputedDistances(lab_distances),
+            mode=&quotdominant&quot)
+
+        result = []
+
+        min_coverage = max(0, int(num_pixels * py_min_color_coverage))
+        max_coverage = min(num_pixels, int(num_pixels * py_max_color_coverage))
+
+        <a id="change">for prototype, coverage, members in dominant:
+            if len(result) &gt;= at_most:
+                break
+            if max_coverage &gt;= coverage &gt; min_coverage:
+                result.append(Expression(&quotRGBColor&quot, *prototype))
+
+       </a> return Expression(&quotList&quot, *result)
+
+
+&#47&#47 pixel access</code></pre><h3>After Change</h3><pre><code class='java'>
+                if max_coverage &gt;= coverage &gt; min_coverage:
+                    yield Expression(&quotRGBColor&quot, *prototype)
+
+        return Expression(&quotList&quot, *itertools.islice(<a id="change">result()</a>, 0, at_most))
+
+
+&#47&#47 pixel access</code></pre>

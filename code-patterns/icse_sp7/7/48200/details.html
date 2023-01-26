@@ -1,0 +1,68 @@
+<html><h3>705a3dcb90454c2d6ab2a857ac0b88dff2ef0bab,src/python/pants/core/goals/lint.py,,lint,#Any#Any#Any#Any#Any#,134
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        )
+
+    sorted_results = sorted(itertools.chain.from_iterable(results), key=lambda res: res.linter_name)
+    <a id="change">if not sorted_results:
+        return Lint(exit_code=0)
+
+   </a> linter_to_reports = defaultdict(list)
+    for result in sorted_results:
+        if result.report:
+            <a id="change">linter_to_reports[result.linter_name].append(result.report)</a>
+    if linter_to_reports:
+        &#47&#47 TODO(&#47&#4710532): Tolerate when a linter has multiple reports.
+        linters_with_multiple_reports = [
+            linter for linter, reports in linter_to_reports.items() if len(reports) &gt; 1
+        ]
+        if linters_with_multiple_reports:
+            if lint_subsystem.per_target_caching:
+                suggestion = "Try running without `--lint-per-target-caching` set."
+            else:
+                suggestion = (
+                    "The linters likely partitioned the input targets, such as grouping by Python "
+                    "interpreter compatibility. Try running on fewer targets or unset "
+                    "`--lint-reports-dir`."
+                )
+            raise InvalidLinterReportsError(
+                "Multiple reports would have been written for these linters: "
+                f"{linters_with_multiple_reports}. The option `--lint-reports-dir` only works if "
+                f"each linter has a single result. {suggestion}"
+            )
+        <a id="change">reports = itertools.chain.from_iterable(linter_to_reports.values())</a>
+        merged_reports = await Get(Digest, MergeDigests(report.digest for report in reports))
+        workspace.write_digest(merged_reports, path_prefix=lint_subsystem.reports_dir)
+        logger.info(f"Wrote lint result files to {lint_subsystem.reports_dir}.")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            for field_set in request.field_sets
+        )
+        &#47&#47 We consolidate all results for each linter into a single `LintResults`.
+        <a id="change">all_results = tuple(
+            LintResults(
+                itertools.chain.from_iterable(
+                    per_target_results.results for per_target_results in all_linter_results
+                ),
+                linter_name=linter_name,
+            )
+            for linter_name, all_linter_results in itertools.groupby(
+                all_per_target_results, key=lambda results: results.linter_name
+            )
+        )</a>
+    else:
+        all_results = await MultiGet(
+            Get(LintResults, LintRequest, lint_request) for lint_request in valid_requests
+        )
+
+    all_results = tuple(sorted(all_results, key=lambda results: results.linter_name))
+
+    reports = list(itertools.chain.from_iterable(results.reports for results in all_results))
+    if reports:
+        &#47&#47 TODO(&#47&#4710532): Tolerate when a linter has multiple reports.
+        linters_with_multiple_reports = [
+            results.linter_name <a id="change">for</a> results in all_results if len(results.reports) &gt; 1
+        ]
+        if linters_with_multiple_reports:
+            if lint_subsystem.per_target_caching:</code></pre><img src="223255885.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/705a3dcb90454c2d6ab2a857ac0b88dff2ef0bab#diff-944e80cb5627a9f23c098e2f3b83bc20c72edb3e66e82df817099e5b2733cc5aL161' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 705a3dcb90454c2d6ab2a857ac0b88dff2ef0bab</div><div id='time'> Time: 2020-08-16</div><div id='author'> Author: 14852634+Eric-Arellano@users.noreply.github.com</div><div id='file'> File Name: src/python/pants/core/goals/lint.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: lint</div><BR><BR><div id='link'><a href='https://github.com/erikbern/ann-benchmarks/commit/21608a6b6e6883504a0bcb06abbf9c7d8029897b#diff-9989e294442a11a07b952b455a3d5fc814c9660e91460e43c46c99d349b773beL21' target='_blank'>Link</a></div><div id='project'> Project Name: erikbern/ann-benchmarks</div><div id='commit'> Commit Name: 21608a6b6e6883504a0bcb06abbf9c7d8029897b</div><div id='time'> Time: 2019-07-21</div><div id='author'> Author: maau@itu.dk</div><div id='file'> File Name: ann_benchmarks/distance.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: transform_dense_to_sparse</div><BR><BR><div id='link'><a href='https://github.com/idank/explainshell/commit/1fffcec16578e6bea8de6e685632b3f56713a438#diff-58269a4891fa907828c597e6788b57090f242ba667803b41818af61e4a6c70d3L234' target='_blank'>Link</a></div><div id='project'> Project Name: idank/explainshell</div><div id='commit'> Commit Name: 1fffcec16578e6bea8de6e685632b3f56713a438</div><div id='time'> Time: 2013-09-07</div><div id='author'> Author: idankk86@gmail.com</div><div id='file'> File Name: explainshell/matcher.py</div><div id='class'> Class Name: matcher</div><div id='method'> Method Name: _mergeadjacent</div><BR>

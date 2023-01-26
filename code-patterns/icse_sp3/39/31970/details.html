@@ -1,0 +1,72 @@
+<html><h3>f4b78d3de601d21dad76b9d339033ff133cb7976,baseline/tf/tagger/training/eager.py,TaggerTrainerEagerTf,_train,#TaggerTrainerEagerTf#Any#Any#,173
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        SET_TRAIN_FLAG(True)
+        reporting_fns = kwargs.get(&quotreporting_fns&quot, [])
+        pg = create_progress_bar(steps)
+        <a id="change">epoch_loss = tf.keras.metrics.Sum()</a>
+        epoch_div = <a id="change">tf.keras.metrics.Sum()</a>
+        <a id="change">nstep_loss = tf.keras.metrics.Sum()</a>
+        nstep_div = <a id="change">tf.keras.metrics.Sum()</a>
+        self.nstep_start = time.time()
+
+        @tf.function
+        def _train_step(inputs):
+            features, y = inputs
+            loss = self.optimizer.update(self.model.impl, features, y)
+            batchsz = tf.cast(get_shape_as_list(y)[0], tf.float32)
+            report_loss = loss * batchsz
+            epoch_loss.update_state(report_loss)
+            nstep_loss.update_state(report_loss)
+            epoch_div.update_state(batchsz)
+            nstep_div.update_state(batchsz)
+
+        with autograph_options({"function_optimization": False, "layout_optimizer": False}):
+            for inputs in pg(loader):
+                _train_step(inputs)
+                step = self.optimizer.global_step.numpy() + 1
+                if step % self.nsteps == 0:
+                    metrics = self.calc_metrics(<a id="change">nstep_loss</a>.result().numpy(), <a id="change">nstep_div</a>.result().numpy())
+                    self.report(
+                        step, metrics, self.nstep_start,
+                        &quotTrain&quot, &quotSTEP&quot, reporting_fns, self.nsteps
+                    )
+                    nstep_loss.reset_states()
+                    nstep_div.reset_states()
+                    self.nstep_start = time.time()
+
+        epoch_loss = <a id="change">epoch_loss</a>.result().numpy()
+        epoch_div = <a id="change">epoch_div</a>.result().numpy()
+        metrics = self.calc_metrics(epoch_loss, epoch_div)
+        return metrics
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        SET_TRAIN_FLAG(True)
+        reporting_fns = kwargs.get(&quotreporting_fns&quot, [])
+        pg = create_progress_bar(steps)
+        <a id="change">epoch_loss = tf.Variable(0.0)</a>
+        epoch_div = <a id="change">tf.Variable(0, dtype=tf.int32)</a>
+        <a id="change">nstep_loss = tf.Variable(0.0)</a>
+        nstep_div = <a id="change">tf.Variable(0, dtype=tf.int32)</a>
+        self.nstep_start = time.time()
+
+        @tf.function
+        def _train_step(inputs):
+            features, y = inputs
+            loss = self.optimizer.update(self.model.impl, features, y)
+            batchsz = get_shape_as_list(y)[0]
+            report_loss = loss * batchsz
+            return report_loss, batchsz
+
+        with autograph_options({"function_optimization": False, "layout_optimizer": False}):
+            for inputs in pg(loader):
+                <a id="change">step_report_loss</a>, <a id="change">step_batchsz</a> = _train_step(inputs)
+                <a id="change">epoch_loss.assign_add(step_report_loss)</a>
+                <a id="change">nstep_loss.assign_add(step_report_loss)</a>
+                <a id="change">epoch_div.assign_add(step_batchsz)</a>
+                <a id="change">nstep_div.assign_add(step_batchsz)</a>
+
+                step = self.optimizer.global_step.numpy() + 1
+                if step % self.nsteps == 0:
+                    metrics = self.calc_metrics(nstep_loss.numpy(), nstep_div.numpy())</code></pre><img src="156883288.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 31</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/f4b78d3de601d21dad76b9d339033ff133cb7976#diff-9697a5691db388e7609253adf469b4b13e3d6e15c4e17e171e8f36e2844cd9a7L192' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: f4b78d3de601d21dad76b9d339033ff133cb7976</div><div id='time'> Time: 2020-04-06</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: baseline/tf/tagger/training/eager.py</div><div id='class'> Class Name: TaggerTrainerEagerTf</div><div id='method'> Method Name: _train</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/f4b78d3de601d21dad76b9d339033ff133cb7976#diff-5e821e4ee5a9a0b068edfcbcf9d96af7031a03a78db5e956bd926a2c7cf2142fL96' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: f4b78d3de601d21dad76b9d339033ff133cb7976</div><div id='time'> Time: 2020-04-06</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: baseline/tf/lm/training/eager.py</div><div id='class'> Class Name: LanguageModelTrainerEagerTf</div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/f4b78d3de601d21dad76b9d339033ff133cb7976#diff-fc9b7ceee7bbb1f82ba3ddc7a49b0ac2e5015ff3e52e87667b7ad3dad4664d2bL96' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: f4b78d3de601d21dad76b9d339033ff133cb7976</div><div id='time'> Time: 2020-04-06</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: baseline/tf/classify/training/eager.py</div><div id='class'> Class Name: ClassifyTrainerEagerTf</div><div id='method'> Method Name: _train</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/f4b78d3de601d21dad76b9d339033ff133cb7976#diff-4fbb8bde2e882f88ffff41a2f4fa81765b6203978216f8d4c46c4a1ab1c8d27dL96' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: f4b78d3de601d21dad76b9d339033ff133cb7976</div><div id='time'> Time: 2020-04-06</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: baseline/tf/seq2seq/training/eager.py</div><div id='class'> Class Name: Seq2SeqTrainerEagerTf</div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/f4b78d3de601d21dad76b9d339033ff133cb7976#diff-9697a5691db388e7609253adf469b4b13e3d6e15c4e17e171e8f36e2844cd9a7L192' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: f4b78d3de601d21dad76b9d339033ff133cb7976</div><div id='time'> Time: 2020-04-06</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: baseline/tf/tagger/training/eager.py</div><div id='class'> Class Name: TaggerTrainerEagerTf</div><div id='method'> Method Name: _train</div><BR>

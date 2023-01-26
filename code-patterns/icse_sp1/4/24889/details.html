@@ -1,0 +1,57 @@
+<html><h3>ba50f604c8394e819870d6fc08ede0248185c385,dipy/tracking/life.py,FiberModel,setup,#FiberModel#Any#Any#Any#Any#,340
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        del v2f, v2fn
+        &#47&#47 Allocate the sparse matrix, using the more memory-efficient &quotcsr&quot
+        &#47&#47 format:
+        life_matrix = sps.csr_matrix((<a id="change">np.hstack(f_matrix_sig)</a>,
+                                      [np.hstack(f_matrix_row),
+                                       np.hstack(f_matrix_col)]))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        n_unique_f = len(np.hstack(v2f.values()))
+        &#47&#47 Preallocate these, which will be used to generate the sparse
+        &#47&#47 matrix:
+        <a id="change">f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)</a>
+        f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
+        f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.int)
+
+        nodes_per_fiber = np.zeros(len(streamline), dtype=np.int)
+        sum_nodes = np.zeros_like(nodes_per_fiber)
+        fiber_signal = []
+        for s_idx, s in enumerate(streamline):
+            if sphere is not False:
+                fiber_signal.append(SignalMaker.streamline_signal(s))
+            else:
+                fiber_signal.append(streamline_signal(s, self.gtab, evals))
+
+        del streamline
+        if sphere is not False:
+            del SignalMaker
+
+        keep_ct = 0
+        range_bvecs = np.arange(n_bvecs).astype(int)
+        my_ones = np.ones(n_bvecs).astype(int)
+        &#47&#47 In each voxel:
+        for v_idx in range(vox_coords.shape[0]):
+            &#47&#47 dbg:
+            if not np.mod(v_idx, 1000):
+                print("voxel %s"%(100*float(v_idx)/n_vox))
+            mat_row_idx = (range_bvecs + v_idx * n_bvecs).astype(np.int32)
+            &#47&#47For each fiber in that voxel:
+            for f_idx in v2f[v_idx]:
+                &#47&#47 For each fiber-voxel combination, store the row/column
+                &#47&#47 indices in the pre-allocated linear arrays
+                f_matrix_row[keep_ct:keep_ct+n_bvecs] = mat_row_idx
+                f_matrix_col[keep_ct:keep_ct+n_bvecs] = f_idx
+
+                vox_fiber_sig = np.zeros(n_bvecs)
+                for node_idx in v2fn[f_idx][v_idx]:
+                    &#47&#47 Sum the signal from each node of the fiber in that voxel:
+                    vox_fiber_sig += fiber_signal[f_idx][node_idx]
+                &#47&#47 And add the summed thing into the corresponding rows:
+                <a id="change">f_matrix_sig[keep_ct:keep_ct+n_bvecs]</a> += vox_fiber_sig
+                keep_ct = keep_ct + n_bvecs
+
+        del v2f, v2fn</code></pre><img src="130282210.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/ba50f604c8394e819870d6fc08ede0248185c385#diff-02f0641670b11ed5253b60285d8031f537d4c3dde278e4fc7cd741f6fe83f002L377' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: ba50f604c8394e819870d6fc08ede0248185c385</div><div id='time'> Time: 2015-03-16</div><div id='author'> Author: arokem@gmail.com</div><div id='file'> File Name: dipy/tracking/life.py</div><div id='class'> Class Name: FiberModel</div><div id='method'> Method Name: setup</div><BR><BR><div id='link'><a href='https://github.com/markovmodel/PyEMMA/commit/0fba025c0d92308682c4fb2401781ce33e17d5dd#diff-df888cf7a937ac98d5eaef796664f3d0354740572af31d970425ef3af6205a2dL428' target='_blank'>Link</a></div><div id='project'> Project Name: markovmodel/PyEMMA</div><div id='commit'> Commit Name: 0fba025c0d92308682c4fb2401781ce33e17d5dd</div><div id='time'> Time: 2016-12-13</div><div id='author'> Author: fabian.paul@mpikg.mpg.de</div><div id='file'> File Name: pyemma/coordinates/transform/tica.py</div><div id='class'> Class Name: EquilibriumCorrectedTICA</div><div id='method'> Method Name: _estimate</div><BR><BR><div id='link'><a href='https://github.com/PyMVPA/PyMVPA/commit/e36d3bc0ae6faf950344e68e5fd2fb8ca0ec43fb#diff-3c4e3b0990782d00d965fc9e5b6fcd78089e4a33604cd5ba74fdc7eae35dd850L94' target='_blank'>Link</a></div><div id='project'> Project Name: PyMVPA/PyMVPA</div><div id='commit'> Commit Name: e36d3bc0ae6faf950344e68e5fd2fb8ca0ec43fb</div><div id='time'> Time: 2008-03-10</div><div id='author'> Author: per@parsec.Princeton.EDU</div><div id='file'> File Name: mvpa/misc/signal.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: __detrend_regress</div><BR>

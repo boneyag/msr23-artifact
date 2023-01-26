@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return np.squeeze(dA_dbeta + dB_dbeta + dC_dbeta + dD_dbeta + dE_dbeta)
+
+    def dL_dtheta(self):
+        dL_dtheta = (self.dL_dpsi0 * self.dpsi0_dtheta + (<a id="change">self.dL_dpsi1[:,:, None]</a> * self.dpsi1_dtheta).sum(0).sum(0)
+                     + (self.dL_dpsi2[:, :, None] * self.dpsi2_dtheta).sum(0).sum(0)
+                     + (self.dL_dKmm[:, :, None] * self.dKmm_dtheta).sum(0).sum(0))
+        return dL_dtheta</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def dL_dtheta(self):
+        &#47&#47re-cast computations in psi2 back to psi1:
+        dL_dpsi1 = self.dL_dpsi1 + <a id="change">2.</a>*np.dot(self.dL_dpsi2,self.psi1)
+
+        dL_dtheta = self.kern.dK_dtheta(self.dL_dKmm,self.Z)
+        dL_dtheta += <a id="change">self.kern.dK_dtheta(dL_dpsi1,self.Z,self.X)</a>
+        dL_dtheta += self.kern.dKdiag_dtheta(self.dL_dpsi0, self.X)
+
+        return dL_dtheta
+</code></pre>

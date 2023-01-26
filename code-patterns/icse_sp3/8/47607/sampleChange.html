@@ -1,0 +1,104 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if model_config is None:
+        raise ValueError(&quotNo model found in config file.&quot)
+    model_config = json.loads(model_config.decode(&quotutf-8&quot))
+    <a id="change">model = model_from_config(model_config, custom_objects=custom_objects)</a>
+
+    &#47&#47 set weights
+    topology.load_weights_from_hdf5_group(f[&quotmodel_weights&quot], model.layers)
+
+    &#47&#47 Early return if compilation is not required.
+    if not compile:
+        f.close()
+        return model
+
+    &#47&#47 instantiate optimizer
+    training_config = f.attrs.get(&quottraining_config&quot)
+    if training_config is None:
+        warnings.warn(&quotNo training configuration found in save file: &quot
+                      &quotthe model was *not* compiled. Compile it manually.&quot)
+        f.close()
+        return model
+    training_config = json.loads(training_config.decode(&quotutf-8&quot))
+    optimizer_config = training_config[&quotoptimizer_config&quot]
+    optimizer = optimizers.deserialize(optimizer_config,
+                                       custom_objects=custom_objects)
+
+    &#47&#47 Recover loss functions and metrics.
+    loss = convert_custom_objects(training_config[&quotloss&quot])
+    metrics = convert_custom_objects(training_config[&quotmetrics&quot])
+    sample_weight_mode = training_config[&quotsample_weight_mode&quot]
+    <a id="change">loss_weights = training_config[&quotloss_weights&quot]</a>
+
+    &#47&#47 Compile model.
+    <a id="change">model.compile(optimizer=optimizer,
+                  loss=loss,
+                  metrics=metrics,
+                  loss_weights=loss_weights,
+                  sample_weight_mode=sample_weight_mode)</a>
+
+    &#47&#47 Set optimizer weights.
+    if &quotoptimizer_weights&quot in f:
+        &#47&#47 Build train function (to get weight updates).</code></pre><h3>After Change</h3><pre><code class='java'>
+        if obj in custom_objects:
+            return custom_objects[obj]
+        return obj
+    <a id="change">with h5py.File(filepath, mode=&quotr&quot) as f:
+        &#47&#47 instantiate model
+        model_config = f.attrs.get(&quotmodel_config&quot)
+        if model_config is None:
+            raise ValueError(&quotNo model found in config file.&quot)
+        model_config = json.loads(model_config.decode(&quotutf-8&quot))
+        model = model_from_config(model_config, custom_objects=custom_objects)
+
+        &#47&#47 set weights
+        topology.load_weights_from_hdf5_group(f[&quotmodel_weights&quot], model.layers)
+
+        &#47&#47 Early return if compilation is not required.
+        if not compile:
+            return model
+
+        &#47&#47 instantiate optimizer
+        training_config = f.attrs.get(&quottraining_config&quot)
+        if training_config is None:
+            warnings.warn(&quotNo training configuration found in save file: &quot
+                          &quotthe model was *not* compiled. Compile it manually.&quot)
+            return model
+        training_config = json.loads(training_config.decode(&quotutf-8&quot))
+        optimizer_config = training_config[&quotoptimizer_config&quot]
+        optimizer = optimizers.deserialize(optimizer_config,
+                                           custom_objects=custom_objects)
+
+        &#47&#47 Recover loss functions and metrics.
+        loss = convert_custom_objects(training_config[&quotloss&quot])
+        metrics = convert_custom_objects(training_config[&quotmetrics&quot])
+        sample_weight_mode = training_config[&quotsample_weight_mode&quot]
+        loss_weights = training_config[&quotloss_weights&quot]
+
+        &#47&#47 Compile model.
+        model.compile(optimizer=optimizer,
+                      loss=loss,
+                      metrics=metrics,
+                      loss_weights=loss_weights,
+                      sample_weight_mode=sample_weight_mode)
+
+        &#47&#47 Set optimizer weights.
+        if &quotoptimizer_weights&quot in f:
+            &#47&#47 Build train function (to get weight updates).
+            if isinstance(model, Sequential):
+                model.model._make_train_function()
+            else:
+                model._make_train_function()
+            optimizer_weights_group = f[&quotoptimizer_weights&quot]
+            optimizer_weight_names = [n.decode(&quotutf8&quot) for n in
+                                      optimizer_weights_group.attrs[&quotweight_names&quot]]
+            optimizer_weight_values = [optimizer_weights_group[n] for n in
+                                       optimizer_weight_names]
+            model.optimizer.set_weights(optimizer_weight_values)
+   </a> return model
+
+
+def model_from_config(config, custom_objects=None):</code></pre>

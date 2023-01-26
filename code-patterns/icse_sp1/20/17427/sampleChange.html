@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def _train(args, cell):
+  <a id="change">env = google.datalab.utils.commands.notebook_environment()</a>
+  <a id="change">cell_data = google.datalab.utils.commands.parse_config(cell, env)</a>
+  required_keys = <a id="change">[&quottraining_data&quot, &quotevaluation_data&quot]</a>
+  if args[&quotcloud&quot]:
+    required_keys.append(&quotcloud&quot)
+
+  <a id="change">google.datalab.utils.commands.validate_config(
+      cell_data,
+      required_keys=required_keys,
+      optional_keys=[&quotmodel_args&quot])</a>
+  job_args = [&quot--job-dir&quot, _abs_path(args[&quotoutput&quot]),
+              &quot--analysis&quot, _abs_path(args[&quotanalysis&quot])]
+
+  def _process_train_eval_data(data, arg_name, job_args):
+    if isinstance(data, dict):
+      if &quotcsv&quot in data:
+        job_args.extend([arg_name, _abs_path(data[&quotcsv&quot])])
+        if &quot--transform&quot not in job_args:
+          job_args.append(&quot--transform&quot)
+      elif &quottransformed&quot in data:
+        job_args.extend([arg_name, _abs_path(data[&quottransformed&quot])])
+      else:
+        raise ValueError(&quotInvalid training_data dict. &quot +
+                         &quotRequires either "csv" or "transformed".&quot)
+    elif isinstance(data, google.datalab.ml.CsvDataSet):
+      for file_name in data.input_files:
+        job_args.append(arg_name + &quot=&quot + _abs_path(file_name))
+    else:
+      raise ValueError(&quotInvalid training data. Requires either a dict, or &quot +
+                       &quota google.datalab.ml.CsvDataSet&quot)
+
+  _process_train_eval_data(cell_data[&quottraining_data&quot], &quot--train&quot, job_args)
+  _process_train_eval_data(cell_data[&quotevaluation_data&quot], &quot--eval&quot, job_args)
+
+  &#47&#47 TODO(brandondutra) document that any model_args that are file paths must
+  &#47&#47 be given as an absolute path
+  if &quotmodel_args&quot in cell_data:
+    for k, v in six.iteritems(cell_data[&quotmodel_args&quot]):
+      job_args.extend([&quot--&quot + k, str(v)])
+
+  try:
+    tmpdir = None
+    if args[&quotpackage&quot]:
+      tmpdir = tempfile.mkdtemp()
+      code_path = os.path.join(tmpdir, &quotpackage&quot)
+      _archive.extract_archive(args[&quotpackage&quot], code_path)
+    else:
+      code_path = MLTOOLBOX_CODE_PATH
+
+    if args[&quotcloud&quot]:
+      cloud_config = <a id="change">cell_data[&quotcloud&quot]</a>
+      if not args[&quotoutput&quot].startswith(&quotgs://&quot):
+        raise ValueError(&quotCloud training requires a GCS (starting with "gs://") output.&quot)
+
+      staging_tarball = os.path.join(args[&quotoutput&quot], &quotstaging&quot, &quottrainer.tar.gz&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+      code_path = MLTOOLBOX_CODE_PATH
+
+    if args[&quotcloud&quot]:
+      cloud_config = <a id="change">args[&quotcloud_config&quot]</a>
+      if not args[&quotoutput&quot].startswith(&quotgs://&quot):
+        raise ValueError(&quotCloud training requires a GCS (starting with "gs://") output.&quot)
+
+      staging_tarball = os.path.join(args[&quotoutput&quot], &quotstaging&quot, &quottrainer.tar.gz&quot)</code></pre>

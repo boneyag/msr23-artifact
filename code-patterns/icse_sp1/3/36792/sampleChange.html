@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    log_vars[&quotloss&quot] = loss
+    for name in log_vars:
+        <a id="change">log_vars[name] = log_vars[name].item()</a>
+
+    return loss, log_vars
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 reduce loss when distributed training
+        if dist.is_initialized():
+            loss_value = loss_value.data.clone()
+            dist.all_reduce(<a id="change">loss_value.div_(dist.get_world_size())</a>)
+        log_vars[loss_name] = loss_value.item()
+
+    return loss, log_vars</code></pre>

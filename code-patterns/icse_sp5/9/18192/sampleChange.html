@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            training_output_vars = tf.contrib.framework.get_variables(&quottraining_outputs&quot)
+
+        with tf.variable_scope(&quottarget&quot):
+            self.target_network = <a id="change">NeuralNetwork(config.network, inputs=self.state)</a>
+            self.internal_inputs.extend(self.target_network.internal_inputs)
+            self.internal_outputs.extend(self.target_network.internal_outputs)
+            self.internal_inits.extend(self.target_network.internal_inits)
+            target_value = dict()
+
+        with tf.variable_scope(&quottarget_outputs&quot):
+            &#47&#47 State-value function
+            target_value_output = layers[&quotlinear&quot](x=self.target_network.output, size=1)
+            for action in self.action:
+                &#47&#47 Naf directly outputs V(s)
+                target_value[action] = target_value_output
+
+            target_output_vars = tf.contrib.framework.get_variables(&quottarget_outputs&quot)
+
+        with tf.name_scope("update"):
+            for action in self.action:
+                q_target = self.reward[:-1] + (1.0 - tf.cast(self.terminal[:-1], tf.float32)) * config.discount * target_value[action][1:]
+                delta = q_target - q_value[:-1]
+                <a id="change">self.loss_per_instance</a> = tf.square(delta)
+
+                &#47&#47 We observe issues with numerical stability in some tests, gradient clipping can help
+                if config.clip_gradients &gt; 0.0:</code></pre><h3>After Change</h3><pre><code class='java'>
+            training_output_vars = tf.contrib.framework.get_variables(&quottraining_outputs&quot)
+
+        with tf.variable_scope(&quottarget&quot):
+            <a id="change">network_builder = util.get_function(fct=config.network)</a>
+            self.target_network = <a id="change">NeuralNetwork(network_builder=network_builder, inputs=self.state)</a>
+            self.internal_inputs.extend(self.target_network.internal_inputs)
+            self.internal_outputs.extend(self.target_network.internal_outputs)
+            self.internal_inits.extend(self.target_network.internal_inits)
+            target_value = dict()
+
+        with tf.variable_scope(&quottarget_outputs&quot):
+            &#47&#47 State-value function
+            target_value_output = layers[&quotlinear&quot](x=self.target_network.output, size=1)
+            for action in self.action:
+                &#47&#47 Naf directly outputs V(s)
+                target_value[action] = target_value_output
+
+            target_output_vars = tf.contrib.framework.get_variables(&quottarget_outputs&quot)
+
+        with tf.name_scope("update"):
+            for action in self.action:
+                q_target = self.reward[:-1] + (1.0 - tf.cast(self.terminal[:-1], tf.float32)) * config.discount * target_value[action][1:]
+                delta = q_target - q_value[:-1]
+                <a id="change">self.loss_per_instance</a> = tf.square(delta)
+
+                &#47&#47 We observe issues with numerical stability in some tests, gradient clipping can help
+                if config.clip_gradients &gt; 0.0:</code></pre>

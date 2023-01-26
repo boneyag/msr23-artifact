@@ -1,0 +1,55 @@
+<html><h3>75dff38e70ec291fbd60382174277fcadddfd285,reagent/ope/estimators/contextual_bandits_estimators.py,DoublyRobustEstimator,evaluate,#DoublyRobustEstimator#Any#,138
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def evaluate(self, input: BanditsEstimatorInput, **kwargs) -&gt; EstimatorResults:
+        self.reset()
+        <a id="change">for log in input.logs:
+            log_reward = RunningAverage()
+            tgt_reward = RunningAverage()
+            gt_reward = RunningAverage()
+            for sample in log.samples:
+                log_reward.add(sample.logged_reward)
+                weight = (
+                    sample.target_propensities[sample.logged_action]
+                    / sample.logged_propensities[sample.logged_action]
+                )
+                weight = self._weight_clamper(weight)
+                rewards = input.target_model(sample.context)
+                r1 = rewards[sample.logged_action]
+                r2 = rewards[sample.target_action]
+                tgt_reward.add((sample.logged_reward - r1) * weight + r2)
+                rewards = input.ground_truth_model(sample.context)
+                gt_reward.add(rewards[sample.target_action])
+            self._append_estimate(
+                log_reward.average, tgt_reward.average, gt_reward.average
+            )
+       </a> return self.results
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    ) -&gt; Optional[EstimatorResult]:
+        logger = Estimator.logger()
+        self._train_model(input.samples, 0.8, logger)
+        <a id="change">log_avg = RunningAverage()</a>
+        tgt_avg = RunningAverage()
+        <a id="change">gt_avg = RunningAverage()</a>
+        for sample in input.samples:
+            log_avg.add(sample.log_reward)
+            weight = (
+                sample.tgt_action_probabilities[sample.log_action]
+                / sample.log_action_probabilities[sample.log_action]
+            )
+            weight = self._weight_clamper(weight)
+            dm_action_reward, dm_reward = self._calc_dm_reward(
+                input.action_space, sample
+            )
+            tgt_avg.add((sample.log_reward - dm_action_reward) * weight + dm_reward)
+            gt_avg.add(sample.ground_truth_reward)
+        <a id="change">return EstimatorResult(
+            log_avg.average, tgt_avg.average, gt_avg.average, tgt_avg.count
+        )</a>
+
+    def __repr__(self):
+        return (
+            f"DoublyRobustEstimator(trainer({self._trainer.name})"</code></pre><img src="164150732.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 21</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/75dff38e70ec291fbd60382174277fcadddfd285#diff-e2b0140866ff25564b35c890c496274f4ad43922be3bec53a01c2ca7c62cdcdcL138' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: 75dff38e70ec291fbd60382174277fcadddfd285</div><div id='time'> Time: 2020-06-10</div><div id='author'> Author: jialiu@fb.com</div><div id='file'> File Name: reagent/ope/estimators/contextual_bandits_estimators.py</div><div id='class'> Class Name: DoublyRobustEstimator</div><div id='method'> Method Name: evaluate</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/75dff38e70ec291fbd60382174277fcadddfd285#diff-e2b0140866ff25564b35c890c496274f4ad43922be3bec53a01c2ca7c62cdcdcL109' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: 75dff38e70ec291fbd60382174277fcadddfd285</div><div id='time'> Time: 2020-06-10</div><div id='author'> Author: jialiu@fb.com</div><div id='file'> File Name: reagent/ope/estimators/contextual_bandits_estimators.py</div><div id='class'> Class Name: IPSEstimator</div><div id='method'> Method Name: evaluate</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/75dff38e70ec291fbd60382174277fcadddfd285#diff-e2b0140866ff25564b35c890c496274f4ad43922be3bec53a01c2ca7c62cdcdcL82' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: 75dff38e70ec291fbd60382174277fcadddfd285</div><div id='time'> Time: 2020-06-10</div><div id='author'> Author: jialiu@fb.com</div><div id='file'> File Name: reagent/ope/estimators/contextual_bandits_estimators.py</div><div id='class'> Class Name: DMEstimator</div><div id='method'> Method Name: evaluate</div><BR>

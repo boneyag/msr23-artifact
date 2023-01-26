@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        re_extract_authors = re.compile(r&quot([^\d]+)(?:\d{4}(?:\?| or \d{1,2})?-(?:ca\. )?\d{4}|[bdfl]\.(?: ca\.)? \d{4}\??|-\d{4}|\d{4} or \d{1,2}|\d{2}th cent\.)\.?&quot)
+        re_clean_authors = re.compile(r&quot^[,; ]+|[,.]+\s*?$&quot)
+
+        <a id="change">metadata = []</a>
+        with ZipFile(self._filename, mode=&quotr&quot) as f:
+            subf = io.StringIO(f.read(&quotota-master/metadata.tsv&quot).decode(&quotutf-8&quot))
+            for row in csv.DictReader(subf, delimiter=&quot\t&quot):
+                &#47&#47 only include English-language works (99.9% of all works)
+                if not row[&quotLanguage&quot].startswith(&quotEnglish&quot):
+                    continue
+                &#47&#47 clean up years
+                year_match = re_extract_year.search(row[&quotYear&quot])
+                if year_match:
+                    row[&quotYear&quot] = year_match.group()
+                else:
+                    row[&quotYear&quot] = None
+                &#47&#47 extract and clean up authors
+                authors = re_extract_authors.findall(row[&quotAuthor&quot]) or [row[&quotAuthor&quot]]
+                row[&quotAuthor&quot] = [re_clean_authors.sub(&quot&quot, author) for author in authors]
+                &#47&#47 get rid of uniform "Language" and "License" fields
+                del row[&quotLanguage&quot]
+                del row[&quotLicense&quot]
+                <a id="change">metadata.append({key.lower(): val for key, val in row.items()})</a>
+
+        self.metadata = metadata
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 set authors attribute
+        &#47&#47 self.authors = {a for m in metadata for a in m[&quotauthor&quot]}
+        <a id="change">self.authors = {
+            author for value in metadata.values()
+            for author in value[&quotauthor&quot]
+            if value.get(&quotauthor&quot)}</a>
+
+        &#47&#47 return tuple(metadata)
+        return metadata
+</code></pre>

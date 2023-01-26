@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        return responses, blocking
+
+    client.deploy(name, v1, version="1", config=<a id="change">{"num_replicas": 2}</a>)
+    responses1, _ = make_nonblocking_calls({"1": 2})
+    pids1 = responses1["1"]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        return responses, blocking
+
+    <a id="change">v1</a> = serve.deployment(name=name, version="1", num_replicas=2)(v1)
+    <a id="change">v1.deploy()</a>
+    responses1, _ = make_nonblocking_calls({"1": 2})
+    pids1 = responses1["1"]
+
+    &#47&#47 ref2 will block a single replica until the signal is sent. Check that
+    &#47&#47 some requests are now blocking.
+    ref2 = call.remote(block=True)
+    responses2, blocking2 = make_nonblocking_calls(
+        {
+            "1": 1
+        }, expect_blocking=True)
+    assert list(responses2["1"])[0] in pids1
+
+    &#47&#47 Redeploy new version. Since there is one replica blocking, only one new
+    &#47&#47 replica should be started up.
+    v2 = <a id="change">v1.options(backend_def=v2, version="2")</a>
+    goal_ref = <a id="change">v2.deploy(_blocking=False)</a>
+    assert not client._wait_for_goal(goal_ref, timeout=0.1)
+    responses3, blocking3 = make_nonblocking_calls(
+        {
+            "1": 1</code></pre>

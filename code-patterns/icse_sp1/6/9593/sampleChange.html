@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+train, val, test = datasets.SNLI.splits(inputs, answers)
+
+<a id="change">inputs.build_vocab(train, vectors=(args.data_cache, args.word_vectors, args.d_embed))</a>
+answers.build_vocab(train)
+
+train_iter, val_iter, test_iter = data.BucketIterator.splits(
+            (train, val, test), batch_size=args.batch_size, device=args.gpu)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+train, val, test = datasets.SNLI.splits(inputs, answers)
+
+<a id="change">if os.path.isfile(args.vocab_cache):
+    inputs.build_vocab(train, lower=args.lower)
+    inputs.vocab.vectors = torch.load(args.vocab_cache)
+else:
+    inputs.build_vocab(train, vectors=(args.data_cache, args.word_vectors, args.d_embed), lower=args.lower)
+    os.makedirs(os.path.dirname(args.vocab_cache), exist_okay=True)
+    torch.save(inputs.vocab.vectors, args.vocab_cache)
+</a>answers.build_vocab(train)
+
+train_iter, val_iter, test_iter = data.BucketIterator.splits(
+            (train, val, test), batch_size=args.batch_size, device=args.gpu)</code></pre>

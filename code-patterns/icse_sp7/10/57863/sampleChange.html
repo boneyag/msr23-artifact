@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      (&quotBatchSizeFive&quot, 5),
+  )
+  def testMultiStepSampling(self, batch_size):
+    <a id="change">if tf.executing_eagerly():
+      self.skipTest(&quotb/123885577&quot)
+   </a> spec = specs.TensorSpec([], tf.int32, &quotaction&quot)
+    replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
+        spec, batch_size=batch_size)
+
+    action = tf.stack([tf.Variable(0).count_up_to(10)] * batch_size)
+
+    add_op = replay_buffer.add_batch(action)
+    (step, next_step), _ = replay_buffer.get_next(num_steps=2,
+                                                  time_stacked=False)
+
+    self.evaluate(tf.compat.v1.global_variables_initializer())
+    for _ in range(10):
+      self.evaluate(add_op)
+    for _ in range(100):
+      step_, next_step_ = <a id="change">self.evaluate([step, next_step])</a>
+      self.assertEqual((step_ + 1) % 10, next_step_)
+
+  @parameterized.named_parameters(
+      (&quotBatchSizeOne&quot, 1),</code></pre><h3>After Change</h3><pre><code class='java'>
+          num_steps=2, time_stacked=False)
+
+    self.evaluate(tf.compat.v1.global_variables_initializer())
+    <a id="change">self.evaluate(add_data())</a>
+
+    for _ in range(100):
+      (step_, next_step_), _ = self.evaluate(sample)
+      self.assertEqual((step_ + 1) % 10, next_step_)</code></pre>

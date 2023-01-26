@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def predict(self, states):
+        with core.DeviceScope(self.c2_device):
+            if isinstance(self.trainer, DiscreteActionTrainer):
+                <a id="change">workspace.FeedBlob("states", states)</a>
+            else:
+                raise NotImplementedError("Invalid trainer passed to GymPredictor")
+            workspace.RunNetOnce(self.trainer.internal_policy_model.net)
+            policy_output_blob = self.trainer.internal_policy_output</code></pre><h3>After Change</h3><pre><code class='java'>
+        elif isinstance(self.trainer, ParametricDQNTrainer):
+            num_actions = len(self.trainer.action_normalization_parameters)
+            actions = np.eye(num_actions, dtype=np.float32)
+            <a id="change">actions = np.tile(actions, reps=(len(states), 1))</a>
+            states = np.repeat(states, repeats=num_actions, axis=0)
+            input = np.hstack((states, actions))
+        else:
+            raise NotImplementedError("Invalid trainer passed to GymPredictor")</code></pre>

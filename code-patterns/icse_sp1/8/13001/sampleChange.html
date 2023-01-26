@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    output_values = input_values | &quotMapInstances&quot &gt;&gt; beam.ParDo(
+        _RunMetaGraphDoFn(input_schema, output_schema),
+        transform_fn_def=beam.pvalue.AsSingleton(transform_fn))
+    return <a id="change">(output_values, output_schema)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 If exclude_outputs is set, update the output metadata, which will also
+    &#47&#47 cause _RunMetaGraphDoFn not to create the excluded outputs.
+    if self._exclude_outputs is not None:
+      <a id="change">schema = output_metadata.schema</a>
+      <a id="change">output_metadata = dataset_metadata.DatasetMetadata(
+          schema=dataset_schema.Schema(
+              {key: column_schema
+               for key, column_schema in schema.column_schemas.items()
+               if key not in self._exclude_outputs}))</a>
+
+    output_instances = (
+        input_values
+        | &quotBatchInstances&quot &gt;&gt; beam.ParDo(_BatchDoFn())</code></pre>

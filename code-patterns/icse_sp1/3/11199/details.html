@@ -1,0 +1,65 @@
+<html><h3>f86781c68cac46a283555471b3d7ca32ca16ccdf,stellargraph/core/convert.py,ColumnarConverter,_convert_single,#ColumnarConverter#Any#Any#,82
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 now verify that all of the columns needed are there (that is, the defaults have filled out appropriately)
+        require_dataframe_has_columns(
+            <a id="change">self.name(type_name)</a>, known, self.selected_columns
+        )
+
+        for column, transform in self.transform_columns.items():</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        existing = set(self.selected_columns).intersection(data.columns)
+
+        <a id="change">ids = data.index</a>
+
+        &#47&#47 split the dataframe based on the columns we know about
+        missing_columns = []
+
+        def select_column(old_name):
+            if old_name in data.columns:
+                column = data[old_name].to_numpy()
+            elif old_name in self.column_defaults:
+                column = np.full(len(ids), self.column_defaults[old_name])
+            else:
+                nonlocal missing_columns
+                missing_columns.append(old_name)
+                return None
+
+            transform = self.transform_columns.get(old_name)
+            if transform is not None:
+                column = transform(column)
+
+            return column
+
+        columns = {
+            new_name: select_column(old_name)
+            for old_name, new_name in self.selected_columns.items()
+        }
+        if missing_columns:
+            raise ValueError(
+                f"{self.name(type_name)}: expected {comma_sep(self.selected_columns)} columns, found: {comma_sep(data.columns)}"
+            )
+
+        other = data.drop(columns=existing)
+
+        if self.allow_features:
+            &#47&#47 to_numpy returns an unspecified order but it&quots Fortran in practice. Row-level bulk
+            &#47&#47 operations are more common (e.g. slicing out a couple of row, when sampling a few
+            &#47&#47 nodes) than column-level ones so having rows be contiguous (C order) is much more
+            &#47&#47 efficient.
+            features = np.ascontiguousarray(other.to_numpy(dtype=self.dtype))
+        elif len(other.columns) == 0:
+            features = None
+        else:
+            raise ValueError(
+                f"{self.name(type_name)}: expected zero feature columns, found {comma_sep(other.columns)}"
+            )
+
+        <a id="change">return ids, columns, features</a>
+
+    def _ids_columns_and_starts_from_singles(self, singles):
+        rows_so_far = 0
+        type_starts = []</code></pre><img src="72994239.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/stellargraph/stellargraph/commit/f86781c68cac46a283555471b3d7ca32ca16ccdf#diff-e07b57d6db6e61c9eebbd02864ebbf3fcae196f4eca6f7638d69c53890ae35adL82' target='_blank'>Link</a></div><div id='project'> Project Name: stellargraph/stellargraph</div><div id='commit'> Commit Name: f86781c68cac46a283555471b3d7ca32ca16ccdf</div><div id='time'> Time: 2020-05-11</div><div id='author'> Author: Huon.Wilson@data61.csiro.au</div><div id='file'> File Name: stellargraph/core/convert.py</div><div id='class'> Class Name: ColumnarConverter</div><div id='method'> Method Name: _convert_single</div><BR><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/ffb26630d54f6c951cac7fb861ba8ba2ad812a26#diff-077eace5225761caa1991795ac1e8aa1631fc3da00a1b1715b2ed113824eed6cL365' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: ffb26630d54f6c951cac7fb861ba8ba2ad812a26</div><div id='time'> Time: 2019-07-29</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: batchflow/named_expr.py</div><div id='class'> Class Name: F</div><div id='method'> Method Name: get</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/530a826bd84306097d7d63ac6c0616a9493234aa#diff-88d768040b7b5f7c976d89e7eb897246c3033c6a2ec71e4d2ad99dbf7d7823acL437' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 530a826bd84306097d7d63ac6c0616a9493234aa</div><div id='time'> Time: 2018-05-13</div><div id='author'> Author: stuhood@twitter.com</div><div id='file'> File Name: tests/python/pants_test/engine/examples/planners.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: setup_json_scheduler</div><BR>

@@ -1,0 +1,107 @@
+<html><h3>202908a6634e9ac5b15658ed3f0cfe50606f32f2,examples/opensets/mnist_model2.py,,,#,41
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    print()
+    print("Start training...")
+    t = time()
+    <a id="change">train_tp</a> = (<a id="change">Pipeline</a>(config=config)
+                .init_variable(&quotloss_history&quot, init_on_each_run=list)
+                .init_variable(&quotcurrent_loss&quot, init_on_each_run=0)
+                .init_variable(&quotpred_label&quot, init_on_each_run=list)
+                .init_variable(&quotinput_tensor_name&quot, &quotimages&quot)
+                .init_model(&quotdynamic&quot, MyModel, &quotconv&quot,
+                            config={&quotsession&quot: {&quotconfig&quot: tf.ConfigProto(allow_soft_placement=True)},
+                                    &quotloss&quot: &quotce&quot,
+                                    &quotoptimizer&quot: {&quotname&quot:&quotAdam&quot, &quotuse_locking&quot: True},
+                                    &quotinputs&quot: dict(images={&quotshape&quot: (None, None, 1)}, &#47&#47&quotshape&quot: (28, 28, 1), &quottransform&quot: &quotmip @ 1&quot},
+                                                   &#47&#47labels={&quotshape&quot: 10, &quotdtype&quot: &quotuint8&quot,
+                                                   labels={&quotclasses&quot: (10+np.arange(10)).astype(&quotstr&quot),
+                                                           &quottransform&quot: &quotohe&quot, &quotname&quot: &quottargets&quot})})
+                .make_digits()
+                .train_model(&quotconv&quot, fetches=[&quotloss&quot, &quotpredicted_labels&quot],
+                                     feed_dict={V(&quotinput_tensor_name&quot): B(&quotimages&quot),
+                                                &quotlabels&quot: B(&quotdigits&quot)},
+                             save_to=[V(&quotcurrent_loss&quot), V(&quotpred_label&quot)])
+                .print_variable(&quotcurrent_loss&quot)
+                .update_variable(&quotloss_history&quot, V(&quotcurrent_loss&quot), mode=&quota&quot))
+
+    <a id="change">train_pp</a> = (train_tp &lt;&lt; mnist.train)
+    train_pp.run(BATCH_SIZE, shuffle=True, n_epochs=1, drop_last=True, prefetch=0)
+    print("End training", time() - t)
+
+
+    print()
+    print("Start testing...")
+    t = time()
+    test_pp = (mnist.test.p
+                .import_model(&quotconv&quot, train_pp)
+                .init_variable(&quotall_targets&quot, init_on_each_run=list)
+                .init_variable(&quotall_predictions&quot, init_on_each_run=list)
+                .make_digits()
+                .predict_model(&quotconv&quot, fetches=&quotpredicted_labels&quot, feed_dict={&quotimages&quot: B(&quotimages&quot),
+                                                                              &quotlabels&quot: B(&quotdigits&quot)},
+                               save_to=V(&quotall_predictions&quot), mode=&quota&quot)
+                .update_variable(&quotall_targets&quot, B(&quotdigits&quot), mode=&quota&quot)
+                .run(BATCH_SIZE, shuffle=True, n_epochs=1, drop_last=False, prefetch=0))
+    print("End testing", time() - t)
+
+    print("Predictions")
+    predictions = np.concatenate(test_pp.get_variable(&quotall_predictions&quot))
+    targets = np.concatenate(test_pp.get_variable(&quotall_targets&quot))
+    accuracy = (predictions == targets).sum() / len(predictions) * 100
+    print(&quotAccuracy {:6.2f}&quot.format(accuracy))
+    print(targets)
+    print(predictions)
+
+
+    <a id="change">conv</a> = train_pp.get_model_by_name("conv")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    print()
+    print("Start training...")
+    t = time()
+    <a id="change">train_tp</a> = (<a id="change">Pipeline</a>(config=config)
+                .init_variable(&quotloss_history&quot, init_on_each_run=list)
+                .init_variable(&quotcurrent_loss&quot, init_on_each_run=0)
+                .init_variable(&quotinput_tensor_name&quot, &quotimages&quot)
+                .init_model(&quotdynamic&quot, MyModel, &quotconv&quot,
+                            config={&quotsession&quot: {&quotconfig&quot: tf.ConfigProto(allow_soft_placement=True)},
+                                    &quotloss&quot: &quotce&quot,
+                                    &quotoptimizer&quot: {&quotname&quot:&quotAdam&quot, &quotuse_locking&quot: True},
+                                    &quotinputs&quot: dict(images={&quotshape&quot: (None, None, 1)}, &#47&#47&quotshape&quot: (28, 28, 1), &quottransform&quot: &quotmip @ 1&quot},
+                                                   &#47&#47labels={&quotshape&quot: 10, &quotdtype&quot: &quotuint8&quot,
+                                                   labels={&quotclasses&quot: (10+np.arange(10)).astype(&quotstr&quot),
+                                                           &quottransform&quot: &quotohe&quot, &quotname&quot: &quottargets&quot}),
+                                    &quotoutput&quot: dict(ops=<a id="change">[&quotlabels&quot, &quotaccuracy&quot]</a>)})
+                .make_digits()
+                .train_model(&quotconv&quot, fetches=&quotloss&quot,
+                                     feed_dict={V(&quotinput_tensor_name&quot): B(&quotimages&quot),
+                                                &quotlabels&quot: B(&quotdigits&quot)},
+                             save_to=V(&quotcurrent_loss&quot))
+                .print_variable(&quotcurrent_loss&quot)
+                .update_variable(&quotloss_history&quot, V(&quotcurrent_loss&quot), mode=&quota&quot))
+
+    <a id="change">train_pp</a> = (train_tp &lt;&lt; mnist.train)
+    train_pp.run(BATCH_SIZE, shuffle=True, n_epochs=1, drop_last=True, prefetch=0)
+    print("End training", time() - t)
+
+
+    print()
+    print("Start testing...")
+    t = time()
+    test_pp = (mnist.test.p
+                .import_model(&quotconv&quot, train_pp)
+                .init_variable(&quotaccuracy&quot, init_on_each_run=list)
+                .make_digits()
+                .predict_model(&quotconv&quot, fetches=&quotaccuracy&quot, feed_dict={&quotimages&quot: B(&quotimages&quot),
+                                                                      &quotlabels&quot: B(&quotdigits&quot)},
+                               save_to=V(&quotaccuracy&quot), mode=&quota&quot)
+                .run(BATCH_SIZE, shuffle=True, n_epochs=1, drop_last=False, prefetch=0))
+    print("End testing", time() - t)
+
+    accuracy = test_pp.get_variable(&quotaccuracy&quot)
+    print(&quotAccuracy {:6.2f}&quot.format(np.array(accuracy).mean()))
+
+    <a id="change">conv</a> = train_pp.get_model_by_name("conv")
+</code></pre><img src="281916621.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/202908a6634e9ac5b15658ed3f0cfe50606f32f2#diff-5cd2b3bf8c95d3d7c8b77b12ddd512bc53b075bdcb31c865e55786354e267a23L47' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: 202908a6634e9ac5b15658ed3f0cfe50606f32f2</div><div id='time'> Time: 2017-11-14</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: examples/opensets/mnist_model2.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/899fd2b1572cc0306292396e2e4879df915798da#diff-5cd2b3bf8c95d3d7c8b77b12ddd512bc53b075bdcb31c865e55786354e267a23L43' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: 899fd2b1572cc0306292396e2e4879df915798da</div><div id='time'> Time: 2017-10-18</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: examples/opensets/mnist_model2.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/fc6c75deed83ab3b85c47e53656ab85289eaea66#diff-f7f88091890bbffdb70ba8168c236aa6f4f6e14960009526acf63445035cf918L25' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: fc6c75deed83ab3b85c47e53656ab85289eaea66</div><div id='time'> Time: 2018-01-15</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: examples/opensets/mnist_model3.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/811177b712cc1eea4b59221357c6474f98315b2d#diff-5cd2b3bf8c95d3d7c8b77b12ddd512bc53b075bdcb31c865e55786354e267a23L43' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: 811177b712cc1eea4b59221357c6474f98315b2d</div><div id='time'> Time: 2017-10-17</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: examples/opensets/mnist_model2.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

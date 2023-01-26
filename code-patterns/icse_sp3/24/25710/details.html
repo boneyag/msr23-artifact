@@ -1,0 +1,88 @@
+<html><h3>da6fb45ee7a00f5051ec47bf15247045774c3604,mimic3benchmark/scripts/create_decompensation.py,,process_partition,#Any#Any#Any#Any#Any#Any#,13
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    xty_triples = []
+    patients = list(filter(str.isdigit, os.listdir(os.path.join(args.root_path, partition))))
+    for (patient_index, patient) in <a id="change">enumerate(patients)</a>:
+        patient_folder = os.path.join(args.root_path, partition, patient)
+        patient_ts_files = list(filter(lambda x: x.find("timeseries") != -1, os.listdir(patient_folder)))
+        stays_df = pd.read_csv(os.path.join(patient_folder, "stays.csv"))
+
+        for ts_filename in patient_ts_files:
+            with open(os.path.join(patient_folder, ts_filename)) as tsfile:
+                lb_filename = ts_filename.replace("_timeseries", "")
+                label_df = pd.read_csv(os.path.join(patient_folder, lb_filename))
+
+                &#47&#47 empty label file
+                if label_df.shape[0] == 0:
+                    continue
+
+                mortality = int(label_df.iloc[0]["Mortality"])
+
+                los = 24.0 * label_df.iloc[0][&quotLength of Stay&quot]  &#47&#47 in hours
+                if pd.isnull(los):
+                    print("(length of stay is missing)", patient, ts_filename)
+                    continue
+
+                stay = stays_df[stays_df.ICUSTAY_ID == label_df.iloc[0][&quotIcustay&quot]]
+                deathtime = stay[&quotDEATHTIME&quot].iloc[0]
+                intime = stay[&quotINTIME&quot].iloc[0]
+                if pd.isnull(deathtime):
+                    lived_time = 1e18
+                else:
+                    lived_time = (datetime.strptime(deathtime, "%Y-%m-%d %H:%M:%S") -
+                                  datetime.strptime(intime, "%Y-%m-%d %H:%M:%S")).total_seconds() / 3600.0
+
+                ts_lines = tsfile.readlines()
+                header = ts_lines[0]
+                ts_lines = ts_lines[1:]
+                event_times = [float(line.split(&quot,&quot)[0]) for line in ts_lines]
+
+                ts_lines = [line for (line, t) in zip(ts_lines, event_times)
+                            if -eps &lt; t &lt; los + eps]
+                event_times = [t for t in event_times
+                               if -eps &lt; t &lt; los + eps]
+
+                &#47&#47 no measurements in ICU
+                if len(ts_lines) == 0:
+                    print("(no events in ICU) ", patient, ts_filename)
+                    continue
+
+                sample_times = np.arange(0.0, min(los, lived_time) + eps, sample_rate)
+
+                sample_times = list(filter(lambda x: x &gt; shortest_length, sample_times))
+
+                &#47&#47 At least one measurement
+                sample_times = list(filter(lambda x: x &gt; event_times[0], sample_times))
+
+                output_ts_filename = patient + "_" + ts_filename
+                with open(os.path.join(output_dir, output_ts_filename), "w") as outfile:
+                    outfile.write(header)
+                    for line in ts_lines:
+                        outfile.write(line)
+
+                for t in sample_times:
+                    if mortality == 0:
+                        cur_mortality = 0
+                    else:
+                        cur_mortality = int(lived_time - t &lt; future_time_interval)
+                    xty_triples.append((output_ts_filename, t, cur_mortality))
+
+        <a id="change">if (patient_index + 1) % 100 == 0:
+            print("processed {} / {} patients".format(patient_index + 1, len(patients)), end=&quot\r&quot)
+
+   </a> print(len(xty_triples))
+    if partition == "train":
+        random.shuffle(xty_triples)
+    if partition == "test":</code></pre><h3>After Change</h3><pre><code class='java'>
+        os.mkdir(output_dir)
+
+    xty_triples = []
+    <a id="change">patients</a> = list(filter(str.isdigit, os.listdir(os.path.join(args.root_path, partition))))
+    for patient in <a id="change">tqdm(patients, desc=&quotIterating over patients in {}&quot.format(partition))</a>:
+        patient_folder = os.path.join(args.root_path, partition, patient)
+        patient_ts_files = list(filter(lambda x: x.find("timeseries") != -1, os.listdir(patient_folder)))
+        stays_df = pd.read_csv(os.path.join(patient_folder, "stays.csv"))</code></pre><img src="132410480.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 11</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/YerevaNN/mimic3-benchmarks/commit/da6fb45ee7a00f5051ec47bf15247045774c3604#diff-057bb7e74c4f090a54e5220d22081e2b308e992632f290369d0508a8247da754L21' target='_blank'>Link</a></div><div id='project'> Project Name: YerevaNN/mimic3-benchmarks</div><div id='commit'> Commit Name: da6fb45ee7a00f5051ec47bf15247045774c3604</div><div id='time'> Time: 2020-03-26</div><div id='author'> Author: harhro@gmail.com</div><div id='file'> File Name: mimic3benchmark/scripts/create_decompensation.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: process_partition</div><BR><BR><div id='link'><a href='https://github.com/YerevaNN/mimic3-benchmarks/commit/da6fb45ee7a00f5051ec47bf15247045774c3604#diff-77773768cb4bbc7abfe9a73a754a6357eff5cde16d52f26c4859a9948df57492L18' target='_blank'>Link</a></div><div id='project'> Project Name: YerevaNN/mimic3-benchmarks</div><div id='commit'> Commit Name: da6fb45ee7a00f5051ec47bf15247045774c3604</div><div id='time'> Time: 2020-03-26</div><div id='author'> Author: harhro@gmail.com</div><div id='file'> File Name: mimic3benchmark/scripts/create_length_of_stay.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: process_partition</div><BR><BR><div id='link'><a href='https://github.com/YerevaNN/mimic3-benchmarks/commit/da6fb45ee7a00f5051ec47bf15247045774c3604#diff-871245cd675e507845456992331a95f67210cd08e8c0ba315d7ddb4f9b31251dL17' target='_blank'>Link</a></div><div id='project'> Project Name: YerevaNN/mimic3-benchmarks</div><div id='commit'> Commit Name: da6fb45ee7a00f5051ec47bf15247045774c3604</div><div id='time'> Time: 2020-03-26</div><div id='author'> Author: harhro@gmail.com</div><div id='file'> File Name: mimic3benchmark/scripts/create_in_hospital_mortality.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: process_partition</div><BR><BR><div id='link'><a href='https://github.com/YerevaNN/mimic3-benchmarks/commit/da6fb45ee7a00f5051ec47bf15247045774c3604#diff-f64ad4e141a9008ebabc63dbf0ec4d4201cd55a7f4ee4031140329e3d049742bL19' target='_blank'>Link</a></div><div id='project'> Project Name: YerevaNN/mimic3-benchmarks</div><div id='commit'> Commit Name: da6fb45ee7a00f5051ec47bf15247045774c3604</div><div id='time'> Time: 2020-03-26</div><div id='author'> Author: harhro@gmail.com</div><div id='file'> File Name: mimic3benchmark/scripts/create_phenotyping.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: process_partition</div><BR>

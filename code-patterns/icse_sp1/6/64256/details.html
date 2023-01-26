@@ -1,0 +1,51 @@
+<html><h3>6cb84f4b742861e823015cac18535efa468b0d81,autokeras/layer_transformer.py,,dense_to_wider_layer,#Any#Any#Any#,45
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def dense_to_wider_layer(pre_layer, next_layer, n_add_units):
+    n_units1 = pre_layer.get_weights().shape[0]
+    n_units2 = <a id="change">pre_layer.get_weights().shape[1]</a>
+    n_units3 = next_layer.get_weights().shape[1]
+
+    teacher_w1 = pre_layer.get_weights()[0]
+    teacher_b1 = pre_layer.get_weights()[1]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def dense_to_wider_layer(pre_layer, next_layer, n_add_units):
+    n_units1 = pre_layer.get_weights()[0].shape[0]
+    <a id="change">n_units2 = pre_layer.units</a>
+    n_units3 = next_layer.units
+
+    teacher_w1 = pre_layer.get_weights()[0]
+    teacher_b1 = pre_layer.get_weights()[1]
+    teacher_w2 = next_layer.get_weights()[0]
+    teacher_b2 = next_layer.get_weights()[1]
+    rand = np.random.randint(n_units2, size=n_add_units)
+    replication_factor = np.bincount(rand)
+    student_w1 = teacher_w1.copy()
+    student_w2 = teacher_w2.copy()
+    student_b1 = teacher_b1.copy()
+
+    &#47&#47 target layer update (i)
+    for i in range(n_add_units):
+        teacher_index = rand[i]
+        new_weight = teacher_w1[:, teacher_index]
+        new_weight = new_weight[:, np.newaxis]
+        student_w1 = np.concatenate((student_w1, new_weight), axis=1)
+        student_b1 = np.append(student_b1, teacher_b1[teacher_index])
+
+    &#47&#47 next layer update (i+1)
+    for i in range(n_add_units):
+        teacher_index = rand[i]
+        n_copies = replication_factor[teacher_index] + 1
+        new_weight = teacher_w2[teacher_index, :]*(1./n_copies)
+        new_weight = new_weight[np.newaxis, :]
+        student_w2 = np.concatenate((student_w2, new_weight), axis=0)
+        student_w2[teacher_index, :] = new_weight
+
+    new_pre_layer = <a id="change">Dense(n_units2 + n_add_units, input_shape=(n_units1,), activation=&quotrelu&quot)</a>
+    new_pre_layer.build((None, n_units1))
+    new_pre_layer.set_weights((student_w1, student_b1))
+    new_next_layer = Dense(n_units3, activation=&quotrelu&quot)
+    new_next_layer.build((None, n_units2 + n_add_units))</code></pre><img src="295777331.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/jhfjhfj1/autokeras/commit/6cb84f4b742861e823015cac18535efa468b0d81#diff-6c1268c64aa666c354d348e882299714e49227fe4fea134aadeb7ea49c837469L46' target='_blank'>Link</a></div><div id='project'> Project Name: jhfjhfj1/autokeras</div><div id='commit'> Commit Name: 6cb84f4b742861e823015cac18535efa468b0d81</div><div id='time'> Time: 2017-12-15</div><div id='author'> Author: jhfjhfj1@gmail.com</div><div id='file'> File Name: autokeras/layer_transformer.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: dense_to_wider_layer</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/79ea4c6923dd064badd5da15cae012a7a7632268#diff-9ed096e9f1a12bf10d3ef5e1b02db2bc9aeb2e38e99b4899f0c56e716467d5a8L40' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 79ea4c6923dd064badd5da15cae012a7a7632268</div><div id='time'> Time: 2017-03-16</div><div id='author'> Author: carlo.deramo@gmail.com</div><div id='file'> File Name: PyPi/approximators/nn.py</div><div id='class'> Class Name: DenseNN</div><div id='method'> Method Name: _init</div><BR>

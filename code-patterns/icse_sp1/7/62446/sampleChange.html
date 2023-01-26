@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        model = state.model
+        self.zero_grads(state)
+        for i, (batch_id, (raw_batch, batch)) in enumerate(samples):
+            <a id="change">if cuda.DISTRIBUTED_WORLD_SIZE &gt; 1:
+                &#47&#47 Whenever *samples* contains more than one mini-batch, we
+                &#47&#47 want to accumulate gradients locally and only call
+                &#47&#47 all-reduce in the last backwards pass.
+                if i &lt; sample_size - 1:
+                    &#47&#47 sync gradients in the last sample backward
+                    model.accumulate_gradients(True)
+                else:
+                    model.accumulate_gradients(False)
+
+           </a> with timing.time("model.train_batch"):
+                loss, metric_data = model.train_batch(model, batch, state)
+                if sample_size &gt; 1:
+                    &#47&#47 gradients averaged per each batch and accumulated across samples.</code></pre><h3>After Change</h3><pre><code class='java'>
+        model = state.model
+        self.zero_grads(state)
+        for idx, (batch_id, (raw_batch, batch)) in enumerate(samples):
+            <a id="change">with maybe_no_sync(model, idx, sample_size):
+                with timing.time("model.train_batch"):
+                    loss, metric_data = model.train_batch(model, batch, state)
+                    if sample_size &gt; 1:
+                        &#47&#47 gradients averaged per batch and accumulated across samples.
+                        &#47&#47 divide sample_size to let gradients averaged per example
+                        loss = loss / sample_size
+                self.backprop(state, loss)
+
+           </a> if report_metric:
+                with timing.time("add metrics"):
+                    metric_reporter.add_batch_stats(
+                        batch_id,</code></pre>

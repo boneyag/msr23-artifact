@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    d_lr = np.float32(config.discriminator_learn_rate)
+
+    gan.graph.d_vars = d_vars
+    g_optimizer = <a id="change">tf.train.GradientDescentOptimizer(g_lr).minimize(g_loss, var_list=g_vars)</a>
+    d_optimizer = tf.train.GradientDescentOptimizer(d_lr).minimize(d_loss, var_list=d_vars)
+
+    return g_optimizer, d_optimizer
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    d_optimizer = tf.train.GradientDescentOptimizer(d_lr)
+
+    if(config.clipped_gradients):
+        <a id="change">g_optimizer = capped_optimizer(g_optimizer, config.clipped_gradients, g_loss, g_vars)</a>
+        d_optimizer = capped_optimizer(d_optimizer, config.clipped_gradients, d_loss, d_vars)
+    else:
+        g_optimizer = g_optimizer.minimize(g_loss, var_list=g_vars)
+        d_optimizer = d_optimizer.minimize(d_loss, var_list=d_vars)
+
+    gan.graph.clip = [tf.assign(d,tf.clip_by_value(d, -config.d_clipped_weights, <a id="change">config.d_clipped_weights</a>))  for d in d_vars]
+
+    return g_optimizer, d_optimizer
+</code></pre>

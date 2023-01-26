@@ -1,0 +1,36 @@
+<html><h3>98e790696877d8065842d83f1819ae9c989a8c98,memcnn/models/revop.py,ReversibleBlockFunction,backward,#Any#Any#,117
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        G_z1 = Gm.forward(z1_stop)
+        x2 = y2 - G_z1
+        <a id="change">x2_stop = Variable(x2.data, requires_grad=True)</a>
+
+        F_x2 = Fm.forward(x2_stop)
+        x1 = y1 - F_x2
+        x1_stop = Variable(x1.data, requires_grad=True)
+
+        &#47&#47 Compute outputs building a sub-graph
+        z1 = x1_stop + F_x2
+        y2_ = x2_stop + G_z1
+        <a id="change">y1_ = z1</a>
+
+        &#47&#47 Perform full backward pass on graph...
+        y = torch.cat([y1_, y2_], dim=1)
+        dd = torch.autograd.grad(y, <a id="change">(x1_stop, x2_stop)</a> + tuple(Gm.parameters()) + tuple(Fm.parameters()), grad_output, retain_graph=False)
+        GWeights = [p for p in Gm.parameters()]
+        GWgrads = dd[2:2+len(GWeights)]
+        FWgrads = dd[2+len(GWeights):]</code></pre><h3>After Change</h3><pre><code class='java'>
+        GWeights = [p for p in Gm.parameters()]
+        x2 = y2 - Gm.forward(z1_stop)
+        x1 = y1 - Fm.forward(x2)
+        x_stop = <a id="change">Variable(torch.cat([x1, x2], dim=1).data, requires_grad=True)</a>
+
+        &#47&#47 compute outputs building a sub-graph
+        <a id="change">x1_, x2_ = torch.chunk(x_stop, chunks=2, dim=1)</a>
+        y1_ = x1_ + Fm.forward(x2_)
+        y2_ = x2_ + Gm.forward(y1_)
+        y = torch.cat([y1_, y2_], dim=1)
+</code></pre><img src="272394364.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/silvandeleemput/memcnn/commit/98e790696877d8065842d83f1819ae9c989a8c98#diff-e1f25583db6ccc8e4ce2a4f9a7a4cd0af82a5f4a3119aaa72c2b23f26e9e84c7L122' target='_blank'>Link</a></div><div id='project'> Project Name: silvandeleemput/memcnn</div><div id='commit'> Commit Name: 98e790696877d8065842d83f1819ae9c989a8c98</div><div id='time'> Time: 2018-06-06</div><div id='author'> Author: sil.vandeleemput@radboudumc.nl</div><div id='file'> File Name: memcnn/models/revop.py</div><div id='class'> Class Name: ReversibleBlockFunction</div><div id='method'> Method Name: backward</div><BR><BR><div id='link'><a href='https://github.com/silvandeleemput/memcnn/commit/90939c828e507c4aa8a6d6ca6d486e3f214b9b8f#diff-e1f25583db6ccc8e4ce2a4f9a7a4cd0af82a5f4a3119aaa72c2b23f26e9e84c7L132' target='_blank'>Link</a></div><div id='project'> Project Name: silvandeleemput/memcnn</div><div id='commit'> Commit Name: 90939c828e507c4aa8a6d6ca6d486e3f214b9b8f</div><div id='time'> Time: 2018-06-06</div><div id='author'> Author: sil.vandeleemput@radboudumc.nl</div><div id='file'> File Name: memcnn/models/revop.py</div><div id='class'> Class Name: ReversibleBlockFunction</div><div id='method'> Method Name: backward</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/39eea80aa70dcbcad57327ce8f9c4a325062fc86#diff-681ef0c25f41477fe9299bba04882068e6e54f88f357ee0e545ed158905b517cL421' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: 39eea80aa70dcbcad57327ce8f9c4a325062fc86</div><div id='time'> Time: 2018-04-17</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: python/baseline/pytorch/torchy.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: show_examples_pytorch</div><BR>

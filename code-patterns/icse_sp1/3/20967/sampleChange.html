@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for case in cases:
+            case.result_filename = self.settings.filenames.output_template.format(case.tag)
+
+        with redirect.folder(self.settings.filenames.run_folder,<a id="change">[]</a>,[],False):
+            write_geometry(self)
+            write_run_cases(self)
+            write_input_deck(self)</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        
+        &#47&#47 unpack
+        <a id="change">run_folder = os.path.abspath(self.settings.filenames.run_folder)</a>
+        output_template = self.settings.filenames.output_template
+        batch_template  = self.settings.filenames.batch_template
+        deck_template   = self.settings.filenames.deck_template
+        
+        &#47&#47 update current status
+        self.current_status.batch_index += 1
+        batch_index = self.current_status.batch_index
+        self.current_status.batch_file = batch_template.format(batch_index)
+        self.current_status.deck_file = deck_template.format(batch_index)
+        
+        &#47&#47 translate conditions
+        cases = translate_conditions_to_cases(self,run_conditions)
+        self.current_status.cases = cases        
+        
+        &#47&#47 case filenames
+        for case in cases:
+            case.result_filename = output_template.format(case.tag)
+
+        &#47&#47 write the input files
+        with redirect.folder(run_folder,force=False):
+            write_geometry(self)
+            write_run_cases(self)
+            write_input_deck(self)
+
+            &#47&#47 RUN AVL!
+            results_avl = run_analysis(self)
+
+        &#47&#47 translate results
+        results = translate_results_to_conditions(cases,results_avl)
+
+        if not self.keep_files:
+            <a id="change">rmtree( run_folder )</a>
+
+        return results
+
+    def __call__(self,*args,**kwarg):</code></pre>

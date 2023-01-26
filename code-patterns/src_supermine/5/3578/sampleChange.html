@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        outputs.append(current_input)
+
+    if self._skip_connections and self._concat_final_output_if_skip:
+      flat_outputs = tuple(nest.flatten(output) <a id="change">for</a> output in outputs)
+      flat_outputs = <a id="change">[tf.concat(output, 1) for output in zip(*flat_outputs)]</a>
+      output = nest.pack_sequence_as(structure=outputs[0],
+                                     flat_sequence=flat_outputs)
+    else:
+      output = current_input</code></pre><h3>After Change</h3><pre><code class='java'>
+    next_states = []
+    outputs = []
+    recurrent_idx = 0
+    <a id="change">concatenate = lambda *args: tf.concat(args, axis=-1)</a>
+    for i, core in enumerate(self._cores):
+      if self._skip_connections and i &gt; 0:
+        current_input = nest.map_structure(concatenate, inputs, current_input)
+
+      &#47&#47 Determine if this core in the stack is recurrent or not and call
+      &#47&#47 accordingly.
+      if self._is_recurrent_list[i]:
+        current_input, next_state = core(current_input,
+                                         prev_state[recurrent_idx])
+        next_states.append(next_state)
+        recurrent_idx += 1
+      else:
+        current_input = core(current_input)
+
+      if self._skip_connections:
+        outputs.append(current_input)
+
+    if self._skip_connections and self._concat_final_output_if_skip:
+      output = <a id="change">nest.map_structure(concatenate, *outputs)</a>
+    else:
+      output = current_input
+
+    self._last_output_size = _get_shape_without_batch_dimension(output)</code></pre>

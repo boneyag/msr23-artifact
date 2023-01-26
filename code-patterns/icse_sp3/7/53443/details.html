@@ -1,0 +1,50 @@
+<html><h3>8bafae2ee7044529543768eec63d8460d894f5c6,train.py,,validate,#Any#Any#Any#Any#Any#Any#,163
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            t.set_postfix(loss=&quot{:.2f}&quot.format(loss_meter.avg), refresh=False)
+
+        val_loss = loss_meter.avg
+        <a id="change">t.write(desc + &quot | valid loss {:2.2f} | valid ppl {:3.2f}&quot
+                .format(val_loss, math.pow(2, val_loss)))</a>
+
+    &#47&#47 update and return the learning rate
+    return val_loss
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                             max_positions=args.max_positions,
+                             skip_invalid_size_inputs_valid_test=args.skip_invalid_size_inputs_valid_test)
+    loss_meter = AverageMeter()
+    <a id="change">extra_meters = collections.defaultdict(lambda: AverageMeter())</a>
+
+    desc = &quot| epoch {:03d} | valid on \&quot{}\&quot subset&quot.format(epoch, subset)
+    with progress_bar(itr, desc, leave=False) as t:
+        for _, sample in data.skip_group_enumerator(t, ngpus):
+            loss_dict = trainer.valid_step(sample)
+            loss = loss_dict[&quotloss&quot]
+            del loss_dict[&quotloss&quot]  &#47&#47 don&quott include in extra_meters or extra_postfix
+
+            ntokens = sum(s[&quotntokens&quot] for s in sample)
+            loss_meter.update(loss, ntokens)
+
+            extra_postfix = []
+            for k, v in loss_dict.items():
+                extra_meters[k].update(v)
+                extra_postfix.append((k, &quot{:.4f}&quot.format(extra_meters[k].avg)))
+
+            t.set_postfix(collections.OrderedDict([
+                (&quotloss&quot, &quot{:.2f}&quot.format(loss_meter.avg)),
+            ] + extra_postfix), refresh=False)
+
+        val_loss = loss_meter.avg
+        fmt = desc + &quot | valid loss {:2.2f} | valid ppl {:3.2f}&quot.format(
+            val_loss, math.pow(2, val_loss))
+        fmt += <a id="change">&quot&quot.join(
+            &quot | {} {:.4f}&quot.format(k, meter.avg)
+            for k, meter in extra_meters.items()
+        )</a>
+        <a id="change">t.write(fmt)</a>
+
+    &#47&#47 update and return the learning rate
+    return val_loss
+</code></pre><img src="247995323.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/8bafae2ee7044529543768eec63d8460d894f5c6#diff-ed183d67207df065a11e1289f19d34cc2abbc5448dea952683cfe9728c342b95L176' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 8bafae2ee7044529543768eec63d8460d894f5c6</div><div id='time'> Time: 2017-10-19</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: validate</div><BR><BR><div id='link'><a href='https://github.com/google/language-resources/commit/1a0c8ee08d03397b3e08d6421427afdcbde88945#diff-1494ef37cdab6213a4333dab8da9f8c925b03c51d5661e5a507bc37cb6d291eeL91' target='_blank'>Link</a></div><div id='project'> Project Name: google/language-resources</div><div id='commit'> Commit Name: 1a0c8ee08d03397b3e08d6421427afdcbde88945</div><div id='time'> Time: 2016-06-12</div><div id='author'> Author: mjansche@google.com</div><div id='file'> File Name: my/grapheme_cluster.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

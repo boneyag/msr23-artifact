@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 The iterative solution is necessitated by making
+        &#47&#47 the implementation compatible with sequence-based models,
+        &#47&#47 where the embedding indices are already two-dimensional.
+        embedding = self.embeddings(indices * <a id="change">self._masks[0]</a> % self.compressed_num_embeddings)
+
+        for mask in self._masks[1:]:
+            embedding += self.embeddings(indices * mask % self.compressed_num_embeddings)</code></pre><h3>After Change</h3><pre><code class='java'>
+        masked_indices.remainder_(self.compressed_num_embeddings)
+        masked_indices = Variable(masked_indices)
+
+        <a id="change">if masked_indices.dim() == 2:
+            embedding = self.embeddings(masked_indices).mean(1)
+        else:
+            embedding = self.embeddings(masked_indices[:, :, 0])
+
+            for idx in range(1, len(self._masks)):
+                embedding += self.embeddings(masked_indices[:, :, idx])
+
+            embedding /= len(self._masks)
+
+       </a> return embedding
+</code></pre>

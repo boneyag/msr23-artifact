@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Load atlas parcellation (and its wm-gm interface reduced version for seeding)
+    atlas_img = nib.load(labels_im_file)
+    <a id="change">atlas_data = atlas_img.get_fdata().astype(&quotint&quot)</a>
+    atlas_img_wm_gm_int = nib.load(labels_im_file_wm_gm_int)
+    atlas_data_wm_gm_int = atlas_img_wm_gm_int.get_fdata().astype(&quotint&quot)
+
+    &#47&#47 Build mask vector from atlas for later roi filtering</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Load atlas parcellation (and its wm-gm interface reduced version for seeding)
+    atlas_data = nib.load(labels_im_file).get_fdata().astype(&quotint&quot)
+    atlas_data_wm_gm_int = <a id="change">nib</a>.load(labels_im_file_wm_gm_int).get_fdata().astype(&quotint&quot)
+
+    &#47&#47 Build mask vector from atlas for later roi filtering
+    parcels = []
+    i = 0
+    for roi_val in np.unique(atlas_data)[1:]:
+        parcels.append(atlas_data == roi_val)
+        i = i + 1
+
+    if np.sum(atlas_data) == 0:
+        raise ValueError(&quotERROR: No non-zero voxels found in atlas. Check any roi masks and/or wm-gm interface images &quot
+                         &quotto verify overlap with dwi-registered atlas.&quot)
+
+    &#47&#47 Iteratively build a list of streamlines for each ROI while tracking
+    print("%s%s%s%s" % (Fore.GREEN, &quotTarget number of samples: &quot, Fore.BLUE, target_samples))
+    print(Style.RESET_ALL)
+    print("%s%s%s%s" % (Fore.GREEN, &quotUsing curvature threshold(s): &quot, Fore.BLUE, curv_thr_list))
+    print(Style.RESET_ALL)
+    print("%s%s%s%s" % (Fore.GREEN, &quotUsing step size(s): &quot, Fore.BLUE, step_list))
+    print(Style.RESET_ALL)
+    print("%s%s%s%s" % (Fore.GREEN, &quotTracking type: &quot, Fore.BLUE, track_type))
+    print(Style.RESET_ALL)
+    if directget == &quotprob&quot:
+        print("%s%s%s%s" % (Fore.GREEN, &quotDirection-getting type: &quot, Fore.BLUE, &quotProbabilistic&quot))
+    elif directget == &quotboot&quot:
+        print("%s%s%s%s" % (Fore.GREEN, &quotDirection-getting type: &quot, Fore.BLUE, &quotBootstrapped&quot))
+    elif directget == &quotclosest&quot:
+        print("%s%s%s%s" % (Fore.GREEN, &quotDirection-getting type: &quot, Fore.BLUE, &quotClosest Peak&quot))
+    elif directget == &quotdet&quot:
+        print("%s%s%s%s" % (Fore.GREEN, &quotDirection-getting type: &quot, Fore.BLUE, &quotDeterministic Maximum&quot))
+    print(Style.RESET_ALL)
+
+    &#47&#47 Commence Ensemble Tractography
+    streamlines = track_ensemble(dwi_data, target_samples, atlas_data_wm_gm_int, parcels, mod_fit,
+                                 prep_tissues(B0_mask, gm_in_dwi, vent_csf_in_dwi, wm_in_dwi, tiss_class),
+                                 get_sphere(&quotrepulsion724&quot), directget, curv_thr_list, step_list, track_type,
+                                 maxcrossing, max_length, roi_neighborhood_tol, min_length, waymask)
+    print(&quotTracking Complete&quot)
+
+    &#47&#47 Create streamline density map
+    [streams, dir_path, dm_path] = create_density_map(dwi_img, utils.do_dir_path(atlas, dwi_file), streamlines,
+                                                      conn_model, target_samples, node_size, curv_thr_list, step_list,
+                                                      network, roi)
+
+    <a id="change">del streamlines</a>
+    del dwi_data
+    <a id="change">del atlas_data_wm_gm_int</a>
+    del atlas_data
+    del mod_fit
+    dwi_img.uncache()
+</code></pre>

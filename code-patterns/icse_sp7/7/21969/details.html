@@ -1,0 +1,44 @@
+<html><h3>054095d922edda5134e520522bc82a1b95cc5bd4,onnx_tf/backend_rep.py,TensorflowRep,run,#TensorflowRep#Any#,52
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    super(TensorflowRep, self).run(inputs, **kwargs)
+
+    &#47&#47 TODO: handle name scope if necessary
+    <a id="change">with self.graph.as_default():
+      with tf.compat.v1.Session() as sess:
+        if isinstance(inputs, dict):
+          feed_dict = inputs
+        elif isinstance(inputs, list) or isinstance(inputs, tuple):
+          if len(self.inputs) != len(inputs):
+            raise RuntimeError(&quotExpected {} values for uninitialized &quot
+                               &quotgraph inputs ({}), but got {}.&quot.format(
+                                   len(self.inputs), &quot, &quot.join(self.inputs),
+                                   len(inputs)))
+          feed_dict = dict(zip(self.inputs, inputs))
+        else:
+          &#47&#47 single input
+          feed_dict = dict([(self.inputs[0], inputs)])
+
+        feed_dict = {
+            self.tensor_dict[key]: feed_dict[key] for key in self.inputs
+        }
+
+        sess.run(tf.compat.v1.global_variables_initializer())
+        outputs = [self.tensor_dict[output] for output in self.outputs]
+
+        output_values = sess.run(outputs, feed_dict=feed_dict)
+        return namedtupledict(&quotOutputs&quot, self.outputs)(*output_values)
+
+ </a> def export_graph(self, path):
+    Export backend representation to a Tensorflow proto file.
+
+    This function obtains the graph proto corresponding to the ONNX</code></pre><h3>After Change</h3><pre><code class='java'>
+      feed_dict = dict([(self.inputs[0], inputs)])
+
+    input_dict = dict(
+        [(<a id="change">x[0]</a>, tf.constant(x[1])) <a id="change">for</a> x in feed_dict.items()])
+
+    output_values = self.tf_module(**input_dict)
+    output_values = [val.numpy() if isinstance(val, tf.Tensor) else val for val in output_values]</code></pre><img src="117805957.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/onnx/onnx-tensorflow/commit/054095d922edda5134e520522bc82a1b95cc5bd4#diff-1e6ff1fe703eb6e9c19bdae957bbc2ab76bd9bcb39f79b5c311a248f7f5dc53eL52' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnx-tensorflow</div><div id='commit'> Commit Name: 054095d922edda5134e520522bc82a1b95cc5bd4</div><div id='time'> Time: 2020-09-09</div><div id='author'> Author: smonov@gmail.com</div><div id='file'> File Name: onnx_tf/backend_rep.py</div><div id='class'> Class Name: TensorflowRep</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/1330ea3102315bd79c9c6efdbd8818c8e2a3cb8f#diff-f582aafccf8343587e7bd879c7191fa93da2d547f815068a0b74c88b15dc9b74L200' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 1330ea3102315bd79c9c6efdbd8818c8e2a3cb8f</div><div id='time'> Time: 2019-07-09</div><div id='author'> Author: peastman@stanford.edu</div><div id='file'> File Name: deepchem/metalearning/maml.py</div><div id='class'> Class Name: MAML</div><div id='method'> Method Name: fit</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/c96af58e6ab2f85626e51a331e8479da49329f0e#diff-977d8959ba382f5a8e545e14cb2b9a35bfcc4680a936ee2dc5b3658eed3e3186L654' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: c96af58e6ab2f85626e51a331e8479da49329f0e</div><div id='time'> Time: 2017-01-18</div><div id='author'> Author: joegomes@stanford.edu</div><div id='file'> File Name: deepchem/models/tensorflow_models/__init__.py</div><div id='class'> Class Name: TensorflowClassifier</div><div id='method'> Method Name: predict_proba_on_batch</div><BR>

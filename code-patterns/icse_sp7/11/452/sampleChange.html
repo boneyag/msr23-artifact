@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      raise
+
+  def AssertVocabularyContents(self, vocab_file_path, file_contents):
+    <a id="change">with tf.io.gfile.GFile(vocab_file_path, &quotrb&quot) as f:
+      file_lines = f.readlines()
+
+      &#47&#47 Store frequency case.
+      if isinstance(file_contents[0], tuple):
+        word_and_frequency_list = []
+        for content in file_lines:
+          frequency, word = content.split(b&quot &quot, 1)
+          &#47&#47 Split by comma for when the vocabulary file stores the result of
+          &#47&#47 per-key analyzers.
+          values = list(map(float, frequency.strip(b&quot\n&quot).split(b&quot,&quot)))
+          word_and_frequency_list.append(
+              (word.strip(b&quot\n&quot), values[0] if len(values) == 1 else values))
+
+        expected_words, expected_frequency = zip(*word_and_frequency_list)
+        actual_words, actual_frequency = zip(*file_contents)
+        self.assertAllEqual(expected_words, actual_words)
+        np.testing.assert_almost_equal(expected_frequency, actual_frequency)
+      else:
+        file_lines = [content.strip(b&quot\n&quot) for content in file_lines]
+        self.assertAllEqual(file_lines, file_contents)
+
+ </a> def WriteRenderedDotFile(self, dot_string, output_file=None):
+    tf.compat.v1.logging.info(
+        &quotWriting a rendered dot file is not yet supported.&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      raise
+
+  def AssertVocabularyContents(self, vocab_file_path, file_contents):
+    <a id="change">if vocab_file_path.endswith(&quot.tfrecord.gz&quot):
+      file_lines = list(
+          tf_utils.read_tfrecord_vocabulary_dataset(
+              vocab_file_path).as_numpy_iterator())
+    else:
+      with tf.io.gfile.GFile(vocab_file_path, &quotrb&quot) as f:
+        file_lines = f.read().splitlines()
+
+    &#47&#47 Store frequency case.
+   </a> if isinstance(file_contents[0], tuple):
+      word_and_frequency_list = []
+      for content in file_lines:
+        frequency, word = content.split(b&quot &quot, 1)</code></pre>

@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        dropout_rate = self._hparams.dropout,
+                        causality = False,
+                        scope = "vanilla_attention")
+                <a id="change">dec = layers.poswise_feedforward(dec,
+                        num_units=[4*self._hparams.embedding.dim, self._hparams.embedding.dim])</a>
+        self.dec = dec
+        &#47&#47even if don&quott use tf.variable_scope(self.variable_scope),
+        &#47&#47 the variables will appear in this scope automatically
+        self.logits = tf.layers.dense(dec, self._vocab_size)</code></pre><h3>After Change</h3><pre><code class='java'>
+                        dropout_rate = self._hparams.dropout,
+                        causality = False,
+                        scope = "vanilla_attention")
+                <a id="change">poswise_network = FeedForwardNetwork(
+                        hparams=self._hparams[&quotposwise_feedforward&quot])</a>
+                with tf.variable_scope(poswise_network.variable_scope, reuse=True):
+                    &#47&#47 why there could be &quotmultihead_attention_1&quot scope
+                    dec += poswise_network(dec)
+                    <a id="change">dec = layers.normalize(dec)</a>
+        self.dec = dec
+        self.logits = tf.layers.dense(dec, self._vocab_size)
+        self.preds = tf.to_int64(tf.argmax(self.logits, axis=-1))
+</code></pre>

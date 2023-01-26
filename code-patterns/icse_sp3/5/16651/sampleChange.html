@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def _run_test(args: argparse.Namespace):
+    <a id="change">initial_working_dir = os.getcwd()</a>
+    module_parent = _get_module_root().parent
+    logger.info("Changing directory to %s", module_parent)
+    <a id="change">os.chdir(module_parent)</a>
+    test_dir = os.path.join(module_parent, "allennlp")
+    logger.info("Running tests at %s", test_dir)
+
+    if args.k:
+        pytest_k = ["-k", args.k]
+        pytest_m = ["-m", "not java"]
+        if args.run_all:
+            logger.warning("the argument &quot-k&quot overwrites &quot--run-all&quot.")
+    elif args.run_all:
+        pytest_k = []
+        pytest_m = []
+    else:
+        pytest_k = ["-k", "not sniff_test"]
+        pytest_m = ["-m", "not java"]
+
+    exit_code = pytest.main([test_dir, "--color=no"] + pytest_k + pytest_m)
+
+    &#47&#47 Change back to original working directory after running tests
+    <a id="change">os.chdir(initial_working_dir)</a>
+    sys.exit(exit_code)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def _run_test(args: argparse.Namespace):
+    module_parent = _get_module_root().parent
+    logger.info("Changing directory to %s", module_parent)
+    <a id="change">with pushd(module_parent):
+        test_dir = os.path.join(module_parent, "allennlp")
+        logger.info("Running tests at %s", test_dir)
+
+        if args.k:
+            pytest_k = ["-k", args.k]
+            pytest_m = ["-m", "not java"]
+            if args.run_all:
+                logger.warning("the argument &quot-k&quot overwrites &quot--run-all&quot.")
+        elif args.run_all:
+            pytest_k = []
+            pytest_m = []
+        else:
+            pytest_k = ["-k", "not sniff_test"]
+            pytest_m = ["-m", "not java"]
+
+        exit_code = pytest.main([test_dir, "--color=no"] + pytest_k + pytest_m)
+        sys.exit(exit_code)</a>
+</code></pre>

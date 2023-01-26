@@ -1,0 +1,155 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    n = data.shape[0]
+    nbr_chunks = nbr_processes ** 2
+    chunk_size = int(np.ceil(n / nbr_chunks))
+    indices = <a id="change">zip(np.arange(0, n, chunk_size),
+                  np.arange(0, n, chunk_size) + chunk_size)</a>
+
+    with InTemporaryDirectory() as tmpdir:
+
+        data_file_name = path.join(tmpdir, &quotdata.npy&quot)
+        np.save(data_file_name, data)
+        if mask is not None:
+            mask = mask.flatten()
+            mask_file_name = path.join(tmpdir, &quotmask.npy&quot)
+            np.save(mask_file_name, mask)
+        else:
+            mask_file_name = None
+
+        pool = Pool(nbr_processes)
+
+        pam_res = pool.map(_peaks_from_model_parallel_sub,
+                           zip(repeat((data_file_name, mask_file_name)),
+                               indices,
+                               repeat(model),
+                               repeat(sphere),
+                               repeat(relative_peak_threshold),
+                               repeat(min_separation_angle),
+                               repeat(return_odf),
+                               repeat(return_sh),
+                               repeat(gfa_thr),
+                               repeat(normalize_peaks),
+                               repeat(sh_order),
+                               repeat(sh_basis_type),
+                               repeat(npeaks),
+                               repeat(B),
+                               repeat(invB)))
+        pool.close()
+
+        pam = PeaksAndMetrics()
+
+        &#47&#47 use memmap to reduce the memory usage
+        pam.gfa = np.memmap(path.join(tmpdir, &quotgfa.npy&quot),
+                            dtype=pam_res[0].gfa.dtype,
+                            mode=&quotw+&quot,
+                            shape=(data.shape[0]))
+
+        pam.peak_dirs = np.memmap(path.join(tmpdir, &quotpeak_dirs.npy&quot),
+                                  dtype=pam_res[0].peak_dirs.dtype,
+                                  mode=&quotw+&quot,
+                                  shape=(data.shape[0], npeaks, 3))
+        <a id="change">pam.peak_values</a> = np.memmap(path.join(tmpdir, &quotpeak_values.npy&quot),
+                                    dtype=pam_res[0].peak_values.dtype,
+                                    mode=&quotw+&quot,
+                                    shape=(data.shape[0], npeaks))
+        pam.peak_indices = np.memmap(path.join(tmpdir, &quotpeak_indices.npy&quot),
+                                     dtype=pam_res[0].peak_indices.dtype,
+                                     mode=&quotw+&quot,
+                                     shape=(data.shape[0], npeaks))
+        pam.qa = np.memmap(path.join(tmpdir, &quotqa.npy&quot),
+                           dtype=pam_res[0].qa.dtype,
+                           mode=&quotw+&quot,
+                           shape=(data.shape[0], npeaks))
+        if return_sh:
+            nbr_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+            pam.shm_coeff = np.memmap(path.join(tmpdir, &quotshm.npy&quot),
+                                      dtype=pam_res[0].shm_coeff.dtype,
+                                      mode=&quotw+&quot,
+                                      shape=(data.shape[0], nbr_shm_coeff))
+            pam.B = pam_res[0].B
+        else:
+            pam.shm_coeff = None
+            pam.invB = None
+        if return_odf:
+            <a id="change">pam.odf</a> = np.memmap(path.join(tmpdir, &quotodf.npy&quot),
+                                dtype=pam_res[0].odf.dtype,
+                                mode=&quotw+&quot,
+                                shape=(data.shape[0], len(sphere.vertices)))</code></pre><h3>After Change</h3><pre><code class='java'>
+    n = data.shape[0]
+    nbr_chunks = nbr_processes ** 2
+    chunk_size = int(np.ceil(n / nbr_chunks))
+    indices = <a id="change">list(zip(np.arange(0, n, chunk_size),
+                       np.arange(0, n, chunk_size) + chunk_size))</a>
+
+    with InTemporaryDirectory() as tmpdir:
+
+        data_file_name = path.join(tmpdir, &quotdata.npy&quot)
+        np.save(data_file_name, data)
+        if mask is not None:
+            mask = mask.flatten()
+            mask_file_name = path.join(tmpdir, &quotmask.npy&quot)
+            np.save(mask_file_name, mask)
+        else:
+            mask_file_name = None
+
+        pool = Pool(nbr_processes)
+
+        pam_res = pool.map(_peaks_from_model_parallel_sub,
+                           zip(repeat((data_file_name, mask_file_name)),
+                               indices,
+                               repeat(model),
+                               repeat(sphere),
+                               repeat(relative_peak_threshold),
+                               repeat(min_separation_angle),
+                               repeat(return_odf),
+                               repeat(return_sh),
+                               repeat(gfa_thr),
+                               repeat(normalize_peaks),
+                               repeat(sh_order),
+                               repeat(sh_basis_type),
+                               repeat(npeaks),
+                               repeat(B),
+                               repeat(invB)))
+        pool.close()
+
+        pam = PeaksAndMetrics()
+        &#47&#47 use memmap to reduce the memory usage
+        pam.gfa = np.memmap(path.join(tmpdir, &quotgfa.npy&quot),
+                            dtype=pam_res[0].gfa.dtype,
+                            mode=&quotw+&quot,
+                            shape=(data.shape[0]))
+
+        pam.peak_dirs = np.memmap(path.join(tmpdir, &quotpeak_dirs.npy&quot),
+                                  dtype=pam_res[0].peak_dirs.dtype,
+                                  mode=&quotw+&quot,
+                                  shape=(data.shape[0], npeaks, 3))
+        <a id="change">pam.peak_values</a> = np.memmap(path.join(tmpdir, &quotpeak_values.npy&quot),
+                                    dtype=pam_res[0].peak_values.dtype,
+                                    mode=&quotw+&quot,
+                                    shape=(data.shape[0], npeaks))
+        pam.peak_indices = np.memmap(path.join(tmpdir, &quotpeak_indices.npy&quot),
+                                     dtype=pam_res[0].peak_indices.dtype,
+                                     mode=&quotw+&quot,
+                                     shape=(data.shape[0], npeaks))
+        pam.qa = np.memmap(path.join(tmpdir, &quotqa.npy&quot),
+                           dtype=pam_res[0].qa.dtype,
+                           mode=&quotw+&quot,
+                           shape=(data.shape[0], npeaks))
+        if return_sh:
+            nbr_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+            pam.shm_coeff = np.memmap(path.join(tmpdir, &quotshm.npy&quot),
+                                      dtype=pam_res[0].shm_coeff.dtype,
+                                      mode=&quotw+&quot,
+                                      shape=(data.shape[0], nbr_shm_coeff))
+            pam.B = pam_res[0].B
+        else:
+            pam.shm_coeff = None
+            pam.invB = None
+        if return_odf:
+            <a id="change">pam.odf</a> = np.memmap(path.join(tmpdir, &quotodf.npy&quot),
+                                dtype=pam_res[0].odf.dtype,
+                                mode=&quotw+&quot,
+                                shape=(data.shape[0], len(sphere.vertices)))</code></pre>

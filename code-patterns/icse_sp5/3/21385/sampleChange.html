@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            loss = -tf.reduce_sum(eligibility)
+            self.losses.append(loss)
+            optimizer = tf.train.RMSPropOptimizer(learning_rate=self.config[&quotlearning_rate&quot], decay=0.9, epsilon=1e-9)
+            self.trainers.append(<a id="change">optimizer.minimize(loss)</a>)
+
+        init = tf.global_variables_initializer()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.variation_probs = [tf.nn.softmax(tf.matmul(L1, tf.matmul(knowledge_base, s))) for s in sparse_representations]
+        self.optimizer = tf.train.RMSPropOptimizer(learning_rate=self.config[&quotlearning_rate&quot], decay=0.9, epsilon=1e-9)
+        net_vars = self.shared_vars + sparse_representations
+        <a id="change">self.accum_grads = create_accumulative_gradients_op(net_vars, 1)</a>
+
+        &#47&#47 self.writers = []
+        self.losses = []
+        for i, probabilities in enumerate(self.variation_probs):
+            good_probabilities = tf.reduce_sum(tf.mul(probabilities, tf.one_hot(tf.cast(self.action_taken, tf.int32), self.nA)), reduction_indices=[1])
+            eligibility = tf.log(good_probabilities) * self.advantage
+            &#47&#47 eligibility = tf.Print(eligibility, [eligibility], first_n=5)
+            loss = -tf.reduce_sum(eligibility)
+            self.losses.append(loss)
+            &#47&#47 writer = tf.summary.FileWriter(self.monitor_dir + &quot/task&quot + str(i), self.sess.graph)
+
+        &#47&#47 An add op for every task & its loss
+        &#47&#47 add_accumulative_gradients_op(net_vars, accum_grads, loss, identifier)
+        self.add_accum_grads = [add_accumulative_gradients_op(
+            self.shared_vars + [sparse_representations[i]],
+            self.accum_grads,
+            loss,
+            i)
+            for i, loss in enumerate(self.losses)]
+
+        self.apply_gradients = <a id="change">self.optimizer.apply_gradients(
+            zip(self.accum_grads, net_vars))</a>
+        self.reset_accum_grads = reset_accumulative_gradients_op(net_vars, self.accum_grads, 1)
+
+        init = tf.global_variables_initializer()
+</code></pre>

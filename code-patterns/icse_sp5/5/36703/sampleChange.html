@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            outputs = squash(K.sum(c * inputs_hat, 1, keepdims=True))
+
+            &#47&#47 last iteration needs not compute bias which will not be passed to the graph any more anyway.
+            <a id="change">if i != self.num_routing - 1:
+                &#47&#47 self.bias = K.update_add(self.bias, K.sum(inputs_hat * outputs, [0, -1], keepdims=True))
+                self.bias += K.sum(inputs_hat * outputs, -1, keepdims=True)
+            &#47&#47 tf.summary.histogram(&quotBigBee&quot, self.bias)  &#47&#47 for debugging
+        &#47&#47 End: routing algorithm V2, static ------------------------------------------------------------&#47&#47
+
+       </a> return K.reshape(outputs, [-1, self.num_capsule, self.dim_vector])
+
+    def compute_output_shape(self, input_shape):
+        return tuple([None, self.num_capsule, self.dim_vector])</code></pre><h3>After Change</h3><pre><code class='java'>
+            c = tf.nn.softmax(b, dim=1)
+
+            &#47&#47 At last iteration, use `inputs_hat` to compute `outputs` in order to backpropagate gradient
+            <a id="change">if i == self.num_routing - 1:
+                &#47&#47 c.shape =  [batch_size, num_capsule, input_num_capsule]
+                &#47&#47 inputs_hat.shape=[None, num_capsule, input_num_capsule, dim_capsule]
+                &#47&#47 The first two dimensions as `batch` dimension,
+                &#47&#47 then matmal: [input_num_capsule] x [input_num_capsule, dim_capsule] -&gt; [dim_capsule].
+                &#47&#47 outputs.shape=[None, num_capsule, dim_capsule]
+                outputs = squash(K.batch_dot(c, inputs_hat, [2, 2]))  &#47&#47 [None, 10, 16]
+            else:  &#47&#47 Otherwise, use `inputs_hat_stopped` to update `b`. No gradients flow on this path.
+                outputs = squash(K.batch_dot(c, inputs_hat_stopped, [2, 2]))
+
+                &#47&#47 outputs.shape =  [None, num_capsule, dim_capsule]
+                &#47&#47 inputs_hat.shape=[None, num_capsule, input_num_capsule, dim_capsule]
+                &#47&#47 The first two dimensions as `batch` dimension,
+                &#47&#47 then matmal: [dim_capsule] x [input_num_capsule, dim_capsule]^T -&gt; [input_num_capsule].
+                &#47&#47 b.shape=[batch_size, num_capsule, input_num_capsule]
+                b += K.batch_dot(outputs, inputs_hat_stopped, [2, 3])
+        &#47&#47 End: Routing algorithm -----------------------------------------------------------------------&#47&#47
+
+       </a> return outputs
+
+    def compute_output_shape(self, input_shape):
+        return tuple([None, self.num_capsule, self.dim_capsule])</code></pre>

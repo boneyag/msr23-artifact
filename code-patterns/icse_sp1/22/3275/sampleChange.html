@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 TODO: This is overkill? We don&quott need to hydrate the sources and strip snapshots,
+        &#47&#47  we only need the path relative to the source root.
+        binary_sources = await Get(HydratedSources, HydrateSourcesRequest(field_set.sources))
+        <a id="change">stripped_binary_sources = await Get(
+            StrippedSourceFiles, SourceFiles(binary_sources.snapshot, ())
+        )</a>
+        entry_point = PythonBinarySources.translate_source_file_to_entry_point(
+            stripped_binary_sources.snapshot.files
+        )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        binary_source_paths = await Get(
+            Paths, PathGlobs, field_set.sources.path_globs(FilesNotFoundBehavior.error)
+        )
+        if <a id="change">len(binary_source_paths.files) != 1:
+   </a>         raise InvalidFieldException(
+                "No `entry_point` was set for the target "
+                f"{repr(field_set.address)}, so it must have exactly one source, but it has "
+                f"{len(binary_source_paths.files)}"
+            )
+        <a id="change">entry_point_path = binary_source_paths.files[0]</a>
+        <a id="change">source_root = await Get(
+            SourceRoot,
+            SourceRootRequest,
+            SourceRootRequest.for_file(entry_point_path),
+        )</a>
+        <a id="change">entry_point = PythonBinarySources.translate_source_file_to_entry_point(
+            os.path.relpath(entry_point_path, source_root.path)
+        )</a>
+
+    disambiguated_output_filename = os.path.join(
+        field_set.address.spec_path.replace(os.sep, "."), f"{field_set.address.target_name}.pex"
+    )</code></pre>

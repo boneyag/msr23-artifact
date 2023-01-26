@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        print(e)
+        else:
+            surveyor.survey_sra_experiment(options["accession"])
+            <a id="change">return 0</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def handle(self, *args, **options):
+        if options["accession"] is None and options["file"] is None:
+            logger.error("You must specify accession or input file.")
+            <a id="change">sys.exit(1)</a> 
+        if options["file"]:
+            if &quots3://&quot in options["file"]:
+                bucket, key = parse_s3_url(options["file"])
+                s3 = boto3.resource(&quots3&quot)
+                try:
+                    filepath = "/tmp/input_" + str(uuid.uuid4()) + ".txt"
+                    s3.Bucket(bucket).download_file(key, filepath)
+                except botocore.exceptions.ClientError as e:
+                    if e.response[&quotError&quot][&quotCode&quot] == "404":
+                        logger.error("The remote file does not exist.")
+                    raise
+            else:
+                filepath = options["file"]
+
+            with open(filepath) as file:
+                for accession in file:
+                    try:
+                        surveyor.survey_sra_experiment(accession.strip())
+                    except Exception as e:
+                        print(e)
+        else:
+            surveyor.survey_sra_experiment(options["accession"])
+            <a id="change">sys.exit(0)</a> 
+</code></pre>

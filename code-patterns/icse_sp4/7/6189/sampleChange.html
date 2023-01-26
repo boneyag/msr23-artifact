@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    offset = image_info[3, :]
+    boxes = input_utils.resize_and_crop_boxes(
+        boxes, image_scale, (image_height, image_width), offset)
+    <a id="change">if self._include_mask:
+      masks = input_utils.resize_and_crop_masks(
+          tf.expand_dims(masks, axis=-1),
+          image_scale, (image_height, image_width), offset)
+      masks = tf.squeeze(masks, axis=-1)
+
+    &#47&#47 Filters out ground truth boxes that are all zeros.
+   </a> indices = input_utils.get_non_empty_box_indices(boxes)
+    boxes = tf.gather(boxes, indices)
+    classes = tf.gather(classes, indices)
+    if self._include_mask:</code></pre><h3>After Change</h3><pre><code class='java'>
+    if self._include_mask:
+      masks = tf.gather(masks, indices)
+      cropped_boxes = boxes + tf.cast(
+          <a id="change">tf.tile(tf.expand_dims(offset, axis=0), [1, 2])</a>, dtype=tf.float32)
+      <a id="change">cropped_boxes = box_utils.normalize_boxes(
+          cropped_boxes, image_info[1, :])</a>
+      num_masks = tf.shape(masks)[0]
+      masks = tf.image.crop_and_resize(
+          tf.expand_dims(masks, axis=-1),
+          cropped_boxes,</code></pre>

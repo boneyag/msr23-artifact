@@ -1,0 +1,72 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    self.dec += dec
+
+                with tf.variable_scope(&quotencdec_attention&quot):
+                    dec = <a id="change">layers.layer_normalize(self.dec)</a>
+                    <a id="change">dec</a> = layers.multihead_attention(
+                        queries=dec,
+                        keys=encoder_output,
+                        queries_valid_length=tgt_length,
+                        keys_valid_length=src_length,
+                        num_units=self._hparams.embedding.dim,
+                        num_heads=self._hparams.num_heads,
+                        dropout_rate=self._hparams.dropout,
+                        causality=False,
+                        scope="multihead_attention")
+                    dec = <a id="change">tf.layers.dropout(
+                        dec,
+                        rate=self._hparams.dropout,
+                        training=context.is_train())</a>
+                    self.dec += dec
+
+                poswise_network = FeedForwardNetwork(hparams=self._hparams[&quotposwise_feedforward&quot])
+                with tf.variable_scope(poswise_network.variable_scope):
+                    dec = layers.layer_normalize(self.dec)
+                    dec = poswise_network(dec)
+                    dec = tf.layers.dropout(
+                        dec,
+                        rate=self._hparams.dropout,
+                        training=context.is_train())
+                    <a id="change">self.dec</a> += dec
+
+        &#47&#47 share the projection weight with word embedding
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                        dropout_rate=self._hparams.dropout,
+                        causality=True,
+                        scope="self_attention")
+                    <a id="change">self.dec</a> = self.dec + tf.layers.dropout(
+                        selfatt_output,
+                        rate=self._hparams.dropout,
+                        training=context.is_train()
+                    )
+
+                with tf.variable_scope(&quotencdec_attention&quot):
+                    <a id="change">encdec_output</a> = layers.multihead_attention(
+                        queries=<a id="change">layers.layer_normalize(self.dec)</a>,
+                        keys=encoder_output,
+                        queries_valid_length=tgt_length,
+                        keys_valid_length=src_length,
+                        num_units=self._hparams.embedding.dim,
+                        num_heads=self._hparams.num_heads,
+                        dropout_rate=self._hparams.dropout,
+                        causality=False,
+                        scope="multihead_attention")
+                    self.dec = <a id="change">self.dec + tf.layers.dropout(encdec_output, \
+                        rate=self._hparams.dropout,
+                        training=context.is_train()
+                    )</a>
+                poswise_network = FeedForwardNetwork(hparams=self._hparams[&quotposwise_feedforward&quot])
+                with tf.variable_scope(poswise_network.variable_scope):
+                    <a id="change">sub_output</a> = tf.layers.dropout(
+                        poswise_network(layers.layer_normalize(self.dec)),
+                        rate=self._hparams.dropout,
+                        training=context.is_train()
+                    )
+                    self.dec = <a id="change">self.dec + sub_output</a>
+
+        self.dec = layers.layer_normalize(self.dec)
+        &#47&#47 share the projection weight with word embedding
+</code></pre>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        loss_out = self._loss(self, self.model, self.dist_class, train_batch)
+        self._optimizer.zero_grad()
+        <a id="change">loss_out.backward()</a>
+
+        grad_process_info = self.extra_grad_process()
+
+        &#47&#47 Note that return values are just references;</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        grad_process_info = {}
+        grads = []
+        <a id="change">for i, opt in enumerate(self._optimizers):
+            opt.zero_grad()
+            loss_out[i].backward()
+            grad_process_info = self.extra_grad_process(opt, loss_out[i])
+
+            &#47&#47 Note that return values are just references;
+            &#47&#47 calling zero_grad will modify the values
+            for param_group in opt.param_groups:
+                for p in param_group["params"]:
+                    if p.grad is not None:
+                        grads.append(p.grad.data.cpu().numpy())
+                    else:
+                        grads.append(None)
+
+       </a> grad_info = self.extra_grad_info(train_batch)
+        grad_info.update(grad_process_info)
+        return grads, {LEARNER_STATS_KEY: grad_info}
+</code></pre>

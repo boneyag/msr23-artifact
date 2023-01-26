@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            blockVectorBV = blockVectorV  &#47&#47 Shared data!!!
+    gramVBV = np.dot(blockVectorV.T.conj(), blockVectorBV)
+    gramVBV = cholesky(gramVBV)
+    gramVBV = <a id="change">inv(gramVBV, overwrite_a=True)</a>
+    &#47&#47 gramVBV is now R^{-1}.
+    blockVectorV = np.dot(blockVectorV, gramVBV)
+    if B is not None:
+        blockVectorBV = np.dot(blockVectorBV, gramVBV)</code></pre><h3>After Change</h3><pre><code class='java'>
+def _b_orthonormalize(B, blockVectorV, blockVectorBV=None, retInvR=False):
+    B-orthonormalize the given block vector using Cholesky.
+    normalization = blockVectorV.max(axis=0)+np.finfo(blockVectorV.dtype).eps
+    <a id="change">blockVectorV = blockVectorV / normalization</a>
+    if blockVectorBV is None:
+        if B is not None:
+            blockVectorBV = B(blockVectorV)
+        else:
+            blockVectorBV = blockVectorV  &#47&#47 Shared data!!!
+    else:
+        <a id="change">blockVectorBV = blockVectorBV / normalization</a>
+    VBV = np.matmul(blockVectorV.T.conj(), blockVectorBV)
+    try:
+        &#47&#47 VBV is a Cholesky factor from now on...
+        <a id="change">VBV = cholesky(VBV, overwrite_a=True)</a>
+        <a id="change">VBV = inv(VBV, overwrite_a=True)</a>
+        blockVectorV = np.matmul(blockVectorV, VBV)
+        &#47&#47 blockVectorV = (cho_solve((VBV.T, True), blockVectorV.T)).T
+        if B is not None:
+            blockVectorBV = np.matmul(blockVectorBV, VBV)</code></pre>

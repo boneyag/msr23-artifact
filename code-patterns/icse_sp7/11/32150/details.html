@@ -1,0 +1,49 @@
+<html><h3>b4562327a4554689d8ab0906c605476ccf817336,language/xsp/data_preprocessing/abstract_sql.py,,_get_from_clause_for_tables,#Any#Any#,549
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  Returns list of SqlSpan tuples for FROM clause.
+  if not table_names:
+    raise ParseError(&quotNo table names provided.&quot)
+  <a id="change">if len(table_names) == 1:
+    return [make_sql_span(table_name=table_names[0])]
+
+  &#47&#47 Map of (table_a, table_b) to (column_a, column_b)
+ </a> fk_relations_map = {}
+  for relation in fk_relations:
+    fk_relations_map[<a id="change">(relation.child_table,
+                      relation.parent_table)</a>] = (relation.child_column,
+                                                 relation.parent_column)
+    &#47&#47 Also add the reverse.
+    <a id="change">fk_relations_map[(relation.parent_table,
+                      relation.child_table)] = (relation.parent_column,
+                                                relation.child_column)</a>
+
+  &#47&#47 Naively try every permutation of table_names until we get a hit.
+  &#47&#47 TODO(petershaw): Could probably speed up this up quite a bit and provide
+  &#47&#47 better error handling for ambiguous cases.</code></pre><h3>After Change</h3><pre><code class='java'>
+  Returns list of SqlSpan tuples for FROM clause.
+  visited_tables, fk_relations = _get_fk_relations_linking_tables(
+      table_names, fk_relations)
+  <a id="change">sql_spans = []</a>
+  sql_spans.append(make_sql_span(table_name=visited_tables[0]))
+  <a id="change">for i in range(len(visited_tables) - 1):
+    table_a = visited_tables[i]
+    table_b = visited_tables[i + 1]
+    column_a, column_b = fk_relations[i]
+    &#47&#47 join table_b on table_a.column_a = table_b.column_b
+    sql_spans.append(make_sql_span(sql_token=&quotjoin&quot))
+    sql_spans.append(make_sql_span(table_name=table_b))
+    sql_spans.append(make_sql_span(sql_token=&quoton&quot))
+    sql_spans.append(
+        make_sql_span(
+            column=SqlColumn(column_name=column_a, table_name=table_a)))
+    sql_spans.append(make_sql_span(sql_token=&quot=&quot))
+    sql_spans.append(
+        make_sql_span(
+            column=SqlColumn(column_name=column_b, table_name=table_b)))
+ </a> return sql_spans
+
+
+def _get_all_table_names(sql_spans):</code></pre><img src="158167661.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/google-research/language/commit/b4562327a4554689d8ab0906c605476ccf817336#diff-199d64ad8c520723787b0b10d680494fb47f1e648355bd7f94cf5d4b100e50eeL551' target='_blank'>Link</a></div><div id='project'> Project Name: google-research/language</div><div id='commit'> Commit Name: b4562327a4554689d8ab0906c605476ccf817336</div><div id='time'> Time: 2019-11-15</div><div id='author'> Author: kentonl@google.com</div><div id='file'> File Name: language/xsp/data_preprocessing/abstract_sql.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _get_from_clause_for_tables</div><BR><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/23bf9b02f92cbebc772fe0574b69a598aa3cd367#diff-91cc67bbfa6ddf0b1cbd10d8b4f697296ee7a78b1e09b8e05661dbb9c09e2b35L72' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: 23bf9b02f92cbebc772fe0574b69a598aa3cd367</div><div id='time'> Time: 2015-11-25</div><div id='author'> Author: bergs@janelia.hhmi.org</div><div id='file'> File Name: ilastik/applets/featureSelection/featureSelectionSerializer.py</div><div id='class'> Class Name: FeatureSelectionSerializer</div><div id='method'> Method Name: _serializeToHdf5</div><BR><BR><div id='link'><a href='https://github.com/uber/ludwig/commit/e0008f1fc54b5917f5505c2913ffae93bff8e87d#diff-1689e75e198106f54f69e50dbcdc03a67328ce8e07aa7cb70dc4031169433f9cL49' target='_blank'>Link</a></div><div id='project'> Project Name: uber/ludwig</div><div id='commit'> Commit Name: e0008f1fc54b5917f5505c2913ffae93bff8e87d</div><div id='time'> Time: 2020-09-20</div><div id='author'> Author: w4nderlust@gmail.com</div><div id='file'> File Name: tests/integration_tests/test_validation_metrics.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_validation_metrics</div><BR>

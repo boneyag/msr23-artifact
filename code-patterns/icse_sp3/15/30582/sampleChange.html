@@ -1,0 +1,110 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        from . import loss as loss_module
+        from . import utils_tf
+        <a id="change">for i in range(self.nb_iter):
+            &#47&#47 Compute loss
+            logits = self.model.get_logits(adv_x)
+            loss = loss_module.attack_softmax_cross_entropy(y, logits,
+                                                            mean=False)
+            if targeted:
+                loss = -loss
+
+            &#47&#47 Define gradient of loss wrt input
+            grad, = tf.gradients(loss, adv_x)
+
+            &#47&#47 Normalize current gradient and add it to the accumulated gradient
+            red_ind = list(xrange(1, len(grad.get_shape())))
+            avoid_zero_div = tf.cast(1e-12, grad.dtype)
+            grad = grad / tf.maximum(avoid_zero_div,
+                                     reduce_mean(tf.abs(grad),
+                                                 red_ind, keepdims=True))
+            momentum = self.decay_factor * momentum + grad
+
+            if self.ord == np.inf:
+                normalized_grad = tf.sign(momentum)
+            elif self.ord == 1:
+                norm = tf.maximum(avoid_zero_div,
+                                  reduce_sum(tf.abs(momentum),
+                                             red_ind, keepdims=True))
+                normalized_grad = momentum / norm
+            elif self.ord == 2:
+                square = reduce_sum(tf.square(momentum),
+                                    red_ind,
+                                    keepdims=True)
+                norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
+                normalized_grad = momentum / norm
+            else:
+                raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                                          "currently implemented.")
+
+            &#47&#47 Update and clip adversarial example in current iteration
+            scaled_grad = self.eps_iter * normalized_grad
+            adv_x = adv_x + scaled_grad
+            adv_x = x + utils_tf.clip_eta(adv_x - x, self.ord, self.eps)
+
+            if self.clip_min is not None and self.clip_max is not None:
+                adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+            adv_x = tf.stop_gradient(adv_x)
+
+       </a> return adv_x
+
+    def parse_params(self, eps=0.3, eps_iter=0.06, nb_iter=10, y=None,
+                     ord=np.inf, decay_factor=1.0,</code></pre><h3>After Change</h3><pre><code class='java'>
+    from . import loss as loss_module
+    from . import utils_tf
+
+    <a id="change">cond = lambda i, _, __: tf.less(i, self.nb_iter)</a>
+
+    def body(i, ax, m):
+      preds = self.model.get_probs(adv_x)
+      loss = utils_tf.model_loss(y, preds, mean=False)
+      if targeted:
+        loss = -loss
+
+      &#47&#47 Define gradient of loss wrt input
+      grad, = tf.gradients(loss, adv_x)
+
+      &#47&#47 Normalize current gradient and add it to the accumulated gradient
+      red_ind = list(xrange(1, len(grad.get_shape())))
+      avoid_zero_div = tf.cast(1e-12, grad.dtype)
+      grad = grad / tf.maximum(
+          avoid_zero_div, reduce_mean(tf.abs(grad), red_ind, keepdims=True))
+      momentum = self.decay_factor * momentum + grad
+
+      if self.ord == np.inf:
+        normalized_grad = tf.sign(momentum)
+      elif self.ord == 1:
+        norm = tf.maximum(avoid_zero_div,
+                          reduce_sum(tf.abs(momentum), red_ind, keepdims=True))
+        normalized_grad = momentum / norm
+      elif self.ord == 2:
+        square = reduce_sum(tf.square(momentum), red_ind, keepdims=True)
+        norm = tf.sqrt(tf.maximum(avoid_zero_div, square))
+        normalized_grad = momentum / norm
+      else:
+        raise NotImplementedError("Only L-inf, L1 and L2 norms are "
+                                  "currently implemented.")
+
+      &#47&#47 Update and clip adversarial example in current iteration
+      scaled_grad = self.eps_iter * normalized_grad
+      adv_x = adv_x + scaled_grad
+      adv_x = x + utils_tf.clip_eta(adv_x - x, self.ord, self.eps)
+
+      if self.clip_min is not None and self.clip_max is not None:
+        adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+      adv_x = tf.stop_gradient(adv_x)
+
+      return i + 1, adv_x, momentum
+
+    <a id="change">_, adv_x, _ = tf.while_loop(
+        cond, body, [tf.zeros([]), adv_x, momentum], back_prop=False)</a>
+
+    return adv_x
+
+  def parse_params(self,</code></pre>

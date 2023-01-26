@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
+
+    &#47&#47 Configure input
+    <a id="change">input_img = Variable(image.type(Tensor))</a>
+
+    &#47&#47 Get detections
+    with torch.no_grad():
+        detections = model(input_img)
+        detections = non_max_suppression(detections, conf_thres, nms_thres)
+    <a id="change">return detections</a>
+
+def detect(model, dataloader, output_path,
+    img_size, conf_thres, nms_thres):
+    Inferences images with model.</code></pre><h3>After Change</h3><pre><code class='java'>
+    model.eval()  &#47&#47 Set model to evaluation mode
+
+    &#47&#47 Configure input
+    <a id="change">input_img = transforms.Compose([
+        DEFAULT_TRANSFORMS, 
+        Resize(img_size)])(
+            (image, np.zeros((1, 5))))[0].unsqueeze(0)</a>
+
+    <a id="change">if torch.cuda.is_available():
+        input_img = input_img.to("cuda")
+
+    &#47&#47 Get detections
+   </a> with torch.no_grad():
+        detections = model(input_img)
+        detections = non_max_suppression(detections, conf_thres, nms_thres)
+        detections = rescale_boxes(detections[0], img_size, image.shape[:2])
+    <a id="change">return to_cpu(detections).numpy()</a>
+
+def detect(model, dataloader, output_path,
+    img_size, conf_thres, nms_thres):
+    Inferences images with model.</code></pre>

@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        trainer.dropout_decay = 0.
+        trainer.each_epoch.append(
+            lambda: print(model.evaluate(dev_X, dev_y)))
+        <a id="change">for X, y in trainer.iterate(train_X, train_y):
+            y = model.ops.flatten(y)
+            yh, backprop = model.begin_update(X, drop=trainer.dropout)
+            d_loss, loss = categorical_crossentropy(yh, y)
+            optimizer.set_loss(loss)
+            backprop(d_loss, optimizer)
+   </a> with model.use_params(optimizer.averages):
+        print(model.evaluate(dev_X, dev_y))
+ 
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    dev_X, dev_y = zip(*check_data)
+    nb_class = max(max(y) for y in train_y)+1
+    train_y = [to_categorical(y, nb_classes=nb_class) for y in train_y]
+    dev_y = [<a id="change">to_categorical(y, nb_classes=nb_class)</a> for y in dev_y]
+    with model.begin_training(train_X, train_y) as (trainer, optimizer):
+        trainer.each_epoch.append(
+            lambda: print(model.evaluate(dev_X, dev_y)))</code></pre>

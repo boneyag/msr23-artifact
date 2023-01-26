@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            aeq(batch, batch_)
+            aeq(sourceL, sourceL_)
+
+        <a id="change">if self.mask is not None:
+            beam_, batch_, sourceL_ = self.mask.size()
+            aeq(batch, batch_*beam_)
+            aeq(sourceL, sourceL_)
+
+       </a> if coverage is not None:
+            cover = coverage.view(-1).unsqueeze(1)
+            context += self.linear_cover(cover).view_as(context)
+            context = self.tanh(context)
+
+        &#47&#47 compute attention scores, as in Luong et al.
+        align = self.score(input, context)
+
+        if self.mask is not None:
+            <a id="change">mask_</a> = <a id="change">self.mask.view(batch, 1, sourceL)</a>  &#47&#47 make it broardcastable
+            <a id="change">align.data.masked_fill_(mask_, -float(&quotinf&quot))</a>
+
+        &#47&#47 Softmax to normalize attention weights
+        align_vectors = self.sm(align.view(batch*targetL, sourceL))
+        align_vectors = align_vectors.view(batch, targetL, sourceL)</code></pre><h3>After Change</h3><pre><code class='java'>
+        align = self.score(input, context)
+
+        if context_lengths is not None:
+            <a id="change">mask</a> = <a id="change">sequence_mask(context_lengths)</a>
+            <a id="change">mask</a> = <a id="change">mask.unsqueeze(1)</a>  &#47&#47 Make it broadcastable.
+            <a id="change">align.data.masked_fill_(1 - mask, -float(&quotinf&quot))</a>
+
+        &#47&#47 Softmax to normalize attention weights
+        align_vectors = self.sm(align.view(batch*targetL, sourceL))
+        align_vectors = align_vectors.view(batch, targetL, sourceL)</code></pre>

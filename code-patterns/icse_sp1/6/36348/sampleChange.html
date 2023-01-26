@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        kmeans.fit(kmeans.record_set(train_set[0][:100]))
+
+    with <a id="change">timeout(minutes=15)</a>:
+        model = KMeansModel(kmeans.model_data, role=&quotSageMakerRole&quot, sagemaker_session=sagemaker_session)
+        predictor = model.deploy(1, &quotml.c4.xlarge&quot)
+        result = predictor.predict(train_set[0][:10])
+
+        <a id="change">try:
+            assert len(result) == 10
+            for record in result:
+                assert record.label["closest_cluster"] is not None
+                assert record.label["distance_to_cluster"] is not None
+        finally:
+            sagemaker_session.delete_endpoint(predictor.endpoint)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        kmeans.fit(kmeans.record_set(train_set[0][:100]))
+
+    <a id="change">endpoint_name = name_from_base(&quotkmeans&quot)</a>
+    with <a id="change">timeout_and_delete_endpoint_by_name(endpoint_name, sagemaker_session, minutes=15)</a>:
+        model = KMeansModel(kmeans.model_data, role=&quotSageMakerRole&quot, sagemaker_session=sagemaker_session)
+        predictor = model.deploy(1, &quotml.c4.xlarge&quot, endpoint_name=endpoint_name)
+        result = predictor.predict(train_set[0][:10])</code></pre>

@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.reward_network_optimizer.step()
+
+        if evaluator is not None:
+            <a id="change">self.evaluate(
+                evaluator,
+                training_samples.actions,
+                training_samples.propensities,
+                boosted_rewards,
+                training_samples.episode_values,
+            )</a>
+
+    def evaluate(
+        self,
+        evaluator: Evaluator,</code></pre><h3>After Change</h3><pre><code class='java'>
+                self.all_action_scores.cpu().numpy(), self.rl_temperature
+            )
+
+            <a id="change">cpe_stats = BatchStatsForCPE(
+                td_loss=self.loss.cpu().numpy(),
+                logged_actions=training_samples.actions.cpu().numpy(),
+                logged_propensities=training_samples.propensities.cpu().numpy(),
+                logged_rewards=rewards.cpu().numpy(),
+                logged_values=None,  &#47&#47 Compute at end of each epoch for CPE
+                model_propensities=model_propensities,
+                model_rewards=self.reward_estimates.cpu().numpy(),
+                model_values=self.all_action_scores.cpu().numpy(),
+                model_values_on_logged_actions=None,  &#47&#47 Compute at end of each epoch for CPE
+                model_action_idxs=self.all_action_scores.argmax(dim=1, keepdim=True)
+                .cpu()
+                .numpy(),
+            )</a>
+            <a id="change">evaluator.report(cpe_stats)</a>
+            training_metadata["model_rewards"] = self.reward_estimates.cpu().numpy()
+
+        return training_metadata
+</code></pre>

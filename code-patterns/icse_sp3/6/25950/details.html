@@ -1,0 +1,61 @@
+<html><h3>603026f0325339c6412e5c045b5149f351bd1778,tensorforce/core/models/model.py,Model,api_act,#Model#,764
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            Module.update_tensors(**states, **internals)
+            actions, internals = self.core_act(states=states, internals=internals)
+            <a id="change">Module.update_tensors(**actions)</a>
+
+        &#47&#47 Exploration
+        with tf.control_dependencies(
+            control_inputs=(util.flatten(xs=actions) + util.flatten(xs=internals))</code></pre><h3>After Change</h3><pre><code class='java'>
+                )
+
+        else:
+            variable_noise_tensors = <a id="change">(incremented_timestep,)</a>
+
+        &#47&#47 Initialize or retrieve internals
+        if len(self.internals_spec) &gt; 0:
+            with tf.control_dependencies(control_inputs=variable_noise_tensors):
+                buffer_index = self.buffer_index[parallel]
+                one = tf.constant(value=1, dtype=util.tf_dtype(dtype=&quotlong&quot))
+
+                def initialize_internals():
+                    internals = OrderedDict()
+                    for name, init in self.internals_init.items():
+                        internals[name] = tf.expand_dims(input=init, axis=0)
+                    return internals
+
+                def retrieve_internals():
+                    internals = OrderedDict()
+                    for name in self.internals_spec:
+                        internals[name] = tf.gather_nd(
+                            params=self.internals_buffer[name],
+                            indices=[(parallel, buffer_index - one)]
+                        )
+                    return internals
+
+                zero = tf.constant(value=0, dtype=util.tf_dtype(dtype=&quotlong&quot))
+                initialize = tf.math.equal(x=buffer_index, y=zero)
+                internals = self.cond(
+                    pred=initialize, true_fn=initialize_internals, false_fn=retrieve_internals
+                )
+                retrieved_internals = util.flatten(xs=internals)
+
+        else:
+            internals = OrderedDict()
+            retrieved_internals = variable_noise_tensors
+
+        &#47&#47 Core act: retrieve actions and internals
+        <a id="change">with tf.control_dependencies(control_inputs=retrieved_internals):
+            Module.update_tensors(**states, **internals)
+            actions, internals = self.core_act(states=states, internals=internals)
+            Module.update_tensors(**actions)
+
+        &#47&#47 Exploration
+       </a> with tf.control_dependencies(
+            control_inputs=(util.flatten(xs=actions) + util.flatten(xs=internals))
+        ):
+            if not isinstance(self.exploration, dict):</code></pre><img src="133640599.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/603026f0325339c6412e5c045b5149f351bd1778#diff-933f130a56cda49625210922b7fe2c555519d6fee8e99aba0746e417b3aaa475L764' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: 603026f0325339c6412e5c045b5149f351bd1778</div><div id='time'> Time: 2019-02-06</div><div id='author'> Author: alexkuhnle@t-online.de</div><div id='file'> File Name: tensorforce/core/models/model.py</div><div id='class'> Class Name: Model</div><div id='method'> Method Name: api_act</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/cce10ef4682c6b5d4a8b24edd0032088707b5491#diff-354cfd5a606dde80c876f2b6be720bf27f9c8c83fdcc30855282abc3168dcf36L679' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: cce10ef4682c6b5d4a8b24edd0032088707b5491</div><div id='time'> Time: 2019-10-12</div><div id='author'> Author: alexkuhnle@t-online.de</div><div id='file'> File Name: tensorforce/core/models/tensorforce.py</div><div id='class'> Class Name: TensorforceModel</div><div id='method'> Method Name: tf_optimize</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/7b9bb10862356401c474c5dd916108ec0069ec2d#diff-cc4ef889cada0e540e921401e9aff1fd0f7f4d65dfdffa46c627e93a8d19284cL592' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: 7b9bb10862356401c474c5dd916108ec0069ec2d</div><div id='time'> Time: 2020-04-18</div><div id='author'> Author: alexkuhnle@t-online.de</div><div id='file'> File Name: tensorforce/core/estimators/estimator.py</div><div id='class'> Class Name: Estimator</div><div id='method'> Method Name: tf_estimate</div><BR>

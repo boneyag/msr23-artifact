@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            out = K.bias_add(out, self.b)
+
+        out = K.softmax(out)
+        out = multiply(inputs=<a id="change">[out, x]</a>)
+
+        return out
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def call(self, x, mask=None):
+
+        <a id="change">expanded_context_3d = expand_tile_batch_size(memory=x, context=self.context)</a>
+        <a id="change">expanded_context_4d = expand_tile(expanded_context_3d, axis=1, n_repetitions=K.int_shape(x)[1])</a>
+        <a id="change">expanded_x = expand_tile(x, axis=2, n_repetitions=K.int_shape(expanded_context_3d)[1])</a>
+
+        &#47&#47 now expanded_context_4d and expanded_x are of
+        &#47&#47 shape (bs, time_steps, context_size, n_features)
+        x_full = concatenate(inputs=[expanded_x, expanded_context_4d], axis=-1)</code></pre>

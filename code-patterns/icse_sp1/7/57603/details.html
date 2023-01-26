@@ -1,0 +1,23 @@
+<html><h3>d0ccc3e02e1a9015d05cade8dfc61896948275c7,fairseq/models/lstm.py,LSTMDecoder,reorder_incremental_state,#LSTMDecoder#Any#Any#,568
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if incremental_state is None or len(incremental_state) == 0:
+            return
+        prev_hiddens, prev_cells, input_feed = self.get_cached_state(incremental_state)
+        <a id="change">cached_state = (prev_hiddens, prev_cells, [input_feed])</a>
+        new_state = [self.reorder_state(state, new_order) for state in cached_state]
+        prev_hiddens_tensor = torch.stack(<a id="change">new_state[0]</a>)
+        prev_cells_tensor = torch.stack(<a id="change">new_state[1]</a>)
+        cached_state_new = torch.jit.annotate(
+            Dict[str, Optional[Tensor]],
+            {"prev_hiddens": prev_hiddens_tensor, "prev_cells": prev_cells_tensor, "input_feed": new_state[2][0]})</code></pre><h3>After Change</h3><pre><code class='java'>
+        prev_hiddens = [p.index_select(0, new_order) for p in prev_hiddens]
+        prev_cells = [p.index_select(0, new_order) for p in prev_cells]
+        if input_feed is not None:
+            <a id="change">input_feed = input_feed.index_select(0, new_order)</a>
+        cached_state_new = torch.jit.annotate(
+            Dict[str, Optional[Tensor]],
+            {
+                "prev_hiddens": torch.stack(prev_hiddens),</code></pre><img src="266419875.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/d0ccc3e02e1a9015d05cade8dfc61896948275c7#diff-6ce7c0d4f0fb1f8f34940039a8bb42a6d902a8894dd18517bee43dac3fc09971L568' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: d0ccc3e02e1a9015d05cade8dfc61896948275c7</div><div id='time'> Time: 2020-06-22</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/models/lstm.py</div><div id='class'> Class Name: LSTMDecoder</div><div id='method'> Method Name: reorder_incremental_state</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/9b664bd7cd8dbb9657626166ba61887ed06774d7#diff-fa4fc1b7b647a4f34b82de5c4d74ca29623c0e4598be9065cb1810147566ddb7L23' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 9b664bd7cd8dbb9657626166ba61887ed06774d7</div><div id='time'> Time: 2017-09-13</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/utils/toeplitz.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: index_coef_to_sparse</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/58cb18761fc72e5f9b8dd92a222a14b0240d8436#diff-a6ee4fbb2b932113cbea6cbf0efb1fb763a70c3f68bacb21aac4ea4235123c36L246' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 58cb18761fc72e5f9b8dd92a222a14b0240d8436</div><div id='time'> Time: 2017-08-20</div><div id='author'> Author: srush@seas.harvard.edu</div><div id='file'> File Name: onmt/Translator.py</div><div id='class'> Class Name: Translator</div><div id='method'> Method Name: translate</div><BR>

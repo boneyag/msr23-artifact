@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    state_stack[-1] = self.transitions.data[self.current_idx].state
+    prev_timestep = self.transitions.data[self.current_idx].timestep
+    for t in reversed(range(self.history - 1)):
+      <a id="change">if prev_timestep == 0:
+        state_stack[t] = blank_trans.state  &#47&#47 If future frame has timestep 0
+      else:
+        state_stack[t] = self.transitions.data[self.current_idx + t - self.history + 1].state
+        prev_timestep -= 1
+   </a> state = torch.stack(state_stack, 0).to(dtype=torch.float32, device=self.device).div_(255)  &#47&#47 Agent will turn into batch
+    self.current_idx += 1
+    return state
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    transitions_firsts = transitions[&quottimestep&quot] == 0
+    blank_mask = np.zeros_like(transitions_firsts, dtype=np.bool_)
+    for t in reversed(range(self.history - 1)):
+      blank_mask[t] = <a id="change">np.logical_or(blank_mask[t + 1], transitions_firsts[t + 1])</a> &#47&#47 If future frame has timestep 0
+    transitions[blank_mask] = blank_trans
+    state = torch.tensor(transitions[&quotstate&quot], dtype=torch.float32, device=self.device).div_(255)  &#47&#47 Agent will turn into batch
+    self.current_idx += 1</code></pre>

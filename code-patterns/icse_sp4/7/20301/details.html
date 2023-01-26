@@ -1,0 +1,39 @@
+<html><h3>a6d07af248a7594b8dfedbf8368ddac3f901f3ec,niftynet/layer/loss_segmentation.py,,dice_plus_xent_loss,#Any#Any#Any#,252
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    :return: the loss (cross_entropy + Dice)
+
+    
+    <a id="change">if weight_map is not None:
+        raise NotImplementedError
+
+   </a> prediction = tf.cast(prediction, tf.float32)
+    loss_xent = cross_entropy(prediction, ground_truth)
+
+    softmax_of_logits = tf.nn.softmax(prediction, axis=-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+    one_hot = labels_to_one_hot(ground_truth, num_classes=num_classes)
+    softmax_of_logits = tf.nn.softmax(prediction)
+
+    <a id="change">if weight_map is not None:
+        weight_map_nclasses = tf.tile(tf.expand_dims(tf.reshape(weight_map, [-1]), 1), [1, num_classes])
+        dice_numerator = 2.0 * tf.sparse_reduce_sum(weight_map_nclasses * one_hot * softmax_of_logits,
+                                                    reduction_axes=[0])
+        dice_denominator = tf.reduce_sum(weight_map_nclasses * softmax_of_logits,
+                                         reduction_indices=[0]) + \
+                           tf.sparse_reduce_sum(one_hot * weight_map_nclasses, reduction_axes=[0])
+
+    else:
+        dice_numerator = 2.0 * tf.sparse_reduce_sum(one_hot * softmax_of_logits,reduction_axes=[0])
+        dice_denominator = tf.reduce_sum(softmax_of_logits, reduction_indices=[0]) + \
+                           tf.sparse_reduce_sum(one_hot, reduction_axes=[0])
+
+        &#47&#47 dice_numerator = -2.0 * tf.sparse_reduce_sum(one_hot * softmax_of_logits, reduction_axes=[0])
+        &#47&#47 dice_denominator = tf.reduce_sum(softmax_of_logits, reduction_indices=[0]) + \
+        &#47&#47                    tf.sparse_reduce_sum(one_hot, reduction_axes=[0])
+
+   </a> epsilon = 0.00001
+    loss_dice = -(dice_numerator + epsilon) / (dice_denominator + epsilon)
+    dice_numerator = tf.Print(dice_denominator, [dice_numerator, dice_denominator, loss_dice])
+</code></pre><img src="110080942.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/a6d07af248a7594b8dfedbf8368ddac3f901f3ec#diff-023d37a8c76fa73084ec27927d67d215e2eba9f0bc6e99a32ee9d11a4d647fb2L265' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: a6d07af248a7594b8dfedbf8368ddac3f901f3ec</div><div id='time'> Time: 2018-12-13</div><div id='author'> Author: z.eaton-rosen@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/loss_segmentation.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: dice_plus_xent_loss</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/29d9f7d43b66da4c25686134ff0366f72934a728#diff-023d37a8c76fa73084ec27927d67d215e2eba9f0bc6e99a32ee9d11a4d647fb2L265' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 29d9f7d43b66da4c25686134ff0366f72934a728</div><div id='time'> Time: 2018-12-13</div><div id='author'> Author: z.eaton-rosen@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/loss_segmentation.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: dice_plus_xent_loss</div><BR><BR><div id='link'><a href='https://github.com/scikit-learn-contrib/DESlib/commit/250e3b3a31f3f50c691878db75af3ed24de448de#diff-bd2d9d3d1223e0b9124d560a8aa133cfe0f38063a8dc161999082812b036920dL66' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-learn-contrib/DESlib</div><div id='commit'> Commit Name: 250e3b3a31f3f50c691878db75af3ed24de448de</div><div id='time'> Time: 2021-04-07</div><div id='author'> Author: rafaelmenelau@gmail.com</div><div id='file'> File Name: deslib/base.py</div><div id='class'> Class Name: BaseDS</div><div id='method'> Method Name: fit</div><BR>

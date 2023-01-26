@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+              cmd=inception3_benchmark_cmd_step,
+              tpu=(benchmark_spec.tpu_groups[&quottrain&quot].GetName() if
+                   benchmark_spec.tpus else &quot&quot),
+              num_shards=<a id="change">(benchmark_spec.tpu_groups[&quottrain&quot].GetNumShards() if
+                          benchmark_spec.tpus else 0)</a>))
+      start = time.time()
+      stdout, stderr = vm.RobustRemoteCommand(inception3_benchmark_train_cmd,
+                                              should_log=True)
+      elapsed_seconds += (time.time() - start)
+      samples.extend(mnist_benchmark.MakeSamplesFromTrainOutput(
+          metadata, stdout + stderr, elapsed_seconds, step))
+    if benchmark_spec.mode in (&quottrain_and_eval&quot, &quoteval&quot):
+      inception3_benchmark_eval_cmd = (
+          &quot{cmd} --tpu={tpu} --mode=eval --num_shards={num_shards}&quot.format(
+              cmd=inception3_benchmark_cmd_step,
+              tpu=<a id="change">(benchmark_spec.tpu_groups[&quoteval&quot].GetName() if
+                   benchmark_spec.tpus else &quot&quot)</a>,
+              num_shards=(benchmark_spec.tpu_groups[&quoteval&quot].GetNumShards() if
+                          benchmark_spec.tpus else 0)))
+      stdout, stderr = vm.RobustRemoteCommand(inception3_benchmark_eval_cmd,</code></pre><h3>After Change</h3><pre><code class='java'>
+        cmd=inception3_benchmark_cmd, step=step)
+    if benchmark_spec.mode in (&quottrain&quot, &quottrain_and_eval&quot):
+      if benchmark_spec.tpus:
+        <a id="change">tpu = benchmark_spec.tpu_groups[&quottrain&quot].GetName()</a>
+        num_shards = &quot--num_shards={}&quot.format(
+            benchmark_spec.tpu_groups[&quottrain&quot].GetNumShards())
+      else:
+        tpu = num_shards = &quot&quot
+      inception3_benchmark_train_cmd = (
+          &quot{cmd} --tpu={tpu} --mode=train {num_shards}&quot.format(
+              cmd=inception3_benchmark_cmd_step,
+              tpu=tpu, num_shards=num_shards))
+      start = time.time()
+      stdout, stderr = vm.RobustRemoteCommand(inception3_benchmark_train_cmd,
+                                              should_log=True)
+      elapsed_seconds += (time.time() - start)
+      samples.extend(mnist_benchmark.MakeSamplesFromTrainOutput(
+          metadata, stdout + stderr, elapsed_seconds, step))
+    if benchmark_spec.mode in (&quottrain_and_eval&quot, &quoteval&quot):
+      <a id="change">if benchmark_spec.tpus:
+        tpu = benchmark_spec.tpu_groups[&quoteval&quot].GetName()
+        num_shards = &quot--num_shards={}&quot.format(
+            benchmark_spec.tpu_groups[&quoteval&quot].GetNumShards())
+      else:
+        tpu = num_shards = &quot&quot
+     </a> inception3_benchmark_eval_cmd = (
+          &quot{cmd} --tpu={tpu} --mode=eval {num_shards}&quot.format(
+              cmd=inception3_benchmark_cmd_step,
+              tpu=tpu, num_shards=num_shards))</code></pre>

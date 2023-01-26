@@ -1,0 +1,53 @@
+<html><h3>dc12fb43b73c641012b53ffcba80a1f4987ba9cc,GPy/kern/parts/linear.py,Linear,dpsi2_dmuS,#Linear#Any#Any#Any#Any#Any#Any#,182
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                         &quotextra_link_args&quot   : [&quot-lgomp&quot]}
+
+        N,num_inducing,input_dim = mu.shape[0],Z.shape[0],mu.shape[1]
+        weave.inline(code, support_code=support_code, libraries=<a id="change">[&quotgomp&quot]</a>,
+                     arg_names=[&quotN&quot,&quotnum_inducing&quot,&quotinput_dim&quot,&quotmu&quot,&quotAZZA&quot,&quotAZZA_2&quot,&quottarget_mu&quot,&quottarget_S&quot,&quotdL_dpsi2&quot],
+                     type_converters=weave.converters.blitz,**weave_options)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47target_S_dummy += (dL_dpsi2[:, :, :, None] * self.ZA[None, :, None, :] * self.ZA[None, None, :, :]).sum(1).sum(1)
+
+
+        <a id="change">if config.getboolean(&quotparallel&quot, &quotopenmp&quot):
+            pragma_string = "&#47&#47pragma omp parallel for private(m,mm,q,qq,factor,tmp)"
+        else:
+            pragma_string = &quot&quot
+
+        &#47&#47Using weave, we can exploiut the symmetry of this problem:
+       </a> <a id="change">code = 
+        int n, m, mm,q,qq;
+        double factor,tmp;
+        %s
+        for(n=0;n&lt;N;n++){
+          for(m=0;m&lt;num_inducing;m++){
+            for(mm=0;mm&lt;=m;mm++){
+              //add in a factor of 2 for the off-diagonal terms (and then count them only once)
+              if(m==mm)
+                factor = dL_dpsi2(n,m,mm);
+              else
+                factor = 2.0*dL_dpsi2(n,m,mm);
+
+              for(q=0;q&lt;input_dim;q++){
+
+                //take the dot product of mu[n,:] and AZZA[:,m,mm,q] TODO: blas!
+                tmp = 0.0;
+                for(qq=0;qq&lt;input_dim;qq++){
+                  tmp += mu(n,qq)*AZZA(qq,m,mm,q);
+                }
+
+                target_mu(n,q) += factor*tmp;
+                target_S(n,q) += factor*AZZA_2(q,m,mm,q);
+              }
+            }
+          }
+        }
+         % pragma_string</a>
+
+
+        N,num_inducing,input_dim = int(mu.shape[0]),int(Z.shape[0]),int(mu.shape[1])
+        weave.inline(code, support_code=self.weave_support_code,</code></pre><img src="43003600.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/SheffieldML/GPy/commit/dc12fb43b73c641012b53ffcba80a1f4987ba9cc#diff-3780cdf6123a4de7f4212c6c6c610eddd6445289a0d008ede0793db3765901efL194' target='_blank'>Link</a></div><div id='project'> Project Name: SheffieldML/GPy</div><div id='commit'> Commit Name: dc12fb43b73c641012b53ffcba80a1f4987ba9cc</div><div id='time'> Time: 2013-10-15</div><div id='author'> Author: nicolo.fusi@gmail.com</div><div id='file'> File Name: GPy/kern/parts/linear.py</div><div id='class'> Class Name: Linear</div><div id='method'> Method Name: dpsi2_dmuS</div><BR><BR><div id='link'><a href='https://github.com/SheffieldML/GPy/commit/dc12fb43b73c641012b53ffcba80a1f4987ba9cc#diff-68398959ab172b8ec6426e825fefcf8114dcb2c0a87052d31b78506c060ff5e7L290' target='_blank'>Link</a></div><div id='project'> Project Name: SheffieldML/GPy</div><div id='commit'> Commit Name: dc12fb43b73c641012b53ffcba80a1f4987ba9cc</div><div id='time'> Time: 2013-10-15</div><div id='author'> Author: nicolo.fusi@gmail.com</div><div id='file'> File Name: GPy/kern/parts/rbf.py</div><div id='class'> Class Name: RBF</div><div id='method'> Method Name: weave_psi2</div><BR><BR><div id='link'><a href='https://github.com/SheffieldML/GPy/commit/dc12fb43b73c641012b53ffcba80a1f4987ba9cc#diff-ff1dd4a43357d38dfa8b6c53c0be194a4654220b1ec6361584f353e330d11b45L266' target='_blank'>Link</a></div><div id='project'> Project Name: SheffieldML/GPy</div><div id='commit'> Commit Name: dc12fb43b73c641012b53ffcba80a1f4987ba9cc</div><div id='time'> Time: 2013-10-15</div><div id='author'> Author: nicolo.fusi@gmail.com</div><div id='file'> File Name: GPy/kern/parts/rbf_inv.py</div><div id='class'> Class Name: RBFInv</div><div id='method'> Method Name: weave_psi2</div><BR><BR><div id='link'><a href='https://github.com/SheffieldML/GPy/commit/dc12fb43b73c641012b53ffcba80a1f4987ba9cc#diff-3780cdf6123a4de7f4212c6c6c610eddd6445289a0d008ede0793db3765901efL243' target='_blank'>Link</a></div><div id='project'> Project Name: SheffieldML/GPy</div><div id='commit'> Commit Name: dc12fb43b73c641012b53ffcba80a1f4987ba9cc</div><div id='time'> Time: 2013-10-15</div><div id='author'> Author: nicolo.fusi@gmail.com</div><div id='file'> File Name: GPy/kern/parts/linear.py</div><div id='class'> Class Name: Linear</div><div id='method'> Method Name: dpsi2_dZ</div><BR>

@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tensor = np.ndarray(tensor, dtype=np.float32)
+    shape = tensor.shape
+    height, width, channel = shape[0], shape[1], shape[2]
+    <a id="change">if channel == 1:
+        &#47&#47 walk around. PIL&quots setting on dimension.
+        tensor = np.reshape(tensor, (height, width))
+   </a> image = make_image(tensor, height, width, channel)
+    return Summary(value=[Summary.Value(tag=tag, image=image)])
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if not isinstance(tensor, np.ndarray):
+        assert tensor.dim()&lt;4 and tensor.dim()&gt;1, &quotinput tensor should be 3 dimensional.&quot
+        if tensor.dim()==2:
+            tensor = <a id="change">tensor.unsqueeze(0)</a>
+        tensor = tensor.cpu().permute(1,2,0).numpy()
+    else:
+        tensor = tensor.astype(np.float32)
+    <a id="change">tensor = (tensor*255).astype(np.uint8)</a>
+    image = make_image(tensor)
+    return Summary(value=[Summary.Value(tag=tag, image=image)])
+
+</code></pre>

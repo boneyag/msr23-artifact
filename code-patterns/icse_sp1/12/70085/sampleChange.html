@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.model = self.model.cuda()
+        log.info(f&quotParameters:\n{self.parameters()}&quot)
+        log.info(f&quotModel:\n{self.model}&quot)
+        <a id="change">if self.elmo_unfreeze != &quotnever&quot:
+            if self.elmo_unfreeze == &quotstart&quot:
+                self.optimizer = Adam(self.model.parameters())
+            elif self.elmo_unfreeze == &quotepoch_10&quot:
+                &#47&#47 Start with LR set to 0, then increase it at epoch 10
+                self.optimizer = Adam([
+                    {&quotparams&quot: self.model.elmo.parameters(), &quotlr&quot: 0.0, &quotname&quot: &quotelmo&quot},
+                    {&quotparams&quot: self.model.classifier.parameters(), &quotname&quot: &quotclassifier&quot}
+                ])
+            else:
+                raise ValueError(&quotInvalid elmo unfreeze option&quot)
+        else:
+            self.optimizer = Adam(self.model.classifier.parameters())
+       </a> self.criterion = nn.CrossEntropyLoss()
+        self.scheduler = lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=5, verbose=True, mode=&quotmax&quot)
+        temp_prefix = get_tmp_filename()
+        self.model_file = f&quot{temp_prefix}.pt&quot</code></pre><h3>After Change</h3><pre><code class='java'>
+        log.info(f&quotModel:\n{self.model}&quot)
+        if self.elmo_unfreeze != &quotnever&quot:
+            parameters = list(self.model.classifier.parameters())
+            <a id="change">for mix in self.model.elmo._scalar_mixes:
+                parameters.extend(list(mix.parameters()))
+           </a> self.optimizer = Adam(parameters)
+        self.criterion = nn.CrossEntropyLoss()
+        self.scheduler = lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=5, verbose=True, mode=&quotmax&quot)
+        temp_prefix = get_tmp_filename()</code></pre>

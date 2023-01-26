@@ -1,0 +1,51 @@
+<html><h3>d3d91cb4d27ff6826d755f0377b54ea999105490,plot_ica_resting_state.py,,,#,14
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 important as it introduces a spatial model that ICA lacks and greatly
+&#47&#47 reduces the high-frequency signal
+from scipy import ndimage
+<a id="change">for image in fmri_data.T:
+    &#47&#47 This works efficiently because image is a view on fmri_data
+    image[...] = ndimage.gaussian_filter(image, 1.5)
+
+&#47&#47 Take the mean along axis 3: the direction of time
+</a>mean_img = np.mean(fmri_data, axis=3)
+
+&#47&#47 Mask non brain areas
+from nisl import masking</code></pre><h3>After Change</h3><pre><code class='java'>
+from nisl import io
+
+masker = io.NiftiMasker(smooth=1.5)
+<a id="change">data_masked = masker.fit_transform(dataset.func[0])</a>
+
+&#47&#47 Concatenate all the subjects
+&#47&#47fmri_data = np.concatenate(data_masked, axis=1)
+fmri_data = data_masked
+
+&#47&#47 Take the mean along axis 3: the direction of time
+mean_img = masker.inverse_transform(fmri_data.mean(axis=-1))
+
+
+&#47&#47&#47&#47&#47&#47 Apply ICA &#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+
+from sklearn.decomposition import FastICA
+n_components = 20
+ica = FastICA(n_components=n_components, random_state=42)
+components_masked = ica.fit_transform(data_masked)
+
+&#47&#47 We normalize the estimated components, for thresholding to make sens
+components_masked -= components_masked.mean(axis=0)
+components_masked /= components_masked.std(axis=0)
+&#47&#47 Threshold
+components_masked[np.abs(components_masked) &lt; .5] = 0
+
+&#47&#47 Now we inverting the masking operation, to go back to a full 3D
+&#47&#47 representation
+component_img = <a id="change">masker.inverse_transform(components_masked)</a>
+<a id="change">components = component_img.get_data()</a>
+
+&#47&#47 Using a masked array is important to have transparency in the figures
+components = np.ma.masked_equal(components, 0, copy=False)
+</code></pre><img src="61287095.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/nilearn/nilearn/commit/d3d91cb4d27ff6826d755f0377b54ea999105490#diff-9ba8337988d13b08343d916e6b9a8236ef5edd821c3158700dd37387c1849a19L14' target='_blank'>Link</a></div><div id='project'> Project Name: nilearn/nilearn</div><div id='commit'> Commit Name: d3d91cb4d27ff6826d755f0377b54ea999105490</div><div id='time'> Time: 2012-09-18</div><div id='author'> Author: gael.varoquaux@normalesup.org</div><div id='file'> File Name: plot_ica_resting_state.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/scikit-optimize/scikit-optimize/commit/ab34a307714c29f891382586224074d1f4ba7f9a#diff-faf7faf72b786c04909bfb3d8d557d13a3ee34c7dbafc666a55cf2521229544aL374' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-optimize/scikit-optimize</div><div id='commit'> Commit Name: ab34a307714c29f891382586224074d1f4ba7f9a</div><div id='time'> Time: 2020-02-01</div><div id='author'> Author: holgernahrstaedt@gmx.de</div><div id='file'> File Name: skopt/tests/test_space.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_normalize</div><BR><BR><div id='link'><a href='https://github.com/nilearn/nilearn/commit/13482b28622840a153162b4c070bffdf05d51d38#diff-1d568344ba51d37a98776795d85bc7b3316e37648087fb0cfb24d7a8069c2190L21' target='_blank'>Link</a></div><div id='project'> Project Name: nilearn/nilearn</div><div id='commit'> Commit Name: 13482b28622840a153162b4c070bffdf05d51d38</div><div id='time'> Time: 2012-08-21</div><div id='author'> Author: alexandre.abraham@cea.fr</div><div id='file'> File Name: plot_haxby_searchlight.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

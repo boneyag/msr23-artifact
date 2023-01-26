@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    normalize(joined_matrix, axis=1, norm=&quotl2&quot, copy=False)
+    dframe = pd.DataFrame(joined_matrix, index=joined_labels)
+    if sort:
+        <a id="change">dframe.sort_index(inplace=True)</a>
+    save_hdf(dframe, output_filename)
+
+
+def retrofit(</code></pre><h3>After Change</h3><pre><code class='java'>
+    assert nshards &gt; 0
+    shard = load_hdf(output_filename + ".shard0")
+    nrows, ncols = shard.shape
+    <a id="change">if sort:
+        &#47&#47 Sort the index and save the permutation bringing it into
+        &#47&#47 ascending alphabetical order, _before_ allocating a big chunk
+        &#47&#47 of memory for the joined vector values, to keep the maximum
+        &#47&#47 memory consumption down.
+        joined_labels, permutation = shard.index.sort_values(return_indexer=True)
+    else:
+        joined_labels = shard.index
+        permutation = np.arange(nrows)
+
+   </a> joined_matrix = np.zeros((nrows, ncols * nshards), dtype="f")
+    joined_matrix[:, 0:ncols] = shard.values[permutation, :]
+    del shard
+</code></pre>

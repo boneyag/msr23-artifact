@@ -1,0 +1,33 @@
+<html><h3>65c9a4857e41dcde4f5dae8a77e6cdf03953646a,model/model.py,RNNFeaturizer,forward,#RNNFeaturizer#Any#Any#,70
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 get last valid cell state
+        if seq_len is not None:
+            cell = cell[<a id="change">(seq_len-1).view(-1).contiguous()</a>, torch.arange(cell.size(1)).long().cuda()]
+        else:
+            cell = cell[-1]
+        return cell</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def forward(self, input, seq_len=None):
+        self.rnn.detach_hidden()
+        <a id="change">if seq_len is None:
+            for i in range(input.size(0)):
+                emb = self.drop(self.encoder(input[i]))
+                _, hidden = self.rnn(emb.unsqueeze(0), collectHidden=True)
+            cell = self.get_cell_features(hidden)
+        else:
+            last_cell = 0
+            for i in range(input.size(0)):
+                emb = self.drop(self.encoder(input[i]))
+                _, hidden = self.rnn(emb.unsqueeze(0), collectHidden=True)
+                cell = self.get_cell_features(hidden)
+                if i &gt; 0:
+                    cell = get_valid_outs(i, seq_len, cell, last_cell)
+                last_cell = cell   
+       </a> return cell
+
+    def get_cell_features(self, hidden):
+        cell = hidden[1]</code></pre><img src="329748039.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NVIDIA/sentiment-discovery/commit/65c9a4857e41dcde4f5dae8a77e6cdf03953646a#diff-62e0d959e50d9f4003df8124a1c19d98c77320268642d433b1cc28c58cf73a85L70' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/sentiment-discovery</div><div id='commit'> Commit Name: 65c9a4857e41dcde4f5dae8a77e6cdf03953646a</div><div id='time'> Time: 2018-03-19</div><div id='author'> Author: raulp@dbcluster.nvidia.com</div><div id='file'> File Name: model/model.py</div><div id='class'> Class Name: RNNFeaturizer</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/BindsNET/bindsnet/commit/b6240c06fb49020e2d51703a1fcfddba7e27297d#diff-0aa5ea17ca07c1e647438c7296f63815b04ba508c8e0a2593f07218fb21bd621L229' target='_blank'>Link</a></div><div id='project'> Project Name: BindsNET/bindsnet</div><div id='commit'> Commit Name: b6240c06fb49020e2d51703a1fcfddba7e27297d</div><div id='time'> Time: 2019-06-21</div><div id='author'> Author: djsaunde@umass.edu</div><div id='file'> File Name: bindsnet/network/network.py</div><div id='class'> Class Name: Network</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/ncullen93/torchsample/commit/943753c968fe7c0cbafc6e44d60f1b28b42e997b#diff-80a11d6c58dfefa22cb7fe542b1dddb91ab537422b26c834f3c0ae182d0d8cadL85' target='_blank'>Link</a></div><div id='project'> Project Name: ncullen93/torchsample</div><div id='commit'> Commit Name: 943753c968fe7c0cbafc6e44d60f1b28b42e997b</div><div id='time'> Time: 2017-05-03</div><div id='author'> Author: ncullen.th@dartmouth.edu</div><div id='file'> File Name: torchsample/utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: th_affine2d</div><BR>

@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  perm_mask = tf.cast(perm_mask, tf.float32)
+
+  &#47&#47 new target: [next token] for LM and [curr token] (self) for PLM
+  <a id="change">new_targets = tf.concat([inputs[0:1], targets[:-1]], axis=0)</a>
+
+  &#47&#47 construct inputs_k
+  inputs_k = inputs
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  &#47&#47 Similar to BERT, randomly leak some masked tokens
+  if leak_ratio &gt; 0:
+    <a id="change">leak_tokens = tf.logical_and(
+        masked_tokens,
+        tf.random.uniform([seq_len], maxval=1.0) &lt; leak_ratio)</a>
+    can_attend_self = tf.logical_or(non_masked_or_func_tokens, leak_tokens)
+  else:
+    can_attend_self = non_masked_or_func_tokens
+  to_index = tf.where(can_attend_self, smallest_index, index)</code></pre>

@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        edge_probs = (self.edge_logits - shift).exp()
+        adjacency = torch.zeros(V, V, dtype=edge_probs.dtype)
+        adjacency[grid[0], grid[1]] = edge_probs
+        <a id="change">adjacency</a>[grid[1], grid[0]] = edge_probs
+        laplacian = adjacency.sum(-1).diag() - adjacency
+        truncated = laplacian[:-1, :-1]
+        try:</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 See https://en.wikipedia.org/wiki/Kirchhoff%27s_theorem
+        V = self.num_vertices
+        v1, v2 = make_complete_graph(V).unbind(0)
+        logits = <a id="change">self.edge_logits.new_full((V, V), -math.inf)</a>
+        logits[v1, v2] = self.edge_logits
+        logits[v2, v1] = self.edge_logits
+        log_diag = logits.logsumexp(-1)
+        &#47&#47 Numerically stabilize so that laplacian has 1&quots on the diagonal.
+        <a id="change">shift = 0.5 * log_diag</a>
+        laplacian = torch.eye(V) - (logits - shift - shift[:, None]).exp()
+        truncated = laplacian[:-1, :-1]
+        try:
+            import gpytorch</code></pre>

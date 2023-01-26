@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                     if (FLAGS.distcp_dest_fs != BaseDpbService.HDFS_FS) else
+                     &quot/{}{}&quot.format(run_uri, &quot/dfsio_destination&quot))
+
+  <a id="change">start = datetime.datetime.now()</a>
+  benchmark_spec.dpb_service.distributed_copy(source_data_dir, destination_dir)
+  end_time = datetime.datetime.now()
+  run_time = <a id="change">(end_time - start).total_seconds()</a>
+
+  results = []
+  metadata = copy.copy(benchmark_spec.dpb_service.GetMetadata())
+  metadata.update({&quotsource_fs&quot: FLAGS.distcp_source_fs})</code></pre><h3>After Change</h3><pre><code class='java'>
+    A list of samples
+  
+  run_uri = benchmark_spec.uuid.split(&quot-&quot)[0]
+  <a id="change">base_dir = &quotpkb-&quot + run_uri</a>
+  service = benchmark_spec.dpb_service
+
+  if FLAGS.distcp_source_fs == BaseDpbService.HDFS_FS:
+    source_dir = &quot/{}/&quot.format(base_dir)
+  else:
+    source_dir = &quot{}://{}/&quot.format(FLAGS.distcp_source_fs, base_dir)
+
+  &#47&#47 Subdirectory TestDFSO writes data to
+  source_data_dir = source_dir + &quotio_data&quot
+
+  &#47&#47 Generate data to copy
+  &#47&#47 TODO(saksena): Add a generic GenerateData method to dpb_service.
+  dpb_testdfsio_benchmark.RunTestDfsio(
+      service,
+      dpb_testdfsio_benchmark.WRITE,
+      source_dir,
+      FLAGS.distcp_num_files,
+      FLAGS.distcp_file_size_mbs)
+
+  <a id="change">if FLAGS.distcp_dest_fs == BaseDpbService.HDFS_FS:
+    destination_dir = &quot/{}/dfsio_destination/&quot.format(base_dir)
+  else:
+    destination_dir = &quot{}://{}/dfsio_destination/&quot.format(
+        FLAGS.distcp_source_fs, base_dir)
+
+ </a> result = benchmark_spec.dpb_service.DistributedCopy(
+      source_data_dir, destination_dir)
+
+  results = []</code></pre>

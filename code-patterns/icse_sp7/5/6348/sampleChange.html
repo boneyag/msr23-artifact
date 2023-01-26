@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        lt = self.lazy_tensor
+        if isinstance(self.diag_tensor, KroneckerProductDiagLazyTensor):
+            if all(isinstance(tdiag, ConstantDiagLazyTensor) for tdiag in dlt.lazy_tensors):
+                <a id="change">sub_evals, sub_evecs = [], []</a>
+                for lt_, dlt_ in zip(lt.lazy_tensors, dlt.lazy_tensors):
+                    evals_, evecs_ = lt_.symeig(eigenvectors=True)
+                    sub_evals.append(DiagLazyTensor(evals_ / dlt_.diag_values))
+                    sub_evecs.append(evecs_)</code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 so that we compute
+                &#47&#47 L^{-1/2} = D^{1/2} Q (\kron a_i^{-1} \Lambda_i + I)^{1/2}
+                &#47&#47       = (\kron a_i^{1/2} Q_i)(\kron a_i^{-1} \Lambda_i + I)^{-1/2}
+                <a id="change">scaled_evecs_list = []</a>
+                for evec_, dlt_ in zip(evecs.lazy_tensors, dlt.lazy_tensors):
+                    scaled_evecs_list.append(evec_ * dlt_.diag_values.sqrt())
+                <a id="change">scaled_evecs = KroneckerProductLazyTensor(*scaled_evecs_list)</a>
+                return MatmulLazyTensor(scaled_evecs, evals_p_i_inv_root)
+
+            &#47&#47 again, we compute the root decomposition by pulling across the diagonals
+            dlt_sqrt, evals_p_i, evecs = _symmetrize_kpadlt_constructor(lt, dlt)</code></pre>

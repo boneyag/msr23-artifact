@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if opt.cuda:
+            self.model.cuda()
+        else:
+            <a id="change">self.model.cpu()</a>
+
+        self.src_dict = checkpoint[&quotdicts&quot][&quotsrc&quot]
+        self.tgt_dict = checkpoint[&quotdicts&quot][&quottgt&quot]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        checkpoint = torch.load(opt.model)
+
+        <a id="change">model_opt = checkpoint[&quotopt&quot]</a>
+        self.src_dict = checkpoint[&quotdicts&quot][&quotsrc&quot]
+        self.tgt_dict = checkpoint[&quotdicts&quot][&quottgt&quot]
+
+        encoder = onmt.Models.Encoder(model_opt, self.src_dict)
+        decoder = onmt.Models.Decoder(model_opt, self.tgt_dict)
+        model = onmt.Models.NMTModel(encoder, decoder)
+
+        generator = nn.Sequential(
+            nn.Linear(model_opt.rnn_size, self.tgt_dict.size()),
+            nn.LogSoftmax())
+
+        model.load_state_dict(checkpoint[&quotmodel&quot])
+        generator.load_state_dict(checkpoint[&quotgenerator&quot])
+
+        if opt.cuda:
+            model.cuda()
+            <a id="change">generator.cuda()</a>
+        else:
+            model.cpu()
+            generator.cpu()
+
+        model.generator = generator
+
+        <a id="change">self.model = model</a>
+        self.model.eval()
+
+
+    def buildData(self, srcBatch, goldBatch):</code></pre>

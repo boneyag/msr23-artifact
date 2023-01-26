@@ -1,0 +1,88 @@
+<html><h3>0e570423a0ecde90bff329a70efa3b666b6b316e,dev/benchmarks/openmp/STDP_standalone.py,,,#,12
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+net.run(5 * second, report=&quottext&quot)
+
+if standalone == 1:
+    <a id="change">device.build(project_dir=&quotdata_stdp_%d&quot %n_threads, compile_project=True, run_project=True, debug=False)</a>
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+standalone = int(sys.argv[-2])
+n_threads  = int(sys.argv[-1])
+<a id="change">path       = &quotdata_stdp_%d&quot %n_threads</a>
+
+if standalone == 1:
+    set_device(&quotcpp_standalone&quot)
+    brian_prefs.codegen.cpp_standalone.openmp_threads = n_threads
+
+start   = time.time()
+N       = 1000
+taum    = 10 * ms
+taupre  = 20 * ms
+taupost = taupre
+Ee      = 0 * mV
+vt      = -54 * mV
+vr      = -60 * mV
+El      = -74 * mV
+taue    = 5 * ms
+F       =  30 * Hz
+gmax    = .01
+dApre   = .01
+dApost  = -dApre * taupre / taupost * 1.05
+dApost *= gmax
+dApre  *= gmax
+
+eqs_neurons = &quot&quot&quot
+dv/dt=(ge*(Ee-vr)+El-v)/taum : volt   &#47&#47 the synaptic current is linearized
+dge/dt=-ge/taue : 1
+&quot&quot&quot
+
+input   = PoissonGroup(N, rates=F)
+neurons = NeuronGroup(500, eqs_neurons, threshold=&quotv&gt;vt&quot, reset=&quotv=vr&quot)
+S = Synapses(input, neurons,
+             &quot&quot&quotw:1
+                dApre/dt=-Apre/taupre : 1 (event-driven)    
+                dApost/dt=-Apost/taupost : 1 (event-driven)&quot&quot&quot,
+             pre=&quot&quot&quotge+=w
+                    Apre+=dApre
+                    w=clip(w+Apost,0,gmax)&quot&quot&quot,
+             post=&quot&quot&quotApost+=dApost
+                     w=clip(w+Apre,0,gmax)&quot&quot&quot,
+             connect=True,
+             )
+S.w          = &quotrand()*gmax&quot
+state_mon    = StateMonitor(S, &quotw&quot, record=[0])
+spike_mon_1  = SpikeMonitor(input)
+spike_mon_2  = SpikeMonitor(neurons)
+start_time   = time.time()
+
+net = Network(input, neurons, S, state_mon, spike_mon_1, spike_mon_2, name=&quotstdp_net&quot)
+
+<a id="change">if standalone == 1:
+    device.insert_device_code(&quotmain&quot, &quotstd::clock_t start = std::clock();&quot)
+
+</a>net.run(5 * second, report=&quottext&quot)
+
+if standalone == 1:
+    <a id="change">device.insert_device_code(&quotmain&quot, &quot&quot&quot
+        std::ofstream myfile ("speed.txt");
+        if (myfile.is_open())
+        {
+            double value = (double) (std::clock() - start)/(%d * CLOCKS_PER_SEC); 
+            myfile &lt;&lt; value &lt;&lt; std::endl;
+            myfile.close();
+        }
+        &quot&quot&quot %(max(1, n_threads)))</a>
+
+<a id="change">try:
+    os.removedirs(path)
+except Exception:
+    pass
+
+if standalone == 1:
+    device.build(project_dir=path, compile_project=True, run_project=True, debug=False)
+</a>
+</code></pre><img src="100909659.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 15</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/brian-team/brian2/commit/0e570423a0ecde90bff329a70efa3b666b6b316e#diff-ca3b1ec37464f9c735f561cb61a874465efbce1f3e9d2521ce0051c986fb0a3eL12' target='_blank'>Link</a></div><div id='project'> Project Name: brian-team/brian2</div><div id='commit'> Commit Name: 0e570423a0ecde90bff329a70efa3b666b6b316e</div><div id='time'> Time: 2014-08-26</div><div id='author'> Author: pierre@yger.net</div><div id='file'> File Name: dev/benchmarks/openmp/STDP_standalone.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/brian-team/brian2/commit/0e570423a0ecde90bff329a70efa3b666b6b316e#diff-ca3b1ec37464f9c735f561cb61a874465efbce1f3e9d2521ce0051c986fb0a3eL12' target='_blank'>Link</a></div><div id='project'> Project Name: brian-team/brian2</div><div id='commit'> Commit Name: 0e570423a0ecde90bff329a70efa3b666b6b316e</div><div id='time'> Time: 2014-08-26</div><div id='author'> Author: pierre@yger.net</div><div id='file'> File Name: dev/benchmarks/openmp/STDP_standalone.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/brian-team/brian2/commit/0e570423a0ecde90bff329a70efa3b666b6b316e#diff-71f5610cc75d346cd386640a0b47eaf159855b061420ec4692a7d6bfd2a04220L10' target='_blank'>Link</a></div><div id='project'> Project Name: brian-team/brian2</div><div id='commit'> Commit Name: 0e570423a0ecde90bff329a70efa3b666b6b316e</div><div id='time'> Time: 2014-08-26</div><div id='author'> Author: pierre@yger.net</div><div id='file'> File Name: dev/benchmarks/openmp/example_standalone_bis.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/brian-team/brian2/commit/0e570423a0ecde90bff329a70efa3b666b6b316e#diff-a59b4683a847cc20d431585896874d6b70e88c27dbe447bd5b6fbb7f0b50aa51L10' target='_blank'>Link</a></div><div id='project'> Project Name: brian-team/brian2</div><div id='commit'> Commit Name: 0e570423a0ecde90bff329a70efa3b666b6b316e</div><div id='time'> Time: 2014-08-26</div><div id='author'> Author: pierre@yger.net</div><div id='file'> File Name: dev/benchmarks/openmp/CUBA_standalone.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

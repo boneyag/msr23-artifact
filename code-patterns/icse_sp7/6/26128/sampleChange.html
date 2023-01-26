@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                q_v = crt_net(states_v, actions_v)
+                last_act_v = tgt_act_net.target_model(last_states_v)
+                q_last_v = tgt_crt_net.target_model(last_states_v, last_act_v)
+                <a id="change">q_last_v[dones_mask]</a> = 0.0
+                q_ref_v = rewards_v.unsqueeze(dim=-1) + q_last_v * (GAMMA ** REWARD_STEPS)
+                critic_loss_v = F.mse_loss(q_v, q_ref_v.detach())
+                critic_loss_v.backward()</code></pre><h3>After Change</h3><pre><code class='java'>
+                crt_opt.zero_grad()
+                crt_distr_v = crt_net(states_v, actions_v)
+                last_act_v = tgt_act_net.target_model(last_states_v)
+                last_distr_v = <a id="change">F.softmax(tgt_crt_net.target_model(last_states_v, last_act_v))</a>
+                <a id="change">proj_distr_v = distr_projection(last_distr_v, rewards_v, dones_mask,
+                                                gamma=GAMMA**REWARD_STEPS, cuda=args.cuda)</a>
+                <a id="change">prob_dist_v = -F.log_softmax(crt_distr_v) * proj_distr_v</a>
+                critic_loss_v = prob_dist_v.sum(dim=1).mean()
+                critic_loss_v.backward()
+                crt_opt.step()
+                tb_tracker.track("loss_critic", critic_loss_v, frame_idx)</code></pre>

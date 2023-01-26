@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                               categorical, [X_train])
+    X_train = X_train[0]
+
+    <a id="change">try:
+        _metafeatures_encoded_labels = metafeatures.calculate_all_metafeatures_encoded_labels(
+            X_train, y_train, categorical, task_id)
+    except MemoryError as e:
+        &#47&#47 During the conversion of the dataset (rescaling, etc...), it can
+        &#47&#47 happen that we run out of memory.
+        _metafeatures_encoded_labels = \
+            metafeatures.metafeature.DatasetMetafeatures(task_id, dict())
+        for metafeature_name in metafeatures.metafeatures.npy_metafeatures:
+            type_ = "HELPERFUNCTION" if metafeature_name not in \
+                                        metafeatures.metafeatures.metafeatures.functions \
+                else "METAFEATURE"
+            _metafeatures_encoded_labels.metafeature_values[metafeature_name] = \
+                metafeature.MetaFeatureValue(metafeature_name, type_, 0, 0,
+                                             np.NaN, np.NaN,
+                                             "Memory error during dataset scaling.")
+
+   </a> mf = _metafeatures_labels
+    mf.metafeature_values.update(
+        _metafeatures_encoded_labels.metafeature_values)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    X_train = X_train[0]
+    categorical = [False] * X_train.shape[1]
+
+    start_time = <a id="change">time.time()</a>
+    obj = pynisher.enforce_limits(mem_in_mb=3072)(
+        metafeatures.calculate_all_metafeatures_encoded_labels)
+    _metafeatures_encoded_labels = obj(X_train, y_train,
+                                       categorical, task_id)
+    <a id="change">end_time = time.time()</a>
+
+    if obj.exit_status == pynisher.MemorylimitException:
+        &#47&#47 During the conversion of the dataset (rescaling, etc...), it can
+        &#47&#47 happen that we run out of memory.
+        _metafeatures_encoded_labels = \
+            metafeature.DatasetMetafeatures(task_id, dict())
+
+        metafeature_calculation_time = <a id="change">(end_time - start_time)</a> / \
+                                       len(metafeatures.npy_metafeatures)
+
+        for metafeature_name in metafeatures.npy_metafeatures:</code></pre>

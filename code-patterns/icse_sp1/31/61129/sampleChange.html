@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        compatibility=interpreter_constraints,
+      )
+    )
+    <a id="change">flake8_subsystem = global_subsystem_instance(
+      Flake8, options={Flake8.options_scope: {
+        "config": ".flake8" if config else None,
+        "args": passthrough_args or [],
+        "skip": skip,
+      }}
+    )</a>
+    return self.request_single_product(
+      LintResult,
+      <a id="change">Params(
+        target,
+        flake8_subsystem,
+        PythonNativeCode.global_instance(),
+        PythonSetup.global_instance(),
+        SubprocessEnvironment.global_instance()
+      )</a>
+    )
+
+  def test_single_passing_source(self) -&gt; None:
+    result = self.run_flake8([self.good_source])</code></pre><h3>After Change</h3><pre><code class='java'>
+    interpreter_constraints: Optional[str] = None,
+    skip: bool = False,
+  ) -&gt; LintResult:
+    <a id="change">args = ["--backend-packages2=pants.backend.python.lint.flake8"]</a>
+    if config:
+      &#47&#47 TODO: figure out how to get this file to exist...
+      self.create_file(relpath=".flake8", contents=config)
+      <a id="change">args.append("--flake8-config=.flake8")</a>
+    <a id="change">if passthrough_args:
+      args.append(f"--flake8-args=&quot{passthrough_args}&quot")
+   </a> <a id="change">if skip:
+      args.append(f"--flake8-skip")
+   </a> input_snapshot = self.request_single_product(Snapshot, InputFilesContent(source_files))
+    target = Flake8Target(
+      PythonTargetAdaptor(
+        sources=EagerFilesetWithSpec(&quottest&quot, {&quotglobs&quot: []}, snapshot=input_snapshot),
+        address=Address.parse("test:target"),
+        compatibility=[interpreter_constraints] if interpreter_constraints else None,
+      )
+    )
+    return self.request_single_product(
+      LintResult, Params(target, <a id="change">create_options_bootstrapper(args=args)</a>),
+    )
+
+  def test_single_passing_source(self) -&gt; None:</code></pre>

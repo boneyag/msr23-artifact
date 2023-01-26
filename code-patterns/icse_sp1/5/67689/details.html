@@ -1,0 +1,40 @@
+<html><h3>383ea0326ae103b5d5e0b62ed9c3cb18510c5b9e,distributed/comm/tcp.py,TCP,write,#TCP#Any#Any#Any#,229
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        try:
+            nframes = len(frames)
+            <a id="change">lengths = [nbytes(frame) for frame in frames]</a>
+            length_bytes = struct.pack(f"Q{nframes}Q", nframes, *lengths)
+
+            <a id="change">frames = [length_bytes, *frames]</a>
+            lengths = [len(length_bytes), *lengths]
+
+            if sum(lengths) &lt; 2 ** 17:  &#47&#47 128kiB
+                &#47&#47 small enough, send in one go
+                stream.write(b"".join(frames))
+            else:
+                &#47&#47 avoid large memcpy, send in many
+                <a id="change">for frame, frame_bytes in zip(frames, lengths):
+                    &#47&#47 Can&quott wait for the write() Future as it may be lost
+                    &#47&#47 ("If write is called again before that Future has resolved,
+                    &#47&#47   the previous future will be orphaned and will never resolve")
+                    if frame_bytes:
+                        future = stream.write(frame)
+                        bytes_since_last_yield += frame_bytes
+                        if bytes_since_last_yield &gt; 32e6:
+                            await future
+                            bytes_since_last_yield = 0
+       </a> except StreamClosedError as e:
+            self.stream = None
+            self._closed = True
+            if not shutting_down():</code></pre><h3>After Change</h3><pre><code class='java'>
+                    stream._total_write_index += each_frame_nbytes
+
+            &#47&#47 start writing frames
+            stream.write(<a id="change">b""</a>)
+        except StreamClosedError as e:
+            self.stream = None
+            self._closed = True</code></pre><img src="310995913.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dask/distributed/commit/383ea0326ae103b5d5e0b62ed9c3cb18510c5b9e#diff-854f6953f0f6e2ff496dca25db11d30dd8ee321de1917e6c7191ecf87e684dd3L230' target='_blank'>Link</a></div><div id='project'> Project Name: dask/distributed</div><div id='commit'> Commit Name: 383ea0326ae103b5d5e0b62ed9c3cb18510c5b9e</div><div id='time'> Time: 2021-02-17</div><div id='author'> Author: jakirkham@gmail.com</div><div id='file'> File Name: distributed/comm/tcp.py</div><div id='class'> Class Name: TCP</div><div id='method'> Method Name: write</div><BR><BR><div id='link'><a href='https://github.com/chakki-works/doccano/commit/43d9234b78a73840c41ab6f0da83960da84c5d14#diff-e3742f892cc7e06601eec69b4a6aa6d4a2eb3ec60d0f3dd40738b8a48eaf4c8fL146' target='_blank'>Link</a></div><div id='project'> Project Name: chakki-works/doccano</div><div id='commit'> Commit Name: 43d9234b78a73840c41ab6f0da83960da84c5d14</div><div id='time'> Time: 2019-08-07</div><div id='author'> Author: null</div><div id='file'> File Name: app/api/tests/test_utils.py</div><div id='class'> Class Name: TestCoNLLParser</div><div id='method'> Method Name: test_calc_char_offset</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/791be481c4a0102042dc0a502b08ba5cc6a85987#diff-34db807cfe81367c2945ff2cd9e5aa1f45a1b6d120187b172ccb2bcd1bf332b8L36' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 791be481c4a0102042dc0a502b08ba5cc6a85987</div><div id='time'> Time: 2020-06-29</div><div id='author'> Author: 14852634+Eric-Arellano@users.noreply.github.com</div><div id='file'> File Name: src/python/pants/backend/python/rules/inject_init_test.py</div><div id='class'> Class Name: InjectInitTest</div><div id='method'> Method Name: assert_injected</div><BR>

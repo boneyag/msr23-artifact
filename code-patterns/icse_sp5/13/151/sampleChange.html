@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  else:
+    &#47&#47 Otherwise: find dependees.
+    all_addresses = yield Get(BuildFileAddresses, Specs((DescendantAddresses(&quot&quot),)))
+    all_structs = yield <a id="change">[Get(HydratedStruct, Address, a.to_address()) for a in all_addresses]</a>
+    all_structs = [s.value for s in all_structs]
+
+    bfa = build_configuration.registered_aliases()
+    graph = _DependentGraph.from_iterable(target_types_from_build_file_aliases(bfa),
+                                          address_mapper,
+                                          all_structs)
+    if owners_request.include_dependees == &quotdirect&quot:
+      <a id="change">yield BuildFileAddresses(tuple(graph.dependents_of_addresses(direct_owners)))</a>
+    else:
+      assert owners_request.include_dependees == &quottransitive&quot
+      yield BuildFileAddresses(tuple(graph.transitive_dependents_of_addresses(direct_owners)))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  else:
+    &#47&#47 Otherwise: find dependees.
+    all_addresses = await Get(BuildFileAddresses, Specs((DescendantAddresses(&quot&quot),)))
+    all_hydrated_structs = await <a id="change">MultiGet</a>(
+      <a id="change">Get(HydratedStruct, Address, a.to_address())</a> <a id="change">for</a> a in all_addresses
+    )
+    all_structs = [hs.value for hs in all_hydrated_structs]
+
+    bfa = build_configuration.registered_aliases()
+    graph = _DependentGraph.from_iterable(target_types_from_build_file_aliases(bfa),
+                                          address_mapper,
+                                          all_structs)
+    if owners_request.include_dependees == &quotdirect&quot:
+      return BuildFileAddresses(tuple(graph.dependents_of_addresses(direct_owners)))
+    else:
+      assert owners_request.include_dependees == &quottransitive&quot
+      <a id="change">return BuildFileAddresses(tuple(graph.transitive_dependents_of_addresses(direct_owners)))</a>
+
+
+@rule
+async def transitive_hydrated_targets(</code></pre>

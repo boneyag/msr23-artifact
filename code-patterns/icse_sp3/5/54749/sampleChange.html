@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            deeplift.util.assert_is_type(final_activation_layer,
+                                         layers.Activation,
+                                         "final_activation_layer")
+            final_activation_type = <a id="change">type</a>(final_activation_layer).__name__
+
+            <a id="change">if (final_activation_type == "Sigmoid"):
+                scoring_mode=ScoringMode.OneAndZeros
+            elif (final_activation_type == "Softmax"):
+                &#47&#47new_W, new_b =\
+                &#47&#47 deeplift.util.get_mean_normalised_softmax_weights(
+                &#47&#47  target_layer.W, target_layer.b)
+                    &#47&#47The weights need to be mean normalised before they are
+                    &#47&#47passed in because build_fwd_pass_vars() has already
+                    &#47&#47been called before this function is called,
+                    &#47&#47because get_output_layers() (used in this function)
+                    &#47&#47is updated during the build_fwd_pass_vars()
+                    &#47&#47call - that is why I can&quott simply mean-normalise
+                    &#47&#47the weights right here :-( (It is a pain and a
+                    &#47&#47recipe for bugs to rebuild the forward pass
+                    &#47&#47vars after they have already been built - in
+                    &#47&#47particular for a model that branches because where
+                    &#47&#47the branches unify you need really want them to be
+                    &#47&#47using the same symbolic variables - no use having
+                    &#47&#47needlessly complicated/redundant graphs and if a node
+                    &#47&#47is common to two outputs, so should its symbolic vars
+                    &#47&#47TODO: I should put in a &quotreset_fwd_pass&quot function and use
+                    &#47&#47it to invalidate the _built_fwd_pass_vars cache and recompile
+                &#47&#47if (np.allclose(target_layer.W, new_W)==False):
+                &#47&#47    print("Consider mean-normalising softmax layer")
+                &#47&#47assert np.allclose(target_layer.b, new_b),\
+                &#47&#47       "Please mean-normalise weights and biases of softmax layer"
+                scoring_mode=ScoringMode.OneAndZeros
+            else:
+                raise RuntimeError("Unsupported final_activation_type: "
+                                   +final_activation_type)
+       </a> target_layer.set_scoring_mode(scoring_mode)    
+    
+    def save_to_yaml_only(self, file_name):
+        raise NotImplementedError()    </code></pre><h3>After Change</h3><pre><code class='java'>
+                **kwargs)
+
+    def _set_scoring_mode_for_target_layer(self, target_layer):
+        <a id="change">print("TARGET LAYER SET TO "+str(target_layer.get_name()))</a>
+        if (deeplift.util.is_type(target_layer,
+                                  layers.Activation)):
+            raise RuntimeError("You set the target layer to an"
+                  +" activation layer, which is unusual so I am"</code></pre>

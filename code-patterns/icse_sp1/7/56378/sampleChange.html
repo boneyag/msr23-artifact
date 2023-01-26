@@ -1,0 +1,80 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mvms = matmul_closure(curr_conjugate_vec)
+        torch.mul(curr_conjugate_vec, mvms, out=mul_storage)
+        torch.sum(mul_storage, -2, keepdim=True, out=alpha)
+        <a id="change">alpha.add_(eps)</a>
+        torch.div(residual_inner_prod, alpha, out=alpha)
+
+        &#47&#47 Update result
+        &#47&#47 result_{k} = result_{k-1} + alpha_{k} p_vec_{k-1}
+        torch.addcmul(result, alpha, curr_conjugate_vec, out=result)
+
+        &#47&#47 Update residual
+        &#47&#47 residual_{k} = residual_{k-1} - alpha_{k} mat p_vec_{k-1}
+        torch.addcmul(residual, -1, alpha, mvms, out=residual)
+
+        &#47&#47 If residual are sufficiently small, then exit loop
+        &#47&#47 Alternatively, exit if this is our last iteration
+        torch.norm(residual, 2, dim=-2, out=residual_norm)
+        if (residual_norm &lt; tolerance).all() and not (n_tridiag and k &lt; n_tridiag_iter):
+            break
+
+        &#47&#47 Update precond_residual
+        &#47&#47 precon_residual{k} = M^-1 residual_{k}
+        <a id="change">precond_residual = preconditioner(residual)</a>
+
+        &#47&#47 beta_{k} = (precon_residual{k}^T r_vec_{k}) / (precon_residual{k-1}^T r_vec_{k-1})
+        residual_inner_prod.add_(eps)
+        torch.reciprocal(residual_inner_prod, out=beta)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Get next alpha
+        &#47&#47 alpha_{k} = (residual_{k-1}^T precon_residual{k-1}) / (p_vec_{k-1}^T mat p_vec_{k-1})
+        mvms = matmul_closure(curr_conjugate_vec)
+        <a id="change">if not no_precond:
+            torch.mul(curr_conjugate_vec, mvms, out=mul_storage)
+            torch.sum(mul_storage, -2, keepdim=True, out=alpha)
+            alpha.add_(eps)
+            torch.div(residual_inner_prod, alpha, out=alpha)
+
+            &#47&#47 Update residual
+            &#47&#47 residual_{k} = residual_{k-1} - alpha_{k} mat p_vec_{k-1}
+            torch.addcmul(residual, -1, alpha, mvms, out=residual)
+
+            &#47&#47 Update precond_residual
+            &#47&#47 precon_residual{k} = M^-1 residual_{k}
+            precond_residual = preconditioner(residual)
+
+            _jit_linear_cg_updates(
+                result,
+                alpha,
+                residual_inner_prod,
+                torch.tensor(eps),
+                beta,
+                residual,
+                precond_residual,
+                mul_storage,
+                curr_conjugate_vec,
+            )
+        else:
+            _jit_linear_cg_updates_no_precond(
+                mvms,
+                result,
+                alpha,
+                residual_inner_prod,
+                torch.tensor(eps),
+                beta,
+                residual,
+                precond_residual,
+                mul_storage,
+                curr_conjugate_vec,
+            )
+        &#47&#47 &#47&#47 if (residual_norm &lt; tolerance).all() and not (n_tridiag and k &lt; n_tridiag_iter):
+        &#47&#47 &#47&#47     break
+
+        &#47&#47 Update tridiagonal matrices, if applicable
+       </a> if n_tridiag and k &lt; n_tridiag_iter and update_tridiag:
+            alpha_tridiag = alpha.squeeze_(-2).narrow(-1, 0, n_tridiag)
+            beta_tridiag = beta.squeeze_(-2).narrow(-1, 0, n_tridiag)
+            torch.reciprocal(alpha_tridiag, out=alpha_reciprocal)</code></pre>

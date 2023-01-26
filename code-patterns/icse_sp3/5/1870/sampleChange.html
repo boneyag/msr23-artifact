@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    )
+    with temporary_dir() as tmpdir:
+        setup_logging_to_file(LogLevel.INFO, log_dir=tmpdir)
+        <a id="change">log_file = Path(tmpdir, "pants.log")</a>
+
+        native.write_log(msg="log msg one", level=LogLevel.INFO.level, target="some.target")
+        native.write_log(msg="log msg two", level=LogLevel.DEBUG.level, target="some.other.target")
+        native.write_log(msg="log msg three", level=LogLevel.DEBUG.level, target="debug_target")</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def test_log_filtering_by_rule() -&gt; None:
+    with temporary_dir() as tmpdir:
+        <a id="change">ob = create_options_bootstrapper(
+            [f"--pants-workdir={tmpdir}", &quot--log-levels-by-target={"debug_target": "debug"}&quot]
+        )</a>
+
+        &#47&#47 Do not set up a stdio destination, meaning that all messages will go to the log.
+        global_bootstrap_options = ob.bootstrap_options.for_global_scope()
+        <a id="change">with initialize_stdio(global_bootstrap_options):
+            native_engine.write_log(
+                msg="log msg one", level=LogLevel.INFO.level, target="some.target"
+            )
+            native_engine.write_log(
+                msg="log msg two", level=LogLevel.DEBUG.level, target="some.other.target"
+            )
+            native_engine.write_log(
+                msg="log msg three", level=LogLevel.DEBUG.level, target="debug_target"
+            )
+
+            loglines = (
+                Path(global_bootstrap_options.pants_workdir, "pants.log").read_text().splitlines()
+            )
+
+            assert "[INFO] log msg one" in loglines[0]
+            assert "[DEBUG] log msg three" in loglines[1]
+            assert len(loglines) == 2</a>
+</code></pre>

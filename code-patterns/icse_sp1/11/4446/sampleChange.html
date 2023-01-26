@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        while True:
+            image_id, data, _ = self.reader(idx=idx, shuffle=True)
+            <a id="change">if not data:
+                break
+           </a> image_shapes = dict((name, data[name].shape)
+                                for name in self.window.names)
+            static_window_shapes = self.window.match_image_shapes(image_shapes)
+
+            &#47&#47 find random coordinates based on window and image shapes
+            coordinates = self._spatial_coordinates_generator(
+                subject_id=image_id,
+                data=data,
+                img_sizes=image_shapes,
+                win_sizes=static_window_shapes,
+                n_samples=self.window.n_samples)
+
+            for window_id in range(self.window.n_samples):
+                output_dict = {}
+                <a id="change">for  name in list(data):
+                    image_data_key = name
+                    coordinates_key = LOCATION_FORMAT.format(name)
+
+                    coord = coordinates[name][window_id]
+                    x_start, y_start, z_start, x_end, y_end, z_end = coord[1:]
+                    try:
+                        image_window = data[name][
+                            x_start:x_end, y_start:y_end, z_start:z_end, ...]
+                        output_dict[image_data_key] = image_window
+                        output_dict[coordinates_key] = coord
+                    except ValueError:
+                        tf.logging.fatal(
+                            "dimensionality miss match in input volumes, "
+                            "please specify spatial_window_size with a "
+                            "3D tuple and make sure each element is "
+                            "smaller than the image length in each dim. "
+                            "Current coords %s", coord)
+                        raise
+               </a> <a id="change">yield output_dict</a>
+
+    def _spatial_coordinates_generator(self,
+                                       subject_id,
+                                       data,</code></pre><h3>After Change</h3><pre><code class='java'>
+            output_dict[coordinates_key] = location_array
+
+            &#47&#47 fill output window array
+            <a id="change">image_array = []</a>
+            for window_id in range(self.window.n_samples):
+                x_start, y_start, z_start, x_end, y_end, z_end = \
+                    location_array[window_id, 1:]
+                try:
+                    image_window = data[name][
+                        x_start:x_end, y_start:y_end, z_start:z_end, ...]
+                    image_array.append(image_window[np.newaxis, ...])
+                except ValueError:
+                    tf.logging.fatal(
+                        "dimensionality miss match in input volumes, "
+                        "please specify spatial_window_size with a "
+                        "3D tuple and make sure each element is "
+                        "smaller than the image length in each dim. "
+                        "Current coords %s", location_array[window_id])
+                    raise
+            <a id="change">if len(image_array) &gt; 1:
+                output_dict[image_data_key] = \
+                    np.concatenate(image_array, axis=0).astype(np.float32)
+            else:
+                output_dict[image_data_key] = image_array[0].astype(np.float32)
+        &#47&#47 the output image shape should be
+        &#47&#47 [enqueue_batch_size, x, y, z, time, modality]
+        &#47&#47 where enqueue_batch_size = windows_per_image
+       </a> return output_dict
+
+    def _init_dataset(self):
+        </code></pre>

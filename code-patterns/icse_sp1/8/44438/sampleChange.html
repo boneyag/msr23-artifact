@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        is_tensor = True
+        if dets.is_cuda:
+            device_id = dets.get_device()
+        dets_np = <a id="change">dets.detach().cpu().numpy()</a>
+    elif isinstance(dets, np.ndarray):
+        is_tensor = False
+        dets_np = dets
+    else:
+        raise TypeError(
+            &quotdets must be either a Tensor or numpy array, but got {}&quot.format(
+                type(dets)))
+
+    if dets_np.shape[0] == 0:
+        inds = []
+    else:
+        inds = (gpu_nms(dets_np, iou_thr, device_id=device_id)
+                if device_id is not None else cpu_nms(dets_np, iou_thr))
+
+    if is_tensor:
+        inds = dets.new_tensor(inds, dtype=torch.long)
+    else:
+        <a id="change">inds = np.array(inds, dtype=np.int64)</a>
+    return dets[inds, :], inds
+
+
+def soft_nms(dets, iou_thr, method=&quotlinear&quot, sigma=0.5, min_score=1e-3):</code></pre><h3>After Change</h3><pre><code class='java'>
+    elif isinstance(dets, np.ndarray):
+        is_numpy = True
+        device = &quotcpu&quot if device_id is None else &quotcuda:{}&quot.format(device_id)
+        <a id="change">dets_th = torch.from_numpy(dets).to(device)</a>
+    else:
+        raise TypeError(
+            &quotdets must be either a Tensor or numpy array, but got {}&quot.format(
+                type(dets)))
+
+    &#47&#47 execute cpu or cuda nms
+    if dets_th.shape[0] == 0:
+        inds = dets_th.new_zeros(0, dtype=torch.long)
+    else:
+        if dets_th.is_cuda:
+            inds = nms_cuda.nms(dets_th, iou_thr)
+        else:
+            inds = nms_cpu.nms(dets_th, iou_thr)
+
+    <a id="change">if is_numpy:
+        inds = inds.cpu().numpy()
+   </a> return dets[inds, :], inds
+
+
+def soft_nms(dets, iou_thr, method=&quotlinear&quot, sigma=0.5, min_score=1e-3):</code></pre>

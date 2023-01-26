@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    detectron_model = infer_engine.initialize_model_from_cfg(args.weights, args.gpu_id)
+
+    &#47&#47 list of paths (example: "coco_train2014/COCO_train2014_000000123456.jpg")
+    <a id="change">image_paths = [os.path.join(args.image_root, name)
+                   for name in os.listdir(args.image_root)
+                   if name not in {".", ".."}]</a>
+
+    &#47&#47 create an output HDF to save extracted features
+    save_h5 = h5py.File(args.save_path, "w")
+    image_ids_h5d = save_h5.create_dataset(</code></pre><h3>After Change</h3><pre><code class='java'>
+    detectron_model = infer_engine.initialize_model_from_cfg(args.weights, args.gpu_id)
+
+    &#47&#47 list of paths (example: "coco_train2014/COCO_train2014_000000123456.jpg")
+    <a id="change">image_paths = []</a>
+    for image_root in args.image_root:
+        image_paths.extend([os.path.join(image_root, name)
+                            for name in glob.glob(os.path.join(image_root, "*.jpg"))
+                            if name not in {".", ".."}])
+
+    &#47&#47 create an output HDF to save extracted features
+    save_h5 = h5py.File(args.save_path, "w")
+    image_ids_h5d = save_h5.create_dataset(
+        "image_ids", (len(image_paths), )
+    )
+
+    &#47&#47 &quotfeatures&quot is a chunked dataset, each chunk holds features from one image
+    features_h5d = save_h5.create_dataset(
+        "features", (len(image_paths), args.max_boxes, args.feat_dims),
+        chunks=(1, args.max_boxes, args.feat_dims)
+    )
+
+    for idx, image_path in tqdm(enumerate(image_paths)):
+        try:
+            image_ids_h5d[idx] = image_id_from_path(image_path)
+
+            image = cv2.imread(image_path)
+            &#47&#47 we only care about features, not classes
+            _, _, _, bottomup_features = detect_image(detectron_model, image, args)
+            features_h5d[idx] = bottomup_features
+        except:
+            <a id="change">print(f"\nWarning: features from {idx}, {image_path} failed to extract.\n")</a>
+    &#47&#47 set current split name in attributrs of file, for tractability
+    save_h5.attrs["split"] = args.split
+    save_h5.close()
+</code></pre>

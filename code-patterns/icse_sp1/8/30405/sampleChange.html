@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def classification(spn, numerical_data, categorical_data):
+    categoricals = <a id="change">f.get_categoricals(spn)</a>
+    misclassified = {}
+    data_dict = {}
+    for i in categoricals:
+        y_true = numerical_data[:,i].reshape(-1,1)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def classification(spn, numerical_data, dictionary):
+    <a id="change">context = dictionary[&quotcontext&quot]</a>
+    categoricals = <a id="change">context.get_categoricals()</a>
+    misclassified = {}
+    data_dict = {}
+    for i in categoricals:
+        y_true = numerical_data[:, i].reshape(-1, 1)
+        query = np.copy(numerical_data)
+        y_pred = predict_mpe(spn, i, query, context).reshape(-1, 1)
+        misclassified[i] = np.where(y_true != y_pred)[0]
+        misclassified_instances = misclassified[i].shape[0]
+        print(query)
+        print(y_pred)
+        data_dict[i] = np.concatenate((query[:, :i], y_pred, query[:, i+1:]), axis=1)
+        printmd(&quotFor feature "{}" the SPN misclassifies {} instances, resulting in a precision of {}%.&quot.format(
+                <a id="change">context</a>.feature_names[i], misclassified_instances, np.round(100 * (1 - misclassified_instances/len(numerical_data)),2)))
+    return misclassified, data_dict
+
+</code></pre>

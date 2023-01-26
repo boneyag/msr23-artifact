@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    updates = kwargs["tensor_dict"][node.inputs[2]]
+
+    &#47&#47 Calculate shape of the tensorflow version of indices tensor.
+    <a id="change">sparsified_dense_idx_shape = updates.get_shape().as_list()</a>
+
+    &#47&#47 Move on to convert ONNX indices to tensorflow indices in 2 steps:
+    &#47&#47
+    &#47&#47 Step 1:</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 check are there any indices are out of bounds
+    result = cls.chk_idx_out_of_bounds_along_axis(data, axis, indices)
+    msg = &quotScatterElements indices are out of bounds, please double check the indices and retry.&quot
+    <a id="change">with tf.control_dependencies(
+        [tf.compat.v1.assert_equal(result, True, message=msg)]):
+      &#47&#47 process negative indices
+      indices = cls.process_neg_idx_along_axis(data, axis, indices)
+
+      &#47&#47 Calculate shape of the tensorflow version of indices tensor.
+      sparsified_dense_idx_shape = tf_shape(updates)
+
+      &#47&#47 Move on to convert ONNX indices to tensorflow indices in 2 steps:
+      &#47&#47
+      &#47&#47 Step 1:
+      &#47&#47   What would the index tensors look like if updates are all
+      &#47&#47   dense? In other words, produce a coordinate tensor for updates:
+      &#47&#47
+      &#47&#47   coordinate[i, j, k ...] = [i, j, k ...]
+      &#47&#47   where the shape of "coordinate" tensor is same as that of updates.
+      &#47&#47
+      &#47&#47 Step 2:
+      &#47&#47   But the coordinate tensor needs some correction because coord
+      &#47&#47   vector at position axis is wrong (since we assumed update is dense,
+      &#47&#47   but it is not at the axis specified).
+      &#47&#47   So we update coordinate vector tensor elements at psotion=axis with
+      &#47&#47   the sparse coordinate indices.
+
+      idx_tensors_per_axis = tf.meshgrid(
+          *list(
+              map(lambda x: tf.range(x, dtype=tf.dtypes.int64),
+                  sparsified_dense_idx_shape)),
+          indexing=&quotij&quot)
+      idx_tensors_per_axis[axis] = indices
+      dim_expanded_idx_tensors_per_axis = list(
+          map(lambda x: tf.expand_dims(x, axis=-1), idx_tensors_per_axis))
+      coordinate = tf.concat(dim_expanded_idx_tensors_per_axis, axis=-1)
+
+      &#47&#47 Now the coordinate tensor is in the shape
+      &#47&#47 [updates.shape, updates.rank]
+      &#47&#47 we need it to flattened into the shape:
+      &#47&#47 [product(updates.shape), updates.rank]
+      indices = tf.reshape(coordinate, [-1, tf.rank(data)])
+      updates = tf.reshape(updates, [-1])
+
+      return [tf.tensor_scatter_nd_update(data, indices, updates)]</a>
+</code></pre>

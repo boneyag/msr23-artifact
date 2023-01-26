@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 Sample a shared latent.
+            &#47&#47 TODO(fehiepsi) Consider adding a method to extract transform from an Auto*Normal(posterior).
+            posterior = self.guide.get_posterior()
+            <a id="change">if not isinstance(posterior, dist.TransformedDistribution):
+                raise ValueError("NeuTraReparam only supports guides whose posteriors are "
+                                 "TransformedDistributions but got a posterior of type {}"
+                                 .format(type(posterior)))
+           </a> self.transform = dist.transforms.ComposeTransform(posterior.transforms)
+            z_unconstrained = pyro.sample("{}_shared_latent".format(name),
+                                          posterior.base_dist.mask(False))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            try:
+                self.transform = self.guide.get_transform()
+            except (NotImplementedError, TypeError):
+                <a id="change">raise ValueError("NeuTraReparam only supports guides that implement "
+                                 "`get_transform` method that does not depend on the "
+                                 "model&quots `*args, **kwargs`")</a>
+
+            z_unconstrained = pyro.sample("{}_shared_latent".format(name),
+                                          self.guide.get_base_dist().mask(False))
+</code></pre>

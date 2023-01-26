@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+class NeighborsSimilarity(BaseSimilarity):
+    def __init__(self, k=10, vectorizer=TfidfVectorizer()):
+        <a id="change">self.vectorizer = vectorizer</a>
+        <a id="change">self.similarity_calculator = NearestNeighbors(n_neighbors=k)</a>
+        text = []
+        self.bug_ids = []
+
+        for bug in bugzilla.get_bugs():
+            text.append(text_preprocess(get_text(bug), join=True))
+            self.bug_ids.append(bug["id"])
+
+        self.vectorizer.fit(text)
+        <a id="change">self.similarity_calculator.fit(self.vectorizer.transform(text))</a>
+
+    def get_similar_bugs(self, query):
+
+        processed_query = self.vectorizer.transform([get_text(query)])</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+class Word2VecWmdSimilarity(BaseSimilarity):
+    def __init__(<a id="change">self</a>, cut_off=0.2, cleanup_urls=True):
+        super().__init__(cleanup_urls=cleanup_urls)
+        <a id="change">self.corpus</a> = []
+        <a id="change">self.bug_ids</a> = []
+        <a id="change">self.cut_off = cut_off</a>
+        for bug in bugzilla.get_bugs():
+            <a id="change">self</a>.corpus.append(self.text_preprocess(self.get_text(bug)))
+            self.bug_ids.append(bug["id"])
+
+        <a id="change">indexes = list(range(len(self.corpus)))</a>
+        <a id="change">random.shuffle(indexes)</a>
+        <a id="change">self.corpus = [self.corpus[idx] for idx in indexes]</a>
+        <a id="change">self.bug_ids = [self.bug_ids[idx] for idx in indexes]</a>
+
+        <a id="change">self.w2vmodel = Word2Vec(self.corpus, size=100, min_count=5)</a>
+        self.w2vmodel.init_sims(replace=True)
+
+    &#47&#47 word2vec.wmdistance calculates only the euclidean distance. To get the cosine distance,
+    &#47&#47 we&quotre using the function with a few subtle changes. We compute the cosine distances</code></pre>

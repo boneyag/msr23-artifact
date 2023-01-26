@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def log_prior(self):
+        x = self.read_value()
+        y = self._unconstrained
+        <a id="change">dtype = x.dtype</a>
+
+        <a id="change">out = tf.convert_to_tensor(0., dtype=dtype)</a>
+
+        bijector = self.transform
+        if self.prior is not None:
+            out += tf.reduce_sum(self.prior.log_prob(x))</code></pre><h3>After Change</h3><pre><code class='java'>
+        x = self.read_value()
+        y = self._unconstrained
+
+        <a id="change">if self.prior is not None:
+            out = tf.reduce_sum(self.prior.log_prob(x))
+            if self.transform is not None:
+                log_det_jacobian = self.transform.forward_log_det_jacobian(y, y.shape.ndims)
+                out += tf.reduce_sum(log_det_jacobian)
+            return out
+        else:
+            return tf.convert_to_tensor(0., dtype=self.dtype)
+
+   </a> @property
+    def handle(self):
+        return self._unconstrained.handle
+</code></pre>

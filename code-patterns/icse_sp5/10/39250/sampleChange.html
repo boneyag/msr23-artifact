@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    with run_mode():
+      trajectories = self._create_trajectories()
+      metric = metric_class()
+      <a id="change">deps = []</a>
+      self.evaluate(metric.init_variables())
+      for i in range(num_trajectories):
+        <a id="change">with tf.control_dependencies(deps):
+          traj = metric(trajectories[i])
+          deps = tf.nest.flatten(traj)
+     </a> with tf.control_dependencies(deps):
+        result = metric.result()
+      result_ = self.evaluate(result)
+      self.assertEqual(result_, expected_result)</code></pre><h3>After Change</h3><pre><code class='java'>
+                 expected_result):
+    with run_mode():
+      trajectories = self._create_trajectories()
+      <a id="change">if metric_class in [tf_metrics.AverageReturnMetric,
+                          tf_metrics.AverageEpisodeLengthMetric]:
+        metric = metric_class(batch_size=2)
+      else:
+        metric = metric_class()
+     </a> self.evaluate(tf.compat.v1.global_variables_initializer())
+      self.evaluate(metric.init_variables())
+      for i in range(num_trajectories):
+        self.evaluate(metric(trajectories[i]))</code></pre>

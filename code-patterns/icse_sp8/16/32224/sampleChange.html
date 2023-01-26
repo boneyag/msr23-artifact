@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        target = target.to(self.device)
+
+        images = image[np.newaxis]
+        images = <a id="change">torch.from_numpy(images)</a>
+        <a id="change">images = images.to(self.device)</a>
+
+        if self._old_pytorch():  &#47&#47 pragma: no cover
+            target = Variable(target)
+            images = Variable(images, requires_grad=True)
+        else:
+            images.requires_grad_()
+
+        predictions = self._model(images)
+        ce = nn.CrossEntropyLoss()
+        loss = ce(predictions, target)
+        loss.backward()
+        grad = images.grad
+
+        if self._old_pytorch():  &#47&#47 pragma: no cover
+            predictions = predictions.data
+        <a id="change">predictions = predictions.to(self.device)</a>
+
+        if not self._old_pytorch():
+            predictions = predictions.detach()
+        predictions = predictions.numpy()</code></pre><h3>After Change</h3><pre><code class='java'>
+        target = torch.from_numpy(target).to(self.device)
+
+        images = image[np.newaxis]
+        images = <a id="change">torch.from_numpy(images).to(self.device)</a>
+
+        if self._old_pytorch():  &#47&#47 pragma: no cover
+            target = Variable(target)
+            images = Variable(images, requires_grad=True)
+        else:
+            images.requires_grad_()
+
+        predictions = self._model(images)
+        ce = nn.CrossEntropyLoss()
+        loss = ce(predictions, target)
+        loss.backward()
+        grad = images.grad
+
+        if self._old_pytorch():  &#47&#47 pragma: no cover
+            predictions = predictions.data
+        <a id="change">if self.device != "cpu":
+            predictions = predictions.to("cpu")
+
+       </a> if not self._old_pytorch():
+            predictions = predictions.detach()
+        predictions = predictions.numpy()
+        predictions = np.squeeze(predictions, axis=0)</code></pre>

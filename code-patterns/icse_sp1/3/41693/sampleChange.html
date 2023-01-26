@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with self.ManagedSessionMaker() as session:
+            experiments = self._list_experiments(
+                names=[experiment_name], view_type=ViewType.ALL, session=session).all()
+            <a id="change">if len(experiments) == 0:
+                return None
+
+           </a> if len(experiments) &gt; 1:
+                raise MlflowException(&quotExpected only 1 experiment with name={}. Found {}.&quot.format(
+                    experiment_name, len(experiments)), INVALID_STATE)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        with self.ManagedSessionMaker() as session:
+            stages = LifecycleStage.view_type_to_stages(ViewType.ALL)
+            <a id="change">experiment = session \
+                .query(SqlExperiment) \
+                .options(*self._get_eager_experiment_query_options()) \
+                .filter(
+                    SqlExperiment.name == experiment_name,
+                    SqlExperiment.lifecycle_stage.in_(stages)) \
+                .one_or_none()</a>
+            return experiment.to_mlflow_entity() if experiment is not None else None
+
+    def delete_experiment(self, experiment_id):
+        with self.ManagedSessionMaker() as session:</code></pre>

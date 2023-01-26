@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self._sample is not None:
+            self._sample = self.criterion.prepare(self.model, self._sample)
+            net_output = self.model(**self._sample[&quotnet_input&quot])
+            <a id="change">loss_ = self.criterion(net_output, self._sample)</a>
+            if grad_denom is not None:
+                <a id="change">loss_</a> /= grad_denom
+            <a id="change">loss_.backward()</a>
+            <a id="change">loss = loss_.data[0]</a>
+
+        &#47&#47 flatten grads into a contiguous block of memory
+        if self.flat_grads is None:
+            self.flat_grads = self._flatten_grads_(self.model)
+
+        &#47&#47 all-reduce grads
+        nccl.all_reduce(self.flat_grads)
+
+        &#47&#47 clip grads
+        grad_norm = self._clip_grads_(self.flat_grads, self.args.clip_norm)
+
+        &#47&#47 take an optimization step
+        self.optimizer.step()
+
+        <a id="change">return loss, grad_norm</a>
+
+    def _flatten_grads_(self, model):
+        num_params = sum(p.data.numel() for p in model.parameters())
+        flat_grads = next(model.parameters()).data.new(num_params)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 calculate loss and grads
+        loss = 0
+        <a id="change">loss_dict = {}</a>
+        if self._sample is not None:
+            loss_dict = self.criterion(self.model, self._sample, grad_denom)
+            loss_dict[&quotloss&quot].backward()
+            loss = loss_dict[&quotloss&quot].data[0]
+
+        &#47&#47 flatten grads into a contiguous block of memory
+        if self.flat_grads is None:
+            self.flat_grads = self._flatten_grads_(self.model)
+
+        &#47&#47 all-reduce grads
+        nccl.all_reduce(self.flat_grads)
+
+        &#47&#47 clip grads
+        loss_dict[&quotgnorm&quot] = self._clip_grads_(self.flat_grads, self.args.clip_norm)
+
+        &#47&#47 take an optimization step
+        self.optimizer.step()
+
+        <a id="change">return loss_dict</a>
+
+    def _flatten_grads_(self, model):
+        num_params = sum(p.data.numel() for p in model.parameters())
+        flat_grads = next(model.parameters()).data.new(num_params)</code></pre>

@@ -1,0 +1,28 @@
+<html><h3>ca5ec9585e711f63acbe337bc38c37520189b9d7,se3_cnn/convolution.py,SE3KernelCombination,backward,#SE3KernelCombination#Any#,152
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                for ii in range(self.multiplicites_out[i]):
+                    si = slice(begin_i + ii * self.dims_out[i], begin_i + (ii + 1) * self.dims_out[i])
+                    <a id="change">for jj in range(self.multiplicites_in[j]):
+                        sj = slice(begin_j + jj * self.dims_in[j], begin_j + (jj + 1) * self.dims_in[j])
+
+                        grad_weight[weight_index : weight_index + b_el] = torch.mm(basis_kernels_ij, grad_kernel[si, sj].contiguous().view(-1, 1)).view(-1)
+                        weight_index += b_el
+
+               </a> begin_j += self.multiplicites_in[j] * self.dims_in[j]
+            begin_i += self.multiplicites_out[i] * self.dims_out[i]
+
+        time_logging.end("kernel combination (backward)", time)</code></pre><h3>After Change</h3><pre><code class='java'>
+                si = slice(begin_i, begin_i + mi * self.dims_out[i])
+                sj = slice(begin_j, begin_j + mj * self.dims_in[j])
+
+                <a id="change">grad = grad_kernel[si, sj]</a> &#47&#47 [I * i, J * j, x, y, z]
+                grad = <a id="change">grad</a>.contiguous().view(mi, self.dims_out[i], mj, self.dims_in[j], -1).transpose(1, 2) &#47&#47 [I, J, i, j, x*y*z]
+                grad = grad.contiguous().view(mi * mj, -1) &#47&#47 [I*J, i*j*x*y*z]
+                <a id="change">grad = torch.mm(grad, basis_kernels_ij.transpose(0, 1))</a> &#47&#47 [I*J, beta]
+
+                grad_weight[weight_index : weight_index + mi * mj * b_el] = grad.view(-1) &#47&#47 [I * J * beta]
+                weight_index += mi * mj * b_el</code></pre><img src="73594594.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mariogeiger/se3cnn/commit/ca5ec9585e711f63acbe337bc38c37520189b9d7#diff-ead31b126abaab6b3c43580555d85e34c5541b19e9665380ca0fcb71b9d3b1edL152' target='_blank'>Link</a></div><div id='project'> Project Name: mariogeiger/se3cnn</div><div id='commit'> Commit Name: ca5ec9585e711f63acbe337bc38c37520189b9d7</div><div id='time'> Time: 2017-08-09</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: se3_cnn/convolution.py</div><div id='class'> Class Name: SE3KernelCombination</div><div id='method'> Method Name: backward</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/f7afc7ae76ed2c328ed02f05e91ccceec8942e0b#diff-e9ca49dfce62c7314c62739aed9d61b482bb144c9cd1f234d2314560130b8264L121' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: f7afc7ae76ed2c328ed02f05e91ccceec8942e0b</div><div id='time'> Time: 2018-09-26</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: python/baseline/pytorch/seq2seq/model.py</div><div id='class'> Class Name: Seq2SeqModel</div><div id='method'> Method Name: make_input</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/e5970f0a822c210b2859708b9556878b01c5b59f#diff-c6077928a16ef44ba87961a28b57aed88966aa4cc5f1ab9f6e1b24b24bb3abe1L68' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: e5970f0a822c210b2859708b9556878b01c5b59f</div><div id='time'> Time: 2017-09-09</div><div id='author'> Author: ruihan.wu14@gmail.com</div><div id='file'> File Name: gpytorch/utils/kronecker_product.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: kronecker_product_toeplitz_matmul</div><BR>

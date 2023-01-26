@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.W_shape = (self.nb_row, self.nb_col, stack_size, self.nb_filter)
+        else:
+            raise ValueError(&quotInvalid dim_ordering:&quot, self.dim_ordering)
+        <a id="change">self.W</a> = self.init(self.W_shape, name=&quot{}_W&quot.format(self.name))
+        if self.bias:
+            <a id="change">self.b = K.zeros((self.nb_filter,), name=&quot{}_b&quot.format(self.name))</a>
+            <a id="change">self.trainable_weights = [self.W, self.b]</a>
+        else:
+            <a id="change">self.trainable_weights = [self.W]</a>
+        <a id="change">self.regularizers = []</a>
+
+        <a id="change">if self.W_regularizer:
+            self.W_regularizer.set_param(self.W)
+            self.regularizers.append(self.W_regularizer)
+
+       </a> <a id="change">if self.bias and self.b_regularizer:
+            self.b_regularizer.set_param(self.b)
+            self.regularizers.append(self.b_regularizer)
+
+       </a> <a id="change">if self.activity_regularizer:
+            self.activity_regularizer.set_layer(self)
+            self.regularizers.append(self.activity_regularizer)
+
+       </a> <a id="change">self.constraints = {}</a>
+        <a id="change">if self.W_constraint:
+            self.constraints[self.W] = self.W_constraint
+       </a> <a id="change">if self.bias and self.b_constraint:
+            self.constraints[self.b] = self.b_constraint
+
+       </a> if self.initial_weights is not None:
+            self.set_weights(self.initial_weights)
+            del self.initial_weights
+        self.built = True</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.initial_weights = weights
+        super(Convolution2D, self).__init__(**kwargs)
+
+    def build(<a id="change">self</a>, input_shape):
+        if self.dim_ordering == &quotth&quot:
+            stack_size = input_shape[1]
+            self.W_shape = (self.nb_filter, stack_size, self.nb_row, self.nb_col)
+        elif self.dim_ordering == &quottf&quot:
+            stack_size = input_shape[3]
+            self.W_shape = (self.nb_row, self.nb_col, stack_size, self.nb_filter)
+        else:
+            raise Exception(&quotInvalid dim_ordering: &quot + self.dim_ordering)
+        self.W = self.add_weight(self.W_shape,
+                                 initializer=<a id="change">self.init</a>,
+                                 name=&quot{}_W&quot.format(self.name),
+                                 regularizer=<a id="change">self.W_regularizer</a>,
+                                 constraint=<a id="change">self.W_constraint</a>)
+        if self.bias:
+            <a id="change">self.b = self.add_weight((self.nb_filter,),
+                                     initializer=&quotzero&quot,
+                                     name=&quot{}_b&quot.format(self.name),
+                                     regularizer=self.b_regularizer,
+                                     constraint=self.b_constraint)</a>
+        else:
+            <a id="change">self.b = None</a>
+
+        if self.initial_weights is not None:
+            self.set_weights(self.initial_weights)
+            del self.initial_weights</code></pre>

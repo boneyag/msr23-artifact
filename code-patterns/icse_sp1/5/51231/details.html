@@ -1,0 +1,35 @@
+<html><h3>65c9a4857e41dcde4f5dae8a77e6cdf03953646a,model/model.py,RNNFeaturizer,forward,#RNNFeaturizer#Any#Any#,70
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47get cell state from layers
+        if self.all_layers:
+            <a id="change">cell = torch.cat(cell, -1)</a>
+        else:
+            cell = cell[-1]
+
+        &#47&#47 get last valid cell state
+        if seq_len is not None:
+            cell = cell[(seq_len-1).view(-1).contiguous(), <a id="change">torch.arange(cell.size(1)).long().cuda()</a>]
+        else:
+            <a id="change">cell = cell[-1]</a>
+        return cell
+
+    def state_dict(self, destination=None, prefix=&quot&quot, keep_vars=False):
+        sd = {}</code></pre><h3>After Change</h3><pre><code class='java'>
+            cell = self.get_cell_features(hidden)
+        else:
+            last_cell = 0
+            <a id="change">for i in range(input.size(0)):
+                emb = self.drop(self.encoder(input[i]))
+                _, hidden = self.rnn(emb.unsqueeze(0), collectHidden=True)
+                cell = self.get_cell_features(hidden)
+                if i &gt; 0:
+                    cell = get_valid_outs(i, seq_len, cell, last_cell)
+                last_cell = cell   
+       </a> return cell
+
+    def get_cell_features(self, hidden):
+        cell = hidden[1]</code></pre><img src="237117681.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NVIDIA/sentiment-discovery/commit/65c9a4857e41dcde4f5dae8a77e6cdf03953646a#diff-62e0d959e50d9f4003df8124a1c19d98c77320268642d433b1cc28c58cf73a85L70' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/sentiment-discovery</div><div id='commit'> Commit Name: 65c9a4857e41dcde4f5dae8a77e6cdf03953646a</div><div id='time'> Time: 2018-03-19</div><div id='author'> Author: raulp@dbcluster.nvidia.com</div><div id='file'> File Name: model/model.py</div><div id='class'> Class Name: RNNFeaturizer</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/pytorch/examples/commit/988ee51b15466231e9770f46dcb4d221866322a7#diff-0b5022104ea9a7b540706883a52fe1794b063963749887b7bcec24b8c58c1d03L7' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/examples</div><div id='commit'> Commit Name: 988ee51b15466231e9770f46dcb4d221866322a7</div><div id='time'> Time: 2017-03-14</div><div id='author'> Author: bryan.mccann.is@gmail.com</div><div id='file'> File Name: OpenNMT/onmt/Translator.py</div><div id='class'> Class Name: Translator</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/1db3e4b5d647adef9811fa74ab8c6bf3638ade62#diff-a6ee4fbb2b932113cbea6cbf0efb1fb763a70c3f68bacb21aac4ea4235123c36L7' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 1db3e4b5d647adef9811fa74ab8c6bf3638ade62</div><div id='time'> Time: 2017-03-14</div><div id='author'> Author: bryan.mccann.is@gmail.com</div><div id='file'> File Name: onmt/Translator.py</div><div id='class'> Class Name: Translator</div><div id='method'> Method Name: __init__</div><BR>

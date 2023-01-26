@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if initializationTechniqueClassic0orDelvingInto1 == 0 :
+        stdForInitialization = 0.01
+    elif initializationTechniqueClassic0orDelvingInto1 == 1 :
+        stdForInitialization = np.sqrt( 2.0 / (filterShape[1] * filterShape[2] * filterShape[3] * <a id="change">filterShape[4]</a>) ) &#47&#47Delving Into rectifiers suggestion.
+    elif initializationTechniqueClassic0orDelvingInto1 == 2 : &#47&#47 For SNN
+        stdForInitialization = np.sqrt( 1.0 / (filterShape[1] * filterShape[2] * filterShape[3] * filterShape[4]) ) &#47&#47 Half of He et al, cause 2 counters ReLU effect.
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+    if convWInitMethod[0] == "normal" :
+        stdForInit = convWInitMethod[1] &#47&#47 commonly 0.01 from Krizhevski
+    elif convWInitMethod[0] == "fanIn" :
+        <a id="change">varianceScale = convWInitMethod[1]</a> &#47&#47 2 for init ala Delving into Rectifier, 1 for SNN.
+        stdForInit = np.sqrt( varianceScale / (filterShape[1] * filterShape[2] * filterShape[3] * filterShape[4]) )
+        
+    &#47&#47 Perhaps I want to use: theano.config.floatX in the below
+    wInitNpArray = np.asarray( rng.normal(loc=0.0, scale=stdForInit, size=(filterShape[0],filterShape[1],filterShape[2],filterShape[3],filterShape[4])), dtype=&quotfloat32&quot )
+    W = <a id="change">theano.shared( wInitNpArray, borrow=True )</a>
+    &#47&#47 W shape: [&#47&#47FMs of this layer, &#47&#47FMs of Input, rKernFims, cKernDims, zKernDims]
+    return W
+
+def convolveWithGivenWeightMatrix(W, filterShape, inputToConvTrain, inputToConvVal, inputToConvTest, inputToConvShapeTrain, inputToConvShapeVal, inputToConvShapeTest) :</code></pre>

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if logits:
+            grds = self._sess.run(self._logit_class_grads, feed_dict={self._input_ph: inputs})
+        else:
+            <a id="change">grds = self._sess.run(self._class_grads, feed_dict={self._input_ph: inputs})</a>
+
+        grds = np.swapaxes(np.array(grds), 0, 1)
+
+        return grds</code></pre><h3>After Change</h3><pre><code class='java'>
+        self._model.zero_grad()
+        for i in range(self.nb_classes):
+            x.grad.data.zero_()
+            <a id="change">torch.autograd.backward(preds[:, i], torch.FloatTensor([1] * len(preds[:, 0])), retain_graph=True)</a>
+            grds.append(x.grad.numpy().copy())
+
+        grds = np.swapaxes(np.array(grds), 0, 1)
+</code></pre>

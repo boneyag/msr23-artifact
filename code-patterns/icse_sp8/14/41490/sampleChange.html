@@ -1,0 +1,85 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      self.variables = [self.W, self.U, self.b]
+      self._built = True
+    if not tfe.in_eager_mode():
+      <a id="change">self._create_variables()</a>
+      self.trainable_weights = [self.W, <a id="change">self.U</a>, self.b]
+    inputs = self._get_input_tensors(in_layers)
+    x, h_tm1, c_tm1 = inputs
+
+    &#47&#47 Taken from Keras code [citation needed]
+    z = model_ops.dot(x, <a id="change">self.W</a>) + model_ops.dot(h_tm1, self.U) + self.b
+
+    z0 = z[:, :self.output_dim]
+    z1 = z[:, self.output_dim:2 * self.output_dim]
+    z2 = z[:, 2 * self.output_dim:3 * self.output_dim]
+    z3 = z[:, 3 * self.output_dim:]
+
+    i = inner_activation(z0)
+    f = inner_activation(z1)
+    c = f * c_tm1 + i * activation(z2)
+    o = inner_activation(z3)
+
+    h = o * activation(c)
+
+    if set_tensors:
+      <a id="change">self.h</a> = h
+      <a id="change">self.c</a> = c
+      <a id="change">self.out_tensor = h</a>
+    return h, [h, c]
+
+
+def _cosine_dist(x, y):</code></pre><h3>After Change</h3><pre><code class='java'>
+        dtype=tf.float32)
+    return [W, U, b]
+
+  def create_tensor(<a id="change">self</a>, in_layers=None, set_tensors=True, **kwargs):
+    Execute this layer on input tensors.
+
+    Parameters
+    ----------
+    in_layers: list
+      List of three tensors (x, h_tm1, c_tm1). h_tm1 means "h, t-1".
+
+    Returns
+    -------
+    list
+      Returns h, [h + c]
+    
+    activation = self.activation
+    inner_activation = self.inner_activation
+
+    if tfe.in_eager_mode():
+      if not self._built:
+        <a id="change">self.variables</a> = self._create_variables()
+        self._built = True
+      W, U, b = self.variables
+    else:
+      <a id="change">W, U, b = self._create_variables()</a>
+    inputs = self._get_input_tensors(in_layers)
+    x, h_tm1, c_tm1 = inputs
+
+    &#47&#47 Taken from Keras code [citation needed]
+    z = model_ops.dot(x, W) + model_ops.dot(h_tm1, U) + b
+
+    z0 = z[:, :self.output_dim]
+    z1 = z[:, self.output_dim:2 * self.output_dim]
+    z2 = z[:, 2 * self.output_dim:3 * self.output_dim]
+    z3 = z[:, 3 * self.output_dim:]
+
+    i = inner_activation(z0)
+    f = inner_activation(z1)
+    c = f * c_tm1 + i * activation(z2)
+    o = inner_activation(z3)
+
+    h = o * activation(c)
+
+    if set_tensors:
+      <a id="change">self.out_tensor = h</a>
+    return h, [h, c]
+
+
+def _cosine_dist(x, y):</code></pre>

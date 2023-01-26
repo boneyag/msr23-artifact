@@ -1,0 +1,87 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+streamlines = Streamlines(boot_streamline_generator)
+
+renderer.clear()
+<a id="change">renderer.add(actor.line(streamlines, cmap.line_colors(streamlines)))</a>
+window.record(renderer, out_path=&quotbootstrap_dg_CSD.png&quot, size=(600, 600))
+
+
+.. figure:: bootstrap_dg_CSD.png</code></pre><h3>After Change</h3><pre><code class='java'>
+Let&quots load the necessary modules for executing this tutorial.
+
+&#47&#47 Enables/disables interactive visualization
+<a id="change">interactive = False</a>
+
+from dipy.data import read_stanford_labels
+from dipy.io.streamline import save_trk
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+from dipy.tracking import utils
+from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking)
+from dipy.viz import window, actor, colormap, have_fury
+
+
+First we load our images and set the tracking seeds. See the ntroduction to
+tractography tutorial (:ref:`example_tracking_introduction_eudx`)
+for more background on these steps.
+
+
+hardi_img, gtab, labels_img = read_stanford_labels()
+data = hardi_img.get_data()
+labels = labels_img.get_data()
+affine = hardi_img.affine
+
+seed_mask = labels == 2
+white_matter = (labels == 1) | (labels == 2)
+seeds = utils.seeds_from_mask(seed_mask, density=1, affine=affine)
+
+
+Next, we fit the CSD model.
+
+
+csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
+csd_fit = csd_model.fit(data, mask=white_matter)
+
+
+we use the CSA fit to calculate GFA, which will serve as our tissue
+classifier.
+
+
+from dipy.reconst.shm import CsaOdfModel
+csa_model = CsaOdfModel(gtab, sh_order=6)
+gfa = csa_model.fit(data, mask=white_matter).gfa
+classifier = ThresholdTissueClassifier(gfa, .25)
+
+
+Next, we need to set up our two direction getters
+
+
+
+Example &#47&#471: Bootstrap direction getter with CSD Model
+
+
+from dipy.direction import BootDirectionGetter
+from dipy.tracking.streamline import Streamlines
+from dipy.data import small_sphere
+
+boot_dg_csd = BootDirectionGetter.from_data(data, csd_model, max_angle=30.,
+                                            sphere=small_sphere)
+boot_streamline_generator = LocalTracking(boot_dg_csd, classifier, seeds,
+                                          affine, step_size=.5)
+streamlines = Streamlines(boot_streamline_generator)
+
+save_trk("tractogram_bootstrap_dg.trk", streamlines, affine, labels.shape)
+
+if have_fury:
+    r = <a id="change">window.Renderer()</a>
+    <a id="change">r.add(actor.line(streamlines, colormap.line_colors(streamlines)))</a>
+    window.record(r, out_path=&quottractogram_bootstrap_dg.png&quot, size=(800, 800))
+    <a id="change">if interactive:
+        window.show(r)
+
+</a>
+.. figure:: tractogram_bootstrap_dg.png
+   :align: center
+</code></pre>

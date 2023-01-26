@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if q_sqrt is not None:
+        if q_sqrt.get_shape().ndims == 2:
+            LTA = A * tf.expand_dims(tf.transpose(q_sqrt), 2)  &#47&#47 [R, M, N]
+        elif <a id="change">q_sqrt</a>.get_shape().ndims == 3:
+            L = tf.matrix_band_part(q_sqrt, -1, 0)  &#47&#47 [R, M, M]
+            A_tiled = tf.tile(tf.expand_dims(A, 0), tf.stack([num_func, 1, 1]))
+            LTA = tf.matmul(L, A_tiled, transpose_a=True)  &#47&#47 [R, M, N]</code></pre><h3>After Change</h3><pre><code class='java'>
+            A_tiled = tf.tile(tf.expand_dims(A, 0), tf.stack([num_func, 1, 1]))
+            LTA = tf.matmul(L, A_tiled, transpose_a=True)  &#47&#47 [R, M, N]
+        else:  &#47&#47 pragma: no cover
+            <a id="change">raise ValueError(f"Bad dimension for q_sqrt: {q_sqrt.shape.ndims}")</a>
+        if full_cov:
+            fvar = fvar + tf.matmul(LTA, LTA, transpose_a=True)  &#47&#47 [R, N, N]
+        else:
+            fvar = fvar + tf.reduce_sum(LTA ** 2, 1)  &#47&#47 [R, N]</code></pre>

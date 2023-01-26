@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def transform_non_affine(self, a):
+        with np.errstate(invalid="ignore"):
+            a = np.where(a &lt;= 0, self._fill_value, a)
+        <a id="change">return np.divide(np.log(a, out=a), np.log(self.base), out=a)</a>
+
+
+class InvertedLogTransformBase(Transform):
+    input_dims = 1</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def transform_non_affine(self, a):
+        with np.errstate(divide="ignore", invalid="ignore"):
+            <a id="change">out = np.log(a)</a>
+        out /= np.log(self.base)
+        if self._clip:
+            &#47&#47 SVG spec says that conforming viewers must support values up
+            &#47&#47 to 3.4e38 (C float); however experiments suggest that Inkscape
+            &#47&#47 (which uses cairo for rendering) runs into cairo&quots 24-bit limit
+            &#47&#47 (which is apparently shared by Agg).
+            &#47&#47 Ghostscript (used for pdf rendering appears to overflow even
+            &#47&#47 earlier, with the max value around 2 ** 15 for the tests to pass.
+            &#47&#47 On the other hand, in practice, we want to clip beyond
+            &#47&#47     np.log10(np.nextafter(0, 1)) ~ -323
+            &#47&#47 so 1000 seems safe.
+            out[a &lt;= 0] = -1000
+        <a id="change">return out</a>
+
+
+class InvertedLogTransformBase(Transform):
+    input_dims = 1</code></pre>

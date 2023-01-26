@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def _merge_overlapping(table, combiners):
+    Merge overlapping regions within a group.
+    &#47&#47 Short-circuit the simple, common cases
+    <a id="change">if len(table) == 1:
+        return table
+   </a> if table[&quotstart&quot].nunique() == table[&quotend&quot].nunique() == 1:
+        return _squash_rows(table, combiners)
+    &#47&#47 Identify & enumerate (non)overlapping groups of rows
+    overlap_sizes = table.end.cummax().values[:-1] - table.start.values[1:]
+    non_overlapping = <a id="change">np</a>.r_[False, (overlap_sizes &lt;= 0)]
+    &#47&#47 Squash rows within each non-overlapping group
+    return (table.groupby(non_overlapping * np.arange(len(non_overlapping)),
+                          as_index=False, group_keys=False, sort=False)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 advantage of the grouping and sorting already done, and don&quott repeat
+    &#47&#47 pandas&quot traversal and inferences.
+    &#47&#47 ENH: Find & use a lower-level, 1-pass pandas function
+    <a id="change">keyed_groups = itertools.izip(_nonoverlapping_groups(table),
+                                  table.itertuples(index=False))</a>
+    merged_rows = [_squash_tuples(row_group, combiners)
+                   for _key, row_group in itertools.groupby(keyed_groups,
+                                                            lambda x: x[0])]
+    return pd.DataFrame.from_records(merged_rows, columns=merged_rows[0]._fields)</code></pre>

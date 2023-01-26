@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    z_list = []
+    for x, y, k in zip(x_list, y_list, backend_list):
+        z_list.append(<a id="change">k.eval(getattr(k, function_name)(x, y, **kwargs))</a>)
+
+    for i in range(len(z_list) - 1):
+        assert z_list[i].shape == z_list[i + 1].shape</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    z_list = []
+    for k in backend_list:
+        <a id="change">if k == KCSD:
+            z = cntk_func_two_tensor(function_name, x_input_shape,
+                                     y=yval, **kwargs)([xval])[0]
+        elif k == KCTD:
+            z = cntk_func_two_tensor(function_name, x_input_shape,
+                                     y=y_input_shape, **kwargs)([xval, yval])[0]
+        else:
+            z = k.eval(getattr(k, function_name)(k.variable(xval), k.variable(yval), **kwargs))
+       </a> <a id="change">if hasattr(z, &quot_keras_shape&quot):
+            assert z._keras_shape == z.shape
+       </a> <a id="change">z_list += [z]</a>
+
+    <a id="change">for (z1, z2) in zip(z_list[1:], z_list[:-1]):
+        assert z1.shape == z2.shape
+        assert_allclose(z1, z2, atol=1e-05)
+
+
+</a>def check_cross_entropy_with_valid_probability_distribution():
+    xval = np.asarray([[0.26157712, 0.0432167], [-0.43380741, 0.30559841],
+                       [0.20225059, -0.38956559], [-0.13805378, 0.08506755]], dtype=np.float32)
+    xtf = KTF.variable(xval)</code></pre>

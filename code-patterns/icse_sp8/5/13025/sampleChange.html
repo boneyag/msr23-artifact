@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def load(self, gs: Type[GeneSignature]) -&gt; pd.DataFrame:
+        rank_unknown = np.iinfo(INVERTED_DB_DTYPE).max
+        <a id="change">features = self.df.index</a>; n_features = len(features)
+        reference_identifiers = np.array([self.identifier2idx[identifier] for identifier in gs.genes])
+        ranked_identifiers = self.df.values
+
+        def gen_series(ranked_identifiers, reference_identifiers, name):
+            idx = np.nonzero(np.isin(ranked_identifiers, reference_identifiers))[0]
+            return pd.Series(index=ranked_identifiers[idx], data=idx, name=name, dtype=INVERTED_DB_DTYPE)
+
+        &#47&#47return pd.DataFrame(data=build_rankings(ranked_identifiers, reference_identifiers),
+        &#47&#47                    index=self.df.index,
+        &#47&#47                    columns=gs.genes)
+
+        return pd.concat(<a id="change">[gen_series(ranked_identifiers[idx, :], reference_identifiers, features[idx]) for idx in range(n_features)]</a>, axis=1).T\
+                                .fillna(rank_unknown).astype(INVERTED_DB_DTYPE)\
+                                .rename(columns=self.idx2identifier, inplace=False)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def load(self, gs: Type[GeneSignature]) -&gt; pd.DataFrame:
+        rank_unknown = np.iinfo(INVERTED_DB_DTYPE).max
+        reference_identifiers = np.array([self.identifier2idx[identifier] for identifier in gs.genes])
+        return pd.concat([<a id="change">col.reindex(index=reference_identifiers, fill_value=rank_unknown)</a> for col in self.features],
+                         axis=1).T.astype(INVERTED_DB_DTYPE).rename(columns=self.idx2identifier)
+
+        &#47&#47return pd.DataFrame(data=build_rankings(ranked_identifiers, reference_identifiers),</code></pre>

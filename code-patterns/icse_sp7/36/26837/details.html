@@ -1,0 +1,85 @@
+<html><h3>7331bc49dab2d0078054b25500890f8d3eb7733e,mnist-collection/classification.py,,train,#,107
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                ve += categorical_error(vpred.d, vlabel.d)
+            monitor_verr.add(i, ve / args.val_iter)
+        if i % args.model_save_interval == 0:
+            <a id="change">nn.save_parameters(os.path.join(
+                args.model_save_path, &quotparams_%06d.h5&quot % i))</a>
+        &#47&#47 Training forward
+        image.d, label.d = data.next()
+        solver.zero_grad()
+        loss.forward(clear_no_need_grad=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Create Solver. If training from checkpoint, load the info.
+    solver = S.Adam(args.learning_rate)
+    solver.set_parameters(nn.get_parameters())
+    <a id="change">start_point = 0</a>
+
+    <a id="change">if args.checkpoint is not None:
+        &#47&#47 load weights and solver state info from specified checkpoint file.
+        start_point = load_checkpoint(args.checkpoint, solver)
+
+    &#47&#47 Create monitor.
+   </a> from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed
+    monitor = Monitor(args.monitor_path)
+    monitor_loss = MonitorSeries("Training loss", monitor, interval=10)
+    monitor_err = MonitorSeries("Training error", monitor, interval=10)
+    monitor_time = MonitorTimeElapsed("Training time", monitor, interval=100)
+    monitor_verr = MonitorSeries("Test error", monitor, interval=10)
+
+    &#47&#47 save_nnp
+    <a id="change">contents = save_nnp({&quotx&quot: vimage}, {&quoty&quot: vpred}, args.batch_size)</a>
+    <a id="change">save.save(os.path.join(args.model_save_path,
+                           &quot{}_result_epoch0.nnp&quot.format(args.net)), contents)</a>
+
+    &#47&#47 Initialize DataIterator for MNIST.
+    from numpy.random import RandomState
+    data = data_iterator_mnist(args.batch_size, True, rng=RandomState(1223))
+    vdata = data_iterator_mnist(args.batch_size, False)
+    &#47&#47 Training loop.
+    for i in range(start_point, args.max_iter):
+        if i % args.val_interval == 0:
+            &#47&#47 Validation
+            ve = 0.0
+            for j in range(args.val_iter):
+                vimage.d, vlabel.d = vdata.next()
+                vpred.forward(clear_buffer=True)
+                vpred.data.cast(np.float32, ctx)
+                ve += categorical_error(vpred.d, vlabel.d)
+            monitor_verr.add(i, ve / args.val_iter)
+        if i % args.model_save_interval == 0:
+            &#47&#47 save checkpoint file
+            <a id="change">save_checkpoint(args.model_save_path, i, solver)</a>
+        &#47&#47 Training forward
+        image.d, label.d = data.next()
+        solver.zero_grad()
+        loss.forward(clear_no_need_grad=True)
+        loss.backward(clear_buffer=True)
+        solver.weight_decay(args.weight_decay)
+        solver.update()
+        loss.data.cast(np.float32, ctx)
+        pred.data.cast(np.float32, ctx)
+        e = categorical_error(pred.d, label.d)
+        monitor_loss.add(i, loss.d.copy())
+        monitor_err.add(i, e)
+        monitor_time.add(i)
+
+    ve = 0.0
+    for j in range(args.val_iter):
+        vimage.d, vlabel.d = vdata.next()
+        vpred.forward(clear_buffer=True)
+        ve += categorical_error(vpred.d, vlabel.d)
+    monitor_verr.add(i, ve / args.val_iter)
+
+    parameter_file = os.path.join(
+        args.model_save_path, &quot{}_params_{:06}.h5&quot.format(args.net, args.max_iter))
+    nn.save_parameters(parameter_file)
+
+    &#47&#47 save_nnp_lastepoch
+    <a id="change">contents = save_nnp({&quotx&quot: vimage}, {&quoty&quot: vpred}, args.batch_size)</a>
+    save.save(os.path.join(args.model_save_path,
+                           &quot{}_result.nnp&quot.format(args.net)), contents)
+
+</code></pre><img src="137348463.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 24</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/sony/nnabla-examples/commit/7331bc49dab2d0078054b25500890f8d3eb7733e#diff-5687fa11e94aaefefde622ecb6b14f797c9ff7a68c94b38134d8bad7b6f0fbddL129' target='_blank'>Link</a></div><div id='project'> Project Name: sony/nnabla-examples</div><div id='commit'> Commit Name: 7331bc49dab2d0078054b25500890f8d3eb7733e</div><div id='time'> Time: 2020-01-13</div><div id='author'> Author: Shreenidhi.Ramachnadran@sony.com</div><div id='file'> File Name: mnist-collection/classification.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/sony/nnabla-examples/commit/7331bc49dab2d0078054b25500890f8d3eb7733e#diff-2f09717e023c2837aa3286bf9aaf43701db911b0e4e05c3a88dbbe6470cec97fL245' target='_blank'>Link</a></div><div id='project'> Project Name: sony/nnabla-examples</div><div id='commit'> Commit Name: 7331bc49dab2d0078054b25500890f8d3eb7733e</div><div id='time'> Time: 2020-01-13</div><div id='author'> Author: Shreenidhi.Ramachnadran@sony.com</div><div id='file'> File Name: mnist-collection/classification_bnn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/sony/nnabla-examples/commit/4d4bc2c1ed869fbbfaf401e02052589ac48f8184#diff-8c9fded869e7533014be677f721cc80fb043ea8ba9c24f6c1a89eda976ac4750L55' target='_blank'>Link</a></div><div id='project'> Project Name: sony/nnabla-examples</div><div id='commit'> Commit Name: 4d4bc2c1ed869fbbfaf401e02052589ac48f8184</div><div id='time'> Time: 2020-01-13</div><div id='author'> Author: Shreenidhi.Ramachandran@sony.com</div><div id='file'> File Name: cifar10-100-collection/classification.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/sony/nnabla-examples/commit/7331bc49dab2d0078054b25500890f8d3eb7733e#diff-5687fa11e94aaefefde622ecb6b14f797c9ff7a68c94b38134d8bad7b6f0fbddL129' target='_blank'>Link</a></div><div id='project'> Project Name: sony/nnabla-examples</div><div id='commit'> Commit Name: 7331bc49dab2d0078054b25500890f8d3eb7733e</div><div id='time'> Time: 2020-01-13</div><div id='author'> Author: Shreenidhi.Ramachnadran@sony.com</div><div id='file'> File Name: mnist-collection/classification.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR>

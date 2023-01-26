@@ -1,0 +1,92 @@
+<html><h3>8565a366de87d82dc19c3386b4a83359be1aa275,autosklearn/pipeline/components/classification/sgd.py,SGD,get_hyperparameter_search_space,#Any#,115
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            default="log"))
+        penalty = cs.add_hyperparameter(CategoricalHyperparameter(
+            "penalty", ["l1", "l2", "elasticnet"], default="l2"))
+        alpha = <a id="change">cs.add_hyperparameter(UniformFloatHyperparameter(
+            "alpha", 10e-7, 1e-1, log=True, default=0.0001))</a>
+        l1_ratio = cs.add_hyperparameter(UniformFloatHyperparameter(
+            "l1_ratio", 1e-9, 1,  log=True, default=0.15))
+        fit_intercept = <a id="change">cs.add_hyperparameter(UnParametrizedHyperparameter(
+            "fit_intercept", "True"))</a>
+        n_iter = <a id="change">cs.add_hyperparameter(UniformIntegerHyperparameter(
+            "n_iter", 5, 1000, log=True, default=20))</a>
+        epsilon = cs.add_hyperparameter(UniformFloatHyperparameter(
+            "epsilon", 1e-5, 1e-1, default=1e-4, log=True))
+        learning_rate = cs.add_hyperparameter(CategoricalHyperparameter(
+            "learning_rate", ["optimal", "invscaling", "constant"],
+            default="optimal"))
+        eta0 = <a id="change">cs.add_hyperparameter(UniformFloatHyperparameter(
+            "eta0", 10**-7, 0.1, default=0.01))</a>
+        power_t = cs.add_hyperparameter(UniformFloatHyperparameter(
+            "power_t", 1e-5, 1, default=0.25))
+        average = cs.add_hyperparameter(CategoricalHyperparameter(
+            "average", ["False", "True"], default="False"))
+
+        &#47&#47 TODO add passive/aggressive here, although not properly documented?
+        elasticnet = EqualsCondition(l1_ratio, penalty, "elasticnet")
+        epsilon_condition = EqualsCondition(epsilon, loss, "modified_huber")
+        &#47&#47 eta0 seems to be always active according to the source code; when
+        &#47&#47 learning_rate is set to optimial, eta0 is the starting value:
+        &#47&#47 https://github.com/scikit-learn/scikit-learn/blob/0.15.X/sklearn/linear_model/sgd_fast.pyx
+        &#47&#47eta0_and_inv = EqualsCondition(eta0, learning_rate, "invscaling")
+        &#47&#47eta0_and_constant = EqualsCondition(eta0, learning_rate, "constant")
+        &#47&#47eta0_condition = OrConjunction(eta0_and_inv, eta0_and_constant)
+        power_t_condition = EqualsCondition(power_t, learning_rate, "invscaling")
+
+        <a id="change">cs.add_condition(elasticnet)</a>
+        <a id="change">cs.add_condition(epsilon_condition)</a>
+        <a id="change">cs.add_condition(power_t_condition)</a>
+
+        return cs
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    @staticmethod
+    def get_hyperparameter_search_space(dataset_properties=None):
+        <a id="change">cs</a> = ConfigurationSpace()
+
+        loss = CategoricalHyperparameter("loss",
+            ["hinge", "log", "modified_huber", "squared_hinge", "perceptron"],
+            default="log")
+        penalty = CategoricalHyperparameter(
+            "penalty", ["l1", "l2", "elasticnet"], default="l2")
+        alpha = UniformFloatHyperparameter(
+            "alpha", 10e-7, 1e-1, log=True, default=0.0001)
+        l1_ratio = UniformFloatHyperparameter(
+            "l1_ratio", 1e-9, 1,  log=True, default=0.15)
+        fit_intercept = UnParametrizedHyperparameter("fit_intercept", "True")
+        n_iter = UniformIntegerHyperparameter("n_iter", 5, 1000, log=True, default=20)
+        epsilon = UniformFloatHyperparameter(
+            "epsilon", 1e-5, 1e-1, default=1e-4, log=True)
+        learning_rate = CategoricalHyperparameter(
+            "learning_rate", ["optimal", "invscaling", "constant"],
+            default="optimal")
+        eta0 = UniformFloatHyperparameter(
+            "eta0", 10**-7, 0.1, default=0.01)
+        power_t = UniformFloatHyperparameter("power_t", 1e-5, 1, default=0.25)
+        average = CategoricalHyperparameter(
+            "average", ["False", "True"], default="False")
+        <a id="change">cs.add_hyperparameters([loss, penalty, alpha, l1_ratio, fit_intercept,
+                                n_iter, epsilon, learning_rate, eta0, power_t,
+                                average])</a>
+
+        &#47&#47 TODO add passive/aggressive here, although not properly documented?
+        elasticnet = EqualsCondition(l1_ratio, penalty, "elasticnet")
+        epsilon_condition = EqualsCondition(epsilon, loss, "modified_huber")
+        &#47&#47 eta0 seems to be always active according to the source code; when
+        &#47&#47 learning_rate is set to optimial, eta0 is the starting value:
+        &#47&#47 https://github.com/scikit-learn/scikit-learn/blob/0.15.X/sklearn/linear_model/sgd_fast.pyx
+        &#47&#47eta0_and_inv = EqualsCondition(eta0, learning_rate, "invscaling")
+        &#47&#47eta0_and_constant = EqualsCondition(eta0, learning_rate, "constant")
+        &#47&#47eta0_condition = OrConjunction(eta0_and_inv, eta0_and_constant)
+        power_t_condition = EqualsCondition(power_t, learning_rate, "invscaling")
+
+        <a id="change">cs.add_conditions([elasticnet, epsilon_condition, power_t_condition])</a>
+
+        return cs
+
+</code></pre><img src="318177015.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 11</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/8565a366de87d82dc19c3386b4a83359be1aa275#diff-e7b336987c3d3f3e60456b975d16352c3f24e5cdfe84531140bb684767ae7c98L116' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 8565a366de87d82dc19c3386b4a83359be1aa275</div><div id='time'> Time: 2017-02-04</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: autosklearn/pipeline/components/classification/sgd.py</div><div id='class'> Class Name: SGD</div><div id='method'> Method Name: get_hyperparameter_search_space</div><BR><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/8565a366de87d82dc19c3386b4a83359be1aa275#diff-cca7a6765de38642acc92dbab6505dab589b6617211271d6f828f6bfee62e307L71' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 8565a366de87d82dc19c3386b4a83359be1aa275</div><div id='time'> Time: 2017-02-04</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: autosklearn/pipeline/components/feature_preprocessing/kernel_pca.py</div><div id='class'> Class Name: KernelPCA</div><div id='method'> Method Name: get_hyperparameter_search_space</div><BR><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/8565a366de87d82dc19c3386b4a83359be1aa275#diff-6e3dec4cb19fb177155a59ec364be462d738a4a43ce62ea8738b645af2a49130L88' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 8565a366de87d82dc19c3386b4a83359be1aa275</div><div id='time'> Time: 2017-02-04</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: autosklearn/pipeline/components/feature_preprocessing/nystroem_sampler.py</div><div id='class'> Class Name: Nystroem</div><div id='method'> Method Name: get_hyperparameter_search_space</div><BR><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/8565a366de87d82dc19c3386b4a83359be1aa275#diff-ebbdaecf9233d4b5d0333ec20c3214cf45b16df6be87eb08d71425a4cdd539bcL103' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 8565a366de87d82dc19c3386b4a83359be1aa275</div><div id='time'> Time: 2017-02-04</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: autosklearn/pipeline/components/regression/libsvm_svr.py</div><div id='class'> Class Name: LibSVM_SVR</div><div id='method'> Method Name: get_hyperparameter_search_space</div><BR><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/8565a366de87d82dc19c3386b4a83359be1aa275#diff-e7b336987c3d3f3e60456b975d16352c3f24e5cdfe84531140bb684767ae7c98L116' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 8565a366de87d82dc19c3386b4a83359be1aa275</div><div id='time'> Time: 2017-02-04</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: autosklearn/pipeline/components/classification/sgd.py</div><div id='class'> Class Name: SGD</div><div id='method'> Method Name: get_hyperparameter_search_space</div><BR>

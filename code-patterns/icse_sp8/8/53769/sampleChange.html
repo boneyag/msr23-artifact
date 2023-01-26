@@ -1,0 +1,67 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      y_pred_batch = undo_transforms(y_pred_batch, transformers)
+      y_preds.append(y_pred_batch)
+      ys.append(y_batch)
+      <a id="change">w_preds.append(w_batch)</a>
+      print("X_batch.shape, y_batch.shape, y_pred_batch.shape")
+      print(X_batch.shape, y_batch.shape, y_pred_batch.shape)
+    y = np.vstack(ys)
+    y_pred = np.vstack(y_preds)
+    w_pred = <a id="change">np.vstack(w_preds)</a>
+  
+    &#47&#47X = X[w.flatten() != 0, :]
+    &#47&#47print("Model.predict()")
+    &#47&#47print("y.shape, w.shape, y_pred.shape")
+    &#47&#47print(y.shape, w.shape, y_pred.shape)
+    &#47&#47for task in xrange(num_tasks):
+    &#47&#47  y_task, w_task, y_pred_task = y[:, task], w[:, task], y_pred[:, task]
+    &#47&#47  y_task = y_task[w_task.flatten() != 0]
+    &#47&#47  y_task = to_one_hot(y_task)
+    &#47&#47  y_pred_task = y_pred_task[w_task.flatten() != 0][:, np.newaxis]
+
+    <a id="change">return y, y_pred, w_pred</a>
+
+    &#47&#47task_names = dataset.get_task_names()
+    &#47&#47pred_task_names = ["%s_pred" % task_name for task_name in task_names]
+    &#47&#47w_task_names = ["%s_weight" % task_name for task_name in task_names]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    batch_size = self.model_params["batch_size"]
+    &#47&#47 Have to include ys/ws since we might pad batches
+    <a id="change">y_preds = []</a>
+    print("predict()")
+    print("len(dataset)")
+    print(len(dataset))
+    for (X_batch, y_batch, w_batch, ids_batch) in dataset.iterbatches(batch_size):
+      y_pred_batch = np.reshape(self.predict_on_batch(X_batch), y_batch.shape)
+      y_pred_batch = undo_transforms(y_pred_batch, transformers)
+      y_preds.append(y_pred_batch)
+      &#47&#47ys.append(y_batch)
+      &#47&#47w_preds.append(w_batch)
+      print("X_batch.shape, y_batch.shape, y_pred_batch.shape")
+      print(X_batch.shape, y_batch.shape, y_pred_batch.shape)
+    &#47&#47y = np.vstack(ys)
+    y_pred = np.vstack(y_preds)
+    &#47&#47w_pred = np.vstack(w_preds)
+  
+    &#47&#47X = X[w.flatten() != 0, :]
+    &#47&#47print("Model.predict()")
+    &#47&#47print("y.shape, w.shape, y_pred.shape")
+    &#47&#47print(y.shape, w.shape, y_pred.shape)
+    &#47&#47for task in xrange(num_tasks):
+    &#47&#47  y_task, w_task, y_pred_task = y[:, task], w[:, task], y_pred[:, task]
+    &#47&#47  y_task = y_task[w_task.flatten() != 0]
+    &#47&#47  y_task = to_one_hot(y_task)
+    &#47&#47  y_pred_task = y_pred_task[w_task.flatten() != 0][:, np.newaxis]
+
+    &#47&#47 The iterbatches does padding with zero-weight examples on the last batch.
+    &#47&#47 Remove padded examples.
+    <a id="change">y_pred = y_pred[:len(dataset)]</a>
+
+    <a id="change">return y_pred</a>
+
+    &#47&#47task_names = dataset.get_task_names()
+    &#47&#47pred_task_names = ["%s_pred" % task_name for task_name in task_names]
+    &#47&#47w_task_names = ["%s_weight" % task_name for task_name in task_names]</code></pre>

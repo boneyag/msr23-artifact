@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.variables[name] = variable
+
+    def tf_apply(self, x, sequence_length=None):
+        <a id="change">x, state = tf.nn.dynamic_rnn(
+            cell=self.cell, inputs=x, sequence_length=sequence_length, initial_state=None,
+            dtype=util.tf_dtype(dtype=&quotfloat&quot),
+            &#47&#47 Weird TensorFlow behavior? (https://github.com/tensorflow/tensorflow/issues/15874)
+            parallel_iterations=(self.input_spec[&quotshape&quot][0] + 1)
+        )</a>
+
+        if self.return_final_state:
+            x = state
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        x = self.rnn(inputs=x, initial_state=None)
+
+        if self.return_final_state:
+            <a id="change">if self.cell == &quotgru&quot:
+                x = x[1]
+            elif self.cell == &quotlstm&quot:
+                x = tf.concat(values=(x[1], x[2]), axis=1)
+       </a> else:
+            x = x[0]
+
+        return super().tf_apply(x=x)</code></pre>

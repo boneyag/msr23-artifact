@@ -1,0 +1,41 @@
+<html><h3>14759e1065e307c7760299670da30f64ffdbf783,src/python/pants/engine/engine.py,ThreadHybridEngine,_submit_until,#ThreadHybridEngine#Any#Any#Any#,312
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      else:
+        keyed_request, result = self._maybe_cache_get(step)
+        if result is None:
+          <a id="change">result = step(self._node_builder)</a>
+          self._maybe_cache_put(keyed_request, result)
+        <a id="change">promise.success(result)</a>
+
+    return submitted
+
+  def _await_one(self, in_flight):</code></pre><h3>After Change</h3><pre><code class='java'>
+    Submit pending while there&quots capacity, and more than `n` items in pending_submission.
+    to_submit = min(len(pending_submission) - n, self._pool_size - len(in_flight))
+    submitted = 0
+    <a id="change">completed = []</a>
+    for _ in range(to_submit):
+      step, runnable = pending_submission.popitem(last=False)
+      if self._is_async_node(step.node):
+        &#47&#47 Run in a future.
+        if step in in_flight:
+          raise InFlightException(&quot{} is already in_flight!&quot.format(step))
+
+        future = self._pool.submit(functools.partial(self._execute_step, step, runnable))
+        in_flight[step] = future
+        self._pending.add(future)
+        future.add_done_callback(self._processed_node_callback)
+
+        submitted += 1
+
+      else:
+        &#47&#47 Run inline.
+        completed.append(self._execute_step(step, runnable))
+
+    return <a id="change">submitted</a>, completed
+
+  def _await_one(self, in_flight):
+    Await one completed step, and remove it from in_flight.</code></pre><img src="124334258.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/14759e1065e307c7760299670da30f64ffdbf783#diff-8d612681f922f7d6e6d319f8c16181610a4eff7fc745e090588d25a887a8e625L286' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 14759e1065e307c7760299670da30f64ffdbf783</div><div id='time'> Time: 2016-08-27</div><div id='author'> Author: stuhood@gmail.com</div><div id='file'> File Name: src/python/pants/engine/engine.py</div><div id='class'> Class Name: ThreadHybridEngine</div><div id='method'> Method Name: _submit_until</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/14759e1065e307c7760299670da30f64ffdbf783#diff-8d612681f922f7d6e6d319f8c16181610a4eff7fc745e090588d25a887a8e625L450' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 14759e1065e307c7760299670da30f64ffdbf783</div><div id='time'> Time: 2016-08-27</div><div id='author'> Author: stuhood@gmail.com</div><div id='file'> File Name: src/python/pants/engine/engine.py</div><div id='class'> Class Name: LocalMultiprocessEngine</div><div id='method'> Method Name: _submit_until</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/14759e1065e307c7760299670da30f64ffdbf783#diff-8d612681f922f7d6e6d319f8c16181610a4eff7fc745e090588d25a887a8e625L149' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 14759e1065e307c7760299670da30f64ffdbf783</div><div id='time'> Time: 2016-08-27</div><div id='author'> Author: stuhood@gmail.com</div><div id='file'> File Name: src/python/pants/engine/engine.py</div><div id='class'> Class Name: LocalSerialEngine</div><div id='method'> Method Name: reduce</div><BR>

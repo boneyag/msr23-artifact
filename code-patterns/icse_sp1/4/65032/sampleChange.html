@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if scale is None:
+                    scale = np.cos(lat * np.pi / 180.)
+
+                <a id="change">R</a>, t = pose_from_oxts_packet(metadata[:6], scale, imu2cam)
+                if origin is None:
+                    origin = t
+                if orientation is None:</code></pre><h3>After Change</h3><pre><code class='java'>
+            imu2velo_mat = transform_from_rot_trans(imu2velo[&quotR&quot], imu2velo[&quotT&quot])
+            cam_2rect_mat = transform_from_rot_trans(cam2cam[&quotR_rect_00&quot], np.zeros(3))
+
+            imu2cam = <a id="change">cam_2rect_mat</a> @ velo2cam_mat @ imu2velo_mat
+
+            for n, f in enumerate(oxts):
+                metadata = np.genfromtxt(f)
+                speed = metadata[8:11]
+                scene_data[&quotspeed&quot].append(speed)
+                scene_data[&quotframe_id&quot].append(&quot{:010d}&quot.format(n))
+                lat = metadata[0]
+
+                if scale is None:
+                    scale = np.cos(lat * np.pi / 180.)
+
+                pose_matrix = pose_from_oxts_packet(metadata[:6], scale)
+                if origin is None:
+                    origin = pose_matrix
+
+                <a id="change">odo_pose = imu2cam @ np.linalg.inv(origin) @ pose_matrix @ np.linalg.inv(imu2cam)</a>
+                scene_data[&quotpose&quot].append(odo_pose[:3])
+
+            sample = self.load_image(scene_data, 0)
+            if sample is None:</code></pre>

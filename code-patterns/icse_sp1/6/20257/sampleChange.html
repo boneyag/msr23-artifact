@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        coeffs = F.softmax(coeffs, dim=1)
+        prior_means = torch.stack([s.distribution.mean[0] for s in samples])
+        prior_stddevs = torch.stack([s.distribution.stddev[0] for s in samples])
+        <a id="change">prior_means = prior_means.expand_as(means)</a>
+        <a id="change">prior_stddevs = prior_stddevs.expand_as(means)</a>
+
+        means = prior_means + (means * prior_stddevs)
+        stddevs = stddevs * prior_stddevs
+        <a id="change">distributions = [TruncatedNormal(means[:, i:i+1], stddevs[:, i:i+1], 0, 40, clamp_mean_between_low_high=True) for i in range(self._mixture_components)]</a>
+        <a id="change">return Mixture(distributions, coeffs)</a>
+
+
+class InferenceNetwork(nn.Module):
+    def __init__(self, model_name=&quotUnnamed model&quot, lstm_dim=512, lstm_depth=2, observe_embedding=ObserveEmbedding.FULLY_CONNECTED, observe_reshape=None, observe_embedding_dim=512, sample_embedding=SampleEmbedding.FULLY_CONNECTED, sample_embedding_dim=32, address_embedding_dim=256, valid_batch=None, cuda=False, device=None):</code></pre><h3>After Change</h3><pre><code class='java'>
+        prior_stddevs = torch.stack([s.distribution.stddev[0] for s in samples])
+        means = prior_means + (means * prior_stddevs)
+        stddevs = stddevs * prior_stddevs
+        <a id="change">return TruncatedNormal(means, stddevs, 0, 40, clamp_mean_between_low_high=True)</a>
+
+
+class InferenceNetwork(nn.Module):
+    def __init__(self, model_name=&quotUnnamed model&quot, lstm_dim=512, lstm_depth=2, observe_embedding=ObserveEmbedding.FULLY_CONNECTED, observe_reshape=None, observe_embedding_dim=512, sample_embedding=SampleEmbedding.FULLY_CONNECTED, sample_embedding_dim=32, address_embedding_dim=256, valid_batch=None, cuda=False, device=None):</code></pre>

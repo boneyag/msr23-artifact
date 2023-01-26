@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        random_state = check_random_state(self.random_state)
+
+        sparsity = np.infty
+        <a id="change">for rs in range(self.n_init):
+            if (distutils.version.LooseVersion(sklearn.__version__).version
+                    &gt; [0, 12]):
+                &#47&#47 random_state in fastica was added in 0.13
+                ica_maps_ = self._cache(fastica, memory_level=6)(
+                    self.components_.T,
+                    whiten=True, fun=&quotcube&quot,
+                    random_state=random_state)[2]
+            else:
+                ica_maps_ = self._cache(fastica, memory_level=6)(
+                    self.components_.T, whiten=True,
+                    fun=&quotcube&quot)[2]
+            ica_maps_ = ica_maps_.T
+
+            sparsity_ = np.sum(np.abs(ica_maps_), axis=1).max()
+            if sparsity_ &lt; sparsity:
+                sparsity = sparsity_
+                ica_maps = ica_maps_
+
+        &#47&#47 Thresholding
+       </a> ratio = None
+        if isinstance(self.threshold, float):
+            ratio = self.threshold
+        elif self.threshold == &quotauto&quot:</code></pre><h3>After Change</h3><pre><code class='java'>
+        MultiPCA.fit(self, niimgs, y=y, confounds=confounds)
+        random_state = check_random_state(self.random_state)
+
+        <a id="change">seeds = random_state.randint(np.iinfo(np.int32).max, size=self.n_init)</a>
+        if (LooseVersion(sklearn.__version__).version &gt; [0, 12]):
+            &#47&#47 random_state in fastica was added in 0.13
+            results = <a id="change">Parallel(n_jobs=self.n_jobs, verbose=self.verbose)(
+                delayed(fastica)(self.components_.T,
+                    whiten=True, fun=&quotcube&quot, random_state=seed)
+                for seed in seeds)</a>
+        else:
+            results = Parallel(n_jobs=1, verbose=self.verbose)(
+                delayed(fastica)(self.components_.T, whiten=True, fun=&quotcube&quot)
+                for seed in seeds)
+
+        <a id="change">ica_maps_gen_ = (result[2].T for result in results)</a>
+        ica_maps_and_sparsities = ((ica_map,
+                                    np.sum(np.abs(ica_map), axis=1).max())
+                                   for ica_map in ica_maps_gen_)
+        ica_maps, sparsity = min(ica_maps_and_sparsities, key=itemgetter(-1))</code></pre>

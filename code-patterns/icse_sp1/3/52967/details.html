@@ -1,0 +1,45 @@
+<html><h3>6ca60969b6893268680d4386e2f22cdc3bc3c405,src/fonduer/utils/udf.py,UDFRunner,apply_mt,#UDFRunner#Any#Any#,86
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        docs_added = 0
+        xs_generator = xs.generate()
+        for _ in range(min(parallelism, total_count)):
+            <a id="change">in_queue.put(next(xs_generator))</a>
+            docs_added += 1
+
+        while any([udf.is_alive() for udf in self.udfs]) and count_parsed &lt; total_count:
+            if docs_added &lt; total_count:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Create a Queue to feed documents to parsers
+        manager = Manager()
+        in_queue = <a id="change">manager.Queue()</a>
+
+        &#47&#47 Use an output queue to track multiprocess progress
+        out_queue = JoinableQueue()
+
+        total_count = len(xs)
+
+        &#47&#47 Start UDF Processes
+        for i in range(parallelism):
+            udf = self.udf_class(
+                in_queue=in_queue,
+                out_queue=out_queue,
+                worker_id=i,
+                **self.udf_init_kwargs
+            )
+            udf.apply_kwargs = kwargs
+            self.udfs.append(udf)
+
+        &#47&#47 Start the UDF processes, and then join on their completion
+        for udf in self.udfs:
+            udf.start()
+
+        &#47&#47 Fill input queue with documents
+        pool = Pool(parallelism)
+        <a id="change">in_tuples = ((in_queue, x) for x in xs)</a>
+        pool.map_async(func=async_fill_input_queue, iterable=in_tuples)
+
+        count_parsed = 0
+        while count_parsed &lt; total_count:</code></pre><img src="244968075.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/HazyResearch/fonduer/commit/6ca60969b6893268680d4386e2f22cdc3bc3c405#diff-1c7984a8cc454fc449b11f1cdf978b470e6b6f9255973e3b5cb971edaad62de5L86' target='_blank'>Link</a></div><div id='project'> Project Name: HazyResearch/fonduer</div><div id='commit'> Commit Name: 6ca60969b6893268680d4386e2f22cdc3bc3c405</div><div id='time'> Time: 2018-09-05</div><div id='author'> Author: jrausch@inf.ethz.ch</div><div id='file'> File Name: src/fonduer/utils/udf.py</div><div id='class'> Class Name: UDFRunner</div><div id='method'> Method Name: apply_mt</div><BR><BR><div id='link'><a href='https://github.com/HazyResearch/fonduer/commit/735287afab4bdcbd791022dc9d75d88a4032c616#diff-1c7984a8cc454fc449b11f1cdf978b470e6b6f9255973e3b5cb971edaad62de5L122' target='_blank'>Link</a></div><div id='project'> Project Name: HazyResearch/fonduer</div><div id='commit'> Commit Name: 735287afab4bdcbd791022dc9d75d88a4032c616</div><div id='time'> Time: 2019-10-23</div><div id='author'> Author: hiromu.hota@hal.hitachi.com</div><div id='file'> File Name: src/fonduer/utils/udf.py</div><div id='class'> Class Name: UDFRunner</div><div id='method'> Method Name: _apply_mt</div><BR><BR><div id='link'><a href='https://github.com/scikit-learn-contrib/categorical-encoding/commit/e7890473e703e7ad0c4ccb04398eec6bf6b4e8a5#diff-5871b042f65ccab77377b2e9a92ea2c9651cc039b020835b6d77bfcb01ffe475L218' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-learn-contrib/categorical-encoding</div><div id='commit'> Commit Name: e7890473e703e7ad0c4ccb04398eec6bf6b4e8a5</div><div id='time'> Time: 2019-06-17</div><div id='author'> Author: slliu96@163.com</div><div id='file'> File Name: category_encoders/hashing.py</div><div id='class'> Class Name: HashingEncoder</div><div id='method'> Method Name: transform</div><BR>

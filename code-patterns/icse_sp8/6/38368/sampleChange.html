@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        smooth_l1_sign = tensorflow.cast(tensorflow.less(tensorflow.abs(inside_mul), 1.0 / sigma2), tensorflow.float32)
+        smooth_l1_option1 = tensorflow.multiply(tensorflow.multiply(inside_mul, inside_mul), 0.5 * sigma2)
+        smooth_l1_option2 = tensorflow.subtract(tensorflow.abs(inside_mul), 0.5 / sigma2)
+        smooth_l1_result = tensorflow.add(<a id="change">tensorflow.multiply(smooth_l1_option1, smooth_l1_sign)</a>, tensorflow.multiply(smooth_l1_option2, tensorflow.abs(tensorflow.subtract(smooth_l1_sign, 1.0))))
+        <a id="change">loss = tensorflow.multiply(outside_weights, smooth_l1_result)</a>
+        loss = tensorflow.reduce_mean(tensorflow.reduce_sum(loss, reduction_indices=[1]))
+
+        return loss
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        inside_weights = 1.0
+        outside_weights = 1.0
+        sigma = 1.0
+        sigma2 = <a id="change">keras.backend.square(sigma)</a>
+        inside_mul = inside_weights * (output - target)
+        smooth_l1_sign = tensorflow.cast(keras.backend.less(keras.backend.abs(inside_mul), 1.0 / sigma2), tensorflow.float32)
+        smooth_l1_option1 = (inside_mul * inside_mul) * (0.5 * sigma2)
+        smooth_l1_option2 = keras.backend.abs(inside_mul) - (0.5 / sigma2)
+        smooth_l1_result = <a id="change">(smooth_l1_option1 * smooth_l1_sign) + (smooth_l1_option2 * keras.backend.abs((smooth_l1_sign - 1.0)))</a>
+        loss = <a id="change">outside_weights * smooth_l1_result</a>
+        loss = tensorflow.reduce_mean(tensorflow.reduce_sum(loss, reduction_indices=[1]))
+
+        return loss
+</code></pre>

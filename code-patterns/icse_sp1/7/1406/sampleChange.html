@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def synth_devset(self, max_size=-1):
+        sys.stdout.write(&quot\tSynthesizing devset\n&quot)
+        file_index = 1
+        for file in <a id="change">self.devset.files[:5]</a>:
+            sys.stdout.write(
+                "\t\t" + str(file_index) + "/" + str(len(self.devset.files)) + " processing file " + file)
+            sys.stdout.flush()</code></pre><h3>After Change</h3><pre><code class='java'>
+            dio = DatasetIO()
+            lab = dio.read_lab(lab_file)
+            phones = lab  &#47&#47 [entry.phoneme for entry in lab]
+            <a id="change">mgc_file = file + ".mgc.npy"</a>
+            mgc = np.load(mgc_file)
+            import time
+            start = time.time()
+            <a id="change">style_probs = self.vocoder.compute_gold_style_probs(mgc)</a>
+            <a id="change">style_file = &quotdata/output/&quot + file[file.rfind(&quot/&quot) + 1:] + ".style"</a>
+            f=open(style_file, &quotw&quot)
+            for value in style_probs.value():
+                f.write(str(value)+&quot &quot)
+            f.write(&quot\n&quot)
+            f.close()
+            mgc, att = <a id="change">self.vocoder.generate(phones, max_size=max_size, style_probs=style_probs.npvalue())</a>
+
+            self.array2file(mgc, &quotdata/output/&quot + file[file.rfind(&quot/&quot) + 1:] + &quot.mgc&quot)
+            att = [a.value() for a in att]
+            new_att = np.zeros((len(att), len(phones) + 2, 3), dtype=np.uint8)</code></pre>

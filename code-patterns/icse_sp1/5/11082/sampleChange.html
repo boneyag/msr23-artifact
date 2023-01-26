@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def main(width=32, vector_length=8):
+    train_data, check_data, nr_tag = ancora_pos_tags()
+
+    model = FeedForward(<a id="change">(
+              layerize(flatten_sequences),
+              BatchNorm(Embed(width, vector_length)),
+              ExtractWindow(nW=2),
+              BatchNorm(ReLu(width)),
+              BatchNorm(ReLu(width)),
+              Softmax(nr_tag))</a>)
+
+    train_X, train_y = zip(*train_data)
+    dev_X, dev_y = zip(*check_data)
+    <a id="change">dev_y = model.ops.flatten(dev_y)</a>
+    with model.begin_training(train_X, train_y) as (trainer, optimizer):
+        trainer.batch_size = 8
+        trainer.nb_epoch = 10
+        trainer.dropout = 0.2</code></pre><h3>After Change</h3><pre><code class='java'>
+    train_X, train_y = zip(*train_data)
+    dev_X, dev_y = zip(*check_data)
+    nb_class = max(max(y) for y in train_y)+1
+    <a id="change">train_y = [to_categorical(y, nb_classes=nb_class) for y in train_y]</a>
+    dev_y = [to_categorical(y, nb_classes=nb_class) for y in dev_y]
+    with model.begin_training(train_X, train_y) as (trainer, optimizer):
+        trainer.each_epoch.append(
+            lambda: print(model.evaluate(dev_X, dev_y)))</code></pre>

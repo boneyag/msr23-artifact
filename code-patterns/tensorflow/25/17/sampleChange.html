@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    batch_size = 2
+    hidden_size = 4
+    hidden_state_size = projection_size or hidden_size
+    <a id="change">inputs = tf.placeholder(tf.float32, shape=[batch_size, hidden_size])</a>
+    <a id="change">prev_cell = tf.placeholder(tf.float32, shape=[batch_size, hidden_size])</a>
+    prev_hidden = tf.placeholder(tf.float32,
+                                 shape=[batch_size, hidden_state_size])
+    lstm = snt.LSTM(hidden_size, projection_size=projection_size)
+    _, next_state = lstm(inputs, (prev_hidden, prev_cell))
+    next_hidden, next_cell = next_state
+    lstm_variables = lstm.get_variables()
+    param_map = {param.name.split("/")[-1].split(":")[0]:
+                 param for param in lstm_variables}
+
+    &#47&#47 With random data, check the TF calculation matches the Numpy version.
+    input_data = np.random.randn(batch_size, hidden_size)
+    prev_hidden_data = np.random.randn(batch_size, hidden_state_size)
+    prev_cell_data = np.random.randn(batch_size, hidden_size)
+
+    <a id="change">with self.test_session() as session:
+      tf.global_variables_initializer().run()
+      fetches = [(next_hidden, next_cell),
+                 param_map[snt.LSTM.W_GATES],
+                 param_map[snt.LSTM.B_GATES]]
+      if projection_size is not None:
+        fetches.append(param_map[snt.LSTM.W_H_PROJECTION])
+      output = session.run(fetches,
+                           {inputs: input_data,
+                            prev_cell: prev_cell_data,
+                            prev_hidden: prev_hidden_data})
+
+   </a> next_state_ex, gate_weights_ex, gate_biases_ex = output[:3]
+    in_and_hid = np.concatenate((input_data, prev_hidden_data), axis=1)
+    real_gate = np.dot(in_and_hid, gate_weights_ex) + gate_biases_ex
+    &#47&#47 i = input_gate, j = next_input, f = forget_gate, o = output_gate</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  @parameterized.named_parameters(
+      [("lstm", None), ("lstm_with_recurrent_projection", 6)])
+  def testComputation(<a id="change">self</a>, projection_size):
+    batch_size = 2
+    hidden_size = 4
+    hidden_state_size = projection_size or hidden_size
+
+    &#47&#47 With random data, check the TF calculation matches the Numpy version.
+    input_data = np.random.randn(batch_size, hidden_size).astype(np.float32)
+    prev_hidden_data = np.random.randn(batch_size,
+                                       hidden_state_size).astype(np.float32)
+    prev_cell_data = np.random.randn(batch_size, hidden_size).astype(np.float32)
+
+    inputs = tf.constant(input_data)
+    prev_cell = tf.constant(prev_cell_data)
+    prev_hidden = tf.constant(prev_hidden_data)
+
+    lstm = snt.LSTM(hidden_size, projection_size=projection_size)
+    _, next_state = lstm(inputs, (prev_hidden, prev_cell))
+    next_hidden, next_cell = next_state
+    lstm_variables = lstm.get_variables()
+    param_map = {param.name.split("/")[-1].split(":")[0]:
+                 param for param in lstm_variables}
+
+    <a id="change">self.evaluate(tf.global_variables_initializer())</a>
+    <a id="change">fetches = [(next_hidden, next_cell), param_map[snt.LSTM.W_GATES],
+               param_map[snt.LSTM.B_GATES]]</a>
+    if projection_size is not None:
+      fetches.append(param_map[snt.LSTM.W_H_PROJECTION])
+    <a id="change">output = self.evaluate(fetches)</a>
+
+    next_state_ex, gate_weights_ex, gate_biases_ex = output[:3]
+    in_and_hid = np.concatenate((input_data, prev_hidden_data), axis=1)
+    real_gate = np.dot(in_and_hid, gate_weights_ex) + gate_biases_ex</code></pre>

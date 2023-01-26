@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47lengths = zero_alloc(1, dtype=int)
+        &#47&#47lengths[0] = min(len(tokens), mxlen)
+
+        <a id="change">data = featurizer.run(tokens)</a>
+        lengths = data[&quotlengths&quot]
+        indices = self.predict(data)[0]
+        output = []
+        for j in range(lengths[0]):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            mxlen = kwargs.get(&quotmxlen&quot, self.mxlen if hasattr(self, &quotmxlen&quot) else len(tokens))
+            maxw = kwargs.get(&quotmaxw&quot, self.maxw if hasattr(self, &quotmaxw&quot) else max([len(token) for token in tokens]))
+            <a id="change">word_tokenizer = Dict1DVectorizer(mxlen=mxlen, fields=&quottext&quot)</a>
+            char_tokenizer = Dict2DVectorizer(mxlen=mxlen, mxwlen=maxw, fields=&quottext&quot)
+            <a id="change">vectorizers = {&quotword&quot: word_tokenizer, &quotchar&quot: char_tokenizer}</a>
+
+        &#47&#47 This might be inefficient if the label space is large
+
+        label_vocab = revlut(self.get_labels())
+        batch_dict = dict()
+        <a id="change">for k, vectorizer in vectorizers.items():
+            value, length = vectorizer.run(tokens, self.embeddings[k].vocab)
+            batch_dict[k] = value
+            if length is not None:
+                batch_dict[&quot{}_lengths&quot.format(k)] = length
+
+       </a> indices = self.predict(batch_dict)[0]
+        output = []
+        for j in len(tokens):
+            output.append((tokens[j], label_vocab[indices[j].item()]))</code></pre>

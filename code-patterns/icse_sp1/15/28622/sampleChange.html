@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                feed_dict = {i: d for i, d in zip(argument, x)}
+                return self._session.run(tfgrad, feed_dict)
+
+        <a id="change">return grad</a>
+
+    @Backend._assert_backend_available
+    def compute_hessian(self, objective, argument):
+        if not isinstance(argument, list):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    @Backend._assert_backend_available
+    def compute_gradient(self, function, arguments):
+        <a id="change">flattened_arguments = flatten_arguments(arguments)</a>
+        gradient = tf.gradients(function, flattened_arguments)
+
+        <a id="change">if len(flattened_arguments) == 1:
+            (argument,) = flattened_arguments
+
+            def unary_gradient(x):
+                feed_dict = {argument: x}
+                return self._session.run(gradient[0], feed_dict)
+            return unary_gradient
+
+       </a> def nary_gradient(arguments):
+            flattened_inputs = flatten_arguments(arguments)
+            feed_dict = {
+                argument: array
+                for argument, array in zip(flattened_arguments,
+                                           flattened_inputs)
+            }
+            return self._session.run(gradient, feed_dict)
+        <a id="change">return group_return_values(nary_gradient, arguments)</a>
+
+    @Backend._assert_backend_available
+    def compute_hessian(self, objective, argument):
+        if not isinstance(argument, list):</code></pre>

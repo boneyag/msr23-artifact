@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        Kuu = self.kern.K(self.Z) + eye(num_inducing) * 1e-6
+        Kus = self.kern.K(self.Z, Xnew)
+        L = tf.cholesky(Kuu)
+        A = <a id="change">tf.matrix_triangular_solve(L, Kuf, lower=True)*tf.sqrt(1./self.likelihood.variance)</a>
+        B = tf.matmul(A, tf.transpose(A)) + eye(num_inducing)
+        LB = tf.cholesky(B)
+        c = <a id="change">tf.matrix_triangular_solve(LB, tf.matmul(A, err), lower=True) * tf.sqrt(1./self.likelihood.variance)</a>
+        tmp1 = tf.matrix_triangular_solve(L, Kus, lower=True)
+        tmp2 = tf.matrix_triangular_solve(LB, tmp1, lower=True)
+        mean = tf.matmul(tf.transpose(tmp2), c)
+        if full_cov:</code></pre><h3>After Change</h3><pre><code class='java'>
+        Kuf = self.kern.K(self.Z, self.X)
+        Kuu = self.kern.K(self.Z) + eye(num_inducing) * 1e-6
+        Kus = self.kern.K(self.Z, Xnew)
+        <a id="change">sigma = tf.sqrt(self.likelihood.variance)</a>
+        L = tf.cholesky(Kuu)
+        A = <a id="change">tf.matrix_triangular_solve(L, Kuf, lower=True) / sigma</a>
+        B = tf.matmul(A, tf.transpose(A)) + eye(num_inducing)
+        LB = tf.cholesky(B)
+        <a id="change">Aerr = tf.matmul(A, err)</a>
+        <a id="change">c = tf.matrix_triangular_solve(LB, Aerr, lower=True) / sigma</a>
+        tmp1 = tf.matrix_triangular_solve(L, Kus, lower=True)
+        tmp2 = tf.matrix_triangular_solve(LB, tmp1, lower=True)
+        mean = tf.matmul(tf.transpose(tmp2), c)
+        if full_cov:</code></pre>

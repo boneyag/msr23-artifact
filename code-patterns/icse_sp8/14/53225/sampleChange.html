@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss)
+
+    def learn(self, s, r, s_):
+        v_ = <a id="change">self</a>.sess.run(self.v, {self.s: [s_]})
+        td_error, _ = <a id="change">self.sess.run([self.td_error, self.train_op], {self.s: [s], self.v_: v_, self.r: r})</a>
+        return td_error
+
+
+sess = tf.Session()</code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss)
+        self.optimizer = tf.train.AdamOptimizer(lr)
+
+    def learn(<a id="change">self</a>, s, r, s_):
+            &#47&#47 v_ = self.sess.run(self.v, {self.s: [s_]})
+        v_ = self.model([s_]).outputs
+            &#47&#47 td_error, _ = self.sess.run([self.td_error, self.train_op], {self.s: [s], self.v_: v_, self.r: r})
+        with tf.GradientTape() as tape:
+            <a id="change">v = self.model([s]).outputs</a>
+            &#47&#47 TD_error = r + lambd * V(newS) - V(S)
+            td_error = r + LAMBDA * v_ - v
+            loss = tf.square(td_error)
+        <a id="change">grad = tape.gradient(loss, self.model.weights)</a>
+        <a id="change">self.optimizer.apply_gradients(zip(grad, self.model.weights))</a>
+
+        return td_error
+
+actor = Actor(n_features=N_F, n_actions=N_A, lr=LR_A)</code></pre>

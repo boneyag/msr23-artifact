@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def create_tf_operations(self, x, deterministic):
+        flat_size = util.prod(self.shape) * self.num_actions
+        bias = [prob <a id="change">for</a> _ in range(util.prod(self.shape)) for prob in self.probabilities]
+        logits = layers[&quotlinear&quot](x=x, size=flat_size, bias=bias)
+        logits = tf.reshape(tensor=logits, shape=((-1,) + self.shape + (self.num_actions,)))
+        self.probabilities = tf.nn.softmax(logits=logits)</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.logits = tf.reshape(tensor=self.logits, shape=shape)
+
+        &#47&#47 linearly shift logits for numerical stability
+        <a id="change">self.logits -= tf.reduce_max(input_tensor=self.logits, axis=-1, keep_dims=True)</a>
+
+        &#47&#47 softmax for corresponding probabilities
+        self.probabilities = tf.nn.softmax(logits=self.logits, dim=-1)
+</code></pre>

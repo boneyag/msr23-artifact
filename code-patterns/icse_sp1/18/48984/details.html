@@ -1,0 +1,88 @@
+<html><h3>775122950d145382146e9120308432a9faf9a9b8,fairseq/optim/adafactor.py,Adafactor,step,#Adafactor#Any#,143
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            for p in group[&quotparams&quot]:
+                if p.grad is None:
+                    continue
+                grad = <a id="change">p.grad.data.float()</a>
+                if grad.is_sparse:
+                    raise RuntimeError(&quotAdafactor does not support sparse gradients.&quot)
+
+                state = self.state[p]
+                grad_shape = grad.shape
+
+                factored, use_first_moment = self._get_options(group, grad_shape)
+                &#47&#47 State Initialization
+                if len(state) == 0:
+                    state[&quotstep&quot] = 0
+
+                    if use_first_moment:
+                        &#47&#47 Exponential moving average of gradient values
+                        <a id="change">state[&quotexp_avg&quot]</a> = torch.zeros_like(grad)
+                    if factored:
+                        state[&quotexp_avg_sq_row&quot] = torch.zeros(grad_shape[:-1]).type_as(grad)
+                        state[&quotexp_avg_sq_col&quot] = torch.zeros(grad_shape[:-2] + grad_shape[-1:]).type_as(grad)
+                    else:
+                        state[&quotexp_avg_sq&quot] = torch.zeros_like(grad)
+
+                    state[&quotRMS&quot] = 0
+                else:
+                    if use_first_moment:
+                        <a id="change">state[&quotexp_avg&quot]</a> = state[&quotexp_avg&quot].type_as(grad)
+                    if factored:
+                        state[&quotexp_avg_sq_row&quot] = state[&quotexp_avg_sq_row&quot].type_as(grad)
+                        <a id="change">state[&quotexp_avg_sq_col&quot]</a> = state[&quotexp_avg_sq_col&quot].type_as(grad)
+                    else:
+                        state[&quotexp_avg_sq&quot] = state[&quotexp_avg_sq&quot].type_as(grad)
+
+                p_data_fp32 = p.data.float()
+
+                <a id="change">state[&quotstep&quot]</a> += 1
+                state[&quotRMS&quot] = self._rms(p_data_fp32)
+                group[&quotlr&quot] = self._get_lr(group, state)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                if p.grad is None:
+                    continue
+                grad = p.grad.data
+                <a id="change">if grad.dtype in {torch.float16, torch.bfloat16}:
+                    grad = grad.float()
+               </a> if grad.is_sparse:
+                    raise RuntimeError(&quotAdafactor does not support sparse gradients.&quot)
+
+                state = self.state[p]
+                grad_shape = grad.shape
+
+                factored, use_first_moment = self._get_options(group, grad_shape)
+                &#47&#47 State Initialization
+                if len(state) == 0:
+                    state[&quotstep&quot] = 0
+
+                    if use_first_moment:
+                        &#47&#47 Exponential moving average of gradient values
+                        <a id="change">state[&quotexp_avg&quot]</a> = torch.zeros_like(grad)
+                    if factored:
+                        state[&quotexp_avg_sq_row&quot] = torch.zeros(grad_shape[:-1]).to(grad)
+                        state[&quotexp_avg_sq_col&quot] = torch.zeros(grad_shape[:-2] + grad_shape[-1:]).to(grad)
+                    else:
+                        state[&quotexp_avg_sq&quot] = torch.zeros_like(grad)
+
+                    state[&quotRMS&quot] = 0
+                else:
+                    if use_first_moment:
+                        <a id="change">state[&quotexp_avg&quot]</a> = state[&quotexp_avg&quot].to(grad)
+                    if factored:
+                        state[&quotexp_avg_sq_row&quot] = state[&quotexp_avg_sq_row&quot].to(grad)
+                        <a id="change">state[&quotexp_avg_sq_col&quot]</a> = state[&quotexp_avg_sq_col&quot].to(grad)
+                    else:
+                        state[&quotexp_avg_sq&quot] = state[&quotexp_avg_sq&quot].to(grad)
+
+                p_data_fp32 = p.data
+                if p.data.dtype in {torch.float16, torch.bfloat16}:
+                    p_data_fp32 = p_data_fp32.float()
+
+                <a id="change">state[&quotstep&quot]</a> += 1
+                state[&quotRMS&quot] = self._rms(p_data_fp32)
+                group[&quotlr&quot] = self._get_lr(group, state)
+</code></pre><img src="226576752.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 17</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/775122950d145382146e9120308432a9faf9a9b8#diff-c8ff6e9ad677733577ae29b16bab6bcd5f2a83bdb9fb9e5e7f79ee3f42939b1cL158' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 775122950d145382146e9120308432a9faf9a9b8</div><div id='time'> Time: 2020-05-18</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/optim/adafactor.py</div><div id='class'> Class Name: Adafactor</div><div id='method'> Method Name: step</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/775122950d145382146e9120308432a9faf9a9b8#diff-d0f1814d2f162ba7c67209130e8a071048855102aa528fbdae9b64fe5a0ab649L146' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 775122950d145382146e9120308432a9faf9a9b8</div><div id='time'> Time: 2020-05-18</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/optim/adam.py</div><div id='class'> Class Name: Adam</div><div id='method'> Method Name: step</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/775122950d145382146e9120308432a9faf9a9b8#diff-69b10cc6379afd44ce1460cf824253135af1da7d2b98dcb39808c2d580d6a98bL114' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 775122950d145382146e9120308432a9faf9a9b8</div><div id='time'> Time: 2020-05-18</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/optim/adamax.py</div><div id='class'> Class Name: Adamax</div><div id='method'> Method Name: step</div><BR>

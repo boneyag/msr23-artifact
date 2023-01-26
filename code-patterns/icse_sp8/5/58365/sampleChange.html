@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                 log_obs_noise_scale_init=torch.randn(obs_dim))
+    elif model == &quotglgssm&quot:
+        gp = GenericLGSSM(state_dim=nu_statedim, obs_dim=obs_dim,
+                          log_obs_noise_scale_init=<a id="change">torch.randn(obs_dim)</a>)
+    elif model == &quotssmgp&quot:
+        state_dim = {0.5: 4, 1.5: 3, 2.5: 2}[nu_statedim]
+        gp = GenericLGSSMWithGPNoiseModel(nu=nu_statedim, state_dim=state_dim, obs_dim=obs_dim,
+                                          log_obs_noise_scale_init=torch.randn(obs_dim))
+    elif model == &quotdmgp&quot:
+        gp = DependentMaternGP(nu=nu_statedim, obs_dim=obs_dim, dt=dt,
+                               log_length_scale_init=torch.randn(obs_dim))
+    elif model == &quotlcdgp&quot:
+        gp = LinearlyCoupledDependentMaternGP(nu=nu_statedim, obs_dim=obs_dim, dt=dt,
+                                              log_length_scale_init=torch.randn(obs_dim))
+
+    targets = torch.randn(T, obs_dim)
+    gp_log_prob = gp.log_prob(targets)
+    if model == &quotimgp&quot:
+        assert gp_log_prob.shape == (obs_dim,)
+    else:
+        assert gp_log_prob.dim() == 0
+
+    &#47&#47 compare matern log probs to vanilla GP result via multivariate normal
+    if model == &quotimgp&quot:
+        times = dt * torch.arange(T).double()
+        for dim in range(obs_dim):
+            lengthscale = gp.kernel.log_length_scale.exp()[dim]
+            variance = (2.0 * gp.kernel.log_kernel_scale).exp()[dim]
+            obs_noise = <a id="change">(</a>2.0 * gp.log_obs_noise_scale).exp()[dim]
+
+            kernel = {0.5: pyro.contrib.gp.kernels.Exponential,
+                      1.5: pyro.contrib.gp.kernels.Matern32,</code></pre><h3>After Change</h3><pre><code class='java'>
+                                 obs_noise_scale_init=0.5 + torch.rand(obs_dim))
+    elif model == &quotglgssm&quot:
+        gp = GenericLGSSM(state_dim=nu_statedim, obs_dim=obs_dim,
+                          obs_noise_scale_init=<a id="change">0.5 + torch.rand(obs_dim)</a>)
+    elif model == &quotssmgp&quot:
+        state_dim = {0.5: 4, 1.5: 3, 2.5: 2}[nu_statedim]
+        gp = GenericLGSSMWithGPNoiseModel(nu=nu_statedim, state_dim=state_dim, obs_dim=obs_dim,</code></pre>

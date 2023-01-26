@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        with tf.device(&quot/cpu:0&quot):
+
+            batch_size = <a id="change">ground_truth</a>.get_shape()[0].value
+            <a id="change">ground_truth = tf.reshape(ground_truth, [batch_size, -1])</a>
+            if weight_map is not None:
+                weight_map = <a id="change">tf.reshape(weight_map, [batch_size, -1])</a>
+            &#47&#47 assumes same gt and weight across scales
+
+            &#47&#47 prediction should be a list for multi-scale losses
+            &#47&#47 single scale ``prediction`` is converted to ``[prediction]``
+            if not isinstance(prediction, (list, tuple)):
+                prediction = [prediction]
+
+            data_loss = []
+            for ind, pred in enumerate(prediction):
+                &#47&#47 go through each scale
+
+                loss_batch = []
+                for b_ind, pred_b in enumerate(tf.unstack(pred, axis=0)):
+                    &#47&#47 go through each image in a batch
+
+                    pred_b = tf.reshape(pred_b, [-1, self._num_classes])
+                    if self._softmax:
+                        pred_b = <a id="change">tf</a>.nn.softmax(
+                            tf.cast(pred_b, dtype=tf.float32))
+                    ground_truth_b = ground_truth[b_ind]
+                    weight_b = <a id="change">None if weight_map is None else weight_map[b_ind]</a>
+
+                    loss_params = {
+                        &quotprediction&quot: pred_b,
+                        &quotground_truth&quot: ground_truth_b,</code></pre><h3>After Change</h3><pre><code class='java'>
+                    &#47&#47 performs softmax if required
+                    if self._softmax:
+                        pred_b = tf.cast(pred_b, dtype=tf.float32)
+                        pred_b = <a id="change">tf</a>.nn.softmax(pred_b)
+
+                    &#47&#47 reshape pred, ground_truth, weight_map to the same
+                    &#47&#47 size: (n_voxels, num_classes)
+                    &#47&#47 if the ground_truth has only one channel, the shape
+                    &#47&#47 becomes: (n_voxels,)
+                    <a id="change">spatial_shape = pred_b.get_shape().as_list()[:-1]</a>
+                    ref_shape = spatial_shape + [-1]
+                    ground_truth_b = <a id="change">tf.reshape(ground_truth[b_ind], ref_shape)</a>
+                    if ground_truth_b.get_shape().as_list()[-1] == 1:
+                        ground_truth_b = tf.squeeze(ground_truth_b, axis=-1)
+                    <a id="change">if weight_map is not None:
+                        weight_b = tf.reshape(weight_map[b_ind], ref_shape)
+                        if weight_b.get_shape().as_list()[-1] == 1:
+                            weight_b = tf.squeeze(weight_b, axis=-1)
+                    else:
+                        weight_b = None
+
+                    &#47&#47 preparing loss function parameters
+                   </a> loss_params = {
+                        &quotprediction&quot: pred_b,
+                        &quotground_truth&quot: ground_truth_b,
+                        &quotweight_map&quot: weight_b}</code></pre>

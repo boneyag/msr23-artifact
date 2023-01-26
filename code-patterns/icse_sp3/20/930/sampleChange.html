@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def CreateScratchDisk(self, disk_spec):
+        name = &quot%s-scratch-%s&quot % (self.name, len(self.scratch_disks))
+        scratch_disk = os_disk.OpenStackDisk(disk_spec, name, self.zone)
+        <a id="change">self.scratch_disks.append(scratch_disk)</a>
+
+        scratch_disk.Create()
+        <a id="change">scratch_disk.Attach(self)</a>
+
+        <a id="change">self.FormatDisk(scratch_disk.GetDevicePath())</a>
+        <a id="change">self.MountDisk(scratch_disk.GetDevicePath(), disk_spec.mount_point)</a>
+
+    def _CreateDependencies(self):
+        self.ImportKeyfile()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def CreateScratchDisk(self, disk_spec):
+        disks_names = (&quot%s-data-%d-%d&quot
+                       % (self.name, len(self.scratch_disks), i)
+                       <a id="change">for</a> i in <a id="change">range(disk_spec.num_striped_disks)</a>)
+        disks = <a id="change">[os_disk.OpenStackDisk(disk_spec, name, self.zone)
+                 for name in disks_names]</a>
+
+        <a id="change">self._CreateScratchDiskFromDisks(disk_spec, disks)</a>
+
+    def _CreateDependencies(self):
+        self.ImportKeyfile()
+</code></pre>

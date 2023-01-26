@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    prefix = _type_conv.get(dtype.char, &quotd&quot)
+    if dtype.char == &quotG&quot:
+        &#47&#47 complex256 -&gt; complex128 (i.e., C long double -&gt; C double)
+        <a id="change">dtype = _np.dtype(&quotD&quot)</a>
+    elif dtype.char not in &quotfdFD&quot:
+        dtype = _np.dtype(&quotd&quot)
+
+    return prefix, dtype, prefer_fortran</code></pre><h3>After Change</h3><pre><code class='java'>
+    if arrays:
+        &#47&#47 use the most generic type in arrays
+        chars = [arr.dtype.char for arr in arrays]
+        scores = <a id="change">[_type_score.get(x, 5) for x in chars]</a>
+        max_score = max(scores)
+        ind_max_score = scores.index(max_score)
+        &#47&#47 safe upcasting for mix of float64 and complex64 --&gt; prefix &quotz&quot
+        if max_score == 3 and (2 in scores):
+            max_score = 4
+
+        if arrays[ind_max_score].flags[&quotFORTRAN&quot]:
+            &#47&#47 prefer Fortran for leading array with column major order
+            prefer_fortran = True
+
+    &#47&#47 Get the LAPACK prefix and the corresponding dtype if not fall back
+    &#47&#47 to &quotd&quot and double precision float.
+    <a id="change">prefix, dtype = _type_conv.get(max_score, (&quotd&quot, _np.dtype(&quotfloat64&quot)))</a>
+
+    return prefix, dtype, prefer_fortran
+
+</code></pre>

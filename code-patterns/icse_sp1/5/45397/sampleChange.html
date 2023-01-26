@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    def execute(self, slot, subindex, roi, result):
+        assert (roi.start == 0).all() and (roi.stop == self.Output.meta.shape).all(), "Must request entire image."
+        <a id="change">self.RavelerLabels(roi.start, roi.stop).writeInto( result ).wait()</a>
+
+        &#47&#47 Allocate a temporary for our fragment images
+        fragment_image = numpy.zeros( result.shape, dtype=numpy.int32 )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.Mapping.meta.shape = (1,)
+
+    def execute(self, slot, subindex, roi, result):
+        <a id="change">if slot == self.Mapping:
+            result[0] = self._mapping
+            return result
+        elif slot == self.Output:
+            assert (roi.start == 0).all() and (roi.stop == self.Output.meta.shape).all(), "Must request entire image."
+            self.RavelerLabels(roi.start, roi.stop).writeInto( result ).wait()
+    
+            &#47&#47 Allocate a temporary for our fragment images
+            fragment_image = numpy.zeros( result.shape, dtype=numpy.int32 )
+            max_label = result.max()
+            self._mapping = collections.OrderedDict()
+            self._mapping[(0,max_label+1)] = -1 &#47&#47 Special body-id: -1 means "identity"
+    
+            for slot in self.FragmentSegmentations:
+                slot(roi.start, roi.stop).writeInto(fragment_image.view(numpy.uint32)).wait()
+                &#47&#47 This next line shows what we want to do, but it creates a big temporary array (e.g. fragment_image + max_label)
+                &#47&#47 fragment_image = numpy.where( fragment_image, fragment_image+max_label, 0) 
+                &#47&#47 Instead, we bend over backwards here to do this &quotin place&quot
+                fragment_image = numpy.where( fragment_image, fragment_image, -max_label )
+                numpy.add( fragment_image, max_label, out=fragment_image )
+                result[:] = numpy.where( fragment_image, fragment_image, result )
+                
+                &#47&#47 New max
+                max_label = result.max()
+                
+                &#47&#47 Update mapping
+                old_max = self._mapping.keys()[-1][1]
+                body_id = slot.meta.selected_label
+                self._mapping[(old_max,max_label+1)] = body_id
+            return result
+        else:
+            assert False, "Unknown output slot: {}".format( slot.name )
+
+   </a> def propagateDirty(self, slot, subindex, roi):
+        self.Output.setDirty()
+
+</code></pre>

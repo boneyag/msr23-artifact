@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def forward(self, inputs):
+        x, = inputs
+        ret = x.sum(axis=self.axis, keepdims=self.keepdims)
+        if <a id="change">backend.get_array_module(x)</a> is numpy:
+            ret = numpy.asarray(ret)
+        return ret,
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def forward(self, inputs):
+        x, = inputs
+        <a id="change">if self.axis is None:
+            self.multiplier = 1.0 / x.size
+        else:
+            divider = 1
+            for axis in self.axis:
+                divider *= x.shape[axis]
+            self.multiplier = 1.0 / divider
+       </a> ret = utils.force_array(
+            x.mean(axis=self.axis, keepdims=self.keepdims))
+        return ret,
+</code></pre>

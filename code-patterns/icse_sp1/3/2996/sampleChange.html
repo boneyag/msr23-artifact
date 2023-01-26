@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def execute(self, context):
+    if self._table:
+      <a id="change">pydatalab_context = google.datalab.Context.default()</a>
+      source_table = google.datalab.bigquery.Table(self._table, context=pydatalab_context)
+      job = source_table.extract(
+        self._path, format=&quotCSV&quot if self._format == &quotcsv&quot else &quotNEWLINE_DELIMITED_JSON&quot,
+        csv_delimiter=self._csv_options.get(&quotdelimiter&quot),</code></pre><h3>After Change</h3><pre><code class='java'>
+    self._csv_options = csv_options or {}
+
+  def execute(self, context):
+    <a id="change">if not self._table:
+      task_instance = context[&quottask_instance&quot]
+      &#47&#47 If the table is not specified, we fetch it from the output of the execute task, i.e. the
+      &#47&#47 query results table. This could either be a permanent table or a temporary table. If we&quotre
+      &#47&#47 here, it is most likely a temporary table. If it was a permanent one, it would have been
+      &#47&#47 passed in as a param and we wouldn&quott be here.
+      &#47&#47 TODO(rajivpb): Assert that if we&quotre here, then the table is a temporary one.
+      &#47&#47 TODO(rajivpb):
+      &#47&#47 The task id of the execute task is created by concatenating &quotbq_pipeline_execute_task&quot
+      &#47&#47 and &quot_id&quot. This is currently being hard-coded, but consider making this a parameter.
+      &#47&#47 It could require substantial changes to the underlying object model of Pipeline.
+      execute_task_output = task_instance.xcom_pull(task_ids=&quotbq_pipeline_execute_task_id&quot)
+      self._table = execute_task_output.get(&quottable&quot)
+
+   </a> source_table = google.datalab.bigquery.Table(self._table, context=None)
+    job = source_table.extract(
+      self._path, format=&quotCSV&quot if self._format == &quotcsv&quot else &quotNEWLINE_DELIMITED_JSON&quot,
+      csv_delimiter=self._csv_options.get(&quotdelimiter&quot),</code></pre>

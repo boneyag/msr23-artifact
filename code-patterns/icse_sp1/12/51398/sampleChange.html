@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            assert (set([&quottype&quot, &quotbn_eval&quot, &quotbn_frozen&quot])
+                    == set(normalize))
+        <a id="change">if normalize[&quottype&quot] == &quotBN&quot:
+            self.bn_eval = normalize[&quotbn_eval&quot]
+            self.bn_frozen = normalize[&quotbn_frozen&quot]
+       </a> self.normalize = normalize
+
+        self.block, stage_blocks = self.arch_settings[depth]
+        self.stage_blocks = stage_blocks[:num_stages]</code></pre><h3>After Change</h3><pre><code class='java'>
+        152: (Bottleneck, (3, 8, 36, 3))
+    }
+
+    def __init__(<a id="change">self</a>,
+                 depth,
+                 num_stages=4,
+                 strides=(1, 2, 2, 2),
+                 dilations=(1, 1, 1, 1),
+                 out_indices=(0, 1, 2, 3),
+                 style=&quotpytorch&quot,
+                 frozen_stages=-1,
+                 normalize=dict(
+                     type=&quotBN&quot,
+                     eval=True,
+                     frozen=False),
+                 with_cp=False):
+        super(ResNet, self).__init__()
+        if depth not in self.arch_settings:
+            raise KeyError(&quotinvalid depth {} for resnet&quot.format(depth))
+        self.depth = depth
+        self.num_stages = num_stages
+        assert num_stages &gt;= 1 and num_stages &lt;= 4
+        self.strides = strides
+        self.dilations = dilations
+        assert len(strides) == len(dilations) == num_stages
+        self.out_indices = out_indices
+        assert max(out_indices) &lt; num_stages
+        self.style = style
+        self.with_cp = with_cp
+        <a id="change">self.is_frozen</a> = [i &lt;= frozen_stages for i in range(num_stages + 1)]
+        assert (isinstance(normalize, dict) and &quoteval&quot in normalize
+                and &quotfrozen&quot in normalize)
+        <a id="change">self.norm_eval = normalize.pop(&quoteval&quot)</a>
+        self.normalize = normalize
+        self.block, stage_blocks = self.arch_settings[depth]
+        self.stage_blocks = stage_blocks[:num_stages]
+        self.inplanes = 64</code></pre>

@@ -1,0 +1,83 @@
+<html><h3>b5a02391e003c33c8f8258a7e3d0736503c3c048,examples/babi_memnn.py,,,#,97
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+&#47&#47 concatenate the match vector with the question vector,
+&#47&#47 and do logistic regression on top
+answer = <a id="change">Sequential()</a>
+answer.add(Merge([response, question_encoder], mode=&quotconcat&quot, concat_axis=-1))
+&#47&#47 the original paper uses a matrix multiplication for this reduction step.
+&#47&#47 we choose to use a RNN instead.
+answer.add(LSTM(32))
+&#47&#47 one regularization layer -- more would probably be needed.
+<a id="change">answer.add(Dropout(0.3))</a>
+<a id="change">answer.add(Dense(vocab_size))</a>
+&#47&#47 we output a probability distribution over the vocabulary
+<a id="change">answer.add(Activation(&quotsoftmax&quot))</a>
+
+answer.compile(optimizer=&quotrmsprop&quot, loss=&quotcategorical_crossentropy&quot,
+               metrics=[&quotaccuracy&quot])
+&#47&#47 Note: you could use a Graph model to avoid repeat the input twice</code></pre><h3>After Change</h3><pre><code class='java'>
+
+&#47&#47 placeholders
+input_sequence = Input((story_maxlen,))
+<a id="change">question = Input((query_maxlen,))</a>
+
+&#47&#47 encoders
+&#47&#47 embed the input sequence into a sequence of vectors
+input_encoder_m = Sequential()
+input_encoder_m.add(Embedding(input_dim=vocab_size,
+                              output_dim=64))
+input_encoder_m.add(Dropout(0.3))
+&#47&#47 output: (samples, story_maxlen, embedding_dim)
+
+&#47&#47 embed the input into a sequence of vectors of size query_maxlen
+input_encoder_c = Sequential()
+input_encoder_c.add(Embedding(input_dim=vocab_size,
+                              output_dim=query_maxlen))
+input_encoder_c.add(Dropout(0.3))
+&#47&#47 output: (samples, story_maxlen, query_maxlen)
+
+&#47&#47 embed the question into a sequence of vectors
+question_encoder = Sequential()
+question_encoder.add(Embedding(input_dim=vocab_size,
+                               output_dim=64,
+                               input_length=query_maxlen))
+question_encoder.add(Dropout(0.3))
+&#47&#47 output: (samples, query_maxlen, embedding_dim)
+
+&#47&#47 encode input sequence and questions (which are indices) to sequences of dense vectors
+input_encoded_m = input_encoder_m(input_sequence)
+input_encoded_c = input_encoder_c(input_sequence)
+question_encoded = question_encoder(question)
+
+&#47&#47 compute a &quotmatch&quot between the first input vector sequence
+&#47&#47 and the question vector sequence
+match = dot([input_encoded_m, question_encoded], axes=(2, 2))  &#47&#47 (samples, story_maxlen, query_maxlen)
+match = Activation(&quotsoftmax&quot)(match)
+
+&#47&#47 add the match matrix with the second input vector sequence
+response = add([match, input_encoded_c])  &#47&#47 (samples, story_maxlen, query_maxlen)
+response = Permute((2, 1))(response)  &#47&#47 (samples, query_maxlen, story_maxlen)
+
+&#47&#47 concatenate the match matrix with the question vector sequence
+<a id="change">answer = concatenate([response, question_encoded])</a>
+
+&#47&#47 the original paper uses a matrix multiplication for this reduction step.
+&#47&#47 we choose to use a RNN instead.
+answer = LSTM(32)(answer)  &#47&#47 (samples, 32)
+
+&#47&#47 one regularization layer -- more would probably be needed.
+<a id="change">answer = Dropout(0.3)(answer)</a>
+answer = <a id="change">Dense(vocab_size)(answer)</a>  &#47&#47 (samples, vocab_size)
+&#47&#47 we output a probability distribution over the vocabulary
+answer = Activation(&quotsoftmax&quot)(answer)
+
+&#47&#47 build the final model
+<a id="change">model = Model([input_sequence, question], answer)</a>
+model.compile(optimizer=&quotrmsprop&quot, loss=&quotcategorical_crossentropy&quot,
+               metrics=[&quotaccuracy&quot])
+
+&#47&#47 train</code></pre><img src="26839193.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 14</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/b5a02391e003c33c8f8258a7e3d0736503c3c048#diff-238b174768800b222e507d9a32e2756691a0c3720909da4504d6b08214f13e06L121' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: b5a02391e003c33c8f8258a7e3d0736503c3c048</div><div id='time'> Time: 2017-03-15</div><div id='author'> Author: farizrahman4u@gmail.com</div><div id='file'> File Name: examples/babi_memnn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/keras-team/autokeras/commit/b80fb3bdcfeac64d91b7365be1196392e013dcb8#diff-3bc1d47e2261e8abea56da534f573564baa80c3f6b7fb12373fd2bc85d38bbd6L49' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/autokeras</div><div id='commit'> Commit Name: b80fb3bdcfeac64d91b7365be1196392e013dcb8</div><div id='time'> Time: 2018-01-05</div><div id='author'> Author: jhfjhfj1@gmail.com</div><div id='file'> File Name: autokeras/generator.py</div><div id='class'> Class Name: DefaultClassifierGenerator</div><div id='method'> Method Name: generate</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/e9aa6a5ebe3468f6413ef15ddde128725139abe9#diff-d1a544b6db313019fda216ce5095c332d10e5a8b978e69b297f05aef541d7dddL335' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: e9aa6a5ebe3468f6413ef15ddde128725139abe9</div><div id='time'> Time: 2017-07-18</div><div id='author'> Author: gokcen.eraslan@gmail.com</div><div id='file'> File Name: tests/keras/test_callbacks.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_TensorBoard</div><BR>

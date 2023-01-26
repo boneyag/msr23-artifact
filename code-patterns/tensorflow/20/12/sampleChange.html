@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def testCellClipping(self):
+    core = snt.LSTM(hidden_size=5, cell_clip_value=1.0)
+    obs = tf.constant(np.random.rand(3, 10), dtype=tf.float32)
+    <a id="change">hidden = tf.placeholder(tf.float32, shape=[3, 5])</a>
+    <a id="change">cell = tf.placeholder(tf.float32, shape=[3, 5])</a>
+    output = core(obs, [hidden, cell])
+    <a id="change">with self.test_session() as sess:
+      sess.run(tf.global_variables_initializer())
+      unclipped = np.random.rand(3, 5) - 0.5
+      unclipped *= 2.0 / unclipped.max()
+      clipped = unclipped.clip(-1., 1.)
+
+      output1, (hidden1, cell1) = sess.run(output, feed_dict={hidden: unclipped,
+                                                              cell: unclipped})
+      output2, (hidden2, cell2) = sess.run(output, feed_dict={hidden: unclipped,
+                                                              cell: clipped})
+      self.assertAllClose(output1, output2)
+      self.assertAllClose(hidden1, hidden2)
+      self.assertAllClose(cell1, cell2)
+
+ </a> @parameterized.parameters(
+      (False, False, False, False),
+      (False, True, False, False),
+      (True, False, True, False),</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    unclipped = np.random.rand(3, 5) - 0.5
+    unclipped *= 2.0 / unclipped.max()
+    unclipped = <a id="change">unclipped.astype(np.float32)</a>
+    clipped = unclipped.clip(-1., 1.)
+
+    hidden = tf.constant(unclipped)
+    cell = tf.constant(unclipped)
+    output = core(obs, [hidden, cell])
+    self.evaluate(tf.global_variables_initializer())
+    output1, (hidden1, cell1) = self.evaluate(output)
+
+    cell = <a id="change">tf.constant(clipped)</a>
+    <a id="change">output = core(obs, [hidden, cell])</a>
+    output2, (hidden2, cell2) = self.evaluate(output)
+    self.assertAllClose(output1, output2)
+    self.assertAllClose(hidden1, hidden2)
+    self.assertAllClose(cell1, cell2)</code></pre>

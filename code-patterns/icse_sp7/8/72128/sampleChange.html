@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 TODO refactor
+    def forward(self, outputs, targets):
+        <a id="change">if targets.size() != outputs.size():
+            raise ValueError(
+                f"Targets and inputs must be same size. "
+                f"Got ({targets.size()}) and ({outputs.size()})"
+            )
+
+       </a> max_val = (-outputs).clamp(min=0)
+        <a id="change">log_ = ((-max_val).exp() + (-outputs - max_val).exp()).log()</a>
+        loss = outputs - outputs * targets + max_val + log_
+
+        invprobs = F.logsigmoid(-outputs * (targets * 2.0 - 1.0))
+        loss = (invprobs * self.gamma).exp() * loss</code></pre><h3>After Change</h3><pre><code class='java'>
+        num_classes = logits.size(1)
+        loss = 0
+        targets = targets.view(-1)
+        logits = <a id="change">logits.view(-1, num_classes)</a>
+
+        for cls in range(num_classes):
+            &#47&#47 Filter anchors with -1 label from loss computation
+            if cls == self.ignore:
+                continue
+
+            cls_label_target = targets[..., cls].long()
+            <a id="change">cls_label_input = logits[..., cls]</a>
+
+            loss += sigmoid_focal_loss(
+                cls_label_input,
+                cls_label_target,</code></pre>

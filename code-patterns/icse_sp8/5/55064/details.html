@@ -1,0 +1,99 @@
+<html><h3>4dd61185f4e27cab7c8af55907399f9d789d549b,examples/eth.py,,,#,33
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+	network._reset()  &#47&#47 Reset state variables.
+	network.connections[(&quotX&quot, &quotAe&quot)].normalize()  &#47&#47 Normalize input -&gt; excitatory weights
+	
+	print(<a id="change">network</a>.layers[&quotAe&quot].theta)
+	
+	&#47&#47 Record spikes.
+	spike_record[i % update_interval] = spikes[&quotAe&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+&#47&#47 Record spikes during the simulation.
+spike_record = torch.zeros_like(torch.Tensor(update_interval, time, n_neurons))
+spike_record_full = torch.zeros_like(<a id="change">torch.Tensor(n_train, time, n_neurons)</a>)
+&#47&#47 Neuron assignments and spike proportions.
+assignments = -torch.ones_like(torch.Tensor(n_neurons))
+proportions = torch.zeros_like(torch.Tensor(n_neurons, 10))
+rates = torch.zeros_like(torch.Tensor(n_neurons, 10))
+
+&#47&#47 Sequence of accuracy estimates.
+accuracy = {&quotall&quot : [], &quotproportion&quot : []}
+
+&#47&#47 Train the network.
+print(&quotBegin training.\n&quot)
+start = default_timer()
+
+for i in range(n_train):    
+	if i % progress_interval == 0:
+		print(&quotProgress: %d / %d (%.4f seconds)&quot % (i, n_train, default_timer() - start))
+		start = default_timer()
+	
+	if i % update_interval == 0 and i &gt; 0:
+		&#47&#47 Get network predictions.
+		all_activity_pred = all_activity(spike_record, assignments, 10)
+		proportion_pred = proportion_weighting(spike_record, assignments, proportions, 10)
+		
+		&#47&#47 Compute network accuracy according to available classification strategies.
+		accuracy[&quotall&quot].append(100 * torch.sum(labels[i - update_interval:i].long() \
+												== all_activity_pred) / update_interval)
+		accuracy[&quotproportion&quot].append(100 * torch.sum(labels[i - update_interval:i].long() \
+														== proportion_pred) / update_interval)
+		
+		print(&quot\nAll activity accuracy: %.2f (last), %.2f (average), %.2f (best)&quot \
+						% (accuracy[&quotall&quot][-1], np.mean(accuracy[&quotall&quot]), np.max(accuracy[&quotall&quot])))
+		print(&quotProportion weighting accuracy: %.2f (last), %.2f (average), %.2f (best)\n&quot \
+						% (accuracy[&quotproportion&quot][-1], np.mean(accuracy[&quotproportion&quot]),
+						  np.max(accuracy[&quotproportion&quot])))
+		
+		&#47&#47 Assign labels to excitatory layer neurons.
+		assignments, proportions, rates = assign_labels(spike_record, labels[i - update_interval:i], 10, rates)
+		
+	&#47&#47 Get next input sample.
+	sample = next(data_loader)
+	inpts = {&quotX&quot : sample}
+	
+	&#47&#47 Run the network on the input.
+	spikes = network.run(inpts=inpts, time=time)
+	network._reset()  &#47&#47 Reset state variables.
+	network.connections[(&quotX&quot, &quotAe&quot)].normalize()  &#47&#47 Normalize input -&gt; excitatory weights
+	
+	&#47&#47 print(network.layers[&quotAe&quot].theta)
+	
+	&#47&#47 Record spikes.
+	spike_record[i % update_interval] = spikes[&quotAe&quot]
+	spike_record_full[i] = spikes[&quotAe&quot]
+
+	&#47&#47 Optionally plot the excitatory, inhibitory spiking.
+	if plot:
+		inpt = inpts[&quotX&quot].t()
+		exc_spikes = spikes[&quotAe&quot]; inh_spikes = spikes[&quotAi&quot]
+		input_exc_weights = network.connections[(&quotX&quot, &quotAe&quot)].w
+		square_weights = get_square_weights(input_exc_weights, n_sqrt)
+		
+		if i == 0:
+			inpt_ims = plot_input(images[i].view(28, 28), inpt)
+			spike_ims, spike_axes = plot_spikes({&quotAe&quot : exc_spikes, &quotAi&quot : inh_spikes})
+			weights_im = plot_weights(square_weights)
+			assigns_im = plot_assignments(assignments)
+			perf_ax = plot_performance(accuracy)
+		else:
+			inpt_ims = plot_input(images[i].view(28, 28), inpt, ims=inpt_ims)
+			spike_ims, spike_axes = plot_spikes({&quotAe&quot : exc_spikes, &quotAi&quot : inh_spikes}, ims=spike_ims, axes=spike_axes)
+			weights_im = plot_weights(square_weights, im=weights_im)
+			assigns_im = plot_assignments(assignments, im=assigns_im)
+			perf_ax = plot_performance(accuracy, ax=perf_ax)
+		
+		plt.pause(1e-8)
+
+print(&quotProgress: %d / %d (%.4f seconds)\n&quot % (n_train, n_train, default_timer() - start))
+print(&quotTraining complete.\n&quot)
+
+assignments, proportions, _ = assign_labels(spike_record_full, labels[:n_train], 10)
+<a id="change">predictions_pw = proportion_weighting(spike_record_full, assignments, proportions, 10)</a>
+predictions_all = all_activity(spike_record_full, assignments, 10)
+print("Accuracy Proportion Weighting = ", np.mean(np.array(predictions_pw)==np.array(labels[:n_train],dtype=np.int32)))
+print("Accuracy All Activity = ", np.mean(np.array(predictions_all)==np.array(labels[:n_train],dtype=np.int32)))
+</code></pre><img src="254072164.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/BindsNET/bindsnet/commit/4dd61185f4e27cab7c8af55907399f9d789d549b#diff-06e8ca58b18697d998a537523270eaa69399f16fe10551e6cd157525335cecb8L64' target='_blank'>Link</a></div><div id='project'> Project Name: BindsNET/bindsnet</div><div id='commit'> Commit Name: 4dd61185f4e27cab7c8af55907399f9d789d549b</div><div id='time'> Time: 2018-03-06</div><div id='author'> Author: darpansanghavi1993@gmail.com</div><div id='file'> File Name: examples/eth.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/60a342edc8b501802135df44869353cc8604d838#diff-253d7d325ff124c53785759aa058301461a60cae026143d11090cf9a20d3a024L11' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 60a342edc8b501802135df44869353cc8604d838</div><div id='time'> Time: 2018-01-11</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: test/lazy/kronecker_product_lazy_variable_test.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/SINGROUP/dscribe/commit/a63872ac35cd9ccaa1649daa45715c2132a5f49d#diff-ddfb6c98e92c0a1236909a164d760afea33366a07c5c80398feb0621628a0a97L178' target='_blank'>Link</a></div><div id='project'> Project Name: SINGROUP/dscribe</div><div id='commit'> Commit Name: a63872ac35cd9ccaa1649daa45715c2132a5f49d</div><div id='time'> Time: 2020-11-20</div><div id='author'> Author: lauri.himanen@gmail.com</div><div id='file'> File Name: examples/forces_and_energies/training.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/junyanz/BicycleGAN/commit/b0d8a8778fccfe49c8c289db32676b0745390732#diff-52751572cc199d3d83d7917f1c1f8c083ca3bca87f221107b625e9536be07e2bL29' target='_blank'>Link</a></div><div id='project'> Project Name: junyanz/BicycleGAN</div><div id='commit'> Commit Name: b0d8a8778fccfe49c8c289db32676b0745390732</div><div id='time'> Time: 2018-05-27</div><div id='author'> Author: junyanzhu89@gmail.com</div><div id='file'> File Name: video.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

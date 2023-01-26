@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def call(self, inputs):
+        inputs = nest.flatten(inputs)[0]
+        outputs = []
+        <a id="change">for index in range(len(self.encoding)):
+            col = tf.slice(inputs, [0, index], [-1, 1])
+            if self.encoding[index] in [INT, ONE_HOT]:
+                col = self.tables[str(index)].lookup(col)
+                col = tf.cast(col, tf.float32)
+            else:
+                col = tf.strings.to_number(col, tf.float32)
+            outputs.append(col)
+       </a> outputs = tf.concat(outputs, axis=-1)
+        outputs.set_shape(inputs.shape)
+        return outputs
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        input_nodes = nest.flatten(inputs)[0]
+        split_inputs = tf.split(input_nodes, [1] * len(self.encoding), axis=-1)
+        output_nodes = []
+        <a id="change">for input_node, encoding_layer in zip(split_inputs, self.encoding_layers):
+            if encoding_layer is None:
+                output_nodes.append(tf.strings.to_number(input_node, tf.float32))
+            else:
+                output_nodes.append(tf.cast(encoding_layer(input_node), tf.float32))
+       </a> return tf.keras.layers.Concatenate()(output_nodes)
+
+    def adapt(self, data):
+        for index, encoding_layer in enumerate(self.encoding_layers):</code></pre>

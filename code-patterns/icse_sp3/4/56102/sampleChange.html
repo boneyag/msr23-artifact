@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 TODO: Doesn&quott make much sense over training data, averaging with initial
+    &#47&#47 (bad) predictions.
+    auc, update_auc_op = tf.metrics.auc(labels, logits, curve=&quotPR&quot)
+    <a id="change">tf.add_to_collection(&quotmetric_ops&quot, update_auc_op)</a>
+    tf.add_to_collection(&quotmetrics&quot, auc)
+    tf.summary.scalar(&quotauc&quot, auc)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def metrics(logits, labels):
+    &#47&#47 TODO: AUC doesn&quott make much sense over training data, averaging with
+    &#47&#47 initial (bad) predictions.
+    <a id="change">normalized_logits = tf.sigmoid(logits)</a>
+
+    &#47&#47 Add one AUC metric per class, so we can see individual performance too.
+    for cls in range(logits.shape[1]):
+        auc, _ = tf.metrics.auc(
+            labels[:, cls], <a id="change">normalized_logits[:, cls]</a>,
+            curve=&quotPR&quot, name=f&quotiauc/{cls}&quot,
+            metrics_collections=&quotmetrics&quot,
+            updates_collections=&quotmetric_ops&quot,</code></pre>

@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def move_rows(self, view, rows, offset):
+        model = view.model()
+        newrows = [min(max(0, row + offset), <a id="change">len(model)</a> - 1) for row in rows]
+
+        for row, newrow in sorted(zip(rows, newrows), reverse=offset &gt; 0):
+            model[row], model[newrow] = <a id="change">model[newrow]</a>, model[row]
+
+        selection = QItemSelection()
+        for nrow in newrows:</code></pre><h3>After Change</h3><pre><code class='java'>
+    def move_rows(self, view: QListView, offset: int, roles=(Qt.EditRole,)):
+        rows = [idx.row() for idx in view.selectionModel().selectedRows()]
+        model = view.model()  &#47&#47 type: QAbstractItemModel
+        <a id="change">rowcount = model.rowCount()</a>
+        newrows = [min(max(0, row + offset), rowcount - 1) for row in rows]
+
+        def itemData(index):
+            return {role: model.data(index, role) for role in roles}
+
+        for row, newrow in sorted(zip(rows, newrows), reverse=offset &gt; 0):
+            d1 = itemData(model.index(row, 0))
+            <a id="change">d2 = itemData(model.index(newrow, 0))</a>
+            model.setItemData(model.index(row, 0), d2)
+            model.setItemData(model.index(newrow, 0), d1)
+
+        selection = QItemSelection()</code></pre>

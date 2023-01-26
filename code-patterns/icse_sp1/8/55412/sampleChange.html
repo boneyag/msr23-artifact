@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        output = [X[i] + Y[i] for i in range(len(X))]
+    elif isinstance(X, tuple) and isinstance(Y, tuple) and len(X) == 2:
+        &#47&#47 Handle case where we have (data, lengths) tuple
+        <a id="change">output = (X[0] + Y[0], Y[1])</a>  &#47&#47 type: ignore
+    else:
+        output = X + Y
+
+    def backprop(d_output: OutT) -&gt; InT:
+        dX = backprop_layer(d_output)
+        if isinstance(d_output, list) or isinstance(d_output, tuple):
+            return [d_output[i] + dX[i] for i in range(len(d_output))]
+        else:
+            return d_output + dX
+
+    <a id="change">return output, backprop</a>
+
+
+def init(
+    model: Model[InT, OutT], X: Optional[InT] = None, Y: Optional[OutT] = None</code></pre><h3>After Change</h3><pre><code class='java'>
+    if isinstance(X, list):
+        return [X[i] + Y[i] for i in range(len(X))], backprop
+    elif isinstance(X, Ragged):
+        return Ragged(X.data + Y.data, <a id="change">X.lengths</a>), backprop
+    elif isinstance(X, Padded):
+        <a id="change">return Padded(X.data + Y.data, X.size_at_t), backprop</a>
+    else:
+        return X + Y, backprop
+
+</code></pre>

@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if ps.is_integer(self.out_dim):
+            self.model_tail = nn.Linear(dims[-1], self.out_dim)
+        else:
+            <a id="change">self.model_tails</a> = nn.ModuleList(<a id="change">[nn.Linear(dims[-1], out_d) for out_d in self.out_dim]</a>)
+
+        net_util.init_layers(self, self.init_fn)
+        for module in self.modules():</code></pre><h3>After Change</h3><pre><code class='java'>
+        if ps.is_integer(self.out_dim):
+            self.model_tail = net_util.build_fc_model([dims[-1], self.out_dim], self.out_layer_activation)
+        else:
+            <a id="change">if not ps.is_list(self.out_layer_activation):
+                self.out_layer_activation = [self.out_layer_activation] * len(out_dim)
+           </a> assert len(self.out_layer_activation) == len(self.out_dim)
+            <a id="change">tails = []</a>
+            <a id="change">for out_d, out_activ in zip(self.out_dim, self.out_layer_activation):
+                tail = net_util.build_fc_model([dims[-1], out_d], out_activ)
+                tails.append(tail)
+           </a> <a id="change">self.model_tails</a> = nn.ModuleList(tails)
+
+        net_util.init_layers(self, self.init_fn)
+        for module in self.modules():</code></pre>

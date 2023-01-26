@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    symbols = [Symbol(name, real=True) for name in diff_eq_names]
+    &#47&#47 Coefficients
+    wildcards = [Wild(&quotc_&quot + name, exclude=symbols) <a id="change">for</a> name in diff_eq_names]
+    
+    &#47&#47Additive constant
+    constant_wildcard = Wild(&quotc&quot, exclude=symbols)
+    
+    <a id="change">pattern = reduce(operator.add, [c * s for c, s in zip(wildcards, symbols)])</a>
+    pattern += constant_wildcard
+    
+    coefficients = sp.zeros(len(diff_eq_names))
+    constants = sp.zeros((len(diff_eq_names), 1))
+    
+    for row_idx, (name, expr) in enumerate(diff_eqs):
+        s_expr = expr.sympy_expr.expand()
+        pattern_matches = s_expr.match(pattern)
+        if pattern_matches is None:
+            raise ValueError((&quotThe expression "%s", defining the variable %s, &quot
+                             &quotcould not be separated into linear components&quot) %
+                             (expr, name))
+        
+        for col_idx in xrange(len(diff_eq_names)):
+            coefficients[row_idx, col_idx] = pattern_matches[<a id="change">wildcards[col_idx]</a>]
+        
+        constants[row_idx] = pattern_matches[constant_wildcard]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            current_s_expr = current_s_expr.collect(symbol)
+            constant_wildcard = Wild(&quotc&quot, exclude=[symbol])
+            factor_wildcard = Wild(&quotc_&quot+name, exclude=symbols)
+            <a id="change">one_pattern = factor_wildcard*symbol + constant_wildcard</a>
+            <a id="change">matches = current_s_expr.match(one_pattern)</a>
+            if matches is None:
+                raise ValueError((&quotThe expression "%s", defining the variable %s, &quot
+                                 &quotcould not be separated into linear components&quot) %
+                                 (expr, name))</code></pre>

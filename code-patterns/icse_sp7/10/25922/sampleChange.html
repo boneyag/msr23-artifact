@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def test_pants_binary_dep_isolation_with_multiple_targets(self):
+    pex1 = os.path.join(get_buildroot(), &quotdist&quot, &quotmain_with_no_conflict.pex&quot)
+    pex2 = os.path.join(get_buildroot(), &quotdist&quot, &quotmain_with_no_pycountry.pex&quot)
+    <a id="change">try:
+      command=[&quotbinary&quot, &quot{}:main_with_no_conflict&quot.format(self.fasthello_install_requires),
+               &quot{}:main_with_no_pycountry&quot.format(self.fasthello_install_requires)]
+      pants_run = self.run_pants(command=command)
+      self.assert_success(pants_run)
+      &#47&#47 Check that the pex was built.
+      self.assertTrue(os.path.isfile(pex1))
+      self.assertTrue(os.path.isfile(pex2))
+      &#47&#47 Check that the pex 1 runs.
+      output = subprocess.check_output(pex1)
+      self._assert_native_greeting(output)
+      &#47&#47 Check that the pex 2 fails due to no python_dists leaked into it.
+      try:
+        output = subprocess.check_output(pex2)
+      except subprocess.CalledProcessError as e:
+        self.assertNotEquals(0, e.returncode)
+    finally:
+      &#47&#47 Cleanup
+      if os.path.exists(pex1):
+        os.remove(pex1)
+      if os.path.exists(pex2):
+        os.remove(pex2)
+
+ </a> def test_pants_resolves_local_dists_for_current_platform_only(self):
+    &#47&#47 Test that pants will override pants.ini platforms config when building
+    &#47&#47 or running a target that depends on native (c or cpp) sources.
+    pex = os.path.join(get_buildroot(), &quotdist&quot, &quotmain.pex&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+    self.assertIn(&quotfasthello&quot, pants_run.stderr_data)
+
+  def test_pants_binary_dep_isolation_with_multiple_targets(self):
+    <a id="change">with temporary_dir() as tmp_dir:
+      pex1 = os.path.join(tmp_dir, &quotmain_with_no_conflict.pex&quot)
+      pex2 = os.path.join(tmp_dir, &quotmain_with_no_pycountry.pex&quot)
+      command=[
+        &quot--pants-distdir={}&quot.format(tmp_dir),
+        &quotbinary&quot,
+        &quot{}:main_with_no_conflict&quot.format(self.fasthello_install_requires),
+        &quot{}:main_with_no_pycountry&quot.format(self.fasthello_install_requires)]
+      pants_run = self.run_pants(command=command)
+      self.assert_success(pants_run)
+      &#47&#47 Check that the pex was built.
+      self.assertTrue(os.path.isfile(pex1))
+      self.assertTrue(os.path.isfile(pex2))
+      &#47&#47 Check that the pex 1 runs.
+      output = subprocess.check_output(pex1)
+      self._assert_native_greeting(output)
+      &#47&#47 Check that the pex 2 fails due to no python_dists leaked into it.
+      try:
+        output = subprocess.check_output(pex2)
+      except subprocess.CalledProcessError as e:
+        self.assertNotEquals(0, e.returncode)
+
+ </a> def test_pants_resolves_local_dists_for_current_platform_only(self):
+    &#47&#47 Test that pants will override pants.ini platforms config when building
+    &#47&#47 or running a target that depends on native (c or cpp) sources.
+    with temporary_dir() as tmp_dir:</code></pre>

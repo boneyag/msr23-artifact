@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            size_buffer[0] = buffer.shape[0]
+            dist.broadcast(size_buffer, src=0)
+            dist.broadcast(buffer, src=0)
+            <a id="change">return from_tensor(buffer)</a>
+        else:
+            dist.broadcast(size_buffer, src=0)
+            buffer_size = size_buffer.cpu().numpy().tolist()[0]
+            buffer = torch.empty(buffer_size, dtype=torch.uint8)</code></pre><h3>After Change</h3><pre><code class='java'>
+            result = func()
+            buffer = to_tensor(result)
+            size_buffer[0] = buffer.shape[0]
+        <a id="change">if dist.get_backend() == "nccl":
+            size_buffer = size_buffer.cuda()
+       </a> dist.broadcast(size_buffer, src=0)
+        buffer_size = size_buffer.cpu().numpy().tolist()[0]
+        if dist.get_rank() != 0:
+            buffer = torch.empty(buffer_size, dtype=torch.uint8)</code></pre>

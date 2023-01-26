@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        d = 1 / p.sum(0)
+        for _ in range(self.bp_iters):
+            s = 1 / (p @ d)
+            d = <a id="change">1 / (s @ p)</a>
+        b = <a id="change">s[:, None] * d * p</a>
+
+        &#47&#47 Evaluate the Bethe free energy.
+        b = b.clamp(min=finfo.tiny ** 0.5)
+        b_ = (1 - b).clamp(min=finfo.tiny ** 0.5)
+        free_energy = (b * (b.log() - p.log())).sum() - (b_ * b_.log()).sum()
+        <a id="change">return shift.sum() - free_energy</a>
+
+    def log_prob(self, value):
+        if self._validate_args:
+            self._validate_sample(value)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Evaluate the Bethe free energy.
+        b_ = (1 - b).clamp(min=0)
+        logits = <a id="change">logits.clamp(min=-1 / finfo.eps)</a>
+        free_energy = (b * (log(b) - logits)).sum() - (b_ * log(b_)).sum()
+        log_Z = shift.sum() - free_energy
+        assert torch.isfinite(log_Z)
+        <a id="change">return log_Z</a>
+
+    def log_prob(self, value):
+        if self._validate_args:
+            self._validate_sample(value)</code></pre>

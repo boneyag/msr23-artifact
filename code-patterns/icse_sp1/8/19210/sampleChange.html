@@ -1,0 +1,116 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        keys = []
+
+        &#47&#47 degenerate case
+        <a id="change">if selected_obj.ndim == 1:
+            for a in arg:
+                colg = obj._gotitem(selected_obj.name, ndim=1, subset=selected_obj)
+                try:
+                    new_res = colg.aggregate(a)
+
+                except TypeError:
+                    pass
+                else:
+                    results.append(new_res)
+
+                    &#47&#47 make sure we find a good name
+                    name = com.get_callable_name(a) or a
+                    keys.append(name)
+
+        &#47&#47 multiples
+        else:
+            for index, col in enumerate(selected_obj):
+                colg = obj._gotitem(col, ndim=1, subset=selected_obj.iloc[:, index])
+                try:
+                    new_res = colg.aggregate(arg)
+                except (TypeError, DataError):
+                    pass
+                except ValueError as err:
+                    &#47&#47 cannot aggregate
+                    if "Must produce aggregated value" in str(err):
+                        &#47&#47 raised directly in _aggregate_named
+                        pass
+                    elif "no results" in str(err):
+                        &#47&#47 raised directly in _aggregate_multiple_funcs
+                        pass
+                    else:
+                        raise
+                else:
+                    results.append(new_res)
+                    keys.append(col)
+
+        &#47&#47 if we are empty
+       </a> if not len(results):
+            raise ValueError("no results")
+
+        try:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        results = []
+        keys = []
+        <a id="change">ndims = []</a>
+
+        &#47&#47 degenerate case
+        &#47&#47 if selected_obj.ndim == 1:
+        for a in arg:
+            &#47&#47 colg = obj._gotitem(selected_obj.name, ndim=1, subset=selected_obj)
+            try:
+                &#47&#47 new_res = colg.aggregate(a)
+                print(&quotselected_obj:&quot, type(selected_obj))
+                print(selected_obj)
+                print(&quot&#47&#47&#47&#47&#47&#47&quot)
+                new_res = selected_obj.aggregate(a)
+                print(new_res)
+
+            except TypeError:
+                pass
+            else:
+                results.append(new_res)
+                if isinstance(new_res, ABCNDFrame):
+                    ndims.append(new_res.ndim)
+                else:
+                    ndims.append(0)
+
+                &#47&#47 make sure we find a good name
+                name = com.get_callable_name(a) or a
+                keys.append(name)
+
+        &#47&#47 multiples
+        &#47&#47 else:
+        &#47&#47     for index, col in enumerate(selected_obj):
+        &#47&#47         colg = obj._gotitem(col, ndim=1, subset=selected_obj.iloc[:, index])
+        &#47&#47         try:
+        &#47&#47             new_res = colg.aggregate(arg)
+        &#47&#47         except (TypeError, DataError):
+        &#47&#47             pass
+        &#47&#47         except ValueError as err:
+        &#47&#47             &#47&#47 cannot aggregate
+        &#47&#47             if "Must produce aggregated value" in str(err):
+        &#47&#47                 &#47&#47 raised directly in _aggregate_named
+        &#47&#47                 pass
+        &#47&#47             elif "no results" in str(err):
+        &#47&#47                 &#47&#47 raised directly in _aggregate_multiple_funcs
+        &#47&#47                 pass
+        &#47&#47             else:
+        &#47&#47                 raise
+        &#47&#47         else:
+        &#47&#47             results.append(new_res)
+        &#47&#47             keys.append(col)
+
+        &#47&#47 if we are empty
+        if not len(results):
+            raise ValueError("no results")
+
+        try:
+            &#47&#47 if len(results) == 0:
+            &#47&#47     result = results[0]
+            &#47&#47 else:
+            result = concat(results, keys=keys, axis=1, sort=False)
+            <a id="change">if all([e == 1 for e in ndims]):
+                result = result.T.infer_objects()
+       </a> except TypeError as err:
+
+            &#47&#47 we are concatting non-NDFrame objects,
+            &#47&#47 e.g. a list of scalars</code></pre>

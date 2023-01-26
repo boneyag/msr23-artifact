@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 save loss to metrics
+        notnull = batch.label_vec.ne(self.NULL_IDX)
+        target_tokens = notnull.long().sum().item()
+        correct = <a id="change">((batch.label_vec == preds) * notnull).sum().item()</a>
+        self.metrics[&quotcorrect_tokens&quot] += correct
+        self.metrics[&quotnll_loss&quot] += <a id="change">loss.item()</a>
+        <a id="change">self.metrics[&quotnum_tokens&quot] += target_tokens</a>
+        loss /= target_tokens  &#47&#47 average loss per token
+        if return_output:
+            return (loss, model_output)
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+        scores, preds, *_ = model_output
+        score_view = scores.view(-1, scores.size(-1))
+        loss = self.criterion(score_view, batch.label_vec.view(-1))
+        loss = loss.view(<a id="change">scores.shape[:-1]</a>).sum(dim=1)
+        &#47&#47 save loss to metrics
+        notnull = batch.label_vec.ne(self.NULL_IDX)
+        target_tokens = notnull.long().sum(dim=-1)</code></pre>

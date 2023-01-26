@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if request.user.is_authenticated:
+            show_unfollow_button = follow_utils.is_user_following_tag(request.user, slash_tag)
+
+    return render(request, &quotsounds/tags.html&quot, <a id="change">locals()</a>)
+
+
+def old_tag_link_redirect(request):</code></pre><h3>After Change</h3><pre><code class='java'>
+                            group_cache_percent=0,
+                            group_truncate=True)  &#47&#47 Sets how many results from the same group are taken into account for computing the facets
+
+    <a id="change">page = None</a>
+    num_results = 0
+    tags = []
+    error = False
+    docs = {}
+    non_grouped_number_of_results = 0
+    paginator = None
+    try:
+        results = SolrResponseInterpreter(solr.select(unicode(query)))
+        paginator = SolrResponseInterpreterPaginator(results, settings.SOUNDS_PER_PAGE)
+        num_results = paginator.count
+        non_grouped_number_of_results = results.non_grouped_number_of_matches
+        page = paginator.page(current_page)
+        tags = [dict(name=f[0], count=f[1]) for f in results.facets["tag"]]
+
+        docs = results.docs
+        resultids = [d.get("id") for d in docs]
+        resultsounds = sounds.models.Sound.objects.bulk_query_id(resultids)
+        allsounds = {}
+        for s in resultsounds:
+            allsounds[s.id] = s
+        for d in docs:
+            d["sound"] = allsounds[d["id"]]
+
+    except SolrException as e:
+        error = True
+        search_logger.error("SOLR ERROR - %s" % e)
+    except:
+        error = True
+
+    slash_tag = "/".join(multiple_tags)
+
+    follow_tags_url = &quot&quot
+    unfollow_tags_url = &quot&quot
+    show_unfollow_button = False
+    if slash_tag:
+        follow_tags_url = reverse(&quotfollow-tags&quot, args=[slash_tag])
+        unfollow_tags_url = reverse(&quotunfollow-tags&quot, args=[slash_tag])
+        show_unfollow_button = False
+
+        if request.user.is_authenticated:
+            show_unfollow_button = follow_utils.is_user_following_tag(request.user, slash_tag)
+
+    <a id="change">tvars = {&quotshow_unfollow_button&quot: show_unfollow_button,
+             &quotmultiple_tags&quot: multiple_tags,
+             &quotfollow_tags_url&quot: follow_tags_url,
+             &quotunfollow_tags_url&quot: unfollow_tags_url,
+             &quoterror&quot: error,
+             &quottags&quot: tags,
+             &quotslash_tag&quot: slash_tag,
+             &quotnum_results&quot: num_results,
+             &quotnon_grouped_number_of_results&quot: non_grouped_number_of_results,
+             &quotdocs&quot: docs,
+             &quotpaginator&quot: paginator,
+             &quotpage&quot: page,
+             &quotcurrent_page&quot: current_page
+             }</a>
+    return render(request, &quotsounds/tags.html&quot, tvars)
+
+
+def old_tag_link_redirect(request):</code></pre>

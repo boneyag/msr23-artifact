@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                           axis=(0, 2, 3, 4))
+      return snt.Sequential([conv, functools.partial(bn, is_training=True)])
+    x = tf.constant(np.random.random(self.INPUT_SHAPE).astype(np.float32))
+    <a id="change">self.helperDataFormats(func, x)</a>
+
+if __name__ == "__main__":
+  tf.test.main()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    conv1 = func(name="NDHWC", data_format="NDHWC")
+    x = tf.constant(np.random.random(self.INPUT_SHAPE).astype(np.float32))
+    <a id="change">o1 = conv1(x)</a>
+
+    custom_getter = {"w": create_custom_field_getter(conv1.layers[0], "w"),
+                     "b": create_custom_field_getter(conv1.layers[0], "b")}
+    conv2 = func(name="NCDHW", data_format="NCDHW", custom_getter=custom_getter)
+    <a id="change">x_transpose = tf.transpose(x, perm=(0, 4, 1, 2, 3))</a>
+    <a id="change">o2 = tf.transpose(conv2(x_transpose), perm=(0, 2, 3, 4, 1))</a>
+
+    <a id="change">self.checkEquality(o1, o2)</a>
+
+
+if __name__ == "__main__":
+  tf.test.main()</code></pre>

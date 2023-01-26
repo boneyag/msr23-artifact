@@ -1,0 +1,57 @@
+<html><h3>1ce9211b9a1b349485c754d2dd3b03078f350fc8,hls4ml/writer/vivado_writer.py,VivadoWriter,write_project_cpp,#VivadoWriter#Any#,61
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                newline += indent + insize_str + &quot,\n&quot
+                newline += indent + outsize_str + &quot\n&quot
+
+            elif <a id="change">&quot//hls-fpga-machine-learning insert weights&quot in line</a>:
+                newline = line
+                for layer in model.get_layers():
+                    for w in layer.get_weights():
+                        newline += &quot&#47&#47include "weights/{}.h"\n&quot.format(w.name)
+
+            elif &quot//hls-fpga-machine-learning insert load weights&quot in line:
+                newline = line
+                for layer in model.get_layers():
+                    for w in layer.get_weights():
+                        if w.__class__.__name__ == &quotCompressedWeightVariable&quot:
+                            newline += indent + &quot    nnet::load_compressed_weights_from_txt&lt;{}, {}&gt;({}, "{}.txt");\n&quot.format(w.type.name, w.nonzeros, w.name, w.name)
+                        else:
+                            newline += indent + &quot    nnet::load_weights_from_txt&lt;{}, {}&gt;({}, "{}.txt");\n&quot.format(w.type.name, w.data_length, w.name, w.name)
+
+            &#47&#47Add input/output type
+            elif &quot//hls-fpga-machine-learning insert IO&quot in line:
+                newline = line
+                all_inputs = [i.cppname for i in model_inputs]
+                all_outputs = [o.cppname for o in model_outputs]
+                if model.config.get_config_value("IOType") == "io_parallel":
+                    for i in model_inputs: newline += indent + &quot&#47&#47pragma HLS ARRAY_RESHAPE variable={} complete dim=0 \n&quot.format(i.cppname)
+                    for o in model_outputs: newline += indent + &quot&#47&#47pragma HLS ARRAY_RESHAPE variable={} complete dim=0 \n&quot.format(o.cppname)
+                    newline += indent + &quot&#47&#47pragma HLS INTERFACE ap_vld port={},{} \n&quot.format(&quot,&quot.join(all_inputs), &quot,&quot.join(all_outputs))
+                    if model.config.model_strategy == &quotResource&quot:
+                        newline += indent + &quot&#47&#47pragma HLS DATAFLOW \n&quot
+                    else:
+                        newline += indent + &quot&#47&#47pragma HLS PIPELINE \n&quot
+                if model.config.get_config_value("IOType") == "io_serial":
+                    <a id="change">newline += indent + &quot&#47&#47pragma HLS INTERFACE axis port={},{} \n&quot.format(&quot,&quot.join(all_inputs), &quot,&quot.join(all_outputs))</a>
+                    newline += indent + &quot&#47&#47pragma HLS DATAFLOW \n&quot
+
+                inval_str = &quot\n    &quot.join([&quotconst_size_in_{} = {};&quot.format(i, inp.size_cpp()) for i, inp in enumerate(model_inputs, 1)])
+                outval_str = &quot\n    &quot.join([&quotconst_size_out_{} = {};&quot.format(i, out.size_cpp()) for i, out in enumerate(model_outputs, 1)])</code></pre><h3>After Change</h3><pre><code class='java'>
+                for i in model_inputs: newline += indent + self._make_array_pragma(i) + &quot\n&quot
+                for o in model_outputs: newline += indent + self._make_array_pragma(o) + &quot\n&quot
+
+                interface_mode = <a id="change">model.config.get_config_value(&quotInterfaceMode&quot)</a>
+                if interface_mode is None:
+                    if model.config.get_config_value(&quotIOType&quot) == &quotio_parallel&quot:
+                        interface_mode = &quotap_vld&quot
+                    elif model.config.get_config_value(&quotIOType&quot) == &quotio_serial&quot:
+                        interface_mode = &quotaxis&quot
+                        
+                <a id="change">newline += indent + &quot&#47&#47pragma HLS INTERFACE {} port={},{} \n&quot.format(interface_mode, &quot,&quot.join(all_inputs), &quot,&quot.join(all_outputs))</a>
+
+                if model.config.get_config_value("IOType") == "io_parallel":
+                    if model.config.model_strategy == &quotResource&quot:
+                        newline += indent + &quot&#47&#47pragma HLS DATAFLOW \n&quot</code></pre><img src="329277568.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/hls-fpga-machine-learning/hls4ml/commit/1ce9211b9a1b349485c754d2dd3b03078f350fc8#diff-2aa6bbc51546159dd75badd914856d116d3bfe80e54813672776870cd49bda68L73' target='_blank'>Link</a></div><div id='project'> Project Name: hls-fpga-machine-learning/hls4ml</div><div id='commit'> Commit Name: 1ce9211b9a1b349485c754d2dd3b03078f350fc8</div><div id='time'> Time: 2020-03-15</div><div id='author'> Author: yutaro.iiyama@cern.ch</div><div id='file'> File Name: hls4ml/writer/vivado_writer.py</div><div id='class'> Class Name: VivadoWriter</div><div id='method'> Method Name: write_project_cpp</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/fda0e0e7d1399a404788c33d19677c4a22583138#diff-907a72a4cd23903defbd92b2627468f7079289b33a811c0df84d6b3b94fb124dL108' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: fda0e0e7d1399a404788c33d19677c4a22583138</div><div id='time'> Time: 2018-05-10</div><div id='author'> Author: nacho950@gmail.com</div><div id='file'> File Name: src/sagemaker/local/local_session.py</div><div id='class'> Class Name: LocalSagemakerClient</div><div id='method'> Method Name: create_endpoint</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/fda0e0e7d1399a404788c33d19677c4a22583138#diff-907a72a4cd23903defbd92b2627468f7079289b33a811c0df84d6b3b94fb124dL147' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: fda0e0e7d1399a404788c33d19677c4a22583138</div><div id='time'> Time: 2018-05-10</div><div id='author'> Author: nacho950@gmail.com</div><div id='file'> File Name: src/sagemaker/local/local_session.py</div><div id='class'> Class Name: LocalSagemakerRuntimeClient</div><div id='method'> Method Name: __init__</div><BR>

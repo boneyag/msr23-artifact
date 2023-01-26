@@ -1,0 +1,136 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                  + &quot:&quot.join(filter(None, [name, address])) + &quot...&quot)
+        print(&quot\n*BlueMuse will auto connect and stream when the device is found. \n*You can also use the BlueMuse interface to manage your stream(s).&quot)
+        muse.start()
+        <a id="change">return</a>
+
+    didConnect = muse.connect()
+
+    if(didConnect):</code></pre><h3>After Change</h3><pre><code class='java'>
+        return
+
+    &#47&#47 For any backend except bluemuse, we will start LSL streams hooked up to the muse callbacks.
+    <a id="change">if backend != &quotbluemuse&quot:
+        if not address:
+            found_muse = find_muse(name)
+            if not found_muse:
+                return
+            else:
+                address = found_muse[&quotaddress&quot]
+                name = found_muse[&quotname&quot]
+
+        if not eeg_disabled:
+            eeg_info = StreamInfo(&quotMuse&quot, &quotEEG&quot, MUSE_NB_EEG_CHANNELS, MUSE_SAMPLING_EEG_RATE, &quotfloat32&quot,
+                                &quotMuse%s&quot % address)
+            eeg_info.desc().append_child_value("manufacturer", "Muse")
+            eeg_channels = eeg_info.desc().append_child("channels")
+
+            for c in [&quotTP9&quot, &quotAF7&quot, &quotAF8&quot, &quotTP10&quot, &quotRight AUX&quot]:
+                eeg_channels.append_child("channel") \
+                    .append_child_value("label", c) \
+                    .append_child_value("unit", "microvolts") \
+                    .append_child_value("type", "EEG")
+
+            eeg_outlet = StreamOutlet(eeg_info, LSL_EEG_CHUNK)
+
+        if ppg_enabled:
+            ppg_info = StreamInfo(&quotMuse&quot, &quotPPG&quot, MUSE_NB_PPG_CHANNELS, MUSE_SAMPLING_PPG_RATE,
+                                &quotfloat32&quot, &quotMuse%s&quot % address)
+            ppg_info.desc().append_child_value("manufacturer", "Muse")
+            ppg_channels = ppg_info.desc().append_child("channels")
+
+            for c in [&quotPPG1&quot, &quotPPG2&quot, &quotPPG3&quot]:
+                ppg_channels.append_child("channel") \
+                    .append_child_value("label", c) \
+                    .append_child_value("unit", "mmHg") \
+                    .append_child_value("type", "PPG")
+
+            ppg_outlet = StreamOutlet(ppg_info, LSL_PPG_CHUNK)
+
+        if acc_enabled:
+            acc_info = StreamInfo(&quotMuse&quot, &quotACC&quot, MUSE_NB_ACC_CHANNELS, MUSE_SAMPLING_ACC_RATE,
+                                &quotfloat32&quot, &quotMuse%s&quot % address)
+            acc_info.desc().append_child_value("manufacturer", "Muse")
+            acc_channels = acc_info.desc().append_child("channels")
+
+            for c in [&quotX&quot, &quotY&quot, &quotZ&quot]:
+                acc_channels.append_child("channel") \
+                    .append_child_value("label", c) \
+                    .append_child_value("unit", "g") \
+                    .append_child_value("type", "accelerometer")
+
+            acc_outlet = StreamOutlet(acc_info, LSL_ACC_CHUNK)
+
+        if gyro_enabled:
+            gyro_info = StreamInfo(&quotMuse&quot, &quotGYRO&quot, MUSE_NB_GYRO_CHANNELS, MUSE_SAMPLING_GYRO_RATE,
+                                &quotfloat32&quot, &quotMuse%s&quot % address)
+            gyro_info.desc().append_child_value("manufacturer", "Muse")
+            gyro_channels = gyro_info.desc().append_child("channels")
+
+            for c in [&quotX&quot, &quotY&quot, &quotZ&quot]:
+                gyro_channels.append_child("channel") \
+                    .append_child_value("label", c) \
+                    .append_child_value("unit", "dps") \
+                    .append_child_value("type", "gyroscope")
+
+            gyro_outlet = StreamOutlet(gyro_info, LSL_GYRO_CHUNK)
+
+        def push(data, timestamps, outlet):
+            for ii in range(data.shape[1]):
+                outlet.push_sample(data[:, ii], timestamps[ii])
+
+        push_eeg = partial(push, outlet=eeg_outlet) if not eeg_disabled else None
+        push_ppg = partial(push, outlet=ppg_outlet) if ppg_enabled else None
+        push_acc = partial(push, outlet=acc_outlet) if acc_enabled else None
+        push_gyro = partial(push, outlet=gyro_outlet) if gyro_enabled else None
+
+        muse = Muse(address=address, callback_eeg=push_eeg, callback_ppg=push_ppg, callback_acc=push_acc, callback_gyro=push_gyro,
+                    backend=backend, interface=interface, name=name)
+
+        didConnect = muse.connect()
+
+        if(didConnect):
+            print(&quotConnected.&quot)
+            muse.start()
+
+            eeg_string = " EEG" if not eeg_disabled else ""
+            ppg_string = " PPG" if ppg_enabled else ""
+            acc_string = " ACC" if acc_enabled else ""
+            gyro_string = " GYRO" if gyro_enabled else ""
+
+            print("Streaming%s%s%s%s..." %
+                (eeg_string, ppg_string, acc_string, gyro_string))
+
+            while time() - muse.last_timestamp &lt; AUTO_DISCONNECT_DELAY:
+                try:
+                    sleep(1)
+                except KeyboardInterrupt:
+                    muse.stop()
+                    muse.disconnect()
+                    break
+
+            print(&quotDisconnected.&quot)
+
+    &#47&#47 For bluemuse backend, we don&quott need to create LSL streams directly, since these are handled in BlueMuse itself.
+    else:
+        &#47&#47 Toggle all data stream types in BlueMuse.
+        subprocess.call(&quotstart bluemuse://setting?key=eeg_enabled!value={}&quot.format(&quotfalse&quot if eeg_disabled else &quottrue&quot), shell=True)
+        subprocess.call(&quotstart bluemuse://setting?key=ppg_enabled!value={}&quot.format(&quottrue&quot if ppg_enabled else &quotfalse&quot), shell=True)
+        subprocess.call(&quotstart bluemuse://setting?key=accelerometer_enabled!value={}&quot.format(&quottrue&quot if acc_enabled else &quotfalse&quot), shell=True)
+        subprocess.call(&quotstart bluemuse://setting?key=gyroscope_enabled!value={}&quot.format(&quottrue&quot if gyro_enabled else &quotfalse&quot), shell=True)
+
+        muse = Muse(address=address, callback_eeg=None, callback_ppg=None, callback_acc=None, callback_gyro=None,
+                    backend=backend, interface=interface, name=name)
+        muse.connect()
+
+        if not address and not name:
+            print(&quotTargeting first device BlueMuse discovers...&quot)
+        else:
+            print(&quotTargeting device: &quot
+                  + &quot:&quot.join(filter(None, [name, address])) + &quot...&quot)
+        print(&quot\n*BlueMuse will auto connect and stream when the device is found. \n*You can also use the BlueMuse interface to manage your stream(s).&quot)
+        muse.start()</a>
+</code></pre>

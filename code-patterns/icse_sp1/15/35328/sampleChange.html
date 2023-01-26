@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if gs.any(mask_0):
+            log[mask_0] = 0
+        if gs.any(mask_non0):
+            <a id="change">log[mask_non0]</a> /= <a id="change">norm_add[mask_non0]</a>
+
+        return log
+
+    @geomstats.vectorization.decorator([&quotelse&quot, &quotvector&quot, &quotvector&quot])</code></pre><h3>After Change</h3><pre><code class='java'>
+        mask_0 = gs.isclose(gs.squeeze(norm_add, axis=-1), 0.)
+        mask_non0 = ~mask_0
+        if gs.any(mask_0):
+            <a id="change">mask_0_float = gs.cast(mask_0, gs.float32)</a>
+            <a id="change">log += mask_0_float * (-log)</a>
+        if gs.any(mask_non0):
+            &#47&#47 TODO(ninamiolane): Correct this when assignement
+            &#47&#47 works with booleans
+            <a id="change">mask_non0_float = gs.cast(mask_non0, gs.float32)</a>
+            <a id="change">log += gs.einsum(
+                &quot...,...i-&gt;...i&quot,
+                mask_non0_float,
+                - log + log / norm_add)</a>
+
+        return log
+
+    @geomstats.vectorization.decorator([&quotelse&quot, &quotvector&quot, &quotvector&quot])</code></pre>

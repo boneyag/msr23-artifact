@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for key, (head, frames) in data.items():
+            if "lengths" not in head:
+                head["lengths"] = tuple(map(nbytes, frames))
+            <a id="change">if "compression" not in head:
+                frames = frame_split_size(frames)
+                if frames:
+                    compression, frames = zip(*map(maybe_compress, frames))
+                else:
+                    compression = []
+                head["compression"] = compression
+           </a> head["count"] = len(frames)
+            header["headers"][key] = head
+            header["keys"].append(key)
+            out_frames.extend(frames)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Compress frames that are not yet compressed
+            out_compression = []
+            _out_frames = []
+            <a id="change">for frame, compression in zip(
+                frames, head.get("compression") or [None] * len(frames)
+            ):
+                if compression is None:  &#47&#47 default behavior
+                    _frames = frame_split_size(frame)
+                    _compression, _frames = zip(*map(maybe_compress, _frames))
+                    out_compression.extend(_compression)
+                    _out_frames.extend(_frames)
+                else:  &#47&#47 already specified, so pass
+                    out_compression.append(compression)
+                    _out_frames.append(frame)
+
+           </a> head["compression"] = out_compression
+            head["count"] = len(_out_frames)
+            header["headers"][key] = head
+            header["keys"].append(key)</code></pre>

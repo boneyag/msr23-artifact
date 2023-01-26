@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            epoch_loss = 0.0
+
+            for (batch_user,
+                 batch_item) in <a id="change">minibatch(user_ids_tensor,
+                                          item_ids_tensor,
+                                          batch_size=self._batch_size)</a>:
+
+                user_var = Variable(batch_user)
+                item_var = Variable(batch_item)
+                positive_prediction = self._net(user_var, item_var)
+
+                if self._loss == &quotadaptive_hinge&quot:
+                    negative_prediction = self._get_adaptive_negatives(
+                        user_var
+                    )
+                else:
+                    negative_items = sample_items(
+                        self._num_items,
+                        len(batch_user),
+                        random_state=self._random_state)
+                    negative_var = Variable(
+                        gpu(torch.from_numpy(negative_items))
+                    )
+                    negative_prediction = self._net(user_var, negative_var)
+
+                self._optimizer.zero_grad()
+
+                loss = loss_fnc(positive_prediction, negative_prediction)
+                epoch_loss += loss.data[0]
+
+                loss.backward()
+                self._optimizer.step()
+
+            if verbose:
+                print(&quotEpoch {}: loss {}&quot.format(epoch_num,
+                                                 <a id="change">epoch_loss / (epoch_num + 1)</a>))
+
+    def _get_adaptive_negatives(self, user_ids, num_neg_candidates=5):
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            for (minibatch_num,
+                 (batch_user,
+                  batch_item)) in <a id="change">enumerate(minibatch(user_ids_tensor,
+                                                      item_ids_tensor,
+                                                      batch_size=self._batch_size))</a>:
+
+                user_var = Variable(batch_user)
+                item_var = Variable(batch_item)
+                positive_prediction = self._net(user_var, item_var)
+
+                if self._loss == &quotadaptive_hinge&quot:
+                    negative_prediction = self._get_adaptive_negatives(
+                        user_var
+                    )
+                else:
+                    negative_items = sample_items(
+                        self._num_items,
+                        len(batch_user),
+                        random_state=self._random_state)
+                    negative_var = Variable(
+                        gpu(torch.from_numpy(negative_items))
+                    )
+                    negative_prediction = self._net(user_var, negative_var)
+
+                self._optimizer.zero_grad()
+
+                loss = loss_fnc(positive_prediction, negative_prediction)
+                epoch_loss += loss.data[0]
+
+                loss.backward()
+                self._optimizer.step()
+
+            <a id="change">epoch_loss /= minibatch_num + 1</a>
+
+            if verbose:
+                print(&quotEpoch {}: loss {}&quot.format(epoch_num, epoch_loss))
+</code></pre>

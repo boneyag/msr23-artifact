@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &quotstrides&quot: [2, 2],
+    &quottrainable&quot: True}},
+    
+    <a id="change">assert len(operator.inputs) == 1</a>
+    x = operator.inputs[0]
+    ksize: Tuple[int, int] = tuple(operator.specific_config["pool_size"])
+    stride: Tuple[int, int] = tuple(operator.specific_config["strides"])
+    padding_keras: str = operator.specific_config["padding"]  &#47&#47 valid or same</code></pre><h3>After Change</h3><pre><code class='java'>
+
+@KerasConverter.register_handler("AveragePooling2D")
+def _convert_max_pooling2d(converter: KerasConverter, k_op: keras.layers.AveragePooling2D):
+    <a id="change">x = converter.get_variable(converter.get_input_tensor(k_op)[0])</a>
+
+    if k_op.data_format == "channels_first":
+        assert x.order == OrderNCHW
+
+    elif k_op.data_format == "channels_last":
+        assert x.order == OrderNHWC
+
+    else:
+        raise ValueError(f"[KerasConverter] Unknown data format: {k_op.data_format}")
+
+    ksize = tuple(<a id="change">k_op.pool_size</a>)
+    stride = tuple(k_op.strides)
+    if <a id="change">k_op.padding</a> == "valid":
+        padding = (0, 0)
+
+    elif k_op.padding == "same":
+        padding = (ksize[0] // 2, ksize[1] // 2)
+
+    else:
+        raise ValueError(f"[KerasConverter] Unknown padding: {k_op.padding}")
+
+    y, = AveragePooling2D(None, ksize=ksize, stride=stride, padding=padding)(x)
+    <a id="change">converter.set_variable(converter.get_output_tensor(k_op)[0], y)</a>
+
+
+@KerasConverter.register_handler("GlobalAveragePooling2D")
+def convert_layer_global_average_pooling2d(converter: KerasConverter, k_op: keras.layers.GlobalAveragePooling2D):</code></pre>

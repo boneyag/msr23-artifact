@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    start = kwargs.pop(&quotstart&quot)
+
+    rseed = _parallel_random_seed(random_seed, njobs)
+    <a id="change">start_vals = _make_parallel(start, njobs)</a>
+
+    chains = list(range(chain, chain + njobs))
+    pbars = [kwargs.pop(&quotprogressbar&quot)] + [False] * (njobs - 1)
+    <a id="change">traces = Parallel(n_jobs=njobs)(delayed(_sample)(chain=chains[i],
+                                                     progressbar=pbars[i],
+                                                     random_seed=rseed[i],
+                                                     start=start_vals[i],
+                                                     **kwargs) for i in range(njobs))</a>
+    return merge_traces(traces)
+
+
+def stop_tuning(step):</code></pre><h3>After Change</h3><pre><code class='java'>
+    chain = kwargs.pop(&quotchain&quot)
+    rseed = kwargs.pop(&quotrandom_seed&quot)
+    start = kwargs.pop(&quotstart&quot)
+    <a id="change">chains = kwargs.pop(&quotchains&quot)</a>
+
+    chain_nums = list(range(chain, chain + chains))
+    pbars = [kwargs.pop(&quotprogressbar&quot)] + [False] * (chains - 1)
+    jobs = (delayed(_sample)(*args, **kwargs)
+            for args in <a id="change">zip(chain_nums, pbars, rseed, start)</a>)
+    <a id="change">traces = Parallel(n_jobs=njobs)(jobs)</a>
+    return MultiTrace(traces)
+
+
+def stop_tuning(step):</code></pre>

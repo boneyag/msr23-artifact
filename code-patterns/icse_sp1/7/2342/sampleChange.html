@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 define output in terms of raw probs
+        probs = torch.FloatTensor(bbsz, len(steps), vocab).zero_()
+        <a id="change">for i, step in enumerate(steps):
+            &#47&#47 args.beam_probs gives the probability for every vocab element,
+            &#47&#47 starting with eos, then unknown, and then the rest of the vocab
+            if step &lt; len(self.args.beam_probs):
+                probs[:, i, self.dictionary.eos():] = self.args.beam_probs[step]
+            else:
+                probs[:, i, self.dictionary.eos()] = 1.0
+
+        &#47&#47 random attention
+       </a> attn = torch.rand(bbsz, src_len, tgt_len)
+
+        return Variable(probs), Variable(attn)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            steps = list(range(tgt_len))
+
+        &#47&#47 define output in terms of raw probs
+        <a id="change">if hasattr(self.args, &quotprobs&quot):
+            assert self.args.probs.dim() == 3, \
+                &quotexpected probs to have size bsz*steps*vocab&quot
+            probs = self.args.probs.index_select(1, torch.LongTensor(steps))
+        else:
+            probs = torch.FloatTensor(bbsz, len(steps), vocab).zero_()
+            for i, step in enumerate(steps):
+                &#47&#47 args.beam_probs gives the probability for every vocab element,
+                &#47&#47 starting with eos, then unknown, and then the rest of the vocab
+                if step &lt; len(self.args.beam_probs):
+                    probs[:, i, self.dictionary.eos():] = self.args.beam_probs[step]
+                else:
+                    probs[:, i, self.dictionary.eos()] = 1.0
+
+        &#47&#47 random attention
+       </a> attn = torch.rand(bbsz, src_len, tgt_len)
+
+        return Variable(probs), Variable(attn)
+</code></pre>

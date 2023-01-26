@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        y = pandas.read_csv(truth_path, usecols=[&quotparticle_id&quot],
+                            dtype=np.int64)
+        y = torch.from_numpy(y.values).squeeze()
+        <a id="change">_, y = y.unique(return_inverse=True)</a>
+        y = y - 1  &#47&#47 Zero entries are marked as invalid via `-1`.
+
+        return TrackingData(x=x, pos=pos, y=y)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        y = pandas.read_csv(truth_path, usecols=[&quotparticle_id&quot],
+                            dtype=np.int64)
+        y = torch.from_numpy(y.values).squeeze()
+        <a id="change">y_row = y.unique(return_inverse=True)[1].sub_(1)</a>
+        mask = y_row != -1
+        y_row = y_row[mask]
+        y_col = torch.arange(y.size(0))[mask]
+        <a id="change">perm = (y_row * y.size(0) + y_col).argsort()</a>
+        y_index = torch.stack([y_row[perm], y_col[perm]], dim=0)
+
+        return TrackingData(x=x, pos=pos, y_index=y_index)
+</code></pre>

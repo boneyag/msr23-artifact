@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    use_cudnn = ndim &lt; 5 and (dev.startswith(&quotcuda&quot) or dev.startswith(&quotgpu&quot))
+    if use_cudnn:
+        try:
+            <a id="change">return theano.sandbox.cuda.dnn.dnn_batch_normalization_test(x, gamma, beta, mean, var,
+                                                                        &quotspatial&quot, epsilon)</a>
+        except AttributeError:
+            pass
+    return T.nnet.bn.batch_normalization(x, gamma, beta, mean, sqrt(var + epsilon),
+                                         mode=&quothigh_mem&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+                mean = mean.dimshuffle(shuffle_pattern)
+                var = var.dimshuffle(shuffle_pattern)
+                beta = beta.dimshuffle(shuffle_pattern)
+                gamma = <a id="change">gamma.dimshuffle(shuffle_pattern)</a>
+            <a id="change">normed = theano.sandbox.cuda.dnn.dnn_batch_normalization_test(x, gamma, beta, mean, var,
+                                                                          &quotspatial&quot, epsilon)</a>
+            if axis != 1:
+                normed = <a id="change">normed.dimshuffle(shuffle_pattern)</a>
+            <a id="change">return normed</a>
+        except AttributeError:
+            pass
+        except ValueError:
+            pass</code></pre>

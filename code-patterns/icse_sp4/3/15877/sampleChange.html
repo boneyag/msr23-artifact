@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            h = tf.concat([fwd_state[i].h, bwd_state[i].h], -1)
+            c = tf.concat([fwd_state[i].c, bwd_state[i].c], -1)
+            encoder_state.append(tf.contrib.rnn.LSTMStateTuple(h=h, c=c))
+        encoder_state = <a id="change">tuple(encoder_state)</a>
+        return self.output_fn(rnnout, encoder_state)
+
+    def output_fn(self, out, state):
+        return out, state</code></pre><h3>After Change</h3><pre><code class='java'>
+        hs = []
+        for rnn in self.rnns:
+            outputs, h1, h2 = rnn(inputs, mask=mask)
+            h = <a id="change">tf.stack([h1, h2])</a>
+            hs.append(h)
+            inputs = outputs
+
+        <a id="change">_, B, H = get_shape_as_list(h)</a>
+        h = tf.reshape(tf.stack(hs), [-1, B, H * 2])
+        return self.output_fn(outputs, h)
+
+    @property</code></pre>

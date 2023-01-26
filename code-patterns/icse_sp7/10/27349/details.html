@@ -1,0 +1,55 @@
+<html><h3>80cfb0e5f889c65a972ebde6c6dae4278b5e28c1,foolbox/attacks/base.py,MinimizationAttack,__call__,#MinimizationAttack#Any#Any#Any#,340
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            early_stop = None
+        else:
+            early_stop = min(epsilons)
+        limit_epsilons = <a id="change">[eps if eps is not None else ep.inf for eps in epsilons]</a>
+        del epsilons
+
+        &#47&#47 run the actual attack
+        xp = self.run(model, x, criterion, early_stop=early_stop, **kwargs)
+        &#47&#47 TODO: optionally improve using a binary search?
+        &#47&#47 TODO: optionally reduce size to the different epsilons and recompute is_adv
+
+        is_adv = is_adversarial(xp)
+        assert is_adv.shape == (N,)
+
+        distances = self.distance(x, xp)
+        assert distances.shape == (N,)
+
+        in_limits = <a id="change">ep.stack(
+            [distances &lt;= epsilon for epsilon in limit_epsilons], axis=0
+        )</a>
+        assert in_limits.shape == (K, N)
+
+        <a id="change">success = ep.logical_and(in_limits, is_adv)</a>
+        assert success.shape == (K, N)
+
+        xp_ = restore_type(xp)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 run the actual attack
+        xp = self.run(model, x, criterion, early_stop=early_stop, **kwargs)
+
+        <a id="change">xpcs = []</a>
+        success = []
+        for epsilon in epsilons:
+            if epsilon is None:
+                xpc = xp
+            else:
+                xpc = self.distance.clip_perturbation(x, xp, epsilon)
+            is_adv = is_adversarial(xpc)
+
+            xpcs.append(xpc)
+            success.append(is_adv)
+
+        success_ = ep.stack(success)
+        assert success_.shape == (K, N)
+
+        xp_ = restore_type(xp)
+        xpcs_ = [restore_type(xpc) <a id="change">for</a> xpc in xpcs]
+
+        if was_iterable:
+            return [xp_] * K, xpcs_, restore_type(success)</code></pre><img src="139673939.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/bethgelab/foolbox/commit/80cfb0e5f889c65a972ebde6c6dae4278b5e28c1#diff-2e76868a2403842075a80eb5d839820a2539b393891dacd357ee4541788b4e5dL341' target='_blank'>Link</a></div><div id='project'> Project Name: bethgelab/foolbox</div><div id='commit'> Commit Name: 80cfb0e5f889c65a972ebde6c6dae4278b5e28c1</div><div id='time'> Time: 2020-02-14</div><div id='author'> Author: git@jonasrauber.de</div><div id='file'> File Name: foolbox/attacks/base.py</div><div id='class'> Class Name: MinimizationAttack</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/f7b4c6de2037ebedf6bc8ea5979e81666d54534f#diff-ee421de3daf8a640c16b7f6f5a5d3399d28ded3a5c073b9ee10e5e2a88b7e94fL1012' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: f7b4c6de2037ebedf6bc8ea5979e81666d54534f</div><div id='time'> Time: 2020-12-01</div><div id='author'> Author: rathodv@google.com</div><div id='file'> File Name: research/object_detection/meta_architectures/center_net_meta_arch.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: convert_strided_predictions_to_normalized_boxes</div><BR><BR><div id='link'><a href='https://github.com/kenshohara/3D-ResNets-PyTorch/commit/371a1b952acb0d2cccaf3ece7f594763d3f02e03#diff-8fe9c2e3fe2a8bd5945a11174ffcedaaab4768a35acb16048f152e020629e153L94' target='_blank'>Link</a></div><div id='project'> Project Name: kenshohara/3D-ResNets-PyTorch</div><div id='commit'> Commit Name: 371a1b952acb0d2cccaf3ece7f594763d3f02e03</div><div id='time'> Time: 2018-11-02</div><div id='author'> Author: kensho.hara@aist.go.jp</div><div id='file'> File Name: datasets/videodataset.py</div><div id='class'> Class Name: VideoDataset</div><div id='method'> Method Name: __getitem__</div><BR>

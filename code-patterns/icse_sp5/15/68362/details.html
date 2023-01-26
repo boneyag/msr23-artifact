@@ -1,0 +1,44 @@
+<html><h3>5f4f3d1aa7f3e5ac7bfd1f950454bcf7ad672f8e,models/AttModel.py,AttModel,_sample_beam,#AttModel#Any#Any#Any#Any#,143
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 embed fc and att feats
+        fc_feats = self.fc_embed(fc_feats)
+        <a id="change">att_feats = pack_wrapper(self.att_embed, att_feats, att_masks)</a>
+
+        &#47&#47 Project the attention feats first to reduce memory and computation comsumptions.
+        <a id="change">p_att_feats = self.ctx2att(att_feats)</a>
+
+        assert beam_size &lt;= self.vocab_size + 1, &quotlets assume this for now, otherwise this corner case causes a few headaches down the road. can be dealt with in future if needed&quot
+        seq = torch.LongTensor(self.seq_length, batch_size).zero_()
+        seqLogprobs = torch.FloatTensor(self.seq_length, batch_size)
+        &#47&#47 lets process every image independently for now, for simplicity
+
+        self.done_beams = [[] for _ in range(batch_size)]
+        for k in range(batch_size):
+            state = self.init_hidden(beam_size)
+            tmp_fc_feats = fc_feats[k:k+1].expand(beam_size, fc_feats.size(1))
+            tmp_att_feats = att_feats[k:k+1].expand(*((beam_size,)+att_feats.size()[1:])).contiguous()
+            tmp_p_att_feats = p_att_feats[k:k+1].expand(*((beam_size,)+p_att_feats.size()[1:])).contiguous()
+            tmp_att_masks = att_masks[k:k+1].expand(*((beam_size,)+att_masks.size()[1:])).contiguous() if att_masks is not None else None
+
+            for t in range(1):
+                if t == 0: &#47&#47 input &lt;bos&gt;
+                    it = fc_feats.data.new(beam_size).long().zero_()
+                    xt = <a id="change">self.embed(Variable(it, requires_grad=False))</a>
+
+                output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, state, tmp_att_masks)
+                <a id="change">logprobs = F.log_softmax(self.logit(output))</a>
+
+            self.done_beams[k] = self.beam_search(state, logprobs, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, tmp_att_masks, opt=opt)
+            seq[:, k] = self.done_beams[k][0][&quotseq&quot] &#47&#47 the first beam has highest cumulative score
+            seqLogprobs[:, k] = self.done_beams[k][0][&quotlogps&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+        beam_size = opt.get(&quotbeam_size&quot, 10)
+        batch_size = fc_feats.size(0)
+
+        <a id="change">fc_feats</a>, att_feats, p_att_feats = self._prepare_feature(fc_feats, att_feats, att_masks)
+
+        assert beam_size &lt;= self.vocab_size + 1, &quotlets assume this for now, otherwise this corner case causes a few headaches down the road. can be dealt with in future if needed&quot
+        seq = torch.LongTensor(self.seq_length, batch_size).zero_()</code></pre><img src="316197491.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 13</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ruotianluo/ImageCaptioning.pytorch/commit/5f4f3d1aa7f3e5ac7bfd1f950454bcf7ad672f8e#diff-19db989ab9f9301d21cdc9066529071818266d09691a8afb0dd298eaded0b467L143' target='_blank'>Link</a></div><div id='project'> Project Name: ruotianluo/ImageCaptioning.pytorch</div><div id='commit'> Commit Name: 5f4f3d1aa7f3e5ac7bfd1f950454bcf7ad672f8e</div><div id='time'> Time: 2018-04-14</div><div id='author'> Author: rluo@ttic.edu</div><div id='file'> File Name: models/AttModel.py</div><div id='class'> Class Name: AttModel</div><div id='method'> Method Name: _sample_beam</div><BR><BR><div id='link'><a href='https://github.com/ruotianluo/ImageCaptioning.pytorch/commit/5f4f3d1aa7f3e5ac7bfd1f950454bcf7ad672f8e#diff-19db989ab9f9301d21cdc9066529071818266d09691a8afb0dd298eaded0b467L181' target='_blank'>Link</a></div><div id='project'> Project Name: ruotianluo/ImageCaptioning.pytorch</div><div id='commit'> Commit Name: 5f4f3d1aa7f3e5ac7bfd1f950454bcf7ad672f8e</div><div id='time'> Time: 2018-04-14</div><div id='author'> Author: rluo@ttic.edu</div><div id='file'> File Name: models/AttModel.py</div><div id='class'> Class Name: AttModel</div><div id='method'> Method Name: _sample</div><BR><BR><div id='link'><a href='https://github.com/ruotianluo/self-critical.pytorch/commit/5f4f3d1aa7f3e5ac7bfd1f950454bcf7ad672f8e#diff-19db989ab9f9301d21cdc9066529071818266d09691a8afb0dd298eaded0b467L143' target='_blank'>Link</a></div><div id='project'> Project Name: ruotianluo/self-critical.pytorch</div><div id='commit'> Commit Name: 5f4f3d1aa7f3e5ac7bfd1f950454bcf7ad672f8e</div><div id='time'> Time: 2018-04-14</div><div id='author'> Author: rluo@ttic.edu</div><div id='file'> File Name: models/AttModel.py</div><div id='class'> Class Name: AttModel</div><div id='method'> Method Name: _sample_beam</div><BR>

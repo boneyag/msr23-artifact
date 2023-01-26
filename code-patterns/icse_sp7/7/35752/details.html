@@ -1,0 +1,75 @@
+<html><h3>a5d1cf98f0ec5c72fb48336cafaf31bf11e6128e,src/pudl/analysis/mcoe.py,,mcoe,#Any#Any#Any#Any#Any#,311
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mcoe_out = mcoe_out[mcoe_out.heat_rate_mmbtu_mwh &gt;= min_heat_rate]
+    if min_fuel_cost_per_mwh is not None:
+        mcoe_out = mcoe_out[mcoe_out.fuel_cost_per_mwh &gt; min_fuel_cost_per_mwh]
+    <a id="change">if min_cap_fact is not None:
+        mcoe_out = mcoe_out[mcoe_out.capacity_factor &gt;= min_cap_fact]
+   </a> if max_cap_fact is not None:
+        mcoe_out = mcoe_out[mcoe_out.capacity_factor &lt;= max_cap_fact]
+
+    return mcoe_out</code></pre><h3>After Change</h3><pre><code class='java'>
+                 if x in pudl_out.fuel_cost().columns and x not in merge_cols]
+    &#47&#47 start with the generators table so we have all of the generators
+    mcoe_out = pudl.helpers.merge_on_date_year(
+        <a id="change">pudl_out.fuel_cost().drop(drop_cols, axis=1)</a>,
+        pudl_out.gens_eia860(),
+        on=[x for x in merge_cols if x != &quotreport_date&quot],
+        how=&quotinner&quot,
+    )
+    &#47&#47 Bring together the fuel cost and capacity factor dataframes, which
+    &#47&#47 also include heat rate information.
+    mcoe_out = pd.merge(
+        mcoe_out,
+        pudl_out.capacity_factor(min_cap_fact=min_cap_fact,
+                                 max_cap_fact=max_cap_fact)[
+            [&quotreport_date&quot, &quotplant_id_eia&quot,
+             &quotgenerator_id&quot, &quotcapacity_factor&quot, &quotnet_generation_mwh&quot]],
+        on=[&quotreport_date&quot, &quotplant_id_eia&quot, &quotgenerator_id&quot],
+        how=&quotouter&quot)
+
+    &#47&#47 Bring the PUDL Unit IDs into the output dataframe so we can see how
+    &#47&#47 the generators are really grouped.
+    mcoe_out = pudl.helpers.merge_on_date_year(
+        mcoe_out,
+        pudl_out.bga()[[&quotreport_date&quot,
+                        &quotplant_id_eia&quot,
+                        &quotunit_id_pudl&quot,
+                        &quotgenerator_id&quot]].drop_duplicates(),
+        how=&quotleft&quot,
+        on=[&quotplant_id_eia&quot, &quotgenerator_id&quot])
+    &#47&#47 Instead of getting the total MMBTU through this multiplication... we
+    &#47&#47 could also calculate the total fuel consumed on a per-unit basis, from
+    &#47&#47 the boiler_fuel table, and then determine what proportion should be
+    &#47&#47 distributed to each generator based on its heat-rate and net generation.
+    mcoe_out[&quottotal_mmbtu&quot] = \
+        mcoe_out.net_generation_mwh * mcoe_out.heat_rate_mmbtu_mwh
+    mcoe_out[&quottotal_fuel_cost&quot] = \
+        mcoe_out.total_mmbtu * mcoe_out.fuel_cost_per_mmbtu
+
+    first_cols = [&quotreport_date&quot,
+                  &quotplant_id_eia&quot,
+                  &quotplant_id_pudl&quot,
+                  &quotunit_id_pudl&quot,
+                  &quotgenerator_id&quot,
+                  &quotplant_name_eia&quot,
+                  &quotutility_id_eia&quot,
+                  &quotutility_id_pudl&quot,
+                  &quotutility_name_eia&quot]
+    mcoe_out = pudl.helpers.organize_cols(mcoe_out, first_cols)
+    mcoe_out = mcoe_out.sort_values(
+        [&quotplant_id_eia&quot, &quotunit_id_pudl&quot, &quotgenerator_id&quot, &quotreport_date&quot]
+    )
+
+    &#47&#47 Filter the output based on the range of validity supplied by the user:
+    mcoe_out = pudl.helpers.oob_to_nan(mcoe_out, [&quotheat_rate_mmbtu_mwh&quot],
+                                       lb=min_heat_rate, ub=None)
+    mcoe_out = pudl.helpers.oob_to_nan(mcoe_out, [&quotfuel_cost_per_mwh&quot],
+                                       lb=min_fuel_cost_per_mwh, ub=None)
+    <a id="change">mcoe_out = pudl.helpers.oob_to_nan(mcoe_out, [&quotcapacity_factor&quot],
+                                       lb=min_cap_fact, ub=max_cap_fact)</a>
+    return mcoe_out
+</code></pre><img src="173540665.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/catalyst-cooperative/pudl/commit/a5d1cf98f0ec5c72fb48336cafaf31bf11e6128e#diff-efdbc6ad2899b8e26ea5bd7357403dd52af0b9f3cf8949dc0cf4924eb4caa545L345' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-cooperative/pudl</div><div id='commit'> Commit Name: a5d1cf98f0ec5c72fb48336cafaf31bf11e6128e</div><div id='time'> Time: 2020-05-16</div><div id='author'> Author: cgosnell@catalyst.coop</div><div id='file'> File Name: src/pudl/analysis/mcoe.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: mcoe</div><BR><BR><div id='link'><a href='https://github.com/CNuge/kaggle-code/commit/b7990885d8b26b9404fd9ce952b0b2f005019594#diff-98e1d888948d2fb9ceba7250296619639269b2d8c5bec5737f959d9d670bfd88L176' target='_blank'>Link</a></div><div id='project'> Project Name: CNuge/kaggle-code</div><div id='commit'> Commit Name: b7990885d8b26b9404fd9ce952b0b2f005019594</div><div id='time'> Time: 2018-01-12</div><div id='author'> Author: nugentc@uoguelph.ca</div><div id='file'> File Name: california_housing/feature_engineering.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/kwgoodman/numerox/commit/7697dc84cdc2d0ba5e28227d15f166d6a569bd95#diff-11e552cd94452f47938f4517506f84b748be8d9a86b9474b3c9286d1ca18f411L147' target='_blank'>Link</a></div><div id='project'> Project Name: kwgoodman/numerox</div><div id='commit'> Commit Name: 7697dc84cdc2d0ba5e28227d15f166d6a569bd95</div><div id='time'> Time: 2018-06-25</div><div id='author'> Author: kwgoodman@gmail.com</div><div id='file'> File Name: numerox/numerai.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_stakes</div><BR>

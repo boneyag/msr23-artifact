@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mock_instance.start_job.return_value = {&quotpod&quot: &quotpod_content&quot}
+        mock_instance.spec = config
+
+        <a id="change">with patch(&quotscheduler.dockerizer_scheduler.start_dockerizer&quot) as mock_start:
+            with patch(&quotscheduler.dockerizer_scheduler.check_image&quot) as mock_check:
+                mock_start.return_value = False
+                mock_check.return_value = True
+                job = JobFactory(config=config.parsed_data)
+
+       </a> assert JobStatus.objects.filter(job=job).count() == 2
+        assert list(JobStatus.objects.filter(job=job).values_list(
+            &quotstatus&quot, flat=True)) == [JobLifeCycle.CREATED,
+                                      JobLifeCycle.SCHEDULED]</code></pre><h3>After Change</h3><pre><code class='java'>
+        mock_instance.start_job.return_value = {&quotpod&quot: &quotpod_content&quot}
+        mock_instance.spec = config
+
+        <a id="change">with patch(&quotscheduler.dockerizer_scheduler.create_build_job&quot) as mock_start:
+            build = BuildJobFactory()
+            BuildJobStatus.objects.create(status=JobLifeCycle.SUCCEEDED, job=build)
+            mock_start.return_value = build, True, True
+            job = JobFactory(config=config.parsed_data)
+
+       </a> assert JobStatus.objects.filter(job=job).count() == 2
+        assert list(JobStatus.objects.filter(job=job).values_list(
+            &quotstatus&quot, flat=True)) == [JobLifeCycle.CREATED,
+                                      JobLifeCycle.SCHEDULED]</code></pre>

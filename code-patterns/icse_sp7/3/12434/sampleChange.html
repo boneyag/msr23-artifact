@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        for features, y in pg(loader):
+            lossv = self.optimizer.update(self.model, features, y).numpy()
+            batchsz = int(<a id="change">y.shape[0]</a>)
+            report_lossv = lossv * batchsz
+            epoch_loss += report_lossv
+            epoch_div += batchsz</code></pre><h3>After Change</h3><pre><code class='java'>
+        epoch_loss = tf.keras.metrics.Sum()
+        epoch_div = tf.keras.metrics.Sum()
+        nstep_loss = tf.keras.metrics.Sum()
+        nstep_div = <a id="change">tf.keras.metrics.Sum()</a>
+        self.nstep_start = time.time()
+
+        @tf.function
+        def _train_step(inputs):
+            Replicated training step.
+
+            features, y = inputs
+            loss = self.optimizer.update(self.model, features, y)
+            batchsz = tf.cast(get_shape_as_list(y)[0], tf.float32)
+            report_loss = loss * batchsz
+            epoch_loss.update_state(report_loss)
+            nstep_loss.update_state(report_loss)
+            epoch_div.update_state(batchsz)
+            nstep_div.update_state(batchsz)
+
+        for inputs in pg(loader):
+            _train_step(inputs)
+            step = self.optimizer.global_step.numpy() + 1
+
+            if step % self.nsteps == 0:
+                <a id="change">metrics = self.calc_metrics(nstep_loss.result().numpy(), nstep_div.result().numpy())</a>
+                self.report(
+                    step, metrics, self.nstep_start,
+                    &quotTrain&quot, &quotSTEP&quot, reporting_fns, self.nsteps
+                )</code></pre>

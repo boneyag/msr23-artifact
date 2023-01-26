@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 one instance across all threads in the worker. This is possible since
+    &#47&#47 tf.Session.run() is thread safe.
+    with self.session_lock:
+      <a id="change">if self._session is None:
+        graph = tf.Graph()
+        self._session = tf.Session(graph=graph)
+        with graph.as_default():
+          meta_graph = tf.saved_model.loader.load(
+              self._session, [tf.saved_model.tag_constants.SERVING],
+              self._model_dir)
+        signature = meta_graph.signature_def[&quotserving_default&quot]
+        input_tensor_name = signature.inputs[&quotinputs&quot].name
+        self._input = graph.get_tensor_by_name(input_tensor_name)
+        self._boxes_node = graph.get_tensor_by_name(
+            signature.outputs[&quotdetection_boxes&quot].name)
+        self._scores_node = graph.get_tensor_by_name(
+            signature.outputs[&quotdetection_scores&quot].name)
+        self._num_detections_node = graph.get_tensor_by_name(
+            signature.outputs[&quotnum_detections&quot].name)
+
+ </a> def process(self, tfrecord_entry):
+    return self._run_inference_and_generate_detections(tfrecord_entry)
+
+  def _run_inference_and_generate_detections(self, tfrecord_entry):</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 one instance across all threads in the worker. This is possible since
+    &#47&#47 tf.Session.run() is thread safe.
+    with self.session_lock:
+      <a id="change">self._detect_fn = tf.saved_model.load(self._model_dir)</a>
+
+  def process(self, tfrecord_entry):
+    return self._run_inference_and_generate_detections(tfrecord_entry)
+</code></pre>

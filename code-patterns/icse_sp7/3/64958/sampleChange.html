@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if not isinstance(test_test_covar, LazyVariable):
+                    test_test_covar = NonLazyVariable(test_test_covar)
+                covar_correction = test_train_covar.matmul(self.chol)
+                predictive_covar = test_test_covar + <a id="change">CholLazyVariable(covar_correction).mul(-1)</a>
+            else:
+                if isinstance(train_test_covar, LazyVariable):
+                    train_test_covar = train_test_covar.evaluate()
+                if isinstance(test_train_covar, LazyVariable):</code></pre><h3>After Change</h3><pre><code class='java'>
+                if not isinstance(test_test_covar, LazyVariable):
+                    test_test_covar = NonLazyVariable(test_test_covar)
+                covar_correction_left = test_train_covar.matmul(self.low_rank_left)
+                <a id="change">covar_correction_right = test_train_covar.matmul(self.low_rank_right.transpose(-1, -2))</a>
+                covar_correction_right = covar_correction_right.transpose(-1, -2)
+                covar_correction = MatmulLazyVariable(covar_correction_left, covar_correction_right).mul(-1)
+                predictive_covar = test_test_covar + covar_correction
+            else:</code></pre>

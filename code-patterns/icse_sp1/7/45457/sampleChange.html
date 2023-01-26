@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      &#47&#47 For rewriting JDK classes to work, the JAR file has to be listed specifically in
+      &#47&#47 the JAR manifest as something that goes in the bootclasspath.
+      &#47&#47 The MANIFEST list a jar &quotallocation.jar&quot this is why we have to rename it
+      agent_jar = os.readlink(<a id="change">profile_classpath(self.agent_profile)[0]</a>)
+      allocation_jar = os.path.join(os.path.dirname(agent_jar), "allocation.jar")
+      &#47&#47 TODO(Steve Gury): Find a solution to avoid copying the jar every run and being resilient
+      &#47&#47 to version upgrade</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  def __init__(self, context):
+    Task.__init__(self, context)
+    <a id="change">config = context.config</a>
+    self.confs = config.getlist(&quotbenchmark-run&quot, &quotconfs&quot)
+    self.java_args = config.getlist(&quotbenchmark-run&quot, &quotargs&quot,
+                                    default=[&quot-Xmx1g&quot, &quot-XX:MaxPermSize=256m&quot])
+
+    <a id="change">self._benchmark_bootstrap_tools</a> = config.getlist(&quotbenchmark-run&quot, &quotbootstrap-tools&quot,
+                                                     default=[&quot:benchmark-caliper-0.5&quot])
+    <a id="change">self._agent_bootstrap_tools = config.getlist(&quotbenchmark-run&quot,
+                                                 &quotagent_profile&quot,
+                                                 default=[&quot:benchmark-java-allocation-instrumenter-2.1&quot])</a>
+
+    <a id="change">self._bootstrap_utils.register_all([self._benchmark_bootstrap_tools,
+                                        self._agent_bootstrap_tools])</a>
+
+    &#47&#47 TODO(Steve Gury):
+    &#47&#47 Find all the target classes from the Benchmark target itself
+    &#47&#47 https://jira.twitter.biz/browse/AWESOME-1938</code></pre>

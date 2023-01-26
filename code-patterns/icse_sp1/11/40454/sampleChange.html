@@ -1,0 +1,118 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if self._include_mask:
+      masks = input_utils.resize_and_crop_masks(
+          tf.expand_dims(masks, axis=-1),
+          image_scale, <a id="change">(image_height, image_width)</a>, offset)
+      <a id="change">masks = tf.squeeze(masks, axis=-1)</a>
+
+    &#47&#47 Filters out ground truth boxes that are all zeros.
+    indices = input_utils.get_non_empty_box_indices(boxes)
+    boxes = tf.gather(boxes, indices)
+    classes = tf.gather(classes, indices)
+    if self._include_mask:
+      masks = tf.gather(masks, indices)
+      num_masks = tf.shape(masks)[0]
+      masks = tf.image.crop_and_resize(
+          tf.expand_dims(masks, axis=-1),
+          box_utils.normalize_boxes(boxes, tf.shape(image)[0:2]),
+          box_ind=tf.range(num_masks, dtype=tf.int32),
+          crop_size=[self._mask_crop_size, self._mask_crop_size],
+          method=&quotbilinear&quot)
+      masks = tf.squeeze(masks, axis=-1)
+
+    &#47&#47 Assigns anchor targets.
+    &#47&#47 Note that after the target assignment, box targets are absolute pixel
+    &#47&#47 offsets w.r.t. the scaled image.
+    input_anchor = anchor.Anchor(
+        self._min_level,
+        self._max_level,
+        self._num_scales,
+        self._aspect_ratios,
+        self._anchor_size,
+        (image_height, image_width))
+    anchor_labeler = anchor.RpnAnchorLabeler(
+        input_anchor,
+        self._rpn_match_threshold,
+        self._rpn_unmatched_threshold,
+        self._rpn_batch_size_per_im,
+        self._rpn_fg_fraction)
+    rpn_score_targets, rpn_box_targets = anchor_labeler.label_anchors(
+        boxes, tf.cast(tf.expand_dims(classes, axis=-1), dtype=tf.float32))
+
+    &#47&#47 If bfloat16 is used, casts input image to tf.bfloat16.
+    if self._use_bfloat16:
+      image = tf.cast(image, dtype=tf.bfloat16)
+
+    &#47&#47 Packs labels for model_fn outputs.
+    labels = {
+        &quotanchor_boxes&quot: input_anchor.multilevel_boxes,
+        &quotimage_info&quot: image_info,
+        &quotrpn_score_targets&quot: rpn_score_targets,
+        &quotrpn_box_targets&quot: rpn_box_targets,
+    }
+    labels[&quotgt_boxes&quot] = input_utils.pad_to_fixed_size(
+        boxes, self._max_num_instances, -1)
+    labels[&quotgt_classes&quot] = input_utils.pad_to_fixed_size(
+        classes, self._max_num_instances, -1)
+    if self._include_mask:
+      <a id="change">labels[&quotgt_masks&quot]</a> = input_utils.pad_to_fixed_size(
+          masks, self._max_num_instances, -1)
+
+    return image, labels</code></pre><h3>After Change</h3><pre><code class='java'>
+    classes = tf.gather(classes, indices)
+    if self._include_mask:
+      masks = tf.gather(masks, indices)
+      <a id="change">cropped_boxes = boxes + tf.tile(tf.expand_dims(offset, axis=0), [1, 2])</a>
+      <a id="change">cropped_boxes = box_utils.normalize_boxes(
+          cropped_boxes, image_info[1, :])</a>
+      num_masks = tf.shape(masks)[0]
+      masks = tf.image.crop_and_resize(
+          tf.expand_dims(masks, axis=-1),
+          cropped_boxes,
+          box_indices=tf.range(num_masks, dtype=tf.int32),
+          crop_size=[self._mask_crop_size, self._mask_crop_size],
+          method=&quotbilinear&quot)
+      masks = tf.squeeze(masks, axis=-1)
+
+    &#47&#47 Assigns anchor targets.
+    &#47&#47 Note that after the target assignment, box targets are absolute pixel
+    &#47&#47 offsets w.r.t. the scaled image.
+    input_anchor = anchor.Anchor(
+        self._min_level,
+        self._max_level,
+        self._num_scales,
+        self._aspect_ratios,
+        self._anchor_size,
+        (image_height, image_width))
+    anchor_labeler = anchor.RpnAnchorLabeler(
+        input_anchor,
+        self._rpn_match_threshold,
+        self._rpn_unmatched_threshold,
+        self._rpn_batch_size_per_im,
+        self._rpn_fg_fraction)
+    rpn_score_targets, rpn_box_targets = anchor_labeler.label_anchors(
+        boxes, tf.cast(tf.expand_dims(classes, axis=-1), dtype=tf.float32))
+
+    &#47&#47 If bfloat16 is used, casts input image to tf.bfloat16.
+    if self._use_bfloat16:
+      image = tf.cast(image, dtype=tf.bfloat16)
+
+    &#47&#47 Packs labels for model_fn outputs.
+    labels = {
+        &quotanchor_boxes&quot: input_anchor.multilevel_boxes,
+        &quotimage_info&quot: image_info,
+        &quotrpn_score_targets&quot: rpn_score_targets,
+        &quotrpn_box_targets&quot: rpn_box_targets,
+    }
+    labels[&quotgt_boxes&quot] = input_utils.pad_to_fixed_size(
+        boxes, self._max_num_instances, -1)
+    labels[&quotgt_classes&quot] = input_utils.pad_to_fixed_size(
+        classes, self._max_num_instances, -1)
+    if self._include_mask:
+      <a id="change">labels[&quotgt_masks&quot]</a> = input_utils.pad_to_fixed_size(
+          masks, self._max_num_instances, -1)
+
+    return image, labels</code></pre>

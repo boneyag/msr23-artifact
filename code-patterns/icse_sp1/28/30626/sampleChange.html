@@ -1,0 +1,88 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            [[8. 8. 8. 8.]
+             [8. 8. 8. 8.]]
+        
+        <a id="change">if isinstance(left, Dist) and left in cache:
+            left = cache[left]
+       </a> <a id="change">if isinstance(right, Dist) and right in cache:
+            right = cache[right]
+
+       </a> if isinstance(left, Dist):
+            if isinstance(right, Dist):
+                raise StochasticallyDependentError(
+                    "under-defined distribution {} or {}".format(left, right))
+        elif not isinstance(right, Dist):
+            return left**right, left**right
+        else:
+            output = numpy.ones(xloc.shape)
+            left = left * output
+            assert numpy.all(left &gt;= 0), "root of negative number"
+
+            indices = xloc &gt; 0
+            output[indices] = numpy.log(xloc[indices])
+            output[~indices] = -numpy.inf
+
+            indices = left != 1
+            output[indices] /= numpy.log(left[indices])
+
+            output = evaluation.evaluate_bound(right, output, cache=cache)
+            output = left**output
+            output[:] = (
+                numpy.where(output[0] &lt; output[1], output[0], output[1]),
+                numpy.where(output[0] &lt; output[1], output[1], output[0]),
+            )
+            return output
+
+        output = numpy.zeros(xloc.shape)
+        right = right + output
+
+        indices = right &gt; 0
+        output[indices] = numpy.abs(xloc[indices])**(1/right[indices])
+        <a id="change">output[indices]</a> *= numpy.sign(xloc[indices])
+        output[right == 0] = 1
+        output[(xloc == 0) & (right &lt; 0)] = numpy.inf
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            [[8. 8. 8. 8.]
+             [8. 8. 8. 8.]]
+        
+        <a id="change">left = evaluation.get_forward_cache(left, cache)</a>
+        <a id="change">right = evaluation.get_forward_cache(right, cache)</a>
+
+        if isinstance(left, Dist):
+            if isinstance(right, Dist):
+                raise StochasticallyDependentError(
+                    "under-defined distribution {} or {}".format(left, right))
+        elif not isinstance(right, Dist):
+            return left**right, left**right
+        else:
+            output = numpy.ones(xloc.shape)
+            left = left * output
+            assert numpy.all(left &gt;= 0), "root of negative number"
+
+            indices = xloc &gt; 0
+            output[indices] = numpy.log(xloc[indices])
+            output[~indices] = -numpy.inf
+
+            indices = left != 1
+            output[indices] /= numpy.log(left[indices])
+
+            output = evaluation.evaluate_bound(right, output, cache=cache)
+            output = left**output
+            output[:] = (
+                numpy.where(output[0] &lt; output[1], output[0], output[1]),
+                numpy.where(output[0] &lt; output[1], output[1], output[0]),
+            )
+            return output
+
+        output = numpy.zeros(xloc.shape)
+        right = right + output
+
+        indices = right &gt; 0
+        output[indices] = numpy.abs(xloc[indices])**(1/right[indices])
+        <a id="change">output[indices]</a> *= numpy.sign(xloc[indices])
+        output[right == 0] = 1
+        output[(xloc == 0) & (right &lt; 0)] = numpy.inf
+</code></pre>

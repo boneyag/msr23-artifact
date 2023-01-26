@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    b_config_1.experimental_graceful_shutdown_timeout_s = grace_period_s
+
+    &#47&#47 Create and delete the backend.
+    <a id="change">tag = "tag"</a>
+    backend_state.deploy_backend(tag, b_config_1, r_config_1)
+    backend_state.update()
+    <a id="change">backend_state</a>._replicas[tag].get()[0]._actor.set_ready()
+    backend_state.update()
+    delete_goal = backend_state.delete_backend(tag)
+    backend_state.update()</code></pre><h3>After Change</h3><pre><code class='java'>
+    backend_state.update()
+
+    &#47&#47 Replica should remain in STOPPING until it finishes.
+    <a id="change">check_counts(backend_state, total=1, by_state=[(ReplicaState.STOPPING, 1)])</a>
+    assert backend_state._replicas[TEST_TAG].get()[0]._actor.stopped
+
+    backend_state.update()
+    backend_state.update()
+
+    &#47&#47 force_stop shouldn&quott be called until after the timer.
+    assert not backend_state._replicas[TEST_TAG].get(
+    )[0]._actor.force_stopped_counter
+    assert not backend_state._replicas[TEST_TAG].get()[0]._actor.cleaned_up
+    <a id="change">check_counts(backend_state, total=1, by_state=[(ReplicaState.STOPPING, 1)])</a>
+
+    &#47&#47 Advance the timer, now the replica should be force stopped.
+    timer.advance(grace_period_s + 0.1)
+    backend_state.update()
+    assert backend_state._replicas[TEST_TAG].get()[
+        0]._actor.force_stopped_counter == 1
+    assert not backend_state._replicas[TEST_TAG].get()[0]._actor.cleaned_up
+    <a id="change">check_counts(backend_state, total=1, by_state=[(ReplicaState.STOPPING, 1)])</a>
+    assert not goal_manager.check_complete(delete_goal)
+
+    &#47&#47 Force stop should be called repeatedly until the replica stops.
+    backend_state.update()
+    assert backend_state._replicas[TEST_TAG].get()[
+        0]._actor.force_stopped_counter == 2
+    assert not backend_state._replicas[TEST_TAG].get()[0]._actor.cleaned_up
+    <a id="change">check_counts(backend_state, total=1, by_state=[(ReplicaState.STOPPING, 1)])</a>
+    assert not goal_manager.check_complete(delete_goal)
+
+    &#47&#47 Once the replica is done stopping, it should be removed.
+    replica = backend_state._replicas[TEST_TAG].get()[0]</code></pre>

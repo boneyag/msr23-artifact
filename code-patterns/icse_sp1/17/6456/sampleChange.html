@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      tf_env = tf_py_environment.TFPyEnvironment(batched_py_env)
+    else:
+      tf_env = tf_py_environment.TFPyEnvironment(py_env)
+    <a id="change">_</a>, step_data = tf_env.current_time_step()
+    <a id="change">_</a>, step_data = tf_env.step(np.array([1]), step_data)
+    time_step, step_data = self.evaluate(tf_env.step(np.array([2]), step_data))
+
+    self.assertEqual(ts.StepType.LAST, time_step.step_type)</code></pre><h3>After Change</h3><pre><code class='java'>
+    else:
+      tf_env = tf_py_environment.TFPyEnvironment(py_env)
+    time_step = tf_env.current_time_step()
+    <a id="change">with tf.control_dependencies([time_step.step_type]):
+      action = tf.constant([1])
+   </a> time_step = tf_env.step(action)
+    <a id="change">with tf.control_dependencies([time_step.step_type]):
+      action = tf.constant([2])
+   </a> time_step = self.evaluate(tf_env.step(action))
+
+    self.assertEqual(ts.StepType.LAST, time_step.step_type)
+    self.assertEqual([2], time_step.observation)</code></pre>

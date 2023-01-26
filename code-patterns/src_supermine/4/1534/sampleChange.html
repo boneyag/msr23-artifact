@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        discount_factor = self._hparams.discount_factor
+        qvalues = list(self._rewards)
+        for i in range(<a id="change">len(qvalues)</a> - 2, -1, -1):
+            qvalues[i] += discount_factor * qvalues[i + 1]
+
+        q_mean = np.mean(qvalues)</code></pre><h3>After Change</h3><pre><code class='java'>
+        qvalues = np.expand_dims(qvalues, -1)
+        max_seq_length = self._samples_py.shape[1]
+        if max_seq_length &gt; 1:
+            prefix = <a id="change">np.zeros(
+                [qvalues.shape[0], max_seq_length-1], dtype=qvalues.dtype)</a>
+            <a id="change">qvalues = np.concatenate([prefix, qvalues])</a>
+            for i in range(max_seq_length - 2, -1, -1):
+                qvalues[:, i] += discount_factor * qvalues[:, i + 1]
+
+        q_mean = np.mean(qvalues)
+        q_std = np.std(qvalues)
+        qvalues = [(q - q_mean) / q_std for q in qvalues]
+
+        fetches = dict(loss=self._train_op)
+        feed_dict_ = {
+            self._qvalue_inputs: qvalues
+        }
+        feed_dict_.update(feed_dict or {})
+
+        vals = self._sess.run(fetches, feed_dict=feed_dict_)
+
+        <a id="change">return vals[&quotloss&quot]</a>
+
+    @property
+    def sess(self):
+        The tf session.</code></pre>

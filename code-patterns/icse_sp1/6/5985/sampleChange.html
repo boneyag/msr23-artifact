@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if start_stamp != end_stamp:
+        return &quotrunning&quot
+    else:
+        <a id="change">return &quotfailed&quot</a>
+
+def kill_task(task):
+    status_file =  os.path.join(os.path.expanduser(&quot~&quot), &quot.sos&quot, &quottasks&quot, task + &quot.status&quot)
+    res_file =  os.path.join(os.path.expanduser(&quot~&quot), &quot.sos&quot, &quottasks&quot, task + &quot.res&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+    res_file =  os.path.join(os.path.expanduser(&quot~&quot), &quot.sos&quot, &quottasks&quot, task + &quot.res&quot)
+
+    if os.path.isfile(res_file):
+        new_res = <a id="change">os.path.getmtime(task_file)</a> &lt;= os.path.getmtime(res_file)
+        try:
+            with open(res_file, &quotrb&quot) as result:
+                res = pickle.load(result)
+            if res[&quotsucc&quot] == 0:
+                if new_res:
+                    return &quotcompleted&quot
+                else:
+                    return &quotcompleted-old&quot
+            else:
+                if new_res:
+                    return &quotfailed&quot
+                else:
+                    return &quotfailed-old&quot
+        except Exception as e:
+            return &quotfailed&quot
+    try:
+        if not os.path.isfile(status_file) or os.path.getmtime(status_file) &lt; os.path.getmtime(res_file):
+            return &quotpending&quot
+    except:
+        &#47&#47 there is a slight chance that the old res_file is removed
+        pass
+    &#47&#47 dead?
+    start_stamp = os.stat(status_file).st_mtime
+    elapsed = time.time() - start_stamp
+    if elapsed &lt; 0:
+        env.logger.warning(&quot{} is created in the future. Your system time might be problematic&quot.format(status_file))
+    &#47&#47 if the file is within 5 seconds
+    if elapsed &lt; monitor_interval:
+        return &quotrunning&quot
+    elif elapsed &gt; 5 * monitor_interval:
+        return &quotfrozen&quot
+    &#47&#47 otherwise, let us be patient ... perhaps there is some problem with the filesystem etc
+    time.sleep(5 * monitor_interval)
+    end_stamp = os.stat(status_file).st_mtime
+    &#47&#47 the process is still alive
+    if start_stamp != end_stamp:
+        return &quotrunning&quot
+    elif <a id="change">os.path.isfile(res_file)</a>:
+        return &quotcompleted&quot
+    else:
+        return &quotfrozen&quot</code></pre>

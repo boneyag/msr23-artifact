@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.features.add(nn.BatchNorm())
+            self.features.add(nn.Activation(&quotrelu&quot))
+            self.features.add(nn.Conv2D(channels * 2, 3, 1, 1, use_bias=False))
+            <a id="change">self.features.add(nn.BatchNorm())</a>
+            self.features.add(nn.Activation(&quotrelu&quot))
+            self.features.add(nn.MaxPool2D(3, 2, ceil_mode=True))
+
+            for i, num_layer in enumerate(layers):
+                stride = 1 if i == 0 else 2
+                <a id="change">self.features.add(self._make_layer(channels, num_layer, stride, i+1))</a>
+                channels *= 2
+            self.features.add(nn.GlobalAvgPool2D())
+            self.features.add(nn.Dropout(0.2))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        with self.name_scope():
+            self.features = nn.HybridSequential(prefix=&quot&quot)
+            self.features.add(nn.Conv2D(channels, 3, 2, 1, use_bias=False))
+            <a id="change">self.features.add(norm_layer(**({} if norm_kwargs is None else norm_kwargs)))</a>
+            self.features.add(nn.Activation(&quotrelu&quot))
+            self.features.add(nn.Conv2D(channels, 3, 1, 1, use_bias=False))
+            self.features.add(norm_layer(**({} if norm_kwargs is None else norm_kwargs)))
+            self.features.add(nn.Activation(&quotrelu&quot))
+            self.features.add(nn.Conv2D(channels * 2, 3, 1, 1, use_bias=False))
+            self.features.add(norm_layer(**({} if norm_kwargs is None else norm_kwargs)))
+            self.features.add(nn.Activation(&quotrelu&quot))
+            self.features.add(nn.MaxPool2D(3, 2, ceil_mode=True))
+
+            for i, num_layer in enumerate(layers):
+                stride = 1 if i == 0 else 2
+                <a id="change">self.features.add(self._make_layer(channels, num_layer, stride, i+1,
+                                                   norm_layer=norm_layer, norm_kwargs=norm_kwargs))</a>
+                channels *= 2
+            self.features.add(nn.GlobalAvgPool2D())
+            self.features.add(nn.Dropout(0.2))
+</code></pre>

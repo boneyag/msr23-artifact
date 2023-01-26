@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                            "list of IDs or just an ID: %s" % type(vals))
+        if timeout is None:
+            timeout = 0
+        <a id="change">out = [self._get(x, timeout) for x in to_get]</a>
+        if single:
+            out = out[0]
+        return out
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        else:
+            deadline = time.monotonic() + timeout
+        out = []
+        <a id="change">for obj_ref in to_get:
+            res = None
+            &#47&#47 Implement non-blocking get with a short-polling loop. This allows
+            &#47&#47 cancellation of gets via Ctrl-C, since we never block for long.
+            while True:
+                try:
+                    if deadline:
+                        op_timeout = min(
+                            MAX_BLOCKING_OPERATION_TIME_S,
+                            max(deadline - time.monotonic(), 0.001))
+                    else:
+                        op_timeout = MAX_BLOCKING_OPERATION_TIME_S
+                    res = self._get(obj_ref, op_timeout)
+                    break
+                except GetTimeoutError:
+                    if deadline and time.monotonic() &gt; deadline:
+                        raise
+                    logger.debug("Internal retry for get {}".format(obj_ref))
+            out.append(res)
+       </a> if single:
+            out = out[0]
+        return out
+</code></pre>

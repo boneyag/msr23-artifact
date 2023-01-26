@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    n, e, K = x.size(0), row.size(0), weight.size(0)
+
+    if edge_attr is None:
+        <a id="change">edge_attr = x.data.new(e).fill_(1)</a>
+
+    &#47&#47 Compute degree.
+    degree = x.data.new(n).fill_(0).scatter_add_(0, row, edge_attr)
+    degree = degree.pow_(-0.5)
+
+    &#47&#47 Compute normalized and rescaled Laplacian.
+    <a id="change">edge_attr *= degree[row]</a>
+    <a id="change">edge_attr *= degree[col]</a>
+    lap = SparseTensor(edge_index, -edge_attr, torch.Size([n, n]))
+
+    &#47&#47 Convolution.
+    Tx_0 = x</code></pre><h3>After Change</h3><pre><code class='java'>
+    row, col = edge_index
+    n, e, K = x.size(0), row.size(0), weight.size(0)
+
+    edge_attr = x.new_full(<a id="change">(e, )</a>, 1) if edge_attr is None else edge_attr
+    deg = degree(row, n, dtype=edge_attr.dtype, device=edge_attr.device)
+
+    &#47&#47 Compute normalized and rescaled Laplacian.
+    deg.pow_(-0.5)
+    lap = <a id="change">-</a>deg[row] * edge_attr * deg[col]
+
+    &#47&#47 Convolution.
+    Tx_0 = x
+    out = torch.mm(Tx_0, weight[0])
+
+    if K &gt; 1:
+        Tx_1 = matmul(edge_index, lap, x)
+        out += torch.mm(Tx_1, weight[1])
+
+    for k in range(2, K):
+        Tx_2 = 2 * <a id="change">matmul(edge_index, lap, Tx_1)</a> - Tx_0
+        out += torch.mm(Tx_2, weight[k])
+        Tx_0, Tx_1 = Tx_1, Tx_2
+</code></pre>

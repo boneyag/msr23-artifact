@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 https://discuss.pytorch.org/t/cumprod-exclusive-true-equivalences/2614/8
+    v = var(T.ones(batch_size, 1))
+    if self.gpu_id != -1:
+      <a id="change">v = v.cuda(self.gpu_id)</a>
+    cat_sorted_usage = T.cat((v, sorted_usage), 1)[:, :-1]
+    prod_sorted_usage = fake_cumprod(cat_sorted_usage, self.gpu_id)
+
+    sorted_allocation_weights = (1 - sorted_usage) * prod_sorted_usage.squeeze()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 cumprod with exclusive=True
+    &#47&#47 https://discuss.pytorch.org/t/cumprod-exclusive-true-equivalences/2614/8
+    v = var(<a id="change">sorted_usage</a>.data.new(batch_size, 1).fill_(1))
+    cat_sorted_usage = T.cat((v, sorted_usage), 1)
+    <a id="change">prod_sorted_usage = T.cumprod(cat_sorted_usage, 1)[:, :-1]</a>
+
+    sorted_allocation_weights = (1 - sorted_usage) * prod_sorted_usage.squeeze()
+
+    &#47&#47 construct the reverse sorting index https://stackoverflow.com/questions/2483696/undo-or-reverse-argsort-python</code></pre>

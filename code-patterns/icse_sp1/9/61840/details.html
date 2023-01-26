@@ -1,0 +1,37 @@
+<html><h3>64710c051f26a2778c03fc15ef29c4bcae01df32,official/recommendation/ncf_main.py,,evaluate_model,#Any#Any#Any#,57
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  &#47&#47 NumPy has an np.argparition() method, however log(1000) is so small that
+  &#47&#47 sorting the whole array is simpler and fast enough.
+  top_indicies = np.argsort(predicted_scores_by_user, axis=1)[:, -_TOP_K:]
+  <a id="change">top_indicies = np.flip(top_indicies, axis=1)</a>
+
+  &#47&#47 Both HR and NDCG vectorized computation takes advantage of the fact that if
+  &#47&#47 the positive example for a user is not in the top k, that index does not
+  &#47&#47 appear. That is to say:   hit_ind.shape[0] &lt;= num_users
+  hit_ind = np.argwhere(np.equal(top_indicies, 0))
+  hr = <a id="change">hit_ind</a>.shape[0] / ncf_dataset.num_users
+  ndcg = <a id="change">np.sum(np.log(2) / np.log(hit_ind[:, 1] + 2))</a> / ncf_dataset.num_users
+
+  global_step = estimator.get_variable_value(tf.GraphKeys.GLOBAL_STEP)
+  eval_results = {</code></pre><h3>After Change</h3><pre><code class='java'>
+  &#47&#47 Get predictions
+  predictions = estimator.predict(input_fn=pred_input_fn,
+                                  yield_single_examples=False)
+  <a id="change">predictions = list(predictions)</a>
+
+  prediction_batches = [p[movielens.RATING_COLUMN] for p in predictions]
+  item_batches = <a id="change">[p[movielens.ITEM_COLUMN] for p in predictions]</a>
+
+  &#47&#47 Reshape the predicted scores and items. Each user takes one row.
+  prediction_with_padding = np.concatenate(prediction_batches, axis=0)
+  predicted_scores_by_user = prediction_with_padding[
+      :ncf_dataset.num_users * (1 + rconst.NUM_EVAL_NEGATIVES)]\
+      .reshape(ncf_dataset.num_users, -1)
+  <a id="change">item_with_padding = np.concatenate(item_batches, axis=0)</a>
+  items_by_user = item_with_padding[
+      :ncf_dataset.num_users * (1 + rconst.NUM_EVAL_NEGATIVES)]\
+      .reshape(ncf_dataset.num_users, -1)
+</code></pre><img src="285217281.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/64710c051f26a2778c03fc15ef29c4bcae01df32#diff-337b910d8781ffdb64d5d2237036f7e6d333079e51f0e2dfaf5f3380a1a77f57L99' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 64710c051f26a2778c03fc15ef29c4bcae01df32</div><div id='time'> Time: 2018-08-22</div><div id='author'> Author: reedwm@google.com</div><div id='file'> File Name: official/recommendation/ncf_main.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: evaluate_model</div><BR><BR><div id='link'><a href='https://github.com/senarvi/theanolm/commit/d4aa09c5b5b762b0b809d349cb7a8f50212a7107#diff-d563be43dd678fccd75d90491f7f0523b12955366fe19bb4107b04cf75d2bba2L34' target='_blank'>Link</a></div><div id='project'> Project Name: senarvi/theanolm</div><div id='commit'> Commit Name: d4aa09c5b5b762b0b809d349cb7a8f50212a7107</div><div id='time'> Time: 2016-06-20</div><div id='author'> Author: seppo.git@marjaniemi.com</div><div id='file'> File Name: theanolm/layers/tanhlayer.py</div><div id='class'> Class Name: TanhLayer</div><div id='method'> Method Name: create_structure</div><BR><BR><div id='link'><a href='https://github.com/senarvi/theanolm/commit/d4aa09c5b5b762b0b809d349cb7a8f50212a7107#diff-4b56a9294d6851eb8ac9ceb67ddc6ef0f74f41f02ab4d8358c8d627348d26883L34' target='_blank'>Link</a></div><div id='project'> Project Name: senarvi/theanolm</div><div id='commit'> Commit Name: d4aa09c5b5b762b0b809d349cb7a8f50212a7107</div><div id='time'> Time: 2016-06-20</div><div id='author'> Author: seppo.git@marjaniemi.com</div><div id='file'> File Name: theanolm/layers/softmaxlayer.py</div><div id='class'> Class Name: SoftmaxLayer</div><div id='method'> Method Name: create_structure</div><BR>

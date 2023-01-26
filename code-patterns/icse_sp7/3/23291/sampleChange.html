@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    args = &quot-bin&quot
+    maths = fsl.ImageMaths(in_file=out_file, op_string=args, out_file=out_file)
+    print(&quot\nBinarizing custom mask...&quot)
+    <a id="change">os.system(maths.cmdline)</a>
+    return out_file
+
+
+def build_coord_list(coords, dwi_dir):</code></pre><h3>After Change</h3><pre><code class='java'>
+        dwi_infile = "%s%s" % (dwi_dir, &quot/dwi.nii.gz&quot)
+
+    out_file = "%s%s" % (dwi_dir, &quot/mask_custom_diff.nii.gz&quot)
+    <a id="change">mask_transforms_wf = pe.Workflow(name=&quotwm_transforms&quot)</a>
+    inputnode = pe.Node(niu.IdentityInterface(fields=[&quotdwi_infile&quot, &quotmask&quot, &quotout_file&quot, &quotmat_file&quot, &quotdwi_dir&quot]),
+                        name=&quotinputnode&quot)
+    inputnode.inputs.dwi_infile = dwi_infile
+    inputnode.inputs.mask = mask
+    inputnode.inputs.out_file = out_file
+    inputnode.inputs.mat_file = "%s%s" % (dwi_dir, &quot/xfms/MNI2diff.mat&quot)
+    inputnode.inputs.dwi_dir = dwi_dir
+
+    flirt = pe.Node(interface=fsl.FLIRT(cost_func=&quotmutualinfo&quot), name=&quotcoregister_wm&quot)
+    flirt.inputs.apply_xfm = True
+    flirt.inputs.out_matrix_file = &quot/tmp/out_flirt.mat&quot
+
+    def bin_mask(out_file):
+        import nipype.interfaces.fsl as fsl
+        import os
+        args = &quot-bin&quot
+        maths = fsl.ImageMaths(in_file=out_file, op_string=args, out_file=out_file)
+        print(&quot\nBinarizing custom mask...&quot)
+        os.system(maths.cmdline)
+        return out_file
+
+    bin_mask = pe.Node(niu.Function(input_names=[&quotout_file&quot], output_names=[&quotout_file&quot],
+                                  function=bin_mask), name="bin_mask_node")
+
+    mask_transforms_wf.connect([(inputnode, flirt, [(&quotdwi_infile&quot, &quotreference&quot), (&quotmask&quot, &quotin_file&quot),
+                                                    (&quotout_file&quot, &quotout_file&quot), (&quotmat_file&quot, &quotin_matrix_file&quot)]),
+                                (flirt, bin_mask, [(&quotout_file&quot, &quotout_file&quot)])
+                                ])
+    <a id="change">return mask_transforms_wf</a>
+
+
+def build_coord_list(coords, dwi_dir):
+    from nilearn import masking</code></pre>

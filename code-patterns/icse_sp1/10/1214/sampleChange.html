@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  &#47&#47 Transpose the list[dict] into dict[list]
+  tensor_inputs = {
+      key: <a id="change">list(values)</a> <a id="change">for</a> key, values in utils.zip_dict(*instruction_dicts)
+  }
+  &#47&#47 Skip slicing if all masks are True (No value skipped)
+  if all(all(m) for m in tensor_inputs["mask"]):</code></pre><h3>After Change</h3><pre><code class='java'>
+  
+
+  &#47&#47 First case: All examples are taken (No value skipped)
+  <a id="change">if _no_examples_skipped(instruction_dicts):
+    &#47&#47 Only use the filenames as instruction
+    instruction_ds = tf.data.Dataset.from_tensor_slices([
+        d["filepath"] for d in instruction_dicts
+    ])
+    build_ds_from_instruction = dataset_from_file_fn
+  &#47&#47 Second case: Use the instructions to read the examples
+  else:
+    instruction_ds = _build_instruction_ds(instruction_dicts)
+    build_ds_from_instruction = functools.partial(
+        _build_ds_from_instruction,
+        ds_from_file_fn=dataset_from_file_fn,
+    )
+
+  &#47&#47 If shuffle is True, we shuffle the instructions/shards
+ </a> if shuffle_files:
+    instruction_ds = instruction_ds.shuffle(len(instruction_dicts))
+
+  &#47&#47 Use interleave to parallel read files and decode records</code></pre>

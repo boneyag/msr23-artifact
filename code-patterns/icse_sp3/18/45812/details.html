@@ -1,0 +1,40 @@
+<html><h3>0754b1f24109e56eea1c72a7380a97cd115b9049,test/test_run.py,RunTests,test_mpi_run_on_large_cluster,#RunTests#,381
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        cmd = [&quotcmd&quot]
+        settings = copy.copy(self.minimal_settings)
+        settings.num_hosts = large_cluster_threshold
+        <a id="change">run_func = MagicMock(return_value=0)</a>
+
+        <a id="change">mpi_run(settings, None, {}, cmd, run_func=run_func)</a>
+
+        mpi_flags, binding_args = _get_mpi_implementation_flags(False)
+        self.assertIsNotNone(mpi_flags)
+        mpi_flags.append(&quot-mca plm_rsh_no_tree_spawn true&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+        def mpi_impl_flags(tcp):
+            return ["--mock-mpi-impl-flags"], ["--mock-mpi-binding-args"]
+
+        <a id="change">with mock.patch("horovod.run.mpi_run._get_mpi_implementation_flags", side_effect=mpi_impl_flags):
+            with mock.patch("horovod.run.mpi_run.safe_shell_exec.execute", return_value=0) as execute:
+                mpi_run(settings, None, {}, cmd)
+
+                &#47&#47 call the mocked _get_mpi_implementation_flags method
+                mpi_flags, binding_args = horovod.run.mpi_run._get_mpi_implementation_flags(False)
+                self.assertIsNotNone(mpi_flags)
+                mpi_flags.append(&quot-mca plm_rsh_no_tree_spawn true&quot)
+                mpi_flags.append(&quot-mca plm_rsh_num_concurrent {}&quot.format(settings.num_hosts))
+                expected_cmd = (&quotmpirun &quot
+                                &quot--allow-run-as-root --tag-output &quot
+                                &quot-np 2 -H host &quot
+                                &quot{binding_args} &quot
+                                &quot{mpi_flags}       &quot
+                                &quotcmd&quot).format(binding_args=&quot &quot.join(binding_args), mpi_flags=&quot &quot.join(mpi_flags))
+                expected_env = {}
+                execute.assert_called_once_with(expected_cmd, env=expected_env, stdout=None, stderr=None)
+
+   </a> 
+    Tests mpi_run with full settings.
+    
+    def test_mpi_run_full(self):</code></pre><img src="213635466.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 11</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/horovod/horovod/commit/0754b1f24109e56eea1c72a7380a97cd115b9049#diff-2a835398ad9cd3091932bce7188c8f4623a08aa1b382c4454f6da97578281613L388' target='_blank'>Link</a></div><div id='project'> Project Name: horovod/horovod</div><div id='commit'> Commit Name: 0754b1f24109e56eea1c72a7380a97cd115b9049</div><div id='time'> Time: 2020-04-01</div><div id='author'> Author: github@enrico.minack.dev</div><div id='file'> File Name: test/test_run.py</div><div id='class'> Class Name: RunTests</div><div id='method'> Method Name: test_mpi_run_on_large_cluster</div><BR><BR><div id='link'><a href='https://github.com/horovod/horovod/commit/0754b1f24109e56eea1c72a7380a97cd115b9049#diff-2a835398ad9cd3091932bce7188c8f4623a08aa1b382c4454f6da97578281613L363' target='_blank'>Link</a></div><div id='project'> Project Name: horovod/horovod</div><div id='commit'> Commit Name: 0754b1f24109e56eea1c72a7380a97cd115b9049</div><div id='time'> Time: 2020-04-01</div><div id='author'> Author: github@enrico.minack.dev</div><div id='file'> File Name: test/test_run.py</div><div id='class'> Class Name: RunTests</div><div id='method'> Method Name: test_mpi_run_minimal</div><BR><BR><div id='link'><a href='https://github.com/horovod/horovod/commit/0754b1f24109e56eea1c72a7380a97cd115b9049#diff-2a835398ad9cd3091932bce7188c8f4623a08aa1b382c4454f6da97578281613L418' target='_blank'>Link</a></div><div id='project'> Project Name: horovod/horovod</div><div id='commit'> Commit Name: 0754b1f24109e56eea1c72a7380a97cd115b9049</div><div id='time'> Time: 2020-04-01</div><div id='author'> Author: github@enrico.minack.dev</div><div id='file'> File Name: test/test_run.py</div><div id='class'> Class Name: RunTests</div><div id='method'> Method Name: test_mpi_run_full</div><BR>

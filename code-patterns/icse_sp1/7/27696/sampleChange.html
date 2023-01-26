@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if len(inputs) != 1:
+      raise ValueError("Must have one parent")
+    parent_tensor = inputs[0]
+    if <a id="change">tfe.in_eager_mode():
+   </a>   lstm_cell = self._cell
+      zero_state = self._zero_state
+    else:
+      lstm_cell = tf.contrib.rnn.LSTMCell(self.n_hidden)</code></pre><h3>After Change</h3><pre><code class='java'>
+      initial_state = kwargs[&quotinitial_state&quot]
+    else:
+      initial_state = zero_state
+    <a id="change">if tf.executing_eagerly():
+      out_tensor, final_state1, final_state2 = self._rnn(
+          parent_tensor, initial_state=initial_state)
+    else:
+      with tf.variable_scope(self.name or &quotrnn&quot):
+        out_tensor, final_state1, final_state2 = tf.keras.layers.RNN(
+            lstm_cell, return_state=True, return_sequences=True)(
+                parent_tensor, initial_state=initial_state)
+   </a> final_state = [final_state1, final_state2]
+    if set_tensors:
+      self._record_variable_scope(self.name)
+      self.out_tensor = out_tensor</code></pre>

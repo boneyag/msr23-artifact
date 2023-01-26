@@ -1,0 +1,389 @@
+<html><h3>9f9c8aa7a0d0fff121e1f9f77f49a059a16825ee,examples/deep_fqi_atari/extractor.py,Extractor,_build,#Extractor#Any#,111
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                            name=&quothidden_6_flat&quot)
+            hidden_6_conv = tf.reshape(hidden_6_flat, [-1, 5, 5, 64],
+                                       name=&quothidden_6_conv&quot)
+            hidden_7 = <a id="change">tf.layers.conv2d_transpose(
+                hidden_6_conv, 64, 3, 1, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_7&quot
+            )</a>
+            hidden_8 = tf.layers.conv2d_transpose(
+                hidden_7, 64, 3, 1, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_8&quot
+            )
+            hidden_9 = tf.layers.conv2d_transpose(
+                hidden_8, 32, 4, 2, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_9&quot
+            )
+            if self._predict_next_frame:
+                output_kernels = 1
+            else:
+                output_kernels = 4
+            self._predicted_frame = tf.layers.conv2d_transpose(
+                hidden_9, output_kernels, 8, 4, activation=tf.nn.sigmoid,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quotpredicted_frame_conv&quot
+            )
+            if self._predict_next_frame:
+                <a id="change">self._predicted_frame</a> = tf.reshape(
+                    self._predicted_frame,
+                    shape=[-1, convnet_pars[&quotheight&quot], convnet_pars[&quotwidth&quot]],
+                    name=&quotpredicted_frame&quot
+                )
+
+            if self._predict_next_frame:
+                self._target_frame = tf.placeholder(
+                    &quotfloat32&quot,
+                    shape=[None,
+                           convnet_pars[&quotheight&quot],
+                           convnet_pars[&quotwidth&quot]],
+                    name=&quottarget_frame&quot)
+            else:
+                self._target_frame = tf.placeholder(
+                    &quotfloat32&quot,
+                    shape=[None,
+                           convnet_pars[&quotheight&quot],
+                           convnet_pars[&quotwidth&quot],
+                           convnet_pars[&quothistory_length&quot]],
+                    name=&quottarget_frame&quot)
+
+            if self._predict_reward or self._predict_absorbing:
+                hidden_9 = tf.layers.dense(
+                    self._features,
+                    128,
+                    tf.nn.relu,
+                    kernel_initializer=tf.glorot_uniform_initializer(),
+                    name=&quothidden_9&quot
+                )
+                hidden_10 = tf.layers.dense(
+                    hidden_9,
+                    64,
+                    tf.nn.relu,
+                    kernel_initializer=tf.glorot_uniform_initializer(),
+                    name=&quothidden_10&quot
+                )
+                if self._predict_reward:
+                    self._target_reward = tf.placeholder(tf.int32,
+                                                         shape=[None, 1],
+                                                         name=&quottarget_reward&quot)
+                    self._target_reward_class = tf.clip_by_value(
+                        self._target_reward, -1, 1,
+                        name=&quottarget_reward_clipping&quot) + 1
+                    self._predicted_reward = tf.layers.dense(
+                        hidden_10, 3, tf.nn.sigmoid, name=&quotpredicted_reward&quot)
+                    predicted_reward = tf.clip_by_value(
+                        self._predicted_reward,
+                        1e-7,
+                        1 - 1e-7,
+                        name=&quotpredicted_reward_clipping&quot
+                    )
+                    predicted_reward_logits = tf.log(
+                        predicted_reward / (1 - predicted_reward),
+                        name=&quotpredicted_reward_logits&quot
+                    )
+                    self._xent_reward = tf.reduce_mean(
+                        tf.nn.sparse_softmax_cross_entropy_with_logits(
+                            labels=tf.squeeze(self._target_reward_class),
+                            logits=predicted_reward_logits,
+                            name=&quotsparse_softmax_cross_entropy_reward&quot
+                        ),
+                        name=&quotxent_reward&quot
+                    )
+                if self._predict_absorbing:
+                    self._target_absorbing = tf.placeholder(
+                        tf.float32, shape=[None, 1], name=&quottarget_absorbing&quot)
+                    self._predicted_absorbing = tf.layers.dense(
+                        hidden_10, 1, tf.nn.sigmoid, name=&quotpredicted_absorbing&quot)
+                    predicted_absorbing = tf.clip_by_value(
+                        self._predicted_absorbing,
+                        1e-7,
+                        1 - 1e-7,
+                        name=&quotpredicted_absorbing_clipping&quot
+                    )
+                    predicted_absorbing_logits = tf.log(
+                        predicted_absorbing / (1 - predicted_absorbing),
+                        name=&quotpredicted_absorbing_logits&quot)
+                    self._xent_absorbing = tf.reduce_mean(
+                        tf.nn.sigmoid_cross_entropy_with_logits(
+                            labels=tf.squeeze(self._target_absorbing),
+                            logits=predicted_absorbing_logits,
+                            name=&quotsigmoid_cross_entropy_absorbing&quot
+                        ),
+                        name=&quotxent_absorbing&quot
+                    )
+
+            predicted_frame = tf.clip_by_value(self._predicted_frame,
+                                               1e-7,
+                                               1 - 1e-7,
+                                               name=&quotpredicted_frame_clipping&quot)
+            predicted_frame_logits = tf.log(
+                predicted_frame / (1 - predicted_frame),
+                name=&quotpredicted_frame_logits&quot
+            )
+
+            self._xent_frame = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(
+                    labels=self._target_frame,
+                    logits=predicted_frame_logits,
+                    name=&quotsigmoid_cross_entropy_frame&quot
+                ),
+                name=&quotxent_frame&quot
+            )
+            <a id="change">self._xent</a> = self._xent_frame
+            if self._predict_reward:
+                <a id="change">self._xent</a> += self._xent_reward
+            if self._predict_absorbing:
+                self._xent += self._xent_absorbing
+            if self._contractive:
+                raise NotImplementedError
+            else:
+                self._reg = tf.reduce_mean(tf.norm(self._features, 1, axis=1),
+                                           name=&quotreg&quot)
+            <a id="change">self._loss</a> = tf.add(self._xent, self._reg_coeff * self._reg,
+                                name=&quotloss&quot)
+
+            tf.summary.scalar(&quotxent_frame&quot, self._xent_frame)
+            if self._predict_reward:
+                accuracy_reward = tf.equal(
+                    tf.squeeze(self._target_reward_class),
+                    tf.cast(tf.argmax(self._predicted_reward, 1), tf.int32)
+                )
+                self._accuracy_reward = tf.reduce_mean(
+                    tf.cast(accuracy_reward, tf.float32))
+                tf.summary.scalar(&quotaccuracy_reward&quot, self._accuracy_reward)
+                tf.summary.scalar(&quotxent_reward&quot, self._xent_reward)
+            if self._predict_absorbing:
+                accuracy_absorbing = tf.equal(
+                    tf.squeeze(tf.cast(self._target_absorbing, tf.int32)),
+                    tf.cast(tf.argmax(self._predicted_absorbing, 1), tf.int32)
+                )
+                self._accuracy_absorbing = tf.reduce_mean(
+                    tf.cast(accuracy_absorbing, tf.float32))
+                tf.summary.scalar(&quotaccuracy_absorbing&quot,
+                                  self._accuracy_absorbing)
+                tf.summary.scalar(&quotxent_absorbing&quot, self._xent_absorbing)
+            tf.summary.scalar(&quotxent&quot, self._xent)
+            tf.summary.scalar(&quotreg&quot, self._reg)
+            tf.summary.scalar(&quotloss&quot, self._loss)
+            self._merged = tf.summary.merge(
+                tf.get_collection(tf.GraphKeys.SUMMARIES,
+                                  scope=self._scope_name)
+            )
+
+            optimizer = convnet_pars[&quotoptimizer&quot]
+            if optimizer[&quotname&quot] == &quotrmspropcentered&quot:
+                opt = tf.train.RMSPropOptimizer(learning_rate=optimizer[&quotlr&quot],
+                                                decay=optimizer[&quotdecay&quot],
+                                                centered=True)
+            elif optimizer[&quotname&quot] == &quotrmsprop&quot:
+                opt = tf.train.RMSPropOptimizer(learning_rate=optimizer[&quotlr&quot],
+                                                decay=optimizer[&quotdecay&quot])
+            elif optimizer[&quotname&quot] == &quotadam&quot:
+                opt = tf.train.AdamOptimizer()
+            elif optimizer[&quotname&quot] == &quotadadelta&quot:
+                opt = tf.train.AdadeltaOptimizer()
+            else:
+                raise ValueError(&quotUnavailable optimizer selected.&quot)
+
+            <a id="change">self._train_step</a> = opt.minimize(loss=self._loss)
+
+            initializer = tf.variables_initializer(
+                tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,</code></pre><h3>After Change</h3><pre><code class='java'>
+                                            name=&quothidden_5_flat&quot)
+            hidden_5_conv = tf.reshape(hidden_5_flat, [-1, 5, 5, 64],
+                                       name=&quothidden_5_conv&quot)
+            hidden_5 = <a id="change">tf.layers.conv2d_transpose(
+                hidden_5_conv, 64, 3, 1, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_5&quot
+            )</a>
+            hidden_6 = tf.layers.conv2d_transpose(
+                hidden_5, 64, 3, 1, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_6&quot
+            )
+            hidden_7 = tf.layers.conv2d_transpose(
+                hidden_6, 32, 4, 2, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_7&quot
+            )
+            if self._predict_next_frame:
+                output_kernels = 1
+            else:
+                output_kernels = 4
+            self._predicted_frame = tf.layers.conv2d_transpose(
+                hidden_7, output_kernels, 8, 4, activation=tf.nn.sigmoid,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quotpredicted_frame_conv&quot
+            )
+            if self._predict_next_frame:
+                <a id="change">self._predicted_frame</a> = tf.reshape(
+                    self._predicted_frame,
+                    shape=[-1, convnet_pars[&quotheight&quot], convnet_pars[&quotwidth&quot]],
+                    name=&quotpredicted_frame&quot
+                )
+
+            if self._predict_next_frame:
+                self._target_frame = tf.placeholder(
+                    &quotfloat32&quot,
+                    shape=[None,
+                           convnet_pars[&quotheight&quot],
+                           convnet_pars[&quotwidth&quot]],
+                    name=&quottarget_frame&quot)
+            else:
+                self._target_frame = tf.placeholder(
+                    &quotfloat32&quot,
+                    shape=[None,
+                           convnet_pars[&quotheight&quot],
+                           convnet_pars[&quotwidth&quot],
+                           convnet_pars[&quothistory_length&quot]],
+                    name=&quottarget_frame&quot)
+
+            if self._predict_reward or self._predict_absorbing:
+                hidden_9 = tf.layers.dense(
+                    self._features,
+                    128,
+                    tf.nn.relu,
+                    kernel_initializer=tf.glorot_uniform_initializer(),
+                    name=&quothidden_9&quot
+                )
+                hidden_10 = tf.layers.dense(
+                    hidden_9,
+                    64,
+                    tf.nn.relu,
+                    kernel_initializer=tf.glorot_uniform_initializer(),
+                    name=&quothidden_10&quot
+                )
+                if self._predict_reward:
+                    self._target_reward = tf.placeholder(tf.int32,
+                                                         shape=[None, 1],
+                                                         name=&quottarget_reward&quot)
+                    self._target_reward_class = tf.clip_by_value(
+                        self._target_reward, -1, 1,
+                        name=&quottarget_reward_clipping&quot) + 1
+                    self._predicted_reward = tf.layers.dense(
+                        hidden_10, 3, tf.nn.sigmoid, name=&quotpredicted_reward&quot)
+                    predicted_reward = tf.clip_by_value(
+                        self._predicted_reward,
+                        1e-7,
+                        1 - 1e-7,
+                        name=&quotpredicted_reward_clipping&quot
+                    )
+                    predicted_reward_logits = tf.log(
+                        predicted_reward / (1 - predicted_reward),
+                        name=&quotpredicted_reward_logits&quot
+                    )
+                    self._xent_reward = tf.reduce_mean(
+                        tf.nn.sparse_softmax_cross_entropy_with_logits(
+                            labels=tf.squeeze(self._target_reward_class),
+                            logits=predicted_reward_logits,
+                            name=&quotsparse_softmax_cross_entropy_reward&quot
+                        ),
+                        name=&quotxent_reward&quot
+                    )
+                if self._predict_absorbing:
+                    self._target_absorbing = tf.placeholder(
+                        tf.float32, shape=[None, 1], name=&quottarget_absorbing&quot)
+                    self._predicted_absorbing = tf.layers.dense(
+                        hidden_10, 1, tf.nn.sigmoid, name=&quotpredicted_absorbing&quot)
+                    predicted_absorbing = tf.clip_by_value(
+                        self._predicted_absorbing,
+                        1e-7,
+                        1 - 1e-7,
+                        name=&quotpredicted_absorbing_clipping&quot
+                    )
+                    predicted_absorbing_logits = tf.log(
+                        predicted_absorbing / (1 - predicted_absorbing),
+                        name=&quotpredicted_absorbing_logits&quot)
+                    self._xent_absorbing = tf.reduce_mean(
+                        tf.nn.sigmoid_cross_entropy_with_logits(
+                            labels=tf.squeeze(self._target_absorbing),
+                            logits=predicted_absorbing_logits,
+                            name=&quotsigmoid_cross_entropy_absorbing&quot
+                        ),
+                        name=&quotxent_absorbing&quot
+                    )
+
+            predicted_frame = tf.clip_by_value(self._predicted_frame,
+                                               1e-7,
+                                               1 - 1e-7,
+                                               name=&quotpredicted_frame_clipping&quot)
+            predicted_frame_logits = tf.log(
+                predicted_frame / (1 - predicted_frame),
+                name=&quotpredicted_frame_logits&quot
+            )
+
+            self._xent_frame = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(
+                    labels=self._target_frame,
+                    logits=predicted_frame_logits,
+                    name=&quotsigmoid_cross_entropy_frame&quot
+                ),
+                name=&quotxent_frame&quot
+            )
+            <a id="change">self._xent</a> = self._xent_frame
+            if self._predict_reward:
+                <a id="change">self._xent</a> += self._xent_reward
+            if self._predict_absorbing:
+                self._xent += self._xent_absorbing
+            if self._contractive:
+                raise NotImplementedError
+            else:
+                self._reg = tf.reduce_mean(tf.norm(self._features, 1, axis=1),
+                                           name=&quotreg&quot)
+            <a id="change">self._loss</a> = tf.add(self._xent, self._reg_coeff * self._reg,
+                                name=&quotloss&quot)
+
+            tf.summary.scalar(&quotxent_frame&quot, self._xent_frame)
+            if self._predict_reward:
+                accuracy_reward = tf.equal(
+                    tf.squeeze(self._target_reward_class),
+                    tf.cast(tf.argmax(self._predicted_reward, 1), tf.int32)
+                )
+                self._accuracy_reward = tf.reduce_mean(
+                    tf.cast(accuracy_reward, tf.float32))
+                tf.summary.scalar(&quotaccuracy_reward&quot, self._accuracy_reward)
+                tf.summary.scalar(&quotxent_reward&quot, self._xent_reward)
+            if self._predict_absorbing:
+                accuracy_absorbing = tf.equal(
+                    tf.squeeze(tf.cast(self._target_absorbing, tf.int32)),
+                    tf.cast(tf.argmax(self._predicted_absorbing, 1), tf.int32)
+                )
+                self._accuracy_absorbing = tf.reduce_mean(
+                    tf.cast(accuracy_absorbing, tf.float32))
+                tf.summary.scalar(&quotaccuracy_absorbing&quot,
+                                  self._accuracy_absorbing)
+                tf.summary.scalar(&quotxent_absorbing&quot, self._xent_absorbing)
+            tf.summary.scalar(&quotxent&quot, self._xent)
+            tf.summary.scalar(&quotreg&quot, self._reg)
+            tf.summary.scalar(&quotloss&quot, self._loss)
+            self._merged = tf.summary.merge(
+                tf.get_collection(tf.GraphKeys.SUMMARIES,
+                                  scope=self._scope_name)
+            )
+
+            optimizer = convnet_pars[&quotoptimizer&quot]
+            if optimizer[&quotname&quot] == &quotrmspropcentered&quot:
+                opt = tf.train.RMSPropOptimizer(learning_rate=optimizer[&quotlr&quot],
+                                                decay=optimizer[&quotdecay&quot],
+                                                centered=True)
+            elif optimizer[&quotname&quot] == &quotrmsprop&quot:
+                opt = tf.train.RMSPropOptimizer(learning_rate=optimizer[&quotlr&quot],
+                                                decay=optimizer[&quotdecay&quot])
+            elif optimizer[&quotname&quot] == &quotadam&quot:
+                opt = tf.train.AdamOptimizer()
+            elif optimizer[&quotname&quot] == &quotadadelta&quot:
+                opt = tf.train.AdadeltaOptimizer()
+            else:
+                raise ValueError(&quotUnavailable optimizer selected.&quot)
+
+            <a id="change">self._train_step</a> = opt.minimize(loss=self._loss)
+
+            initializer = tf.variables_initializer(
+                tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,</code></pre><img src="161102171.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/9f9c8aa7a0d0fff121e1f9f77f49a059a16825ee#diff-b34b932d72cd2575c7a2a65583c04f0b758a356a4427ed8cd3d94dc9f188dc2fL147' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 9f9c8aa7a0d0fff121e1f9f77f49a059a16825ee</div><div id='time'> Time: 2017-09-26</div><div id='author'> Author: carloderamo@gmail.com</div><div id='file'> File Name: examples/deep_fqi_atari/extractor.py</div><div id='class'> Class Name: Extractor</div><div id='method'> Method Name: _build</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/f53509b67c9ca37f40331a51e4f39228186383d8#diff-b34b932d72cd2575c7a2a65583c04f0b758a356a4427ed8cd3d94dc9f188dc2fL62' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: f53509b67c9ca37f40331a51e4f39228186383d8</div><div id='time'> Time: 2017-09-16</div><div id='author'> Author: carlo.deramo@gmail.com</div><div id='file'> File Name: examples/deep_fqi_atari/extractor.py</div><div id='class'> Class Name: Extractor</div><div id='method'> Method Name: _build</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/f75eaafe8077c6443276503206600faa24218526#diff-b34b932d72cd2575c7a2a65583c04f0b758a356a4427ed8cd3d94dc9f188dc2fL63' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: f75eaafe8077c6443276503206600faa24218526</div><div id='time'> Time: 2017-09-16</div><div id='author'> Author: carlo.deramo@gmail.com</div><div id='file'> File Name: examples/deep_fqi_atari/extractor.py</div><div id='class'> Class Name: Extractor</div><div id='method'> Method Name: _build</div><BR>

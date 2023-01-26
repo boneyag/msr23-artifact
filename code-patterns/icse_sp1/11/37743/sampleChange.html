@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      [-1.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0],
+  ])
+  <a id="change">default_center = tf.constant([0.0, 0.0, default_camera_z])</a>
+  operator = tf.linalg.LinearOperatorFullMatrix(default_rotation_to_camera)
+  keypoints_3d = operator.matvec(keypoints_3d) + default_center
+
+  &#47&#47 Project to 2D.</code></pre><h3>After Change</h3><pre><code class='java'>
+        minval=normalized_camera_depth_range[0],
+        maxval=normalized_camera_depth_range[1],
+        seed=seed)
+    <a id="change">normalized_camera_depths = data_utils.recursively_expand_dims(
+        normalized_camera_depths, axes=[-1, -1])</a>
+  else:
+    normalized_camera_depths = tf.random.uniform(
+        tf.shape(keypoints_3d)[:-2],
+        minval=normalized_camera_depth_range[0],
+        maxval=normalized_camera_depth_range[1],
+        seed=seed)
+    <a id="change">normalized_camera_depths = tf.expand_dims(normalized_camera_depths, axis=-1)</a>
+
+  <a id="change">default_centers = tf.stack([
+      tf.zeros_like(normalized_camera_depths),
+      tf.zeros_like(normalized_camera_depths),
+      normalized_camera_depths,
+  ],
+                             axis=-1)</a>
+  keypoints_3d += default_centers
+
+  &#47&#47 Project to 2D.
+  return keypoints_3d[Ellipsis, :-1] / tf.math.maximum(1e-12, keypoints_3d[Ellipsis, -1:])</code></pre>

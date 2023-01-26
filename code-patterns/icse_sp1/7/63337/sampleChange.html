@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Combine the first two dimensions so that weight matrix will have equal
+        &#47&#47 dimensions and element-wise multiplication is possible.
+        num_time_steps = layer_input.shape[0]
+        <a id="change">num_sequences = layer_input.shape[1]</a>
+        input_size = layer_input.shape[2]
+        minibatch_size = num_time_steps * num_sequences
+        layer_input = layer_input.reshape([minibatch_size, 1, input_size])
+
+        &#47&#47 Create preactivation for only the target outputs.
+        weight = self._params[self._param_path(&quotinput/W&quot)]
+        bias = self._params[self._param_path(&quotinput/b&quot)]
+        <a id="change">target_class_ids = target_class_ids.flatten()</a>
+        weight = weight.T
+        weight = weight[target_class_ids, :]
+        weight = weight.reshape([minibatch_size, -1, input_size])
+        &#47&#47 For some reason if we select elements from a vector, it will use
+        &#47&#47 GpuAdvancedIncSubtensor1 and be slow. If bias is a matrix, it will
+        &#47&#47 use the faster GpuAdvancedIncSubtensor1_dev20.
+        bias = bias[:, None]
+        bias = bias[target_class_ids, 0]
+&#47&#47        bias = bias[target_class_ids]
+        bias = bias.reshape([minibatch_size, -1])
+
+        result = (layer_input * weight).sum(2) + bias
+        <a id="change">return result.reshape([num_time_steps, num_sequences, -1])</a>
+
+    def _get_target_list_preact(self, layer_input, target_class_ids):
+        Structures the preactivations for a list of target classes.
+        Preactivations at each word are computed for all the targets.</code></pre><h3>After Change</h3><pre><code class='java'>
+        bias = bias[:, None]
+        bias = bias[target_class_ids, 0]
+&#47&#47        bias = bias[target_class_ids]
+        <a id="change">return (layer_input[:, :, None, :] * weight).sum(3) + bias</a>
+
+    def _get_target_list_preact(self, layer_input, target_class_ids):
+        Structures the preactivations for a list of target classes.
+        Preactivations at each word are computed for all the targets.</code></pre>

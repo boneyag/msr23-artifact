@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+answer.add(Dropout(0.3))
+answer.add(Dense(vocab_size))
+&#47&#47 we output a probability distribution over the vocabulary
+<a id="change">answer.add(Activation(&quotsoftmax&quot))</a>
+
+answer.compile(optimizer=&quotrmsprop&quot, loss=&quotcategorical_crossentropy&quot,
+               metrics=[&quotaccuracy&quot])
+&#47&#47 Note: you could use a Graph model to avoid repeat the input twice</code></pre><h3>After Change</h3><pre><code class='java'>
+
+&#47&#47 compute a &quotmatch&quot between the first input vector sequence
+&#47&#47 and the question vector sequence
+match = dot(<a id="change">[input_encoded_m, question_encoded]</a>, axes=(2, 2))  &#47&#47 (samples, story_maxlen, query_maxlen)
+match = Activation(&quotsoftmax&quot)(match)
+
+&#47&#47 add the match matrix with the second input vector sequence
+response = add([match, input_encoded_c])  &#47&#47 (samples, story_maxlen, query_maxlen)
+response = Permute((2, 1))(response)  &#47&#47 (samples, query_maxlen, story_maxlen)
+
+&#47&#47 concatenate the match matrix with the question vector sequence
+answer = concatenate([response, question_encoded])
+
+&#47&#47 the original paper uses a matrix multiplication for this reduction step.
+&#47&#47 we choose to use a RNN instead.
+answer = LSTM(32)(answer)  &#47&#47 (samples, 32)
+
+&#47&#47 one regularization layer -- more would probably be needed.
+answer = Dropout(0.3)(answer)
+answer = Dense(vocab_size)(answer)  &#47&#47 (samples, vocab_size)
+&#47&#47 we output a probability distribution over the vocabulary
+<a id="change">answer = Activation(&quotsoftmax&quot)(answer)</a>
+
+&#47&#47 build the final model
+model = Model([input_sequence, question], answer)
+model.compile(optimizer=&quotrmsprop&quot, loss=&quotcategorical_crossentropy&quot,</code></pre>

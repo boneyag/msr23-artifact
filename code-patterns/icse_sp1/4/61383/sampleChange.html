@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        args.max_target_positions = 1024
+
+    use_cuda = torch.cuda.is_available() and not args.cpu
+    dataset = data_loaders.load_dataset(args, <a id="change">[args.gen_subset]</a>, False)
+
+    &#47&#47 Load ensemble
+    print(&quot| loading model(s) from {}&quot.format(args.path))</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Load dataset splits
+    task = tasks.setup_task(args)
+    task.load_dataset(args.gen_subset)
+    print(&quot| {} {} {} examples&quot.format(args.data, args.gen_subset, len(<a id="change">task.dataset(args.gen_subset)</a>)))
+
+    &#47&#47 Load ensemble
+    print(&quot| loading model(s) from {}&quot.format(args.path))
+    models, _ = utils.load_ensemble_for_inference(args.path.split(&quot,&quot), task)
+
+    &#47&#47 Optimize ensemble for generation and set the source and dest dicts on the model (required by scorer)
+    for model in models:
+        model.make_generation_fast_()
+
+    itr = data.EpochBatchIterator(
+        dataset=<a id="change">task.dataset(args.gen_subset)</a>,
+        max_sentences=args.max_sentences or 4,
+        max_positions=model.max_positions(),
+        num_shards=args.num_shards,</code></pre>

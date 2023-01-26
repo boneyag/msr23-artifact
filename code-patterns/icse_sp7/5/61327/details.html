@@ -1,0 +1,28 @@
+<html><h3>984d17836d7a6240942cd44f2f61c92a427bb9bb,niftynet/layer/crop.py,CropLayer,layer_op,#CropLayer#Any#,25
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            [self.border * 2 + 1] * spatial_rank, 1, 1)).flatten()
+        &#47&#47 initializer a kernel with all 0s, and set the central element to 1
+        np_kernel = layer_util.trivial_kernel(kernel_shape)
+        crop_kernel = <a id="change">tf.constant(np_kernel, dtype=inputs.dtype)</a>
+        &#47&#47 split channel dim
+        output_tensor = [tf.expand_dims(x, -1)
+                         for x in tf.unstack(inputs, axis=-1)]
+        <a id="change">output_tensor = [tf.nn.convolution(input=inputs,
+                                           filter=crop_kernel,
+                                           strides=[1] * spatial_rank,
+                                           padding=&quotVALID&quot,
+                                           name=&quotconv&quot)
+                         for inputs in output_tensor]</a>
+        output_tensor = tf.concat(output_tensor, axis=-1)
+        return output_tensor
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def layer_op(self, inputs):
+        spatial_rank = layer_util.infer_spatial_rank(inputs)
+        offsets = [0, *([int(self.border)] * spatial_rank), 0]
+        out_shape = [-1, <a id="change">*[int(d) - 2 * int(self.border) for d in list(inputs.shape)[1:-1]]</a>, -1]
+        output_tensor = tf.slice(inputs, offsets, out_shape)
+        return output_tensor
+</code></pre><img src="285366835.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/984d17836d7a6240942cd44f2f61c92a427bb9bb#diff-8fd130746bb117134a0f2b871c50656b7039c9b30980502e5c0c6654e3528c8bL25' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 984d17836d7a6240942cd44f2f61c92a427bb9bb</div><div id='time'> Time: 2018-04-24</div><div id='author'> Author: z.eaton-rosen@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/crop.py</div><div id='class'> Class Name: CropLayer</div><div id='method'> Method Name: layer_op</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/603026f0325339c6412e5c045b5149f351bd1778#diff-fb57a90e012ec70f93c1bdb9e1e0a43790e9936ce05d9291303b19604580fbe8L49' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: 603026f0325339c6412e5c045b5149f351bd1778</div><div id='time'> Time: 2019-02-06</div><div id='author'> Author: alexkuhnle@t-online.de</div><div id='file'> File Name: tensorforce/core/optimizers/multi_step.py</div><div id='class'> Class Name: MultiStep</div><div id='method'> Method Name: tf_step</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/b6437e4dd115c5b290eb84b0620610b497293609#diff-984fad50a19969a039515db1445b731db8904fae37e3b79d59ae3c5d41b53c53L59' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: b6437e4dd115c5b290eb84b0620610b497293609</div><div id='time'> Time: 2020-05-12</div><div id='author'> Author: pengchong@google.com</div><div id='file'> File Name: models/official/detection/serving/inputs.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: raw_image_tensor_input</div><BR><BR><div id='link'><a href='https://github.com/Microsoft/nni/commit/55b557f17385ca10b8a3e8fb8bbb0d3799906db5#diff-df251c9dfb250a216429eb5be38feb7856e2d9e0614c9e3bfded2388caa8bdc8L181' target='_blank'>Link</a></div><div id='project'> Project Name: Microsoft/nni</div><div id='commit'> Commit Name: 55b557f17385ca10b8a3e8fb8bbb0d3799906db5</div><div id='time'> Time: 2019-11-20</div><div id='author'> Author: 38930155+chicm-ms@users.noreply.github.com</div><div id='file'> File Name: src/sdk/pynni/nni/compression/tensorflow/builtin_pruners.py</div><div id='class'> Class Name: FPGMPruner</div><div id='method'> Method Name: _get_min_gm_kernel_idx</div><BR>

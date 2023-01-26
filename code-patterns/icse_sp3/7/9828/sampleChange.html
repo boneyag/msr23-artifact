@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            spherical_coord[:, -1] *= 2
+
+            point = gs.zeros((n_samples, self.dimension+1))
+            <a id="change">for i in range(self.dimension):
+                point[:, i] = (
+                        gs.prod(gs.sin(spherical_coord[:, :i]), axis=1)
+                        * gs.cos(spherical_coord[:, i]))
+           </a> point[:, -1] = gs.prod(gs.sin(spherical_coord), axis=1)
+
+        else:
+            assert bound &lt;= 0.5</code></pre><h3>After Change</h3><pre><code class='java'>
+            sin_prod = gs.cumprod(gs.sin(spherical_coord), axis=1)
+
+            factor_1 = gs.hstack((gs.ones((n_samples, 1)), sin_prod))
+            factor_2 = gs.hstack((gs.cos(spherical_coord), <a id="change">gs.ones((n_samples, 1))</a>))
+
+            <a id="change">point = factor_1 * factor_2</a>
+        else:
+            assert bound &lt;= 0.5
+            point = bound * (2 * gs.random.rand(*size) - 1)
+            point = self.intrinsic_to_extrinsic_coords(point)</code></pre>

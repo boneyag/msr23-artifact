@@ -1,0 +1,39 @@
+<html><h3>13c14eac076c81227a96e24f749392f5b75aa2ce,python/ray/experimental/async_api.py,,init,#,23
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    assert ray.is_initialized(), "Please call ray.init before async_api.init"
+
+    &#47&#47 Noop when handler is set.
+    <a id="change">if handler is not None:
+        return
+
+   </a> loop = asyncio.get_event_loop()
+    if loop.is_running():
+        if loop._thread_id != threading.get_ident():
+            &#47&#47 If the loop is runing outside current thread, we actually need
+            &#47&#47 to do this to make sure the context is initialized.
+            asyncio.run_coroutine_threadsafe(_async_init(), loop=loop)
+        else:
+            <a id="change">async_init_done = asyncio.get_event_loop().create_task(
+                _async_init())</a>
+            &#47&#47 Block until the async init finishes.
+            async_init_done.done()
+    else:
+        asyncio.get_event_loop().run_until_complete(_async_init())</code></pre><h3>After Change</h3><pre><code class='java'>
+    assert ray.is_initialized(), "Please call ray.init before async_api.init"
+
+    global handler
+    <a id="change">if handler is None:
+        worker = ray.worker.global_worker
+        loop = asyncio.get_event_loop()
+        handler = PlasmaEventHandler(loop, worker)
+        worker.core_worker.set_plasma_added_callback(handler)
+        logger.debug("AsyncPlasma Connection Created!")
+
+
+</a>def as_future(object_id):
+    Turn an object_id into a Future object.
+
+    Args:</code></pre><img src="16039396.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/13c14eac076c81227a96e24f749392f5b75aa2ce#diff-cfc25900c9ac924d79a156a4f7d9d45272c9f2a0033ac4abbde9776b6ef0af2aL15' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 13c14eac076c81227a96e24f749392f5b75aa2ce</div><div id='time'> Time: 2020-04-25</div><div id='author'> Author: xmo@berkeley.edu</div><div id='file'> File Name: python/ray/experimental/async_api.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: init</div><BR><BR><div id='link'><a href='https://github.com/streamlit/streamlit/commit/c4d653ee7275f364b82d539bc58a9793248374eb#diff-33a322a8c4747755b20efc95c64f73b226fba2abae342d3cd2cf5f203d2e0b2bL255' target='_blank'>Link</a></div><div id='project'> Project Name: streamlit/streamlit</div><div id='commit'> Commit Name: c4d653ee7275f364b82d539bc58a9793248374eb</div><div id='time'> Time: 2019-06-05</div><div id='author'> Author: tconkling@gmail.com</div><div id='file'> File Name: lib/streamlit/ScriptRunner.py</div><div id='class'> Class Name: ScriptRunner</div><div id='method'> Method Name: maybe_handle_execution_control_request</div><BR><BR><div id='link'><a href='https://github.com/streamlit/streamlit/commit/e0e9d7350826c7d968e48181cea38bde23942c30#diff-05558899fefcda038c24bd884297d61ddad46d1bc4a474669cc6724e0c13912bL201' target='_blank'>Link</a></div><div id='project'> Project Name: streamlit/streamlit</div><div id='commit'> Commit Name: e0e9d7350826c7d968e48181cea38bde23942c30</div><div id='time'> Time: 2019-06-19</div><div id='author'> Author: tconkling@gmail.com</div><div id='file'> File Name: lib/streamlit/Server.py</div><div id='class'> Class Name: Server</div><div id='method'> Method Name: _add_browser_connection</div><BR>

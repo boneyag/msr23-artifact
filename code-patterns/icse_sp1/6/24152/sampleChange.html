@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            start = end
+
+        return {
+            "state": [s["state"] <a id="change">for</a> s in self._all_states],
+            "param_groups": param_groups,
+            "partition": partition,
+            "local_state_dict": False,</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 - go through the per-shard states, which are all indexed locally
+        for rank, s in enumerate(self._all_states):
+            &#47&#47 -- match the local indexing and the global partition, update the corresponding saved state globally
+            <a id="change">for local_pg, global_pg in zip(
+                s["param_groups"], self.partition_parameters()[rank]
+            ):
+                local_index_to_param_id = {
+                    i_param: id(global_pg["params"][i])
+                    for i, i_param in enumerate(local_pg["params"])
+                }
+
+                for local_param_index in local_pg["params"]:
+                    &#47&#47 Update the state, if any
+                    if local_param_index in s["state"].keys():
+                        global_id = self._param_to_index[
+                            local_index_to_param_id[local_param_index]
+                        ]
+                        state_dict["state"][global_id] = s["state"][local_param_index]
+
+        &#47&#47 Make sure that the parameters are sorted in the state, as expected
+       </a> state_dict["state"] = dict(sorted(state_dict["state"].items()))
+        return state_dict
+
+    @staticmethod</code></pre>

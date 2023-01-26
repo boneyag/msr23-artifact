@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                :math:`\mathbf{M} \in {\{ 0, 1 \}}^{B \times N}` indicating
+                the valid nodes for each graph. (default: :obj:`None`)
+        
+        x = <a id="change">x.unsqueeze(0) if x.dim() == 2 else x</a>
+
+        B = x.shape[0]
+        H = self.heads
+        K = self.num_keys
+        N = x.shape[1]
+
+        dist = torch.cdist(self.k.view(H * K, -1), x.view(B * N, -1), 1)
+        dist = (1 + (dist**2 / self.tau)).pow(-(self.tau + 1) / 2.0)
+        dist = dist.view(H, K, B, N).permute(2, 0, 3, 1)
+        S = dist / dist.sum(3).unsqueeze(3)  &#47&#47 B*H*N*K
+
+        S = self.conv(S).squeeze(1)
+        S = torch.softmax(S, 2)  &#47&#47 B*N*K
+        <a id="change">S = self.apply_mask(S, mask)</a>
+        x = self.lin(matmul(S.transpose(1, 2), x))  &#47&#47 B*K*F&quot
+        x = self.act(x)
+
+        return x, S</code></pre><h3>After Change</h3><pre><code class='java'>
+    def forward(self, x: Tensor,
+                batch: Optional[Tensor] = None) -&gt; Tuple[Tensor, Tensor]:
+        
+        <a id="change">x</a>, mask = to_dense_batch(x, batch)
+
+        (B, N, _), H, K = x.size(), self.heads, self.num_clusters
+</code></pre>

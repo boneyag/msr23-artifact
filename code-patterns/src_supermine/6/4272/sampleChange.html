@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        def unbottle(m):
+            return m.view(beamSize, batchSize, -1)
+
+        <a id="change">while i &lt; self.opt.max_sent_length \
+              or any([len(b.finished) == 0 for b in beam]):
+            &#47&#47 Construct batch x beam_size nxt words.
+            &#47&#47 Get all the pending current beam words and arrange for forward.
+            inp = var(torch.stack([b.getCurrentState() for b in beam])
+                      .t().contiguous().view(1, -1))
+            
+            &#47&#47 Turn any copied words to UNKs
+            &#47&#47 0 is unk
+            if self.copy_attn:
+                inp = inp.masked_fill(inp.gt(len(self.fields["tgt"].vocab) - 1), 0)
+                            
+            &#47&#47 Run one step.
+            decOut, decStates, attn = \
+                self.model.decoder(inp, src, context, decStates)
+            decOut = decOut.squeeze(0)
+            &#47&#47 decOut: beam x rnn_size
+            
+            &#47&#47 (b) Compute a vector of batch*beam word scores.
+            if not self.copy_attn:
+                out = self.model.generator.forward(decOut).data
+                out = unbottle(out)
+                &#47&#47 beam x tgt_vocab
+            else:                
+                out = self.model.generator.forward(decOut, attn["copy"].squeeze(0),
+                                                   srcMap)
+                &#47&#47 beam x (tgt_vocab + extra_vocab)
+                out = dataset.collapseCopyScores(
+                    unbottle(out.data),
+                    batch, self.fields["tgt"].vocab)
+                &#47&#47 beam x tgt_vocab
+                out = out.log()
+
+            &#47&#47 (c) Advance each beam.
+            for j, b in enumerate(beam):
+                is_done = b.advance(out[:, j], unbottle(attn["copy"]).data[:, j])
+                decStates.beamUpdate_(j, b.getCurrentOrigin(), beamSize)
+                if is_done:
+                    break
+            i += 1
+            
+       </a> if "tgt" in batch.__dict__:
+            allGold = self._runTarget(batch, dataset)
+        else:
+            allGold = [0] * batchSize</code></pre><h3>After Change</h3><pre><code class='java'>
+            return m.view(beamSize, batchSize, -1)
+
+        for i in range(self.opt.max_sent_length):
+            if all(<a id="change">(b.done() for b in beam)</a>):
+                break
+
+            &#47&#47 Construct batch x beam_size nxt words.</code></pre>

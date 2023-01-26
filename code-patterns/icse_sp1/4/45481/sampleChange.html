@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mem_limit=mem_limit,
+        detach=True)
+    t = t0 = datetime.datetime.now()
+    <a id="change">while True:
+        exit_code = None
+        try:
+            exit_code = container.wait(timeout=10)
+        except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
+            pass
+        except:
+            &#47&#47 If something unexpected happened, just kill the container
+            container.kill()
+
+        &#47&#47 Print any logs since last timestamp
+        logs = container.logs(since=t)
+        sys.stdout.buffer.write(logs)
+        sys.stdout.buffer.flush()
+        t = datetime.datetime.now()
+
+        &#47&#47 Exit if exit code
+        if exit_code == 0:
+            return
+        elif exit_code is not None:
+            raise Exception(&quotChild process raised exception %d&quot % exit_code)
+
+        &#47&#47 Break if we&quotve spent too much time
+        if (t - t0).total_seconds() &gt; timeout:
+            raise Exception(&quotChild process time limit %fs exceeded&quot % timeout)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            print(colors.color(line.decode().rstrip(), fg=&quotyellow&quot))
+
+    t = threading.Thread(target=stream_logs, daemon=True)
+    <a id="change">t.start()</a>
+    try:
+        exit_code = container.wait(timeout=timeout)
+    except:
+        container.kill()</code></pre>

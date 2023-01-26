@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.n_inputs != 1:
+            raise ValueError("Currently only supports univariate input per time-step")
+        preds = list()
+        <a id="change">x = np.zeros(shape=(1, self.n_lag, 1), dtype=np.float32)</a>
+        for i in range(self.n_lag):
+            x[0, i, 0] = start_ts[i]
+        init_state = np.zeros(shape=(1, self.state_size))
+        for i in range(n):
+            yhat = self.predict_op.eval(feed_dict={self.X: x,
+                                                    self.init_state: init_state})
+            logger.debug("pred: %d %s" % (i, str(yhat)))
+            preds.append(yhat[0, 0])
+            for lag in range(self.n_lag-1):
+                <a id="change">x[0, lag, 0] = x[0, lag+1, 0]</a>
+            x[0, self.n_lag-1, 0] = yhat[0, 0]
+        return np.array(preds)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        if self.n_inputs != 1:
+            raise ValueError("Currently only supports univariate input per time-step")
+        seq = list(<a id="change">np.reshape(start_ts, newshape=(-1,))</a>)
+        logger.debug("seq: %s" % str(seq))
+        preds = list()
+        init_state = np.zeros(shape=(1, self.state_size))
+        for i in range(n):
+            <a id="change">ts = seq[-self.n_lag:]</a>
+            <a id="change">X_batch = np.array(ts).reshape(1, self.n_lag, self.n_inputs)</a>
+            yhat = self.predict_op.eval(feed_dict={self.X: X_batch,
+                                                   self.init_state: init_state})
+            logger.debug("pred: %d %s" % (i, str(yhat)))
+            preds.append(yhat[0, 0])</code></pre>

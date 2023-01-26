@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        not torch.cuda.is_available()
+                ):
+                    disable_cuda = True
+                    val = <a id="change">torch.load(
+                        f, map_location=lambda storage, loc: storage)</a>
+                else:
+                    val = torch.load(f)
+            state[key] = val
+        if disable_cuda:</code></pre><h3>After Change</h3><pre><code class='java'>
+                        not torch.cuda.is_available())
+        load_kwargs = {}
+        if disable_cuda:
+            <a id="change">load_kwargs = {&quotmap_location&quot: lambda store, loc: store}</a>
+
+        with tempfile.SpooledTemporaryFile() as f:
+            f.write(state[&quotcuda_dependent_attributes_&quot])
+            f.seek(0)
+            cuda_attrs = torch.load(f, **load_kwargs)
+
+        set_cuda_attrs = {}
+        <a id="change">state.update(cuda_attrs)</a>
+        for key in self.cuda_dependent_attributes_:
+            if key not in cuda_attrs:
+                continue
+            set_cuda_attrs[key] = state.pop(key)</code></pre>

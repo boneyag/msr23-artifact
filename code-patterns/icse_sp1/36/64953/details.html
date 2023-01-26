@@ -1,0 +1,209 @@
+<html><h3>a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f,plantcv/plantcv/y_axis_pseudolandmarks.py,,y_axis_pseudolandmarks,#Any#Any#Any#,13
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            print_image(img2, os.path.join(params.debug_outdir, (str(params.device) + &quot_y_axis_pseudolandmarks.png&quot)))
+
+        &#47&#47 Store into global measurements
+        <a id="change">if not &quotlandmark_reference&quot in outputs.measurements:
+            outputs.measurements[&quotlandmark_reference&quot] = {}
+       </a> outputs.measurements[&quotlandmark_reference&quot][&quotleft_lmk&quot] = left
+        outputs.measurements[&quotlandmark_reference&quot][&quotright_lmk&quot] = right
+        <a id="change">outputs.measurements[&quotlandmark_reference&quot][&quotcenter_h_lmk&quot] = center_h</a>
+
+        return left, right, center_h
+    
+    if extent &lt; 21:</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Outputs
+    left = []
+    right = []
+    <a id="change">center_h = []</a>
+    left_list = []
+    right_list = []
+    <a id="change">center_h_list = []</a>
+
+    &#47&#47 If height is greater than 21 pixels make 20 increments (5% intervals)
+    if extent &gt;= 21:
+        inc = int(extent / 21)
+        &#47&#47 Define variable for max points and min points
+        pts_max = []
+        pts_min = []
+        &#47&#47 Get max and min points for each of the intervals
+        for i in range(1, 21):
+            if i == 1:
+                pt_max = y
+                pt_min = y + (inc * i)
+            else:
+                pt_max = y + (inc * (i - 1))
+                pt_min = y + (inc * i)
+            &#47&#47 Put these in an array
+            pts_max.append(pt_max)
+            pts_min.append(pt_min)
+        &#47&#47 Combine max and min into a set of tuples
+        point_range = list(zip(pts_max, pts_min))
+        &#47&#47 define some list variables to fill
+        row_median = []
+        row_ave = []
+        max_width = []
+        left_points = []
+        right_points = []
+        y_vals = []
+        x_centroids = []
+        y_centroids = []
+        &#47&#47 For each of the 20 intervals
+        for pt in point_range:
+            &#47&#47 Get the lower and upper bounds
+            &#47&#47 (lower and higher in terms of value; low point is actually towards top of photo, higher is lower of photo)
+            low_point, high_point = pt
+            &#47&#47 Get all rows within these two points
+            rows = []
+            lps = []
+            rps = []
+            &#47&#47 Get a continuous list of the values between the top and the bottom of the interval save as vals
+            vals = list(range(low_point, high_point))
+            &#47&#47 For each row... get all coordinates from object contour that match row
+            for v in vals:
+                &#47&#47 Value is all entries that match the row
+                value = obj[v == obj[:, 0, 1]]
+                if len(value) &gt; 0:
+                    &#47&#47 Could potentially be more than two points in all contour in each pixel row
+                    &#47&#47 Grab largest x coordinate (column)
+                    largest = value[:, 0, 0].max()
+                    &#47&#47 Grab smallest x coordinate (column)
+                    smallest = value[:, 0, 0].min()
+                    &#47&#47 Take the difference between the two (this is how far across the object is on this plane)
+                    row_width = largest - smallest
+                    &#47&#47 Append this value to a list
+                    rows.append(row_width)
+                    lps.append(smallest)
+                    rps.append(largest)
+                if len(value) == 0:
+                    row_width = 1
+                    rows.append(row_width)
+                    lps.append(1)
+                    rps.append(1)
+            &#47&#47 For each of the points find the median and average width
+            row_median.append(np.median(np.array(rows)))
+            row_ave.append(np.mean(np.array(rows)))
+            max_width.append(np.max(np.array(rows)))
+            left_points.append(np.mean(smallest))
+            right_points.append(np.mean(largest))
+            yval = int((high_point + low_point) / 2)
+            y_vals.append(yval)
+            &#47&#47 Make a copy of the mask; we want to get landmark points from this
+            window = np.copy(mask)
+            window[:low_point] = 0
+            window[high_point:] = 0
+            s = cv2.moments(window)
+            &#47&#47 Centroid (center of mass x, center of mass y)
+            if largest - smallest &gt; 3:
+                if s[&quotm00&quot] &gt; 0.001:
+                    smx, smy = (s[&quotm10&quot] / s[&quotm00&quot], s[&quotm01&quot] / s[&quotm00&quot])
+                    x_centroids.append(int(smx))
+                    y_centroids.append(int(smy))
+                if s[&quotm00&quot] &lt; 0.001:
+                    smx, smy = (s[&quotm10&quot] / 0.001, s[&quotm01&quot] / 0.001)
+                    x_centroids.append(int(smx))
+                    y_centroids.append(int(smy))
+            else:
+                smx = (largest + smallest) / 2
+                smy = yval
+                x_centroids.append(int(smx))
+                y_centroids.append(int(smy))
+        &#47&#47 Get the indicie of the largest median/average x-axis value (if there is a tie it takes largest index)
+        &#47&#47 indice_median = row_median.index(max(row_median))
+        &#47&#47 indice_ave = row_ave.index(max(row_ave))
+        &#47&#47 median_value = row_median[indice_median]
+        &#47&#47 ave_value = row_ave[indice_ave]
+        &#47&#47 max_value = max_width[indice_ave]
+        left = list(zip(left_points, y_vals))
+        left = np.array(left)
+        left.shape = (20, 1, 2)
+        right = list(zip(right_points, y_vals))
+        right = np.array(right)
+        right.shape = (20, 1, 2)
+        center_h = list(zip(x_centroids, y_centroids))
+        center_h = np.array(center_h)
+        center_h.shape = (20, 1, 2)
+
+        img2 = np.copy(img)
+        for i in left:
+            x = i[0, 0]
+            y = i[0, 1]
+            cv2.circle(img2, (int(x), int(y)), params.line_thickness, (255, 0, 0), -1)
+        for i in right:
+            x = i[0, 0]
+            y = i[0, 1]
+            cv2.circle(img2, (int(x), int(y)), params.line_thickness, (255, 0, 255), -1)
+        for i in center_h:
+            x = i[0, 0]
+            y = i[0, 1]
+            cv2.circle(img2, (int(x), int(y)), params.line_thickness, (0, 79, 255), -1)
+
+        if params.debug == &quotplot&quot:
+            plot_image(img2)
+        elif params.debug == &quotprint&quot:
+            print_image(img2, os.path.join(params.debug_outdir, (str(params.device) + &quot_y_axis_pseudolandmarks.png&quot)))
+    elif extent &lt; 21:
+        &#47&#47 If the length of the object is less than 20 pixels just make the object a 20 pixel rectangle
+        x, y, width, height = cv2.boundingRect(obj)
+        y_coords = list(range(y, y + 20))
+        l_points = [x] * 20
+        left = list(zip(l_points, y_coords))
+        left = np.array(left)
+        left.shape = (20, 1, 2)
+        r_points = [x + width] * 20
+        right = list(zip(r_points, y_coords))
+        right = np.array(right)
+        right.shape = (20, 1, 2)
+        m = cv2.moments(mask, binaryImage=True)
+        &#47&#47 Centroid (center of mass x, center of mass y)
+        if m[&quotm00&quot] == 0:
+            fatal_error(&quotCheck input parameters, first moment=0&quot)
+        else:
+            cmx, cmy = (m[&quotm10&quot] / m[&quotm00&quot], m[&quotm01&quot] / m[&quotm00&quot])
+            c_points = [cmx] * 20
+            center_h = list(zip(c_points, y_coords))
+            center_h = np.array(center_h)
+            center_h.shape = (20, 1, 2)
+
+        img2 = np.copy(img)
+        for i in left:
+            x = i[0, 0]
+            y = i[0, 1]
+            cv2.circle(img2, (int(x), int(y)), params.line_thickness, (255, 0, 0), -1)
+        for i in right:
+            x = i[0, 0]
+            y = i[0, 1]
+            cv2.circle(img2, (int(x), int(y)), params.line_thickness, (255, 0, 255), -1)
+        for i in center_h:
+            x = i[0, 0]
+            y = i[0, 1]
+            cv2.circle(img2, (int(x), int(y)), params.line_thickness, (0, 79, 255), -1)
+        &#47&#47 print_image(img2, (str(device) + &quot_y_axis_pseudolandmarks.png&quot))
+        if params.debug == &quotplot&quot:
+            plot_image(img2)
+        elif params.debug == &quotprint&quot:
+            print_image(img2, os.path.join(params.debug_outdir, (str(params.device) + &quot_y_axis_pseudolandmarks.png&quot)))
+
+    &#47&#47 Store into global measurements
+    for pt in left:
+        left_list.append(pt[0].tolist())
+    for pt in right:
+        right_list.append(pt[0].tolist())
+    <a id="change">for pt in center_h:
+        center_h_list.append(pt[0].tolist())
+
+   </a> outputs.add_measurement(variable=&quotleft_lmk&quot, trait=&quotleft landmark coordinates&quot,
+                            method=&quotplantcv.plantcv.x_axis_pseudolandmarks&quot, scale=&quotnone&quot, datatype=list,
+                            value=left_list, label=&quotnone&quot)
+    outputs.add_measurement(variable=&quotright_lmk&quot, trait=&quotright landmark coordinates&quot,
+                            method=&quotplantcv.plantcv.x_axis_pseudolandmarks&quot, scale=&quotnone&quot, datatype=list,
+                            value=right_list, label=&quotnone&quot)
+    <a id="change">outputs.add_measurement(variable=&quotcenter_h_lmk&quot, trait=&quotcenter horizontal landmark coordinates&quot,
+                            method=&quotplantcv.plantcv.x_axis_pseudolandmarks&quot, scale=&quotnone&quot, datatype=list,
+                            value=center_h_list, label=&quotnone&quot)</a>
+
+    return left, right, center_h
+</code></pre><img src="298812621.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 22</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/danforthcenter/plantcv/commit/a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f#diff-fa5985b9a15207db2fb8ed2c1320ee4ab1e1480b574e6d632eebcb1457e6219dL41' target='_blank'>Link</a></div><div id='project'> Project Name: danforthcenter/plantcv</div><div id='commit'> Commit Name: a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f</div><div id='time'> Time: 2019-05-16</div><div id='author'> Author: noahfahlgren@gmail.com</div><div id='file'> File Name: plantcv/plantcv/y_axis_pseudolandmarks.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: y_axis_pseudolandmarks</div><BR><BR><div id='link'><a href='https://github.com/danforthcenter/plantcv/commit/a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f#diff-fa5985b9a15207db2fb8ed2c1320ee4ab1e1480b574e6d632eebcb1457e6219dL41' target='_blank'>Link</a></div><div id='project'> Project Name: danforthcenter/plantcv</div><div id='commit'> Commit Name: a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f</div><div id='time'> Time: 2019-05-16</div><div id='author'> Author: noahfahlgren@gmail.com</div><div id='file'> File Name: plantcv/plantcv/y_axis_pseudolandmarks.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: y_axis_pseudolandmarks</div><BR><BR><div id='link'><a href='https://github.com/danforthcenter/plantcv/commit/a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f#diff-f8fa2658ed92fc9d6c4eacebd5aa4c636f86cde98cec2950e9914852cddda3d9L42' target='_blank'>Link</a></div><div id='project'> Project Name: danforthcenter/plantcv</div><div id='commit'> Commit Name: a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f</div><div id='time'> Time: 2019-05-16</div><div id='author'> Author: noahfahlgren@gmail.com</div><div id='file'> File Name: plantcv/plantcv/x_axis_pseudolandmarks.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: x_axis_pseudolandmarks</div><BR><BR><div id='link'><a href='https://github.com/danforthcenter/plantcv/commit/a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f#diff-7b78b15e2beadc6a9512655b63e17e51f354c03bfac914334e1ebf4da6a27bbfL92' target='_blank'>Link</a></div><div id='project'> Project Name: danforthcenter/plantcv</div><div id='commit'> Commit Name: a0ac1b1a68f46bcdb02b0350a9a6e85256273e7f</div><div id='time'> Time: 2019-05-16</div><div id='author'> Author: noahfahlgren@gmail.com</div><div id='file'> File Name: plantcv/plantcv/acute_vertex.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: acute_vertex</div><BR>

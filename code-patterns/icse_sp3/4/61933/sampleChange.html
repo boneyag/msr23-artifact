@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    param_shape = (1, 10, 30, 25)
+
+    &#47&#47 forward pass
+    <a id="change">out</a>, x_mean, x_invstd = bn.batch_normalization_train(x, scale, bias, &quotper-activation&quot)
+    &#47&#47 backward pass
+    grads = T.grad(None, wrt=[x, scale, bias], known_grads={out: dy})
+    &#47&#47 compile</code></pre><h3>After Change</h3><pre><code class='java'>
+        bn.batch_normalization_train(x, scale, bias, &quotper-activation&quot)
+    &#47&#47 backward pass
+    grads_gpu = T.grad(None, wrt=[x, scale, bias], known_grads={out_gpu: dy})
+    grads_abstract = T.grad(None, wrt=<a id="change">[x, scale, bias]</a>, known_grads={out_gpu: dy})
+    &#47&#47 compile
+    f_gpu = theano.function([x, scale, bias, dy],
+                            [out_gpu, x_mean_gpu, x_invstd_gpu] +
+                            grads_gpu,
+                            mode=mode_with_gpu)
+    <a id="change">f_abstract = theano.function([x, scale, bias, dy],
+                                 [out_abstract, x_mean_abstract, x_invstd_abstract] +
+                                 grads_abstract,
+                                 mode=mode_with_gpu)</a>
+    &#47&#47 check if the abstract Ops have been replaced
+    assert any([isinstance(n.op, dnn.GpuDnnBatchNorm)
+                for n in f_abstract.maker.fgraph.toposort()])
+    assert any([isinstance(n.op, dnn.GpuDnnBatchNormGrad)</code></pre>

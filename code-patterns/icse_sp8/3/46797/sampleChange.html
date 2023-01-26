@@ -1,0 +1,194 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+
+<a id="change">try:
+    &#47&#47 Only create these classes when matplotlib is installed
+    from matplotlib.artist import Artist
+    from matplotlib.transforms import Bbox
+    from matplotlib.patches import Rectangle, Polygon
+
+
+    class PlasmidMap(Artist):
+        pass
+
+
+    class Feature_Indicator(Artist):
+        def __init__(self, axes, zorder, feature, loc, bbox, head_width,
+                     arrow_properties, label_properties, feature_formatter):
+            super().__init__()
+            self._axes = axes
+            self.zorder = zorder
+            self._direction = loc.strand
+            self._bbox = bbox
+            self._head_width = head_width
+            
+            &#47&#47 Determine how to draw the feature
+            directional, face_color, label_color, label \
+                = feature_formatter(feature)
+            
+            &#47&#47 Draw arrow as composition of a rectangle and a triangle,
+            &#47&#47 as FancyArrow does not properly work for polar plots
+
+            self._arrow_tail = axes.add_patch(Rectangle(
+                &#47&#47 Set positions in &quotdraw()&quot method
+                (0, 0), 0, 0,
+                &#47&#47 Line width is set to 1 to avoid strange artifact in
+                &#47&#47 the transition from rectangle (tail) to polygon (head)
+                color=face_color, linewidth=1, zorder = self.zorder + 1,
+                **arrow_properties
+            ))
+            
+            if directional:
+                &#47&#47 Only draw any arrow head when feature has a direction,
+                &#47&#47 otherwise simply draw the tail (rectangle)
+                self._arrow_head = axes.add_patch(Polygon(
+                    &#47&#47 Set positions in &quotdraw()&quot method
+                    [(0, 0), (0, 0), (0, 0)],
+                    color=face_color, linewidth=1, zorder = self.zorder + 1,
+                    **arrow_properties
+                ))
+            else:
+                self._arrow_head = None
+
+            if label is not None:
+                self._label = axes.add_artist(CurvedText(
+                    &#47&#47 Set positions in &quotdraw()&quot method
+                    axes, self.zorder + 1, 0, 0, label, label_properties
+                ))
+            else:
+                self._label = None
+
+
+        def draw(self, renderer, *args, **kwargs):
+            bbox = self._bbox
+            center_x = (bbox.x0 + bbox.x1) / 2
+            center_y = (bbox.y0 + bbox.y1) / 2
+            
+            &#47&#47 Check if the feature location is too small for
+            &#47&#47 arrow tail AND head to be drawn
+            if self._arrow_head is None:
+                head_width = 0
+            elif self._head_width &gt; bbox.width:
+                &#47&#47 Limit size of arrow head to range of location
+                head_width = bbox.width
+            else:
+                head_width = self._head_width
+
+            if self._direction == Location.Strand.FORWARD:
+                rect_pos = (bbox.x0, bbox.y0)
+                &#47&#47 (x0, y0), (x1, y1), (x2, y2)
+                triangle_coord = [
+                    (bbox.x1 - head_width, bbox.y0), &#47&#47 base 1
+                    (bbox.x1 - head_width, bbox.y1), &#47&#47 base 2
+                    (bbox.x1,              center_y) &#47&#47 tip
+                ]
+            else:
+                rect_pos = (bbox.x0+head_width, bbox.y0)
+                triangle_coord = [
+                    (bbox.x0 + head_width, bbox.y0), &#47&#47 base 1
+                    (bbox.x0 + head_width, bbox.y1), &#47&#47 base 2
+                    (bbox.x0,              center_y) &#47&#47 tip
+                ]
+            
+            &#47&#47 Update coordinates of sub-artists
+            self._arrow_tail.set_xy(rect_pos)
+            self._arrow_tail.set_width(bbox.width-head_width)
+            self._arrow_tail.set_height(bbox.height)
+            if self._arrow_head is not None:
+                self._arrow_head.set_xy(triangle_coord)
+            if self._label is not None:
+                self._label.set_position(center_x, center_y)
+
+
+    class CurvedText(Artist):
+
+        def __init__(self, axes, zorder, angle, radius, string,
+                     text_properties):
+            super().__init__()
+            self._axes = axes
+            self.zorder = zorder
+            self._angle = angle
+            self._radius = radius
+
+            self._texts = []
+            for word in _split_into_words(string):
+                text = axes.text(
+                    &#47&#47 Set position in &quotdraw()&quot method
+                    0, 0,
+                    word,
+                    ha="center", va="center",
+                    zorder=self.zorder + 1,
+                    **text_properties,
+                )
+                self._texts.append(text)
+        
+        def set_position(self, angle, radius):
+            self._angle = angle
+            self._radius = radius
+        
+        def draw(self, renderer, *args, **kwargs):
+            xlim = self._axes.get_xlim()
+            ylim = self._axes.get_ylim()
+            
+            ax_px_radius = self._axes.get_window_extent(renderer).width / 2
+            circle_px_radius = ax_px_radius * self._radius / ylim[1]
+            
+            value_range = xlim[1] - xlim[0]
+            units_per_px = value_range / (circle_px_radius * 2*np.pi)
+
+            rad_angle = 360 - np.rad2deg(self._angle)
+            &#47&#47 Avoid to draw the text upside down, when drawn on the
+            &#47&#47 bottom half of the map
+            if rad_angle &gt; 90 and rad_angle &lt; 270:
+                turn_around = True
+            else:
+                turn_around = False
+            
+            unit_widths = []
+            total_unit_width = 0
+            for text in self._texts:
+                &#47&#47 Reset rotation for correct window extent calculation
+                text.set_rotation(0)
+                word_px_width = text.get_window_extent(renderer).width
+                word_unit_width = word_px_width * units_per_px
+                unit_widths.append(word_unit_width)
+                total_unit_width += word_unit_width
+            
+            &#47&#47 Now that the width is known,
+            &#47&#47 the appropriate position and rotation can be set
+            if turn_around:
+                &#47&#47 curr_angle is the left-aligned position of the
+                &#47&#47 upcoming word
+                curr_angle = self._angle + total_unit_width / 2
+            else:
+                curr_angle = self._angle - total_unit_width / 2
+            for text, width in zip(self._texts, unit_widths):
+                if turn_around:
+                    &#47&#47 The text itself is centered
+                    &#47&#47 -&gt; The position itself must be corrected with
+                    &#47&#47 half of the word width
+                    angle_corrected = curr_angle - width / 2
+                    text_rot = 360 - np.rad2deg(angle_corrected) + 180
+                    curr_angle -= width
+                else:
+                    angle_corrected = curr_angle + width / 2
+                    text_rot = 360 - np.rad2deg(angle_corrected)
+                    curr_angle += width
+                text.set_position((angle_corrected, self._radius))
+                text.set_rotation(text_rot)
+
+
+except ImportError:
+    pass</a></code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+&#47&#47 &quot &quot, &quot-&quot and &quot_&quot are word delimiters
+separators = <a id="change">re.compile("\s|_|-")</a>
+def _split_into_words(string):
+    match_indices = sorted(
+        [match.start() for match in separators.finditer(string)]
+    )</code></pre>

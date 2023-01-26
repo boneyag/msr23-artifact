@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 fine and concat. This is really not expected to fail
+        assert(all(
+            stats[&quotgroup&quot].as_matrix() == unique[&quotgroup&quot].as_matrix()))
+        <a id="change">if len(stats) == len(unique):
+            stats = pd.concat([stats, unique.loc[:, missing]],
+                              axis=1)
+        elif len(unique) == 1:
+            for col in unique:
+                stats[col] = unique[col].iloc[0]
+        else:
+            raise GgplotError(&quotCould not merge stats. Report bug&quot)
+
+        &#47&#47 Note: If the data coming in has columns with non-unique
+        &#47&#47 values with-in group(s), this implementation loses the
+        &#47&#47 columns. Individual stats may want to do some preparation
+        &#47&#47 before then fall back on this implementation or override
+        &#47&#47 it completely.
+       </a> return stats
+
+    def __radd__(self, gg):
+        &#47&#47 Create and add a layer to ggplot object</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        stats = []
+        for _, old in data.groupby(&quotgroup&quot):
+            <a id="change">new = self._calculate(old, scales)</a>
+            unique = uniquecols(old)
+            missing = unique.columns - new.columns
+            u = unique.loc[[0]*len(new), missing].reset_index(drop=True)
+            <a id="change">df = pd.concat([new, u], axis=1)</a>
+            stats.append(df)
+
+        stats = pd.concat(stats, axis=0, ignore_index=True)
+</code></pre>

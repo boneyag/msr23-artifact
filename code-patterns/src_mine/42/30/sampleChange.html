@@ -1,0 +1,108 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        height, width, nb_channels = image.shape
+        downscale_factor = np.clip(1.0 - flake_size_sample, 0.001, 1.0)
+        <a id="change">height_down</a> = <a id="change">int(height*downscale_factor)</a>
+        width_down = int(width*downscale_factor)
+        <a id="change">noise</a> = self._generate_noise(
+            height_down,
+            width_down,
+            self.density,
+            rss[0]
+        )
+
+        &#47&#47 gate the sampled noise via noise in range [0.0, 1.0]
+        &#47&#47 this leads to less flakes in some areas of the image and more in
+        &#47&#47 other areas
+        gate_noise = iap.Beta(1.0, 1.0 - self.density_uniformity)
+        <a id="change">noise</a> = self._gate(noise, gate_noise, self.gate_noise_size, rss[1])
+        <a id="change">noise</a> = ia.imresize_single_image(noise, (height, width),
+                                         interpolation="cubic")
+
+        &#47&#47 apply a bit of gaussian blur and then motion blur according to
+        &#47&#47 angle and speed
+        sigma = max(height, width) * blur_sigma_fraction_sample
+        sigma = np.clip(sigma,
+                        self.blur_sigma_limits[0], self.blur_sigma_limits[1])
+        <a id="change">noise_small_blur</a> = self._blur(noise, sigma)
+        <a id="change">noise_small_blur</a> = self._motion_blur(noise_small_blur,
+                                             angle=angle_sample,
+                                             speed=speed_sample,
+                                             random_state=random_state)
+
+        &#47&#47 use contrast adjustment of noise to make the flake size a bit less
+        &#47&#47 uniform then readjust the noise values to make them more visible
+        &#47&#47 again
+        gain = 1.0 + 2*(1 - flake_size_uniformity_sample)
+        gain_adj = 1.0 + 5*(1 - flake_size_uniformity_sample)
+        <a id="change">noise_small_blur</a> = contrast.GammaContrast(gain).augment_image(
+            noise_small_blur)
+        noise_small_blur = noise_small_blur.astype(np.float32) * gain_adj
+        <a id="change">noise_small_blur_rgb</a> = np.tile(
+            noise_small_blur[..., np.newaxis], (1, 1, nb_channels))
+
+        &#47&#47 blend:
+        &#47&#47 sum for a bit of glowy, hardly visible flakes
+        &#47&#47 max for the main flakes
+        image_f32 = image.astype(np.float32)
+        <a id="change">image_f32</a> = self._blend_by_sum(
+            image_f32, (0.1 + 20*speed_sample) * noise_small_blur_rgb)
+        <a id="change">image_f32</a> = self._blend_by_max(
+            image_f32, (1.0 + 20*speed_sample) * noise_small_blur_rgb)
+        return image_f32
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        height, width, nb_channels = image.shape
+        downscale_factor = np.clip(1.0 - flake_size_sample, 0.001, 1.0)
+        <a id="change">height_down</a> = max(1, <a id="change">int(height*downscale_factor)</a>)
+        width_down = max(1, int(width*downscale_factor))
+        <a id="change">noise</a> = self._generate_noise(
+            height_down,
+            width_down,
+            self.density,
+            rss[0]
+        )
+
+        &#47&#47 gate the sampled noise via noise in range [0.0, 1.0]
+        &#47&#47 this leads to less flakes in some areas of the image and more in
+        &#47&#47 other areas
+        gate_noise = iap.Beta(1.0, 1.0 - self.density_uniformity)
+        <a id="change">noise</a> = self._gate(noise, gate_noise, self.gate_noise_size, rss[1])
+        <a id="change">noise</a> = ia.imresize_single_image(noise, (height, width),
+                                         interpolation="cubic")
+
+        &#47&#47 apply a bit of gaussian blur and then motion blur according to
+        &#47&#47 angle and speed
+        sigma = max(height, width) * blur_sigma_fraction_sample
+        sigma = np.clip(sigma,
+                        self.blur_sigma_limits[0], self.blur_sigma_limits[1])
+        <a id="change">noise_small_blur</a> = self._blur(noise, sigma)
+        <a id="change">noise_small_blur</a> = self._motion_blur(noise_small_blur,
+                                             angle=angle_sample,
+                                             speed=speed_sample,
+                                             random_state=random_state)
+
+        &#47&#47 use contrast adjustment of noise to make the flake size a bit less
+        &#47&#47 uniform then readjust the noise values to make them more visible
+        &#47&#47 again
+        gain = 1.0 + 2*(1 - flake_size_uniformity_sample)
+        gain_adj = 1.0 + 5*(1 - flake_size_uniformity_sample)
+        <a id="change">noise_small_blur</a> = contrast.GammaContrast(gain).augment_image(
+            noise_small_blur)
+        noise_small_blur = noise_small_blur.astype(np.float32) * gain_adj
+        <a id="change">noise_small_blur_rgb</a> = np.tile(
+            noise_small_blur[..., np.newaxis], (1, 1, nb_channels))
+
+        &#47&#47 blend:
+        &#47&#47 sum for a bit of glowy, hardly visible flakes
+        &#47&#47 max for the main flakes
+        image_f32 = image.astype(np.float32)
+        <a id="change">image_f32</a> = self._blend_by_sum(
+            image_f32, (0.1 + 20*speed_sample) * noise_small_blur_rgb)
+        <a id="change">image_f32</a> = self._blend_by_max(
+            image_f32, (1.0 + 20*speed_sample) * noise_small_blur_rgb)
+        return image_f32
+</code></pre>

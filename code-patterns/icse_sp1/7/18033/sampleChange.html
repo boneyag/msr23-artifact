@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def worker(remote, parent_remote, env_fn_wrapper):
+    parent_remote.close()
+    <a id="change">env = env_fn_wrapper.x()</a>
+    try:
+        while True:
+            cmd, data = remote.recv()
+            if cmd == &quotstep&quot:
+                ob, reward, done, info = env.step(data)
+                if done:
+                    ob = env.reset()
+                <a id="change">remote.send((ob, reward, done, info))</a>
+            elif cmd == &quotreset&quot:
+                <a id="change">ob = env.reset()</a>
+                remote.send(ob)
+            elif cmd == &quotrender&quot:
+                remote.send(env.render(mode=&quotrgb_array&quot))
+            elif cmd == &quotclose&quot:</code></pre><h3>After Change</h3><pre><code class='java'>
+        return ob, reward, done, info
+
+    parent_remote.close()
+    <a id="change">envs = [env_fn_wrapper() for env_fn_wrapper in env_fn_wrappers.x]</a>
+    try:
+        while True:
+            cmd, data = remote.recv()
+            if cmd == &quotstep&quot:
+                remote.send([step_env(env, action) <a id="change">for</a> env, action in zip(envs, data)])
+            elif cmd == &quotreset&quot:
+                remote.send([env.reset() for env in envs])
+            elif cmd == &quotrender&quot:
+                remote.send([env.render(mode=&quotrgb_array&quot) for env in envs])
+            elif cmd == &quotclose&quot:
+                remote.close()
+                break
+            elif cmd == &quotget_spaces_spec&quot:
+                remote.send((<a id="change">envs</a>[0].observation_space, envs[0].action_space, <a id="change">envs</a>[0].spec))
+            else:
+                raise NotImplementedError
+    except KeyboardInterrupt:</code></pre>

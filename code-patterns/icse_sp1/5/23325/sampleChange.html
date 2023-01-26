@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def forward_gpu(self, inputs):
+        x0, x1 = inputs
+        <a id="change">self.diff = x0 - x1</a>
+        <a id="change">diff = self.diff.ravel()</a>
+        return abs(diff).sum() / diff.dtype.type(diff.size),
+
+    def backward(self, indexes, grad_outputs):
+        gy, = grad_outputs</code></pre><h3>After Change</h3><pre><code class='java'>
+    def forward_gpu(self, inputs):
+        self.retain_inputs((0, 1))
+        cupy = cuda.cupy
+        <a id="change">diff = (inputs[0] - inputs[1]).ravel()</a>
+        if self.ignore_nan:
+            diff[cupy.isnan(diff)] = 0.
+        return abs(diff).sum() / diff.dtype.type(diff.size),
+</code></pre>

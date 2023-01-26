@@ -1,0 +1,37 @@
+<html><h3>12b19fcbf91e9d02bd8b2a67ce96e2d00d1d5ed7,foreman/data_refinery_foreman/foreman/management/commands/check_computed_files.py,Command,handle,#Command#,19
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        ref https://github.com/AlexsLemonade/refinebio/issues/1696
+        
+        computed_files_queryset = ComputedFile.objects.filter(s3_key__isnull=False, s3_bucket__isnull=False)
+        <a id="change">total_files = 0</a>
+        missing_file_ids = []
+
+        <a id="change">for computed_file in queryset_iterator(computed_files_queryset, PAGE_SIZE):
+            total_files += 1
+            &#47&#47 check that file is present in S3, no need to download the entire object
+            &#47&#47 https://stackoverflow.com/a/38376288/763705
+            &#47&#47 https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html&#47&#47S3.Client.head_object
+            try:
+                S3.head_object(Bucket=computed_file.s3_bucket, Key=computed_file.s3_key)
+            except ClientError:
+                &#47&#47 Not found
+                logger.debug(&quotComputed file not found on S3 - will remove S3 fields.&quot, computed_file=computed_file)
+                missing_file_ids.append(computed_file.pk)
+
+            &#47&#47 provide some info while the command is running.
+            if total_files % PAGE_SIZE == 0:
+                logger.info(&quotChecked %i computed files to see if they are in S3, so far found %i&quot % (total_files, len(missing_file_ids)))
+
+        &#47&#47 Update all computed files in one query
+       </a> logger.info(&quotFound %i files that were missing in S3, clearing s3_key and s3_bucket now.&quot % len(missing_file_ids))
+        ComputedFile.objects.filter(id__in=missing_file_ids).update(s3_key=None, s3_bucket=None)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        results = queryset_page_iterator(computed_files_queryset, PAGE_SIZE)
+
+        connections.close_all()
+        <a id="change">with Pool(processes=8) as pool:
+            pool.apply(check_page, results)</a>
+</code></pre><img src="332608160.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/AlexsLemonade/refinebio/commit/12b19fcbf91e9d02bd8b2a67ce96e2d00d1d5ed7#diff-5b98a81bb89965321ab4c69b4ea0bdeb9fbff37d96e9e2f1149cf44907e74c9dL26' target='_blank'>Link</a></div><div id='project'> Project Name: AlexsLemonade/refinebio</div><div id='commit'> Commit Name: 12b19fcbf91e9d02bd8b2a67ce96e2d00d1d5ed7</div><div id='time'> Time: 2019-10-01</div><div id='author'> Author: arielsvn@gmail.com</div><div id='file'> File Name: foreman/data_refinery_foreman/foreman/management/commands/check_computed_files.py</div><div id='class'> Class Name: Command</div><div id='method'> Method Name: handle</div><BR><BR><div id='link'><a href='https://github.com/uber/ludwig/commit/7d9db23a389499c2764fb850cd19f853cc3e8565#diff-93083b0167fe4d5d7228a93acefc4045ce7e5320a4203d876bb8400637a88123L205' target='_blank'>Link</a></div><div id='project'> Project Name: uber/ludwig</div><div id='commit'> Commit Name: 7d9db23a389499c2764fb850cd19f853cc3e8565</div><div id='time'> Time: 2019-08-08</div><div id='author'> Author: smiryala@uber.com</div><div id='file'> File Name: ludwig/features/image_feature.py</div><div id='class'> Class Name: ImageBaseFeature</div><div id='method'> Method Name: add_feature_data</div><BR><BR><div id='link'><a href='https://github.com/uber/ludwig/commit/5667af96dade79ef77194d519182d4989494b3a4#diff-93083b0167fe4d5d7228a93acefc4045ce7e5320a4203d876bb8400637a88123L205' target='_blank'>Link</a></div><div id='project'> Project Name: uber/ludwig</div><div id='commit'> Commit Name: 5667af96dade79ef77194d519182d4989494b3a4</div><div id='time'> Time: 2019-08-25</div><div id='author'> Author: smiryala@uber.com</div><div id='file'> File Name: ludwig/features/image_feature.py</div><div id='class'> Class Name: ImageBaseFeature</div><div id='method'> Method Name: add_feature_data</div><BR>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def transform(self, x, fit=False):
+        sentence = nest.flatten(x)[0].numpy().decode(&quotutf-8&quot)
+        data = self.vectorizer.transform([sentence]).toarray()
+        <a id="change">if self.selector:
+            data = self.selector.transform(data).astype(&quotfloat32&quot)
+       </a> <a id="change">return data[0]</a>
+
+    def output_types(self):
+        return (tf.float32,)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def transform(self, x, fit=False):
+        &#47&#47 Calculate tf at doc level
+        <a id="change">tf = np.zeros(len(self.vocabulary), dtype=int)</a>
+        x = nest.flatten(x)[0].numpy().decode(&quotutf-8&quot)
+        token_pattern = re.compile(r"(?u)\b\w\w+\b")
+        tokens = self._word_ngram(token_pattern.findall(x.lower()))
+
+        for feature in tokens:
+            if feature in self.vocabulary:
+                feature_idx = self.vocabulary[feature]
+                <a id="change">tf[feature_idx] += 1</a>
+        <a id="change">result = tf * self.k_best_idf_values</a>
+        result = normalize([result], norm=self.norm, copy=False)[0]
+        <a id="change">return result</a>
+
+    def output_types(self):
+        return (tf.float64,)
+</code></pre>

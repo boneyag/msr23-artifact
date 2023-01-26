@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        orig_input = input
+        if isinstance(orig_input, PackedSequence):
+            input, batch_sizes, sorted_indices, unsorted_indices = input
+            <a id="change">length = input.size(0)</a>
+            batch_size = input.size(1)
+            mask_pad = torch.arange(batch_size,
+                                    device=batch_sizes.device).expand(length, batch_size)
+            <a id="change">mask_pad = (mask_pad &gt;= batch_sizes.view(length, 1)).contiguous()</a>
+        else:
+            length = input.size(0)
+            batch_size = input.size(1)
+            batch_sizes = None</code></pre><h3>After Change</h3><pre><code class='java'>
+        if isinstance(orig_input, PackedSequence):
+            input, lengths = nn.utils.rnn.pad_packed_sequence(input)
+            max_length = lengths.max().item()
+            <a id="change">mask_pad = torch.ByteTensor([[0] * l + [1] * (max_length - l) for l in lengths.tolist()])</a>
+            <a id="change">mask_pad = mask_pad.to(input.device).transpose(0, 1).contiguous()</a>
+
+        &#47&#47 The dimensions of `input` should be: `(sequence_length, batch_size, input_size)`.
+        if input.dim() != 3:
+            raise ValueError("There must be 3 dimensions for (length, batch_size, input_size)")</code></pre>

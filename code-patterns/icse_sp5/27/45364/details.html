@@ -1,0 +1,288 @@
+<html><h3>1d23b992191fde5403c1927efd339516fbee1a8c,QUANTAXIS/QASU/save_bitfinex.py,,QA_SU_save_bitfinex_min,#Any#Any#Any#,178
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    print(&quotUnder construction... I will test and debug soon...&quot)
+    return False
+    <a id="change">market = &quotbitfinex&quot</a>
+    symbol_list = <a id="change">QA_fetch_crypto_asset_list(market=market)</a>
+    col = DATABASE.crypto_asset_min
+    col.create_index(
+        [
+            (&quotmarket&quot,
+             pymongo.ASCENDING),
+            ("symbol",
+             pymongo.ASCENDING),
+            (&quottime_stamp&quot,
+             pymongo.ASCENDING),
+            (&quotdate_stamp&quot,
+             pymongo.ASCENDING)
+        ]
+    )
+    col.create_index(
+        [
+            (&quotmarket&quot,
+             pymongo.ASCENDING),
+            ("symbol",
+             pymongo.ASCENDING),
+            ("type",
+             pymongo.ASCENDING),
+            (&quottime_stamp&quot,
+             pymongo.ASCENDING)
+        ],
+        unique=True
+    )
+
+    end = datetime.datetime.now(tzutc())
+
+    QA_util_log_info(
+        &quotStarting DOWNLOAD PROGRESS of min Klines from Bitfinex... &quot,
+        ui_log=ui_log,
+        ui_progress=ui_progress
+    )
+    for index in range(len(symbol_list)):
+        <a id="change">symbol_info</a> = symbol_list.iloc[index]
+        &#47&#47 上架仅处理交易对
+        QA_util_log_info(
+            &quotThe "{}" &#47&#47{} of total in {}&quot.format(
+                <a id="change">symbol_info[&quotsymbol&quot]</a>,
+                index,
+                len(symbol_list)
+            ),
+            ui_log=ui_log,
+            ui_progress=ui_progress
+        )
+        QA_util_log_info(
+            &quotDOWNLOAD PROGRESS {} &quot
+            .format(str(float(index / len(symbol_list) * 100))[0:4] + &quot%&quot),
+            ui_log=ui_log,
+            ui_progress=ui_progress
+        )
+        query_id = {
+            "symbol": <a id="change">symbol_info[&quotsymbol&quot]</a>,
+            &quotmarket&quot: <a id="change">symbol_info[&quotmarket&quot]</a>,
+            &quottype&quot: Bitfinex2QA_FREQUENCY_DICT[frequency]
+        }
+        ref = col.find(query_id).sort(&quottime_stamp&quot, -1)
+
+        if (col.count_documents(query_id) &gt; 0):
+            start_stamp = ref.next()[&quottime_stamp&quot]
+            start_time = datetime.datetime.fromtimestamp(
+                start_stamp + 1,
+                tz=tzutc()
+            )
+            QA_util_log_info(
+                &quotUPDATE_SYMBOL "{}" Trying updating "{}" from {} to {}&quot.format(
+                    <a id="change">symbol_info[&quotsymbol&quot]</a>,
+                    Bitfinex2QA_FREQUENCY_DICT[frequency],
+                    QA_util_timestamp_to_str(start_time),
+                    QA_util_timestamp_to_str(end)
+                ),
+                ui_log=ui_log,
+                ui_progress=ui_progress
+            )
+
+            &#47&#47 查询到 Kline 缺漏，点抓取模式，按缺失的时间段精确请求K线数据
+            missing_data_list = QA_util_find_missing_kline(
+                symbol_info[&quotsymbol&quot],
+                OKEx2QA_FREQUENCY_DICT[frequency],
+                market=&quotokex&quot
+            )[::-1]
+        else:
+            start_time = Bitfinex_MIN_DATE
+            QA_util_log_info(
+                &quotNEW_SYMBOL "{}" Trying downloading "{}" from {} to {}&quot.format(
+                    <a id="change">symbol_info[&quotsymbol&quot]</a>,
+                    Bitfinex2QA_FREQUENCY_DICT[frequency],
+                    QA_util_timestamp_to_str(start_time),
+                    QA_util_timestamp_to_str(end)
+                ),
+                ui_log=ui_log,
+                ui_progress=ui_progress
+            )
+            miss_kline = pd.DataFrame(
+                [
+                    [
+                        int(QA_util_datetime_to_Unix_timestamp(start_time)),
+                        int(QA_util_datetime_to_Unix_timestamp(end)),
+                        &quot{} to {}&quot.format(start_time,
+                                         end)
+                    ]
+                ],
+                columns=[&quotexpected&quot,
+                         &quotbetween&quot,
+                         &quotmissing&quot]
+            )
+            missing_data_list = miss_kline.values
+
+        if len(missing_data_list) &gt; 0:
+            &#47&#47 查询确定中断的K线数据起止时间，缺分时数据，补分时数据
+            expected = 0
+            between = 1
+            missing = 2
+            reqParams = {}
+            for i in range(len(missing_data_list)):
+                reqParams[&quotfrom&quot] = int(missing_data_list[i][expected])
+                reqParams[&quotto&quot] = int(missing_data_list[i][between])
+                if (reqParams[&quotfrom&quot] &gt;
+                    (QA_util_datetime_to_Unix_timestamp() + 120)):
+                    &#47&#47 出现“未来”时间，一般是默认时区设置错误造成的
+                    raise Exception(
+                        &quotA unexpected \&quotFuture\&quot timestamp got, Please check self.missing_data_list_func param \&quottzlocalize\&quot set. More info: {:s}@{:s} at {:s} but current time is {}&quot
+                        .format(
+                            symbol_info[&quotsymbol&quot],
+                            frequency,
+                            QA_util_print_timestamp(reqParams[&quotfrom&quot]),
+                            QA_util_print_timestamp(
+                                QA_util_datetime_to_Unix_timestamp()
+                            )
+                        )
+                    )
+                QA_util_log_info(
+                    &quotFetch "{:s}" slices "{:s}" kline：{:s} to {:s}&quot.format(
+                        <a id="change">symbol_info[&quotsymbol&quot]</a>,
+                        OKEx2QA_FREQUENCY_DICT[frequency],
+                        QA_util_timestamp_to_str(
+                            missing_data_list[i][expected]</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    Save Bitfinex min kline 分钟线数据，统一转化字段保存数据为 crypto_asset_min
+    
+    <a id="change">symbol_template = Bitfinex_SYMBOL</a>
+    symbol_list = <a id="change">QA_fetch_cryptocurrency_list(Bitfinex_EXCHANGE)</a>
+    col = DATABASE.cryptocurrency_min
+    col.create_index(
+        [
+            ("symbol",
+             pymongo.ASCENDING),
+            (&quottime_stamp&quot,
+             pymongo.ASCENDING),
+            (&quotdate_stamp&quot,
+             pymongo.ASCENDING)
+        ]
+    )
+    col.create_index(
+        [
+            ("symbol",
+             pymongo.ASCENDING),
+            ("type",
+             pymongo.ASCENDING),
+            (&quottime_stamp&quot,
+             pymongo.ASCENDING)
+        ],
+        unique=True
+    )
+
+    end = datetime.datetime.now(tzutc())
+
+    QA_util_log_info(
+        &quotStarting DOWNLOAD PROGRESS of min Klines from {:s}... &quot.format(Bitfinex_EXCHANGE),
+        ui_log=ui_log,
+        ui_progress=ui_progress
+    )
+    for index in range(len(symbol_list)):
+        <a id="change">symbol_info</a> = symbol_list.iloc[index]
+        &#47&#47 上架仅处理交易对
+        QA_util_log_info(
+            &quotThe "{}" &#47&#47{} of total in {}&quot.format(
+                <a id="change">symbol_template.format(symbol_info[&quotsymbol&quot])</a>,
+                index,
+                len(symbol_list)
+            ),
+            ui_log=ui_log,
+            ui_progress=ui_progress
+        )
+        QA_util_log_info(
+            &quotDOWNLOAD PROGRESS {} &quot
+            .format(str(float(index / len(symbol_list) * 100))[0:4] + &quot%&quot),
+            ui_log=ui_log,
+            ui_progress=ui_progress
+        )
+        query_id = {
+            "symbol": <a id="change">symbol_template.format(symbol_info[&quotsymbol&quot])</a>,
+            &quottype&quot: Bitfinex2QA_FREQUENCY_DICT[frequency]
+        }
+        ref = col.find(query_id).sort(&quottime_stamp&quot, -1)
+
+        if (col.count_documents(query_id) &gt; 0):
+            start_stamp = ref.next()[&quottime_stamp&quot]
+            start_time = datetime.datetime.fromtimestamp(
+                start_stamp + 1,
+                tz=tzutc()
+            )
+            QA_util_log_info(
+                &quotUPDATE_SYMBOL "{}" Trying updating "{}" from {} to {}&quot.format(
+                    <a id="change">symbol_template.format(symbol_info[&quotsymbol&quot])</a>,
+                    Bitfinex2QA_FREQUENCY_DICT[frequency],
+                    QA_util_timestamp_to_str(start_time),
+                    QA_util_timestamp_to_str(end)
+                ),
+                ui_log=ui_log,
+                ui_progress=ui_progress
+            )
+
+            &#47&#47 查询到 Kline 缺漏，点抓取模式，按缺失的时间段精确请求K线数据
+            missing_data_list = QA_util_find_missing_kline(
+                symbol_info[&quotsymbol&quot],
+                Bitfinex2QA_FREQUENCY_DICT[frequency],
+            )[::-1]
+        else:
+            start_time = Bitfinex_MIN_DATE
+            QA_util_log_info(
+                &quotNEW_SYMBOL "{}" Trying downloading "{}" from {} to {}&quot.format(
+                    <a id="change">symbol_template.format(symbol_info[&quotsymbol&quot])</a>,
+                    Bitfinex2QA_FREQUENCY_DICT[frequency],
+                    QA_util_timestamp_to_str(start_time),
+                    QA_util_timestamp_to_str(end)
+                ),
+                ui_log=ui_log,
+                ui_progress=ui_progress
+            )
+            miss_kline = pd.DataFrame(
+                [
+                    [
+                        int(QA_util_datetime_to_Unix_timestamp(start_time)),
+                        int(QA_util_datetime_to_Unix_timestamp(end)),
+                        &quot{} to {}&quot.format(start_time,
+                                         end)
+                    ]
+                ],
+                columns=[&quotexpected&quot,
+                         &quotbetween&quot,
+                         &quotmissing&quot]
+            )
+            missing_data_list = miss_kline.values
+
+        if len(missing_data_list) &gt; 0:
+            &#47&#47 查询确定中断的K线数据起止时间，缺分时数据，补分时数据
+            expected = 0
+            between = 1
+            missing = 2
+            reqParams = {}
+            for i in range(len(missing_data_list)):
+                reqParams[&quotfrom&quot] = int(missing_data_list[i][expected])
+                reqParams[&quotto&quot] = int(missing_data_list[i][between])
+                if (reqParams[&quotfrom&quot] &gt;
+                    (QA_util_datetime_to_Unix_timestamp() + 120)):
+                    &#47&#47 出现“未来”时间，一般是默认时区设置错误造成的
+                    QA_util_log_info(
+                        &quotA unexpected \&quotFuture\&quot timestamp got, Please check self.missing_data_list_func param \&quottzlocalize\&quot set. More info: {:s}@{:s} at {:s} but current time is {}&quot
+                        .format(
+                            symbol_template.format(symbol_info[&quotsymbol&quot]),
+                            frequency,
+                            QA_util_print_timestamp(reqParams[&quotfrom&quot]),
+                            QA_util_print_timestamp(
+                                QA_util_datetime_to_Unix_timestamp()
+                            )
+                        )
+                    )
+                    &#47&#47 跳到下一个时间段
+                    continue
+
+                QA_util_log_info(
+                    &quotFetch "{:s}" slices "{:s}" kline：{:s} to {:s}&quot.format(
+                        symbol_template.format(<a id="change">symbol_info[&quotsymbol&quot]</a>),
+                        Bitfinex2QA_FREQUENCY_DICT[frequency],
+                        QA_util_timestamp_to_str(
+                            missing_data_list[i][expected]</code></pre><img src="212263073.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 19</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/QUANTAXIS/QUANTAXIS/commit/1d23b992191fde5403c1927efd339516fbee1a8c#diff-e17a22a25bb82bc560eba67f16181cf977481cb8e6de6992b1de0c5a320834acL182' target='_blank'>Link</a></div><div id='project'> Project Name: QUANTAXIS/QUANTAXIS</div><div id='commit'> Commit Name: 1d23b992191fde5403c1927efd339516fbee1a8c</div><div id='time'> Time: 2020-03-24</div><div id='author'> Author: 11652964@qq.com</div><div id='file'> File Name: QUANTAXIS/QASU/save_bitfinex.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: QA_SU_save_bitfinex_min</div><BR><BR><div id='link'><a href='https://github.com/QUANTAXIS/QUANTAXIS/commit/1d23b992191fde5403c1927efd339516fbee1a8c#diff-0295fe4354cab35c8ab7b7842430c97139f7068f83470d648256c15d4d490db6L77' target='_blank'>Link</a></div><div id='project'> Project Name: QUANTAXIS/QUANTAXIS</div><div id='commit'> Commit Name: 1d23b992191fde5403c1927efd339516fbee1a8c</div><div id='time'> Time: 2020-03-24</div><div id='author'> Author: 11652964@qq.com</div><div id='file'> File Name: QUANTAXIS/QASU/save_bitmex.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: QA_SU_save_bitmex_day</div><BR><BR><div id='link'><a href='https://github.com/QUANTAXIS/QUANTAXIS/commit/1d23b992191fde5403c1927efd339516fbee1a8c#diff-e17a22a25bb82bc560eba67f16181cf977481cb8e6de6992b1de0c5a320834acL182' target='_blank'>Link</a></div><div id='project'> Project Name: QUANTAXIS/QUANTAXIS</div><div id='commit'> Commit Name: 1d23b992191fde5403c1927efd339516fbee1a8c</div><div id='time'> Time: 2020-03-24</div><div id='author'> Author: 11652964@qq.com</div><div id='file'> File Name: QUANTAXIS/QASU/save_bitfinex.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: QA_SU_save_bitfinex_min</div><BR><BR><div id='link'><a href='https://github.com/QUANTAXIS/QUANTAXIS/commit/1d23b992191fde5403c1927efd339516fbee1a8c#diff-dc21b6727fd230f112d916fed1eee56880cca2cbab897df3960d7c9092c95106L180' target='_blank'>Link</a></div><div id='project'> Project Name: QUANTAXIS/QUANTAXIS</div><div id='commit'> Commit Name: 1d23b992191fde5403c1927efd339516fbee1a8c</div><div id='time'> Time: 2020-03-24</div><div id='author'> Author: 11652964@qq.com</div><div id='file'> File Name: QUANTAXIS/QASU/save_okex.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: QA_SU_save_okex_min</div><BR>

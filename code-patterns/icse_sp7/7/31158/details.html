@@ -1,0 +1,48 @@
+<html><h3>535ca090eb4d780169494c1c17eaaba8005bcecc,catalyst/rl/offpolicy/exploration/exploration.py,ExplorationHandler,__init__,#ExplorationHandler#,7
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def __init__(self, **params):
+        from catalyst.contrib.registry import Registry
+
+        <a id="change">config_ = params.copy()</a>
+        self.strategies: List[ExplorationStrategy] = []
+        self.probs = []
+
+        <a id="change">for key, expl in config_.items():
+            probability = expl["probability"]
+            expl_params = expl["params"] or {}
+            strategy = Registry.get_exploration(
+                strategy=expl["strategy"], **expl_params)
+            self.strategies.append(strategy)
+            self.probs.append(probability)
+
+       </a> self.num_strategies = len(self.probs)
+
+    def get_exploration_strategy(self):
+        strategy_idx = np.random.choice(self.num_strategies, p=self.probs)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+class ExplorationHandler:
+    def __init__(self, *exploration_params, env: EnvironmentSpec):
+        params = <a id="change">deepcopy(exploration_params)</a>
+        self.exploration_strategies: List[ExplorationStrategy] = []
+        self.probs = []
+
+        <a id="change">for params_ in params:
+            exploration_name = params_.pop("exploration")
+            probability = params_.pop("probability")
+            strategy_fn = EXPLORATION.get(exploration_name)
+
+            if issubclass(strategy_fn, EpsilonGreedy):
+                assert isinstance(env.action_space, Discrete)
+                params_["num_actions"] = env.action_space.n
+
+            strategy = strategy_fn(**params_)
+            self.exploration_strategies.append(strategy)
+            self.probs.append(probability)
+
+       </a> self.num_strategies = len(self.probs)
+        assert np.isclose(np.sum(self.probs), 1.0)
+
+    def get_exploration_strategy(self):</code></pre><img src="153502055.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/Scitator/catalyst/commit/535ca090eb4d780169494c1c17eaaba8005bcecc#diff-36c3799460a638fcd01eece0788399f5f3703ca265f8e36b307e195334e2b7ffL10' target='_blank'>Link</a></div><div id='project'> Project Name: Scitator/catalyst</div><div id='commit'> Commit Name: 535ca090eb4d780169494c1c17eaaba8005bcecc</div><div id='time'> Time: 2019-04-14</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/offpolicy/exploration/exploration.py</div><div id='class'> Class Name: ExplorationHandler</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/idaholab/raven/commit/5ad7296f10444d96a15e34dc1b040ca1b8f947cc#diff-d870b50a08add592563e4579d54d67a79ae5e9c8918a532a305bcf2a6de7db35L576' target='_blank'>Link</a></div><div id='project'> Project Name: idaholab/raven</div><div id='commit'> Commit Name: 5ad7296f10444d96a15e34dc1b040ca1b8f947cc</div><div id='time'> Time: 2017-08-11</div><div id='author'> Author: paul.talbot@inl.gov</div><div id='file'> File Name: framework/Optimizers/Optimizer.py</div><div id='class'> Class Name: Optimizer</div><div id='method'> Method Name: updateMultilevelDepth</div><BR><BR><div id='link'><a href='https://github.com/albu/albumentations/commit/9942689f9846c59006c80718ee8db38e02ee2104#diff-7ed2569bed9b670e72fc9f41fa9e1756d544dec768fcdf80886af28489bcb7fcL52' target='_blank'>Link</a></div><div id='project'> Project Name: albu/albumentations</div><div id='commit'> Commit Name: 9942689f9846c59006c80718ee8db38e02ee2104</div><div id='time'> Time: 2019-09-27</div><div id='author'> Author: al.buslaev@gmail.com</div><div id='file'> File Name: albumentations/core/transforms_interface.py</div><div id='class'> Class Name: BasicTransform</div><div id='method'> Method Name: __call__</div><BR>

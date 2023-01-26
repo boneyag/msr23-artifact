@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 processor jobs were successful, including the one that
+            &#47&#47 got recreated.
+            logger.info("Downloader Jobs finished, waiting for processor Jobs to complete.")
+            <a id="change">successful_processor_jobs = []</a>
+            for processor_job in processor_jobs:
+                &#47&#47 One of the two calls to wait_for_job will fail
+                &#47&#47 because the job is going to delete itself when it
+                &#47&#47 finds that the file it wants to process is missing.
+                try:
+                    processor_job = wait_for_job(processor_job, ProcessorJob, start_time)
+                    <a id="change">if processor_job.success:
+                        successful_processor_jobs.append(processor_job)
+               </a> except:
+                    pass
+
+            self.assertEqual(len(successful_processor_jobs), NUM_SAMPLES_IN_EXPERIMENT)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Once the Downloader job succeeds, it should create one
+            &#47&#47 and only one processor job, after which the total goes back up
+            &#47&#47 to NUM_SAMPLES_IN_EXPERIMENT:
+            <a id="change">processor_jobs = ProcessorJob.objects.all()</a>
+            self.assertEqual(processor_jobs.count(), NUM_SAMPLES_IN_EXPERIMENT)
+
+            &#47&#47 And finally we can make sure that all of the
+            &#47&#47 processor jobs were successful, including the one that</code></pre>

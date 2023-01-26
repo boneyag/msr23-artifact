@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        min_value, max_value = session.run(override_min_and_max)
+      else:
+        min_value, max_value = None, None
+      <a id="change">column_schemas[name] = dataset_schema.ColumnSchema(
+          dataset_schema.IntDomain(tf.int64, min_value, max_value,
+                                   is_categorical=True),
+          column_schema.axes,
+          column_schema.representation)</a>
+    else:
+      column_schemas[name] = column_schema
+
+  return dataset_schema.Schema(column_schemas)</code></pre><h3>After Change</h3><pre><code class='java'>
+  domains = {}
+  for name, tensor in six.iteritems(features):
+    values = tensor.values if isinstance(tensor, tf.SparseTensor) else tensor
+    <a id="change">if values in tensor_ranges:
+      assert values.dtype == tf.int64
+      min_value, max_value = tensor_ranges[values]
+      domains[name] = schema_pb2.IntDomain(
+          min=min_value, max=max_value, is_categorical=True)
+
+ </a> feature_spec = _feature_spec_from_batched_tensors(features)
+
+  return dataset_schema.from_feature_spec(feature_spec, domains)
+</code></pre>

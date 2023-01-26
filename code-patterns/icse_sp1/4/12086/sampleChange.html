@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        target[0] += np.sum(self._K_dvar*dL_dK)
+        if self.ARD == True:
+            dl = self._K_dvar[:,:,None]*self.variance*self._K_dist2/self.lengthscale
+            target[1:] += <a id="change">(dl*dL_dK[:,:,None]).sum(0).sum(0)</a>
+        else:
+            target[1] += np.sum(self._K_dvar*self.variance*(self._K_dist2.sum(-1))/self.lengthscale*dL_dK)
+        &#47&#47np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*dL_dK)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self._K_computations(X,X2)
+        target[0] += np.sum(self._K_dvar*dL_dK)
+        if self.ARD:
+            [np.add(target[1+q:2+q],<a id="change">self.variance/self.lengthscale[q]**3*np.sum(self._K_dvar*dL_dK*np.square(X[:,q][:,None]-X2[:,q][None,:]))</a>,target[1+q:2+q]) for q in range(self.D)]
+        else:
+            target[1] += np.sum(self._K_dvar*self.variance*self._K_dist2/self.lengthscale*dL_dK)
+</code></pre>

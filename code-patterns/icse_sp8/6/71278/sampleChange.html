@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 outs = [o for o in outs]
+
+    if self.debug:
+      <a id="change">viz = T.cat(viz, 0).transpose(0, 1)</a>
+
+    controller_hidden = chxs
+
+    if not self.batch_first:</code></pre><h3>After Change</h3><pre><code class='java'>
+    outputs = None
+    chxs = []
+    if self.debug:
+      viz = <a id="change">[]</a>
+
+    read_vectors = [last_read] * max_length
+    &#47&#47 outs = [input[:, x, :] for x in range(max_length)]
+    outs = [T.cat([input[:, x, :], last_read], 1) for x in range(max_length)]
+
+    for layer in range(self.num_layers):
+      &#47&#47 this layer&quots hidden states
+      chx = controller_hidden[layer]
+
+      m = mem_hidden if self.share_memory else mem_hidden[layer]
+      &#47&#47 pass through controller
+      if self.debug:
+        outs, _, mem_debug, (chx, m) = self._layer_forward(outs,layer,(chx, m))
+      else:
+        outs, _, (chx, m) = self._layer_forward(outs, layer, (chx, m))
+
+      &#47&#47 debug memory
+      if self.debug:
+        viz.append(mem_debug)
+
+      &#47&#47 store the memory back (per layer or shared)
+      if self.share_memory:
+        mem_hidden = m
+      else:
+        mem_hidden[layer] = m
+      chxs.append(chx)
+
+      if layer == self.num_layers - 1:
+        &#47&#47 final outputs
+        outputs = T.stack(outs, 1)
+      else:
+        &#47&#47 the controller output + read vectors go into next layer
+        outs = [T.cat([o, r], 1) for o, r in zip(outs, read_vectors)]
+        &#47&#47 outs = [o for o in outs]
+
+    if self.debug:
+      viz = <a id="change">np.array(viz)</a>
+      <a id="change">s = list(viz.shape)</a>
+      <a id="change">viz = viz.reshape(s[0]*s[1], s[2]*s[3])</a>
+
+    controller_hidden = chxs
+
+    if not self.batch_first:</code></pre>

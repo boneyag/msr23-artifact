@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            nmap.run()
+
+            if nmap.rc == 0:
+                <a id="change">try:
+                    results = NmapParser.parse(nmap.stdout)
+                    self.last_results = []
+                    for host in results.hosts:
+                        if host.is_up():
+                            if host.hostnames:
+                                name = host.hostnames[0]
+                            else:
+                                name = host.ipv4
+                            if host.mac:
+                                mac = host.mac
+                            else:
+                                mac = _arp(host.ipv4)
+                            if mac:
+                                device = Device(mac, name)
+                                self.last_results.append(device)
+                    _LOGGER.info("nmap scan successful")
+                    return True
+                except NmapParserException as parse_exc:
+                    _LOGGER.error("failed to parse nmap results: %s",
+                                  parse_exc.msg)
+                    self.last_results = []
+                    return False
+
+           </a> else:
+                self.last_results = []
+                _LOGGER.error(nmap.stderr)
+                return False</code></pre><h3>After Change</h3><pre><code class='java'>
+            _LOGGER.info("Scanning")
+
+            options = "-F"
+            <a id="change">exclude_targets = set()</a>
+            if self.home_interval:
+                now = datetime.now()
+                for host in self.last_results:
+                    if host.last_update + self.home_interval &gt; now:
+                        exclude_targets.add(host)
+                if len(exclude_targets) &gt; 0:
+                    target_list = [t.ip for t in exclude_targets]
+                    options += " --exclude {}".format(",".join(target_list))
+
+            nmap = NmapProcess(targets=self.hosts, options=options)
+
+            nmap.run()
+
+            if nmap.rc == 0:
+                <a id="change">if self._parse_results(nmap.stdout):
+                    self.last_results.extend(exclude_targets)
+           </a> else:
+                self.last_results = []
+                _LOGGER.error(nmap.stderr)
+                return False</code></pre>

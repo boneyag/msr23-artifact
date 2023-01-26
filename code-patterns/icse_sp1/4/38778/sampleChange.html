@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                phi = partial_tensor_to_vec(
+                            T.dot(partial_unfold(X, i),
+                                  T.dot(kronecker(W, skip_matrix=i),
+                                          <a id="change">unfold</a>(G, i).T)))
+                &#47&#47 Regress phi on y: we could call a package here, e.g. scikit-learn
+                inv_term = T.dot(phi.T, phi) + self.reg_W * T.tensor(np.eye(phi.shape[1]))
+                W_i = vec_to_tensor(T.solve(inv_term, T.dot(phi.T, y)),
+                                    (X.shape[i + 1], G.shape[i]))
+                <a id="change">W[i]</a> = W_i
+
+            phi = T.dot(partial_tensor_to_vec(X), kronecker(W))
+            G = vec_to_tensor(T.solve(T.dot(phi.T, phi) + self.reg_W * T.tensor(np.eye(phi.shape[1])), T.dot(phi.T, y)), G.shape)</code></pre><h3>After Change</h3><pre><code class='java'>
+                phi = partial_tensor_to_vec(
+                            T.dot(partial_unfold(X, i),
+                                  T.dot(kronecker(W, skip_matrix=i),
+                                          T.transpose(<a id="change">unfold(G, i)</a>))))
+                &#47&#47 Regress phi on y: we could call a package here, e.g. scikit-learn
+                inv_term = T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(np.eye(phi.shape[1]))
+                W_i = vec_to_tensor(T.solve(inv_term, T.dot(T.transpose(phi), y)),
+                                    (X.shape[i + 1], G.shape[i]))
+                <a id="change">W[i]</a> = W_i
+
+            phi = T.dot(partial_tensor_to_vec(X), kronecker(W))
+            G = vec_to_tensor(T.solve(T.dot(T.transpose(phi), phi) + self.reg_W * T.tensor(np.eye(phi.shape[1])), T.dot(T.transpose(phi), y)), G.shape)</code></pre>

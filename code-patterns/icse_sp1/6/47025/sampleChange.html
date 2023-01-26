@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    n, e = x.size(0), row.size(0)
+
+    if edge_attr is None:
+        <a id="change">edge_attr = x.data.new(e).fill_(1)</a>
+
+    &#47&#47 Compute degree.
+    degree = x.data.new(n).fill_(0).scatter_add_(0, row, edge_attr) + 1
+    degree = degree.pow_(-0.5)
+
+    &#47&#47 Normalize and append adjacency matrix by self loops.
+    edge_attr = edge_attr * degree[row]
+    <a id="change">edge_attr *= degree[col]</a>
+    edge_attr = torch.cat([edge_attr, degree * degree], dim=0)
+    edge_index = add_self_loops(edge_index, n)
+    <a id="change">adj = SparseTensor(edge_index, edge_attr, torch.Size([n, n]))</a>
+
+    &#47&#47 Convolution.
+    output = SparseMM(adj)(torch.mm(x, weight))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    deg = degree(row, num_nodes, dtype=x.dtype, device=x.device).pow_(-0.5)
+
+    &#47&#47 Normalize and append adjacency matrix by self loops.
+    edge_attr = deg[row] * edge_attr * <a id="change">deg[col]</a>
+
+    &#47&#47 Append self-loops.
+    edge_attr = torch.cat([edge_attr, deg * deg], dim=0)
+    edge_index = add_self_loops(edge_index, num_nodes)</code></pre>

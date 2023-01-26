@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  trunc_data = input_data[..., :1]
+  &#47&#47 we drop duplicates that might have been formed, i.e. of the form
+  &#47&#47 aabc or abcc or aabb for quadruplets, and aa for pairs.
+  <a id="change">if isinstance(estimator, _QuadrupletsClassifierMixin):
+    for slice_idx in [slice(0, 2), slice(2, 4)]:
+      pairs = trunc_data[:, slice_idx, :]
+      diffs = pairs[:, 1, :] - pairs[:, 0, :]
+      to_keep = np.where(np.abs(diffs.ravel()) &gt; 1e-9)
+      trunc_data = trunc_data[to_keep]
+      labels = labels[to_keep]
+  elif isinstance(estimator, _PairsClassifierMixin):
+    diffs = trunc_data[:, 1, :] - trunc_data[:, 0, :]
+    to_keep = np.where(np.abs(diffs.ravel()) &gt; 1e-9)
+    trunc_data = trunc_data[to_keep]
+    labels = labels[to_keep]
+ </a> model.fit(*remove_y_quadruplets(estimator, trunc_data, labels))
+  assert model.components_.shape == (1, 1)  &#47&#47 the components must be 2D
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  elif isinstance(estimator, _PairsClassifierMixin):
+    pairs_idx = [[0, 1]]
+  else:
+    <a id="change">pairs_idx = []</a>
+
+  for pair_idx in pairs_idx:
+    pairs = trunc_data[:, pair_idx, :]
+    diffs = pairs[:, 1, :] - pairs[:, 0, :]</code></pre>

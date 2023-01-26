@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 batch x src_len x dim
+            uh = self.linear_context(h_s.contiguous())
+            &#47&#47 batch x src_len x dim
+            wquh = uh + <a id="change">wq.expand_as(uh)</a>
+            &#47&#47 batch x src_len x dim
+            wquh = self.tanh(wquh)
+            &#47&#47 batch x src_len
+            return self.v(wquh.contiguous()).squeeze(2)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if self.attn_type in ["general", "dot"]:
+            if self.attn_type == "general":
+                h_t_ = <a id="change">h_t.view(tgt_batch*tgt_len, tgt_dim)</a>
+                h_t_ = self.linear_in(h_t_)
+                h_t = h_t_.view(tgt_batch, tgt_len, tgt_dim)
+            h_s_ = h_s.transpose(1, 2)
+            &#47&#47 (batch, t_len, d) x (batch, d, s_len) --&gt; (batch, t_len, s_len)
+            <a id="change">return torch.bmm(h_t, h_s_)</a>
+        else:
+            wq = self.linear_query(h_t.view(-1, dim))
+            wq = wq.view(tgt_batch, tgt_len, 1, dim)
+</code></pre>

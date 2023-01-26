@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        while True:
+            self.check_thread_error()
+            if self.disk_io.completion_event.is_set():
+                <a id="change">break</a>
+            sleep(1)
+        pool.join()
+
+        logger.debug("Putting EOF")</code></pre><h3>After Change</h3><pre><code class='java'>
+        logger.debug("Converting images")
+        save_queue = queue_manager.get_queue("convert_out")
+        patch_queue = queue_manager.get_queue("patch")
+        <a id="change">completion_queue = queue_manager.get_queue("patch_completed")</a>
+        pool = PoolProcess(self.converter.process, patch_queue, save_queue,
+                           completion_queue=completion_queue,
+                           processes=self.pool_processes)
+        pool.start()
+        completed_count = 0
+        while True:
+            self.check_thread_error()
+            if self.disk_io.completion_event.is_set():
+                logger.debug("DiskIO completion event set. Joining Pool")
+                break
+            try:
+                completed = completion_queue.get(True, 1)
+            except QueueEmpty:
+                continue
+            completed_count += completed
+            logger.debug("Total process pools completed: %s of %s", completed_count, pool.procs)
+            <a id="change">if completed_count == pool.procs:
+                logger.debug("All processes completed. Joining Pool")
+                break
+       </a> pool.join()
+
+        logger.debug("Putting EOF")
+        save_queue.put("EOF")</code></pre>

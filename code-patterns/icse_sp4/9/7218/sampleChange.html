@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        :return: Smoothed sample
+        :rtype: `np.ndarray`
+        
+        <a id="change">clip_values = (0, 1)</a>
+
+        assert self.channel_index &lt; len(x.shape)
+        size = [1] + [self.window_size] * (len(x.shape) - 1)
+        size[self.channel_index] = 1
+        size = tuple(size)
+
+        result = ndimage.filters.median_filter(x, size=size, mode="reflect")
+        <a id="change">result = np.clip(result, clip_values[0], clip_values[1])</a>
+
+        return result.astype(NUMPY_DTYPE), y
+
+    def estimate_gradient(self, x, grad):</code></pre><h3>After Change</h3><pre><code class='java'>
+        :return: Smoothed sample
+        :rtype: `np.ndarray`
+        
+        <a id="change">if len(x.shape) == 2:
+            raise ValueError(&quotFeature vectors detected. Smoothing can only be applied to data with spatial &quot
+                             &quotdimensions.&quot)
+       </a> if self.channel_index &gt;= len(x.shape):
+            raise ValueError(&quotChannel index does not match input shape.&quot)
+
+        size = [1] + [self.window_size] * (len(x.shape) - 1)
+        size[self.channel_index] = 1
+        size = tuple(size)
+
+        result = ndimage.filters.median_filter(x, size=size, mode="reflect")
+        <a id="change">if hasattr(self, &quotclip_values&quot) and self.clip_values is not None:
+            np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
+
+       </a> return result.astype(NUMPY_DTYPE), y
+
+    def estimate_gradient(self, x, grad):
+        return grad</code></pre>

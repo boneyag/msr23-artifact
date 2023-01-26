@@ -1,0 +1,63 @@
+<html><h3>53633acd7c861fd73e3954088a48d0ac8dc42895,niftynet/application/regression_application.py,RegressionApplication,connect_data_and_network,#RegressionApplication#Any#Any#,180
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def connect_data_and_network(self,
+                                 outputs_collector=None,
+                                 gradients_collector=None):
+        <a id="change">data_dict = self.get_sampler()[0].pop_batch_op()</a>
+        <a id="change">image = tf.cast(data_dict[&quotimage&quot], tf.float32)</a>
+        <a id="change">net_out = self.net(image, self.is_training)</a>
+
+        if self.is_training:
+            crop_layer = CropLayer(border=self.regression_param.loss_border,
+                                   name=&quotcrop-88&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+        if self.is_training:
+            <a id="change">data_dict</a>, <a id="change">net_out</a> = tf.cond(self.is_validation,
+                                         lambda: data_net(False),
+                                         lambda: data_net(True))
+            crop_layer = CropLayer(border=self.regression_param.loss_border,
+                                   name=&quotcrop-88&quot)
+            with tf.name_scope(&quotOptimiser&quot):
+                optimiser_class = OptimiserFactory.create(
+                    name=self.action_param.optimiser)
+                self.optimiser = optimiser_class.get_instance(
+                    learning_rate=self.action_param.lr)
+            loss_func = LossFunction(
+                loss_type=self.action_param.loss_type)
+
+            prediction = crop_layer(net_out)
+            ground_truth = crop_layer(data_dict.get(&quotoutput&quot, None))
+            weight_map = None if data_dict.get(&quotweight&quot, None) is None \
+                else crop_layer(data_dict.get(&quotweight&quot, None))
+            data_loss = loss_func(prediction=prediction,
+                                  ground_truth=ground_truth,
+                                  weight_map=weight_map)
+
+            reg_losses = tf.get_collection(
+                tf.GraphKeys.REGULARIZATION_LOSSES)
+            if self.net_param.decay &gt; 0.0 and reg_losses:
+                reg_loss = tf.reduce_mean(
+                    [tf.reduce_mean(reg_loss) for reg_loss in reg_losses])
+                loss = data_loss + reg_loss
+            else:
+                loss = data_loss
+            grads = self.optimiser.compute_gradients(loss)
+            &#47&#47 collecting gradients variables
+            gradients_collector.add_to_collection([grads])
+            &#47&#47 collecting output variables
+            outputs_collector.add_to_collection(
+                var=data_loss, name=&quotLoss&quot,
+                average_over_devices=False, collection=CONSOLE)
+            outputs_collector.add_to_collection(
+                var=data_loss, name=&quotLoss&quot,
+                average_over_devices=True, summary_type=&quotscalar&quot,
+                collection=TF_SUMMARIES)
+        else:
+            <a id="change">data_dict</a>, <a id="change">net_out</a> = data_net(for_training=False)
+            crop_layer = CropLayer(border=0, name=&quotcrop-88&quot)
+            post_process_layer = PostProcessingLayer(&quotIDENTITY&quot)
+            net_out = post_process_layer(crop_layer(net_out))</code></pre><img src="19571490.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/53633acd7c861fd73e3954088a48d0ac8dc42895#diff-30ee55ffacfcb677278b40ae1b0b72bf843ac0b9035a44dbc65144e2af1c8230L180' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 53633acd7c861fd73e3954088a48d0ac8dc42895</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: eli.gibson@gmail.com</div><div id='file'> File Name: niftynet/application/regression_application.py</div><div id='class'> Class Name: RegressionApplication</div><div id='method'> Method Name: connect_data_and_network</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/01f1bcb376dfd967603c785a255f927dea2712b6#diff-53ddb2032e0c1d87e5909f4de6e398f7d34f11404f19b5ee5181cd6d478a0076L133' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 01f1bcb376dfd967603c785a255f927dea2712b6</div><div id='time'> Time: 2017-11-15</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: demos/BRATS17/brats_segmentation.py</div><div id='class'> Class Name: BRATSApp</div><div id='method'> Method Name: connect_data_and_network</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/53633acd7c861fd73e3954088a48d0ac8dc42895#diff-30ee55ffacfcb677278b40ae1b0b72bf843ac0b9035a44dbc65144e2af1c8230L180' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 53633acd7c861fd73e3954088a48d0ac8dc42895</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: eli.gibson@gmail.com</div><div id='file'> File Name: niftynet/application/regression_application.py</div><div id='class'> Class Name: RegressionApplication</div><div id='method'> Method Name: connect_data_and_network</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/dfdad808d0979d6e45419720fa0d73b4cedcbb96#diff-73a8c4cc65d49e3b8afd6d829c764ee82a8f8e8bf8d43473328c27f044c442b9L218' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: dfdad808d0979d6e45419720fa0d73b4cedcbb96</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: eli.gibson@gmail.com</div><div id='file'> File Name: niftynet/application/segmentation_application.py</div><div id='class'> Class Name: SegmentationApplication</div><div id='method'> Method Name: connect_data_and_network</div><BR>

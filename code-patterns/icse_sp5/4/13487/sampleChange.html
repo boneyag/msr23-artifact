@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.tensor_dict[key]: feed_dict[key] for key in self.inputs
+        }
+
+        <a id="change">sess.run(tf.compat.v1.global_variables_initializer())</a>
+        outputs = [self.tensor_dict[output] for output in self.outputs]
+
+        output_values = sess.run(outputs, feed_dict=feed_dict)
+        return namedtupledict(&quotOutputs&quot, self.outputs)(*output_values)</code></pre><h3>After Change</h3><pre><code class='java'>
+      &#47&#47 single input
+      feed_dict = dict([(self.inputs[0], inputs)])
+
+    input_dict = <a id="change">dict(
+        [(x[0], tf.constant(x[1])) for x in feed_dict.items()])</a>
+
+    output_values = self.tf_module(**input_dict)
+    <a id="change">output_values = [val.numpy() if isinstance(val, tf.Tensor) else val for val in output_values]</a>
+
+    return namedtupledict(&quotOutputs&quot, self.outputs)(*output_values)
+
+  def export_graph(self, path):</code></pre>

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        elif isinstance(value, plt.Figure):
+            self._writer.add_figure(key, value, step)
+        elif isinstance(value, tfp.distributions.Distribution):
+            samples = <a id="change">tf.get_default_session().run(
+                value.sample(self._histogram_samples))</a>
+            self._writer.add_histogram(key, samples, step)
+
+    def _record_graph(self, graph):
+        graph_def = graph.as_graph_def(add_shapes=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+        elif isinstance(value, scipy.stats._distn_infrastructure.rv_frozen):
+            shape = (self._histogram_samples, ) + value.mean().shape
+            self._writer.add_histogram(key, value.rvs(shape), step)
+        elif <a id="change">isinstance</a>(value, scipy.stats._multivariate.multi_rv_frozen):
+            self._writer.add_histogram(key, value.rvs(self._histogram_samples),
+                                       step)
+        elif isinstance(value, Histogram):</code></pre>

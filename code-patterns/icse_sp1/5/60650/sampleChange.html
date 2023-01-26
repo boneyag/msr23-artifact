@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def forward(self, rhs, *matrix_args):
+        matmul_closure = None
+        <a id="change">if self.representation_tree is None:
+            mat = matrix_args[0]
+            matmul_closure = mat.matmul
+        else:
+            lazy_var = self.representation_tree(*matrix_args)
+            matmul_closure = lazy_var._matmul
+
+       </a> self.is_vector = False
+        if rhs.ndimension() == 1:
+            rhs.unsqueeze_(-1)
+            self.is_vector = True</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        args = [res, rhs] + list(matrix_args)
+        self.save_for_backward(*args)
+        <a id="change">if not settings.memory_efficient.on():
+            self._lazy_var = lazy_var
+
+       </a> return res
+
+    def backward(self, grad_output):
+        &#47&#47 Extract items that were saved</code></pre>

@@ -1,0 +1,52 @@
+<html><h3>13a85e08e713f374933bc4fc082f67e1fa8dcd02,deepvariant/util/io_utils.py,,read_shard_sorted_tfrecords,#Any#Any#Any#Any#Any#,377
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  else:
+    paths = [path]
+
+  <a id="change">heap = []</a>
+  for path in paths:
+    it = (
+        proto.FromString(buf)
+        for buf in python_io.tf_record_iterator(path, options))
+    heap.append(_ComparableSortedRecordIterator(it, key))
+  heapq.heapify(heap)
+  i = 0
+  <a id="change">while heap:
+    i += 1
+    if max_records is not None and i &gt; max_records:
+      return
+
+    nextit = heap[0]
+    yield nextit.value
+    nextit.advance()
+    &#47&#47 Because nextit.advance() mutates the first entry in the heap, the heap
+    &#47&#47 invariant may not be satisfied at this point. If the iterator is exhausted
+    &#47&#47 we should just pop it off. Otherwise, we call heapreplace and replace the
+    &#47&#47 item with itself, since this triggers the check to efficiently fix the
+    &#47&#47 heap invariant in this case where just the top element may not satisfy it.
+    if nextit.exhausted:
+      heapq.heappop(heap)
+    else:
+      heapq.heapreplace(heap, nextit)
+
+
+</a>def write_tfrecords(protos, output_path, options=None):
+  Writes protos to output_path.
+
+  This function writes serialized strings of each proto in protos to output_path</code></pre><h3>After Change</h3><pre><code class='java'>
+        for buf in python_io.tf_record_iterator(path, options))
+    keyed_iterables.append(((key(elem), elem) for elem in protos))
+
+  <a id="change">for i, (_, value) in enumerate(heapq.merge(*keyed_iterables)):
+    if max_records is not None and i &gt;= max_records:
+      return
+    yield value
+
+
+</a>def write_tfrecords(protos, output_path, options=None):
+  Writes protos to output_path.
+
+  This function writes serialized strings of each proto in protos to output_path</code></pre><img src="102232400.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/google/deepvariant/commit/13a85e08e713f374933bc4fc082f67e1fa8dcd02#diff-38d03ed48272ff8aa5f3a6a6288a19287e9906e20fb8f93c2d02f96dce85c841L336' target='_blank'>Link</a></div><div id='project'> Project Name: google/deepvariant</div><div id='commit'> Commit Name: 13a85e08e713f374933bc4fc082f67e1fa8dcd02</div><div id='time'> Time: 2018-02-20</div><div id='author'> Author: cym@google.com</div><div id='file'> File Name: deepvariant/util/io_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: read_shard_sorted_tfrecords</div><BR><BR><div id='link'><a href='https://github.com/hellohaptik/chatbot_ner/commit/8ddf7bf7b977640e61bb6113186f165748f214a8#diff-aced2d1bba3878e4402e362440bb4e343ea3031ce038ac25f1881e1205ce851cL40' target='_blank'>Link</a></div><div id='project'> Project Name: hellohaptik/chatbot_ner</div><div id='commit'> Commit Name: 8ddf7bf7b977640e61bb6113186f165748f214a8</div><div id='time'> Time: 2017-11-07</div><div id='author'> Author: jain.chirag925@gmail.com</div><div id='file'> File Name: lib/nlp/regex.py</div><div id='class'> Class Name: Regex</div><div id='method'> Method Name: text_substitute</div><BR><BR><div id='link'><a href='https://github.com/hellohaptik/chatbot_ner/commit/c81fafd9c93e90babeab6b0c7321ee88163955ab#diff-9aa31da6288ef058419785579023306ae657591db9f650692ea52b2b433cc843L789' target='_blank'>Link</a></div><div id='project'> Project Name: hellohaptik/chatbot_ner</div><div id='commit'> Commit Name: c81fafd9c93e90babeab6b0c7321ee88163955ab</div><div id='time'> Time: 2018-04-18</div><div id='author'> Author: jain.chirag925@gmail.com</div><div id='file'> File Name: ner_v1/chatbot/entity_detection.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: output_entity_dict_list</div><BR>

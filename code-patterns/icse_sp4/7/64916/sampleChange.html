@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                            anchors, cls_preds, gt_boxes, gt_ids)
+                        num_positive.append(nd.sum(box_masks &gt;= 0).asscalar())
+                        valid_cls = nd.sum(cls_targets &gt;= 0, axis=0, exclude=True)
+                        <a id="change">valid_cls = nd.maximum(valid_cls, nd.ones_like(valid_cls))</a>
+                        valid_box = nd.sum(box_masks &gt; 0, axis=0, exclude=True)
+
+                    l1 = cls_loss(cls_preds, cls_targets, (cls_targets &gt;= 0).expand_dims(axis=-1))
+                    &#47&#47 losses3.append(l1 * cls_targets.size / cls_targets.shape[0])
+                    l1 = l1 / valid_cls * cls_targets.shape[-1]
+                    l2 = box_loss(box_preds * box_masks, box_targets)
+                    &#47&#47 losses4.append(l2 * box_targets.size / box_targets.shape[0])
+                    <a id="change">l2 = l2 / valid_cls * box_targets.size / box_targets.shape[0]</a>
+                    L = l1 + l2
+                    Ls.append(L)
+                    outputs.append(cls_preds)
+                    labels.append(cls_targets)
+                    box_outputs.append(box_preds * box_masks)
+                    box_labels.append(box_targets)
+                    losses1.append(l1)
+                    <a id="change">losses2.append(l2)</a>
+                &#47&#47 n_pos = max(1, sum(num_positive)) / batch[0].shape[0]
+                &#47&#47 for l3, l4 in zip(losses3, losses4):
+                &#47&#47     L = l3 / n_pos + l4 / n_pos
+                &#47&#47     Ls.append(L)</code></pre><h3>After Change</h3><pre><code class='java'>
+                    box_labels.append(box_targets)
+                    &#47&#47 losses1.append(l1)
+                    &#47&#47 losses2.append(l2)
+                n_pos = max(1, <a id="change">sum(num_positive)</a>)
+                for l3, l4 in zip(losses3, losses4):
+                    <a id="change">L = l3 / n_pos + l4 / n_pos</a>
+                    Ls.append(L)
+                    losses1.append(l3 / n_pos)
+                    losses2.append(l4 / n_pos)
+                autograd.backward(Ls)</code></pre>

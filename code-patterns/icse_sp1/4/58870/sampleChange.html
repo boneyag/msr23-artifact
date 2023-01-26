@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        Stop all rollout workers.
+        self.local_worker().stop()
+        for w in self.remote_workers():
+            <a id="change">w.stop.remote()</a>
+            w.__ray_terminate__.remote()
+
+    @DeveloperAPI
+    def foreach_worker(self, func: Callable[[RolloutWorker], T]) -&gt; List[T]:</code></pre><h3>After Change</h3><pre><code class='java'>
+        Stop all rollout workers.
+        try:
+            self.local_worker().stop()
+            <a id="change">tids = [w.stop.remote() for w in self.remote_workers()]</a>
+            <a id="change">ray.get(tids)</a>
+        except Exception:
+            logger.exception("Failed to stop workers")
+        finally:
+            for w in self.remote_workers():</code></pre>

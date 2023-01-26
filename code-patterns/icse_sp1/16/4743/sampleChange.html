@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    return a, b, c, np.array(d, dtype=np.float32)
+
+def GetTensor( tensor_fn, num ):
+    f = <a id="change">open( tensor_fn, "r" )</a>
+    total = 0
+    c = 0
+    rows = np.empty((num, ((2*param.flankingBaseNum+1)*4*param.matrixNum)), dtype=np.float32)
+    pos = []</code></pre><h3>After Change</h3><pre><code class='java'>
+    return a, b, c, np.array(d, dtype=np.float32)
+
+def GetTensor( tensor_fn, num ):
+    <a id="change">f = subprocess.Popen(shlex.split("gzip -fdc %s" % (tensor_fn) ), stdout=subprocess.PIPE, bufsize=8388608)</a>
+    total = 0
+    c = 0
+    rows = np.empty((num, ((2*param.flankingBaseNum+1)*4*param.matrixNum)), dtype=np.float32)
+    pos = []
+    for row in <a id="change">f.stdout</a>: &#47&#47 A variant per row
+        chrom, coord, seq, rows[c] = UnpackATensorRecord(*(row.split()))
+        if seq[param.flankingBaseNum] not in ["A","C","G","T"]: &#47&#47 TODO: Support IUPAC in the future
+            continue
+        pos.append(chrom + ":" + coord + ":" + seq)
+        c += 1
+
+        if c == num:
+            x = np.reshape(rows, (num,2*param.flankingBaseNum+1,4,param.matrixNum))
+            for i in range(1, param.matrixNum): x[:,:,:,i] -= x[:,:,:,0]
+            total += c; print &gt;&gt; sys.stderr, "Processed %d tensors" % total
+            yield 0, c, x, pos
+            c = 0
+            pos = []
+
+    <a id="change">f.stdout.close()</a>
+    <a id="change">f.wait()</a>
+    x = np.reshape(rows[:c], (c,2*param.flankingBaseNum+1,4,param.matrixNum))
+    for i in range(1, param.matrixNum): x[:,:,:,i] -= x[:,:,:,0]
+    total += c; print &gt;&gt; sys.stderr, "Processed %d tensors" % total
+    yield 1, c, x, pos</code></pre>

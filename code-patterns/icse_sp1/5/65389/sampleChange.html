@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if self.train_train_covar.dim() == 3:
+            res = test_train_covar.matmul(
+                precomputed_cache.expand(<a id="change">*test_train_covar</a>.shape[<a id="change">:-2</a>], test_train_covar.shape[-1]).unsqueeze(-1)
+            ).squeeze(-1)
+        else:
+            if self.non_batch_train and precomputed_cache.dim() == 2:</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        &#47&#47 For efficiency - we can use addmv in the 2d case
+        if test_train_covar.dim() == 2:
+            <a id="change">res = torch.addmv(test_mean, delazify(test_train_covar), self.mean_cache)</a>
+        &#47&#47 In other cases - we&quotll use the standard infrastructure
+        else:
+            res = (test_train_covar @ self.mean_cache.unsqueeze(-1)).squeeze(-1)
+            res = res + test_mean</code></pre>

@@ -1,0 +1,109 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    if len(csv_data_array) == 1:
+                        output_dict[name] = np.asarray(csv_data_array[0])
+                    else:
+                        <a id="change">output_dict[name]</a> = np.concatenate(csv_data_array,0)
+
+                else:
+                    csv_data_array=[]
+                    for n in range(0, self.window.n_samples):
+                        csv_data_array.append(csv_data_dict[&quotsampler&quot])
+                    if len(csv_data_array) == 1:
+                        output_dict[&quotsampler&quot] = np.asarray(csv_data_array[0])
+                    else:
+                        <a id="change">output_dict[&quotsampler&quot]</a> = np.concatenate(csv_data_array,0)
+            &#47&#47 _, label_dict, _ = self.csv_reader(subject_id=image_id)
+            &#47&#47 for name in self.csv_reader.task_param.keys():
+            &#47&#47
+            &#47&#47 output_dict.update(label_dict)
+            for name in csv_data_dict.keys():
+                output_dict[name + &quot_location&quot] = output_dict[&quotimage_location&quot]
+        <a id="change">yield output_dict</a>
+        &#47&#47 the output image shape should be
+        &#47&#47 [enqueue_batch_size, x, y, z, time, modality]
+        &#47&#47 where enqueue_batch_size = windows_per_image
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 initialise output dict, placeholders as dictionary keys
+        &#47&#47 this dictionary will be used in
+        &#47&#47 enqueue operation in the form of: `feed_dict=output_dict`
+        <a id="change">output_dict</a> = {}
+        &#47&#47 fill output dict with data
+        for name in list(data):
+            coordinates_key = LOCATION_FORMAT.format(name)
+            image_data_key = name
+
+            &#47&#47 fill the coordinates
+            location_array = coordinates[name]
+            output_dict[coordinates_key] = location_array
+
+            &#47&#47 fill output window array
+            image_array = []
+            for window_id in range(self.window.n_samples):
+                x_start, y_start, z_start, x_end, y_end, z_end = \
+                    location_array[window_id, 1:]
+                try:
+                    image_window = data[name][
+                        x_start:x_end, y_start:y_end, z_start:z_end, ...]
+                    image_array.append(image_window[np.newaxis, ...])
+                except ValueError:
+                    tf.logging.fatal(
+                        "dimensionality miss match in input volumes, "
+                        "please specify spatial_window_size with a "
+                        "3D tuple and make sure each element is "
+                        "smaller than the image length in each dim. "
+                        "Current coords %s", location_array[window_id])
+                    raise
+            if len(image_array) &gt; 1:
+                output_dict[image_data_key] = \
+                    np.concatenate(image_array, axis=0)
+            else:
+                output_dict[image_data_key] = image_array[0]
+        &#47&#47 fill output dict with csv_data
+        if self.csv_reader is not None:
+            idx_dict = {}
+            list_keys = self.csv_reader.df_by_task.keys()
+            for k in list_keys:
+                if k == &quotsampler&quot:
+                    idx_dict[k] = idx
+                else:
+                    for n in range(0, self.window.n_samples):
+                        idx_dict[k] = 0
+
+            _, csv_data_dict,_ = self.csv_reader(idx=idx_dict,
+                                                 subject_id=subject_id)
+            for name in csv_data_dict.keys():
+                if name != &quotsampler&quot:
+                    csv_data_array = []
+                    for n in range(0, self.window.n_samples):
+                        csv_data_array.append(csv_data_dict[name])
+                    if len(csv_data_array) == 1:
+                        output_dict[name] = np.asarray(csv_data_array[0],
+                                                       dtype=np.float32)
+                    else:
+                        <a id="change">output_dict[name]</a> = np.concatenate(
+                            csv_data_array,0).astype(dtype=<a id="change">np.float32</a>)
+
+                else:
+                    csv_data_array=[]
+                    for n in range(0, self.window.n_samples):
+                        csv_data_array.append(csv_data_dict[&quotsampler&quot])
+                    if len(csv_data_array) == 1:
+                        output_dict[&quotsampler&quot] = np.asarray(csv_data_array[0],
+                                                       dtype=<a id="change">np.float32</a>)
+                    else:
+                        <a id="change">output_dict[&quotsampler&quot]</a> = <a id="change">np.concatenate(
+                            csv_data_array,0).astype(np.float32)</a>
+            &#47&#47 _, label_dict, _ = self.csv_reader(subject_id=image_id)
+            &#47&#47 for name in self.csv_reader.task_param.keys():
+            &#47&#47
+            &#47&#47 output_dict.update(label_dict)
+            for name in csv_data_dict.keys():
+                output_dict[name + &quot_location&quot] = output_dict[&quotimage_location&quot]
+        <a id="change">return output_dict</a>
+        &#47&#47 the output image shape should be
+        &#47&#47 [enqueue_batch_size, x, y, z, time, modality]
+        &#47&#47 where enqueue_batch_size = windows_per_image
+</code></pre>

@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def interval_coverages_pileup(bed_fname, bam_fname, min_mapq, procs=1):
+    Calculate log2 coverages in the BAM file at each interval.
+    logging.info("Processing reads in %s", os.path.basename(bam_fname))
+    <a id="change">if procs == 1:
+        for chrom, start, end, gene, count, depth in bedcov(bed_fname, bam_fname,
+                                                            min_mapq):
+            yield [count,
+                   (chrom, start, end, gene,
+                    math.log(depth, 2) if depth else NULL_LOG2_COVERAGE, depth)]
+        raise StopIteration
+
+   </a> with futures.ProcessPoolExecutor(procs) as pool:
+        <a id="change">for biter in pool.map(_bedcov, ((bed_chrom, bam_fname, min_mapq) for
+                                       bed_chrom in to_chunks(bed_fname))):
+            for chrom, start, end, gene, count, depth in biter:
+                yield [count,
+                       (chrom, start, end, gene,
+                        math.log(depth, 2) if depth else NULL_LOG2_COVERAGE, depth)]
+            rm(bed_chrom)
+
+</a>def _bedcov(args):
+    Wrapper for parallel.
+    return list(bedcov(*args))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def interval_coverages_pileup(bed_fname, bam_fname, min_mapq, procs=1):
+    Calculate log2 coverages in the BAM file at each interval.
+    logging.info("Processing reads in %s", os.path.basename(bam_fname))
+    <a id="change">if procs == 1:
+        for count, row in bedcov(bed_fname, bam_fname, min_mapq):
+            yield [count, row]
+    else:
+        with futures.ProcessPoolExecutor(procs) as pool:
+            args_iter = ((bed_chunk, bam_fname, min_mapq)
+                         for bed_chunk in to_chunks(bed_fname))
+            for bed_chunk_fname, biter in pool.map(_bedcov, args_iter):
+                for count, row in biter:
+                    yield [count, row]
+                rm(bed_chunk_fname)
+
+
+</a>def _bedcov(args):
+    Wrapper for parallel.
+    bed_fname = args[0]
+    return bed_fname, list(bedcov(*args))</code></pre>

@@ -1,0 +1,60 @@
+<html><h3>7fd53c15c6273327ef10c2458848fcaf2a85e406,finetune/base_models/gpt2/featurizer.py,,gpt2_featurizer,#Any#Any#Any#Any#Any#,138
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def gpt2_featurizer(X, encoder, config, train=False, reuse=None):
+    <a id="change">initial_shape = [a or -1 for a in X.get_shape().as_list()]</a>
+    X = tf.reshape(X, shape=[-1] + initial_shape[-2:])
+
+    with tf.variable_scope(&quotmodel/featurizer&quot, reuse=reuse):
+        embed_weights = tf.get_variable(</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def gpt2_featurizer(X, encoder, config, train=False, reuse=None):
+    <a id="change">initial_shape = tf.shape(X)</a>
+    X = tf.reshape(X, shape=[-1] + initial_shape[-2:])
+    <a id="change">X = tf.reshape(X, shape=tf.concat(([-1], initial_shape[-2:]), 0))</a>
+
+    with tf.variable_scope(&quotmodel/featurizer&quot, reuse=reuse):
+        embed_weights = tf.get_variable(
+            name="we",
+            shape=[encoder.vocab_size + config.max_length, config.n_embed],
+            initializer=tf.random_normal_initializer(stddev=config.weight_stddev)
+        )
+        if config.train_embeddings:
+            embed_weights = dropout(embed_weights, config.embed_p_drop, train)
+        else:
+            embed_weights = tf.stop_gradient(embed_weights)
+
+        X = tf.reshape(X, [-1, config.max_length, 2])
+        h = embed(X, embed_weights)
+
+        &#47&#47 Transformer
+        pasts = [None] * config.n_layer
+        for layer, past in enumerate(pasts):
+            if (config.n_layer - layer) == config.num_layers_trained and config.num_layers_trained != config.n_layer:
+                h = tf.stop_gradient(h)
+                train_layer = False
+            else:
+                train_layer = train
+
+            with tf.variable_scope(&quoth%d&quot % layer):
+                block_fn = functools.partial(block, past=past, hparams=config, train=train)
+                if config.low_memory_mode and train_layer:
+                    block_fn = recompute_grad(block_fn, use_entire_scope=True)
+                h = block_fn(h)
+
+        h = norm(h, &quotln_f&quot)
+
+        &#47&#47 Use hidden state at classifier token as input to final proj. + softmax
+        clf_h = tf.reshape(h, [-1, config.n_embed])  &#47&#47 [batch * seq_len, embed]
+        clf_token = encoder[&quot_classify_&quot]
+        pool_idx = tf.cast(tf.argmax(tf.cast(tf.equal(X[:, :, 0], clf_token), tf.float32), 1), tf.int32)
+        clf_h = tf.gather(clf_h, tf.range(shape_list(X)[0], dtype=tf.int32) * config.max_length + pool_idx)
+        clf_h = tf.reshape(clf_h, shape=tf.concat(<a id="change">(initial_shape[: -2], [config.n_embed])</a>, 0))
+        seq_feats = tf.reshape(h, shape=tf.concat((initial_shape[: -1], [config.n_embed]), 0))
+
+        return {</code></pre><img src="185018247.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/IndicoDataSolutions/finetune/commit/7fd53c15c6273327ef10c2458848fcaf2a85e406#diff-ee70097769b6c27eb61e5309639977406294c0fd8e13efc569db55ad31affbbaL139' target='_blank'>Link</a></div><div id='project'> Project Name: IndicoDataSolutions/finetune</div><div id='commit'> Commit Name: 7fd53c15c6273327ef10c2458848fcaf2a85e406</div><div id='time'> Time: 2019-03-21</div><div id='author'> Author: benlt@hotmail.co.uk</div><div id='file'> File Name: finetune/base_models/gpt2/featurizer.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: gpt2_featurizer</div><BR><BR><div id='link'><a href='https://github.com/IndicoDataSolutions/finetune/commit/7fd53c15c6273327ef10c2458848fcaf2a85e406#diff-42a1d62f8fe428eae0d41f1825b03e3badbf8ffcc955675723c7ecffa3f638f3L147' target='_blank'>Link</a></div><div id='project'> Project Name: IndicoDataSolutions/finetune</div><div id='commit'> Commit Name: 7fd53c15c6273327ef10c2458848fcaf2a85e406</div><div id='time'> Time: 2019-03-21</div><div id='author'> Author: benlt@hotmail.co.uk</div><div id='file'> File Name: finetune/base_models/gpt/featurizer.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: gpt_featurizer</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/1ea84b7fa9a03781d22837f91683462d823202ea#diff-48b43703b25bfdf0058400fe027194f5ede829dd7adc3f0289363eec7abf1173L328' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 1ea84b7fa9a03781d22837f91683462d823202ea</div><div id='time'> Time: 2020-11-24</div><div id='author'> Author: gardener@tensorflow.org</div><div id='file'> File Name: research/object_detection/predictors/heads/keras_class_head.py</div><div id='class'> Class Name: WeightSharedConvolutionalClassHead</div><div id='method'> Method Name: _predict</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/1ea84b7fa9a03781d22837f91683462d823202ea#diff-a7c8657dd97eb8e9c87ad86152ff63614421c01d9f0c0c7349c7b3f3b117c493L273' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 1ea84b7fa9a03781d22837f91683462d823202ea</div><div id='time'> Time: 2020-11-24</div><div id='author'> Author: gardener@tensorflow.org</div><div id='file'> File Name: research/object_detection/predictors/heads/class_head.py</div><div id='class'> Class Name: WeightSharedConvolutionalClassHead</div><div id='method'> Method Name: predict</div><BR>

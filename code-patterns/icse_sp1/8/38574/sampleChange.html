@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    
+
+    use_double = <a id="change">int(x_gpu.dtype in [np.float64, np.complex128])</a>
+    <a id="change">use_complex = int(x_gpu.dtype in [np.complex64, np.complex128])</a>
+
+    cumsum_mod = \
+                SourceModule(cumsum_template.substitute(use_double=use_double,
+                                                        use_complex=use_complex))
+
+    <a id="change">cumsum = cumsum_mod.get_function("cumsum")</a>
+    c_gpu = gpuarray.empty_like(x_gpu)
+    cumsum(x_gpu, c_gpu, np.uint32(x_gpu.size),
+           block=(1, 1, 1), grid=(1, 1))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    
+
+    <a id="change">try:
+        func = cumsum.cache[x_gpu.dtype]
+    except KeyError:
+        func = scan.InclusiveScanKernel(x_gpu.dtype, "a+b")
+        cumsum.cache[x_gpu.dtype] = func
+   </a> return func(x_gpu)
+cumsum.cache = {}
+
+diff_mod_template = Template(</code></pre>

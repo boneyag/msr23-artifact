@@ -1,0 +1,98 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+from StringIO import StringIO
+data = pd.read_csv(StringIO(pkgutil.get_data(&quotpymc.examples&quot, &quotdata/srrs2.dat&quot)))
+
+cty_data = pd.read_csv(<a id="change">StringIO(pkgutil.get_data(&quotpymc.examples&quot, &quotdata/cty.dat&quot))</a>)
+
+data = data[data.state == &quotMN&quot]
+
+data[&quotfips&quot] = data.stfips * 1000 + data.cntyfips
+cty_data[&quotfips&quot] = cty_data.stfips * 1000 + cty_data.ctfips
+
+
+data[&quotlradon&quot] = np.log(np.where(data.activity == 0, .1, data.activity))
+
+
+<a id="change">data</a> = data.merge(cty_data, &quotinner&quot, on=&quotfips&quot)
+
+unique = data[[&quotfips&quot]].drop_duplicates()
+unique[&quotgroup&quot] = np.arange(len(unique))
+unique.set_index(&quotfips&quot)
+data = data.merge(unique, &quotinner&quot, on=&quotfips&quot)
+
+<a id="change">obs_means</a> = data.groupby(&quotfips&quot).lradon.mean()
+n = len(obs_means)
+
+<a id="change">lradon</a> = np.array(data.lradon)
+<a id="change">floor</a> = np.array(data.floor)
+<a id="change">group</a> = np.array(data.group)
+ufull = np.array(data.Uppm)
+
+
+model = Model()
+with model:
+    groupmean = Normal(&quotgroupmean&quot, 0, 10. ** -2.)
+    &#47&#47 as recommended by "Prior distributions for variance parameters in
+    &#47&#47 hierarchical models"
+    groupsd = Uniform(&quotgroupsd&quot, 0, 10.)
+
+    sd = Uniform(&quotsd&quot, 0, 10.)
+
+    floor_m = Normal(&quotfloor_m&quot, 0, 5. ** -2.)
+    u_m = Normal(&quotu_m&quot, 0, 5. ** -2)
+    means = Normal(&quotmeans&quot, groupmean, groupsd ** -2., shape=n)
+
+    <a id="change">lr</a> = Normal(&quotlr&quot, floor * floor_m + means[group] + ufull * u_m, sd ** -
+                2., observed=lradon)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+data = pd.read_csv(get_data_file(&quotpymc.examples&quot, &quotdata/srrs2.dat&quot))
+
+cty_data = pd.read_csv(<a id="change">get_data_file(&quotpymc.examples&quot, &quotdata/cty.dat&quot)</a>)
+
+data = data[data.state == &quotMN&quot]
+
+data[&quotfips&quot] = data.stfips * 1000 + data.cntyfips
+cty_data[&quotfips&quot] = cty_data.stfips * 1000 + cty_data.ctfips
+
+
+data[&quotlradon&quot] = np.log(np.where(data.activity == 0, .1, data.activity))
+
+
+<a id="change">data</a> = data.merge(cty_data, &quotinner&quot, on=&quotfips&quot)
+
+unique = data[[&quotfips&quot]].drop_duplicates()
+unique[&quotgroup&quot] = np.arange(len(unique))
+unique.set_index(&quotfips&quot)
+data = data.merge(unique, &quotinner&quot, on=&quotfips&quot)
+
+<a id="change">obs_means</a> = data.groupby(&quotfips&quot).lradon.mean()
+n = len(obs_means)
+
+<a id="change">lradon</a> = np.array(data.lradon)
+<a id="change">floor</a> = np.array(data.floor)
+<a id="change">group</a> = np.array(data.group)
+ufull = np.array(data.Uppm)
+
+
+model = Model()
+with model:
+    groupmean = Normal(&quotgroupmean&quot, 0, 10. ** -2.)
+    &#47&#47 as recommended by "Prior distributions for variance parameters in
+    &#47&#47 hierarchical models"
+    groupsd = Uniform(&quotgroupsd&quot, 0, 10.)
+
+    sd = Uniform(&quotsd&quot, 0, 10.)
+
+    floor_m = Normal(&quotfloor_m&quot, 0, 5. ** -2.)
+    u_m = Normal(&quotu_m&quot, 0, 5. ** -2)
+    means = Normal(&quotmeans&quot, groupmean, groupsd ** -2., shape=n)
+
+    <a id="change">lr</a> = Normal(&quotlr&quot, floor * floor_m + means[group] + ufull * u_m, sd ** -
+                2., observed=lradon)
+
+</code></pre>

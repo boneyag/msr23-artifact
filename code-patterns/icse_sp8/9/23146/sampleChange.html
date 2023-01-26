@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  nfm = NormalizingFlowModel(nf)
+
+  &#47&#47 Must be float32 for RealNVP
+  <a id="change">dataset = NumpyDataset(
+      X=np.random.rand(5, 3).astype(np.float32),
+      y=np.random.rand(5,),
+      ids=np.arange(5))</a>
+
+  &#47&#47 Tests a simple flow of one RealNVP layer.
+
+  X = nfm.flow.sample()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  &#47&#47 Must be float32 for RealNVP
+  target_distribution = tfd.MultivariateNormalDiag(loc=[1., 0.])
+  <a id="change">dataset = NumpyDataset(X=target_distribution.sample(96))</a>
+
+  &#47&#47 Tests a simple flow of one RealNVP layer.
+
+  X = nfm.flow.sample()
+  x1 = tf.zeros([2])
+  x2 = dataset.X[0]
+
+  &#47&#47 log likelihoods should be negative
+  assert nfm.flow.log_prob(X).numpy() &lt; 0
+  assert nfm.flow.log_prob(x1).numpy() &lt; 0
+  assert nfm.flow.log_prob(x2).numpy() &lt; 0
+
+  &#47&#47 &#47&#47 Fit model
+  final = nfm.fit(dataset, nb_epoch=5)
+  <a id="change">print(final)</a>
+  assert final &gt; 0
+</code></pre>

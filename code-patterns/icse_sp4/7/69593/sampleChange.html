@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  _, image_bytes = image_reader.read(filename_queue)
+  image = tf.image.decode_image(image_bytes)
+  <a id="change">image_patch = full_image_to_patch(image, patch_size)</a>
+
+  if shuffle:
+    <a id="change">return tf.train.shuffle_batch(
+        [image_patch],
+        batch_size=batch_size,
+        num_threads=num_threads,
+        capacity=5 * batch_size,
+        min_after_dequeue=batch_size)</a>
+  else:
+    return tf.train.batch(
+        [image_patch],
+        batch_size=batch_size,</code></pre><h3>After Change</h3><pre><code class='java'>
+  Raises:
+    ValueError: If no files match `image_file_pattern`.
+  
+  <a id="change">if not tf.gfile.Glob(image_file_pattern):
+    raise ValueError(&quotNo file patterns found.&quot)
+ </a> filenames_ds = tf.data.Dataset.list_files(image_file_pattern)
+  bytes_ds = filenames_ds.map(tf.io.read_file, num_parallel_calls=num_threads)
+  images_ds = bytes_ds.map(
+      tf.image.decode_image, num_parallel_calls=num_threads)
+  patches_ds = images_ds.map(
+      lambda img: full_image_to_patch(img, patch_size),
+      num_parallel_calls=num_threads)
+  patches_ds = patches_ds.repeat()
+
+  if shuffle:
+    patches_ds = <a id="change">patches_ds.shuffle(5 * batch_size)</a>
+
+  patches_ds = patches_ds.prefetch(5 * batch_size)
+  <a id="change">patches_ds = patches_ds.batch(batch_size)</a>
+
+  return patches_ds
+
+</code></pre>

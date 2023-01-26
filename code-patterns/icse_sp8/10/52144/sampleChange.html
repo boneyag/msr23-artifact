@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    api_secret = config.get(CONF_API_SECRET)
+    sensor_id = config.get(CONF_SENSOR_ID)
+
+    <a id="change">if not sensor_id:
+        import neurio
+        neurio_tp = neurio.TokenProvider(key=api_key, secret=api_secret)
+        neurio_client = neurio.Client(token_provider=neurio_tp)
+        user_info = neurio_client.get_user_information()
+        _LOGGER.warning(&quotSensor ID auto-detected, set api_sensor_id: "%s"&quot,
+                        user_info["locations"][0]["sensors"][0]["sensorId"])
+        sensor_id = user_info["locations"][0]["sensors"][0]["sensorId"]
+
+   </a> add_devices([NeurioEnergy(api_key, api_secret, name, sensor_id)])
+
+
+class NeurioEnergy(Entity):</code></pre><h3>After Change</h3><pre><code class='java'>
+    api_secret = config.get(CONF_API_SECRET)
+    sensor_id = config.get(CONF_SENSOR_ID)
+
+    <a id="change">data = NeurioData(api_key, api_secret, sensor_id)</a>
+
+    @Throttle(MIN_TIME_BETWEEN_DAILY_UPDATES)
+    def update_daily():
+        Update the daily power usage.
+        data.get_daily_usage()
+
+    @Throttle(MIN_TIME_BETWEEN_ACTIVE_UPDATES)
+    def update_active():
+        Update the active power usage.
+        data.get_active_power()
+
+    update_daily()
+    update_active()
+
+    &#47&#47 Active power sensor
+    add_devices([NeurioEnergy(data, ACTIVE_NAME, ACTIVE_TYPE, update_active)])
+    &#47&#47 Daily power sensor
+    <a id="change">add_devices([NeurioEnergy(data, DAILY_NAME, DAILY_TYPE, update_daily)])</a>
+
+
+class NeurioData(object):
+    Stores data retrieved from Neurio sensor.</code></pre>

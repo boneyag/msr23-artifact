@@ -1,0 +1,47 @@
+<html><h3>d1ac7b831ad36cd0e4bdd7980819f83208345148,gpflow/expectations.py,,_expectation,#Any#Any#Any#Any#Any#,512
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+@dispatch(Gaussian, kernels.Sum, InducingPoints, kernels.Sum, InducingPoints)
+@quadrature_fallback
+def _expectation(p, kern1, feat1, kern2, feat2):
+    <a id="change">if feat1 != feat2:
+        raise NotImplementedError("Different features are not supported")
+
+   </a> <a id="change">feat = feat1</a>
+    crossexps = []
+
+    <a id="change">for k1, k2 in it.product(kern1.kern_list, kern2.kern_list):
+        if k1.on_separate_dims(k2):
+            eKxz1 = _expectation(p, k1, feat, None, None)
+            eKxz2 = _expectation(p, k2, feat, None, None)
+            result = eKxz1[:, :, None] * eKxz2[:, None, :]
+        else:
+            result = _expectation(p, k1, feat, k2, feat)
+
+        crossexps.append(result)
+
+   </a> return functools.reduce(tf.add, crossexps)
+
+
+&#47&#47 Product</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    crossexps = []
+
+    <a id="change">if kern1 == kern2 and feat1 == feat2:  &#47&#47 avoid duplicate computation by using transposes
+        for i, k1 in enumerate(kern1.kern_list):
+            crossexps.append(expectation(p, (k1, feat1), (k1, feat1)))
+
+            for k2 in kern1.kern_list[:i]:
+                eKK = expectation(p, (k1, feat1), (k2, feat2))
+                eKK += tf.matrix_transpose(eKK)
+                crossexps.append(eKK)
+    else:
+        for k1, k2 in it.product(kern1.kern_list, kern2.kern_list):
+            crossexps.append(expectation(p, (k1, feat1), (k2, feat2)))
+
+   </a> return functools.reduce(tf.add, crossexps)
+
+
+&#47&#47 =================== Cross Kernel expectations (eK1zxK2xz) ===================</code></pre><img src="1746970.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/d1ac7b831ad36cd0e4bdd7980819f83208345148#diff-fec3d5d915217c71e27fb0ed9d7f6f3d63da4ee9cbfa4a0733591f2a28c3e228L513' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: d1ac7b831ad36cd0e4bdd7980819f83208345148</div><div id='time'> Time: 2018-02-07</div><div id='author'> Author: alex.ialongo@gmail.com</div><div id='file'> File Name: gpflow/expectations.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _expectation</div><BR><BR><div id='link'><a href='https://github.com/dmlc/gluon-nlp/commit/03b0e7061cf477fbeccb9c128ee76603df582d86#diff-9f211728739d8c530be209acfeaf63e70a4f30275188f5d5a4b458e61646b57eL163' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-nlp</div><div id='commit'> Commit Name: 03b0e7061cf477fbeccb9c128ee76603df582d86</div><div id='time'> Time: 2018-09-04</div><div id='author'> Author: leonard@lausen.nl</div><div id='file'> File Name: scripts/word_embeddings/evaluate_pretrained.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/NervanaSystems/nlp-architect/commit/9267d77a87ac5d6736953f4822deab36b20945c7#diff-e696d21c9c884c57d3c53725bf2502d835d3d0916e2e86f0f6249410bdcdcf57L101' target='_blank'>Link</a></div><div id='project'> Project Name: NervanaSystems/nlp-architect</div><div id='commit'> Commit Name: 9267d77a87ac5d6736953f4822deab36b20945c7</div><div id='time'> Time: 2020-09-22</div><div id='author'> Author: daniel.korat@intel.com</div><div id='file'> File Name: nlp_architect/models/absa/inference/inference.py</div><div id='class'> Class Name: SentimentInference</div><div id='method'> Method Name: run_multiple</div><BR>

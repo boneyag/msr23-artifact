@@ -1,0 +1,53 @@
+<html><h3>7459ce340e207f1764cf8bd94afe15bed6196fa8,petastorm/pytorch.py,DataLoader,__iter__,#DataLoader#,135
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        The Data Loader iterator stops the for-loop when reader runs out of samples.
+        
+        <a id="change">batch = []</a>
+        for row in self.reader:
+            &#47&#47 Default collate does not work nicely on namedtuples and treat them as lists
+            &#47&#47 Using dict will result in the yielded structures being dicts as well
+            row_as_dict = row._asdict()
+
+            &#47&#47 Promote some types that are incompatible with pytorch to be pytorch friendly.
+            _sanitize_pytorch_types(row_as_dict)
+
+            &#47&#47 Add rows to shuffling buffer
+            self._shuffling_buffer.add_many([row_as_dict])
+
+            &#47&#47 If the shuffling buffer is ready, pull the resampled rows out and try add to our accumulated batch
+            while self._shuffling_buffer.can_retrieve():
+                post_shuffled_row = self._shuffling_buffer.retrieve()
+                batch.append(post_shuffled_row)
+
+                &#47&#47 Batch is ready? Collate and emmit
+                if len(batch) == self.batch_size:
+                    <a id="change">yield self.collate_fn(batch)</a>
+                    batch = []
+
+        &#47&#47 Once reader can not emit new rows, we might still have a bunch of rows waiting in the shuffling buffer.
+        &#47&#47 Telling shuffling buffer thatt we are finished allows to deplete the buffer completely, regardless its</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Using dict will result in the yielded structures being dicts as well
+            row_as_dict = row._asdict()
+
+            <a id="change">keys = row_as_dict.keys()</a>
+
+            &#47&#47 Promote some types that are incompatible with pytorch to be pytorch friendly.
+            _sanitize_pytorch_types(row_as_dict)
+
+            &#47&#47 Add rows to shuffling buffer
+            if not self.reader.is_batched_reader:
+                self._shuffling_buffer.add_many([row_as_dict])
+            else:
+                &#47&#47 Transposition:
+                &#47&#47   row_as_dict:        {&quota&quot: [1,2,3], &quotb&quot:[4,5,6]}
+                &#47&#47   row_group_as_tuple: [(1, 4), (2, 5), (3, 6)]
+                &#47&#47 The order within a tuple is defined by key order in &quotkeys&quot
+                <a id="change">row_group_as_tuple = list(zip(*(row_as_dict[k] for k in keys)))</a>
+
+                &#47&#47 Adding data as &quotrow-by-row&quot into a shuffling buffer. This is a pretty
+                &#47&#47 slow implementation though. Probably can comeup with a faster way to shuffle,
+                &#47&#47 perhaps at the expense of a larger memory consumption...</code></pre><img src="154515543.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/uber/petastorm/commit/7459ce340e207f1764cf8bd94afe15bed6196fa8#diff-d14e9ff9c6b380e9a8aec500d4d5b8d139175c72a6574c98928b9e68276cfde1L135' target='_blank'>Link</a></div><div id='project'> Project Name: uber/petastorm</div><div id='commit'> Commit Name: 7459ce340e207f1764cf8bd94afe15bed6196fa8</div><div id='time'> Time: 2019-08-27</div><div id='author'> Author: yevgeni@uber.com</div><div id='file'> File Name: petastorm/pytorch.py</div><div id='class'> Class Name: DataLoader</div><div id='method'> Method Name: __iter__</div><BR><BR><div id='link'><a href='https://github.com/chakki-works/doccano/commit/49d41416e440926f0a9a8243b4d77f6f5468efe9#diff-d99b7d47f927a1f9a22c3ed872ee6d3aed488219df3fc8de90ad828daa96293cL243' target='_blank'>Link</a></div><div id='project'> Project Name: chakki-works/doccano</div><div id='commit'> Commit Name: 49d41416e440926f0a9a8243b4d77f6f5468efe9</div><div id='time'> Time: 2019-03-12</div><div id='author'> Author: light.tree.1.13@gmail.com</div><div id='file'> File Name: app/server/utils.py</div><div id='class'> Class Name: JsonHandler</div><div id='method'> Method Name: parse</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/pytext/commit/5a8868024c4ece64611ae75107b00b66e0892684#diff-7f12fbe446c60859298dd59f066a6524d8291ba4cca4a160f018dc41ce5317eaL295' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/pytext</div><div id='commit'> Commit Name: 5a8868024c4ece64611ae75107b00b66e0892684</div><div id='time'> Time: 2019-05-24</div><div id='author'> Author: snl@fb.com</div><div id='file'> File Name: pytext/data/data.py</div><div id='class'> Class Name: Data</div><div id='method'> Method Name: batches</div><BR><BR><div id='link'><a href='https://github.com/Calamari-OCR/calamari/commit/1b305c86dc2ff6b3461c42f4428460b66a8bff8b#diff-67dee263d92122e3df5fcab4a073ad78f77652585f119e053bc4f8d4cb388b77L350' target='_blank'>Link</a></div><div id='project'> Project Name: Calamari-OCR/calamari</div><div id='commit'> Commit Name: 1b305c86dc2ff6b3461c42f4428460b66a8bff8b</div><div id='time'> Time: 2020-01-31</div><div id='author'> Author: wick.chr.info@gmail.com</div><div id='file'> File Name: calamari_ocr/ocr/backends/tensorflow_backend/tensorflow_model.py</div><div id='class'> Class Name: TensorflowModel</div><div id='method'> Method Name: predict_dataset</div><BR>

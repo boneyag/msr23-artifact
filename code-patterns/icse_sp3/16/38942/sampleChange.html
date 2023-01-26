@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if self._stop_iteration():
+                    break
+
+                if <a id="change">not self._is_valid(line[&quotImageID&quot])</a>:
+                    continue
+
+                &#47&#47 Filter group annotations (we only want single instances)</code></pre><h3>After Change</h3><pre><code class='java'>
+                if self._stop_iteration():
+                    break
+
+                if <a id="change">self._should_skip(image_id=line[&quotImageID&quot])</a>:
+                    continue
+
+                &#47&#47 Filter group annotations (we only want single instances)
+                if line[&quotIsGroupOf&quot] == &quot1&quot:
+                    continue
+
+                if line[&quotImageID&quot] != current_image_id:
+                    &#47&#47 Yield if image changes and we have current image.
+                    if current_image_id is not None:
+                        if len(partial_record[&quotgt_boxes&quot]) &gt; 0:
+                            records_queue.put(partial_record)
+                        else:
+                            tf.logging.debug(
+                                &quotDropping record {} without gt_boxes.&quot.format(
+                                    partial_record))
+
+                    &#47&#47 Start new record.
+                    current_image_id = line[&quotImageID&quot]
+
+                    partial_record = {
+                        &quotfilename&quot: current_image_id,
+                        &quotgt_boxes&quot: []
+                    }
+
+                &#47&#47 Append annotation to current record.
+                try:
+                    &#47&#47 LabelName may not exist because not all labels are
+                    &#47&#47 trainable
+                    label = self.trainable_labels.index(line[&quotLabelName&quot])
+                except ValueError:
+                    continue
+
+                <a id="change">if self._should_skip(label=label):
+                    continue
+               </a> <a id="change">self._per_class_counter[label] += 1</a>
+
+                partial_record[&quotgt_boxes&quot].append({
+                    &quotxmin&quot: float(line[&quotXMin&quot]),
+                    &quotymin&quot: float(line[&quotYMin&quot]),</code></pre>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            model = Model.from_table(conn.CASTable(model_name))
+            model.load_weights(path=pre_train_weight_file)
+            <a id="change">model._retrieve_(&quotaddlayer&quot, model=model_name, name=&quotfc6&quot,
+                             layer=dict(type=&quotfullconnect&quot, n=4096,
+                                        act=&quotrelu&quot, dropout=0.5),
+                             srcLayers=[&quotpool5&quot])</a>
+
+            &#47&#47 fc7 layer: 4096 neurons
+            model._retrieve_(&quotaddlayer&quot, model=model_name, name=&quotfc7&quot,
+                             layer=<a id="change">dict(type=&quotfullconnect&quot, n=4096,
+                                        act=&quotrelu&quot, dropout=0.5)</a>,
+                             srcLayers=[&quotfc6&quot])
+            &#47&#47 fc output layer: 1000 neurons
+            model._retrieve_(&quotaddlayer&quot, model=model_name, name=&quotfc8&quot,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        else:
+
+            <a id="change">model</a> = Model.from_table(conn.CASTable(model_name))
+            model.load_weights(path=pre_train_weight_file)
+
+            weight_table_options = <a id="change">model</a>.model_weights.to_table_params()
+            weight_table_options.update(dict(where=&quot_LayerID_&lt;22&quot))
+            <a id="change">model._retrieve_(&quottable.partition&quot, table=weight_table_options,
+                             casout=dict(replace=True, **model.model_weights.to_table_params()))</a>
+            model._retrieve_(&quotremovelayer&quot, model=model_name, name=&quotfc8&quot)
+            model._retrieve_(&quotaddlayer&quot, model=model_name, name=&quotfc8&quot,
+                             layer=dict(type=&quotoutput&quot, n=n_classes, act=&quotsoftmax&quot),
+                             srcLayers=[&quotfc7&quot])</code></pre>

@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            ag_new = np.empty((self.rollout_batch_size, self.dims[&quotg&quot]))
+            success = np.zeros(self.rollout_batch_size)
+            &#47&#47 compute new states and observations
+            <a id="change">for i in range(self.rollout_batch_size):
+                try:
+                    &#47&#47 We fully ignore the reward here because it will have to be re-computed
+                    &#47&#47 for HER.
+                    curr_o_new, _, _, info = self.envs[i].step(u[i])
+                    if &quotis_success&quot in info:
+                        success[i] = info[&quotis_success&quot]
+                    o_new[i] = curr_o_new[&quotobservation&quot]
+                    ag_new[i] = curr_o_new[&quotachieved_goal&quot]
+                    for idx, key in enumerate(self.info_keys):
+                        info_values[idx][t, i] = info[key]
+                    if self.render:
+                        self.envs[i].render()
+                except MujocoException as e:
+                    return self.generate_rollouts()
+
+           </a> if np.isnan(o_new).any():
+                self.logger.warn(&quotNaN caught during rollout generation. Trying again...&quot)
+                self.reset_all_rollouts()
+                return self.generate_rollouts()</code></pre><h3>After Change</h3><pre><code class='java'>
+            ag_new = obs_dict_new[&quotachieved_goal&quot]
+            success = np.array([i.get(&quotis_success&quot, 0.0) for i in info])
+
+            <a id="change">if any(done):
+                &#47&#47 here we assume all environments are done is ~same number of steps, so we terminate rollouts whenever any of the envs returns done
+                &#47&#47 trick with using vecenvs is not to add the obs from the environments that are "done", because those are already observations
+                &#47&#47 after a reset
+                break
+
+           </a> for i, info_dict in enumerate(info):
+                for idx, key in enumerate(self.info_keys):
+                    info_values[idx][t, i] = info[i][key]
+</code></pre>

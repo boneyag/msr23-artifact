@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        &#47&#47 Mistakenly inactive feeds
+        day = now - datetime.timedelta(days=1)
+        inactive_feeds = <a id="change">Feed.objects.filter(
+            next_scheduled_update__lte=day,
+            min_to_decay__lte=60*24,
+            active_subscribers__gte=1
+        ).order_by(&quot?&quot)[:100]</a>
+        inactive_count = inactive_feeds.count()
+        cp3 = time.time()
+        
+        old = now - datetime.timedelta(days=3)</code></pre><h3>After Change</h3><pre><code class='java'>
+        now = datetime.datetime.utcnow()
+        start = time.time()
+        r = redis.Redis(connection_pool=settings.REDIS_FEED_POOL)
+        <a id="change">task_feeds_size = r.llen(&quotupdate_feeds&quot) * 12</a>
+        
+        hour_ago = now - datetime.timedelta(hours=1)
+        r.zremrangebyscore(&quotfetched_feeds_last_hour&quot, 0, int(hour_ago.strftime(&quot%s&quot)))
+        
+        now_timestamp = int(now.strftime("%s"))
+        queued_feeds = r.zrangebyscore(&quotscheduled_updates&quot, 0, now_timestamp)
+        r.zremrangebyscore(&quotscheduled_updates&quot, 0, now_timestamp)
+        r.sadd(&quotqueued_feeds&quot, *queued_feeds)
+        logging.debug(" ---&gt; ~SN~FBQueuing ~SB%s~SN stale feeds (~SB%s~SN/%s queued/scheduled)" % (
+                        len(queued_feeds),
+                        r.scard(&quotqueued_feeds&quot),
+                        r.zcard(&quotscheduled_updates&quot)))
+        
+        &#47&#47 Regular feeds
+        <a id="change">if task_feeds_size &lt; 1000:
+            feeds = r.srandmember(&quotqueued_feeds&quot, 1000)
+            Feed.task_feeds(feeds, verbose=True)
+            active_count = len(feeds)
+        else:
+            active_count = 0
+       </a> cp1 = time.time()
+        
+        &#47&#47 Force refresh feeds
+        refresh_feeds = Feed.objects.filter(</code></pre>

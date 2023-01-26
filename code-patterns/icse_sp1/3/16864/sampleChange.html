@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+    def _train(self, dataset):
+        <a id="change">sens_ana = self.clf.get_sensitivity_analyzer(postproc=self.analyzer_postproc)</a>
+        pmeasure = ProxyMeasure(self.clf,
+                                postproc=BinaryFxNode(self.errorfx,
+                                                      self.clf.space),
+                                skip_train=True   &#47&#47 do not train since sens_ana will
+            )
+        rfe = RFE(sens_ana,
+                  pmeasure,
+                  Splitter(&quotpartitions&quot),
+                  fselector=self.fselector,
+                  train_pmeasure=False,
+                  stopping_criterion=None,   &#47&#47 full "track"
+                  update_sensitivity=True,
+                  enable_ca=[&quoterrors&quot, &quotnfeatures&quot])
+
+        errors, nfeatures = [], []
+
+        if __debug__:
+            debug("RFEC", "Starting with the %s", (dataset,))
+
+        for partition in self.partitioner.generate(dataset):
+            rfe.train(partition)
+            errors.append(rfe.ca.errors)
+            nfeatures.append(rfe.ca.nfeatures)
+
+        &#47&#47 mean errors across splits and find optimal number
+        errors_mean = np.mean(errors, axis=0)
+        nfeatures_mean = np.mean(nfeatures, axis=0)
+        &#47&#47 we will take the "mean location" of the min to stay
+        &#47&#47 within the most &quotstable&quot choice
+
+        mins_idx = np.where(errors_mean==np.min(errors_mean))[0]
+        min_idx = mins_idx[int(len(mins_idx)/2)]
+        min_error = errors_mean[min_idx]
+        assert(min_error == np.min(errors_mean))
+        nfeatures_min = nfeatures_mean[min_idx]
+
+        if __debug__:
+            debug("RFEC",
+                  "Choosing among %d choices to have %d features with "
+                  "mean error=%.2g (initial mean error %.2g)",
+                  (len(mins_idx), nfeatures_min, min_error, errors_mean[0]))
+
+        &#47&#47 Now perform 2nd RFE -- until optimal_n
+        &#47&#47 so we should provide an alternative stopping criterion
+        self._mclf = FeatureSelectionClassifier(
+            self.clf,
+            RFE(sens_ana,
+                None, &#47&#47 we do not have anything to transfer to
+                Repeater(2),
+                fselector=self.fselector,
+                train_pmeasure=False,
+                stopping_criterion=None,
+                nfeatures_min=nfeatures_min,
+                update_sensitivity=True,
+                enable_ca=[&quotnfeatures&quot]))
+        <a id="change">self._mclf.train(dataset)</a>
+
+    def _untrain(self):
+        super(RFELearner, self)._untrain()
+        if self._mclf is not None:</code></pre><h3>After Change</h3><pre><code class='java'>
+            debug("RFEC", "Stage 2: running RFE on full training dataset to "
+                  "distil best %d features" % nfeatures_min)
+
+        <a id="change">super</a>(SplitRFE, self)._train(dataset)
+
+
+    def _untrain(self):</code></pre>

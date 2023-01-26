@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if breaks is None and binwidth is None:
+                _bin_count = 30
+                if not self._warning_printed:
+                    <a id="change">sys.stderr.write(
+                        "stat_bin: binwidth defaulted to range/30." +
+                        " Use &quotbinwidth = x&quot to adjust this.")</a>
+                    self._warning_printed = True
+            if binwidth:
+                _bin_count = int(np.ceil(np.ptp(x))) / binwidth
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 y values are not needed
+        try:
+            <a id="change">del data[&quoty&quot]</a>
+        except KeyError:
+            pass
+        else:
+            self._print_warning(_MSG1, 1)
+
+        &#47&#47 TODO: make sure it is passed from the geom
+        &#47&#47 data.pop(&quotweight&quot)
+        weight = 1
+        x_weights = np.ones(len(x)) * weight
+
+        categorical = is_categorical(x.values)
+        if categorical:
+            x_assignments = x
+            x = sorted(set(x))
+            width = make_iterable_ntimes(self.params[&quotwidth&quot], len(x))
+        elif cbook.is_numlike(x.iloc[0]):
+            if breaks is None and binwidth is None:
+                _bin_count = 30
+                self._print_warning(_MSG1, 1)
+            if binwidth:
+                _bin_count = int(np.ceil(np.ptp(x))) / binwidth
+
+            &#47&#47 Breaks have a higher precedence and,
+            &#47&#47 pandas accepts either the breaks or the number of bins
+            _bins_info = breaks or _bin_count
+            x_assignments, breaks = pd.cut(x, bins=_bins_info, labels=False,
+                                           right=right, retbins=True)
+            width = np.diff(breaks)
+            x = [breaks[i] + width[i] / 2
+                 for i in range(len(breaks)-1)]
+        else:
+            &#47&#47 TODO: Create test case
+            raise Exception("Cannot recognise the type of x")
+
+        &#47&#47 Create a dataframe with two columns:
+        &#47&#47   - the bins to which each x is assigned
+        &#47&#47   - the weights of each x value
+        &#47&#47 Then create a weighted frequency table
+        _df = pd.DataFrame({&quotassignments&quot: x_assignments,
+                            &quotweights&quot: x_weights
+                            })
+        _wfreq_table = pd.pivot_table(_df, values=&quotweights&quot,
+                                      rows=[&quotassignments&quot], aggfunc=np.sum)
+
+        &#47&#47 For numerical x values, empty bins get have no value
+        &#47&#47 in the computed frequency table. We need to add the zeros and
+        &#47&#47 since frequency table is a Series object, we need to keep it ordered
+        if len(_wfreq_table) &lt; len(x):
+            empty_bins = set(range(max(x_assignments))) - set(x_assignments)
+            for _b in empty_bins:
+                _wfreq_table[_b] = 0
+            _wfreq_table = _wfreq_table.sort_index()
+
+        y = list(_wfreq_table)
+        new_data = pd.DataFrame({&quotx&quot: x, &quoty&quot: y, &quotwidth&quot: width})
+
+        &#47&#47 Copy the other aesthetics into the new dataframe
+        n = len(x)
+        for ae in data:
+            new_data[ae] = make_iterable_ntimes(<a id="change">data</a>[ae].iloc[0], n)
+        return new_data
+
+</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        static_loss_scale = opt.loss_scale
+        dynamic_loss_scale = opt.loss_scale == 0
+        &#47&#47 TODO: clean this up when APEX unify its optimizer API.
+        <a id="change">if opt.optim.startswith(&quotfused&quot):
+            namespace = apex.optimizers  &#47&#47 Faster wrapper.
+        else:
+            namespace = apex.fp16_utils
+       </a> optimizer = namespace.FP16_Optimizer(
+            optimizer,
+            static_loss_scale=static_loss_scale,
+            dynamic_loss_scale=dynamic_loss_scale)</code></pre><h3>After Change</h3><pre><code class='java'>
+    if opt.model_dtype == &quotfp16&quot:
+        import apex
+        loss_scale = "dynamic" if opt.loss_scale == 0 else opt.loss_scale
+        <a id="change">model, optimizer = apex.amp.initialize(
+            [model, model.generator],
+            optimizer,
+            opt_level=opt.apex_opt_level,
+            loss_scale=loss_scale,
+            keep_batchnorm_fp32=False if opt.optim == "fusedadam" else None)</a>
+
+    return optimizer
+
+</code></pre>

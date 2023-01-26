@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        super().__init__(noise_covar=noise_covar)
+        if rank != 0:
+            <a id="change">self.register_parameter(
+                name="task_noise_corr_factor", parameter=torch.nn.Parameter(torch.randn(*batch_shape, num_tasks, rank))
+            )</a>
+            self.register_parameter(
+                name="task_noise_corr_diag", parameter=torch.nn.Parameter(torch.ones(*batch_shape, num_tasks))
+            )
+            if task_correlation_prior is not None:</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        super().__init__(noise_covar=noise_covar)
+        if rank != 0:
+            <a id="change">if rank &gt; num_tasks:
+                raise ValueError(f"Cannot have rank ({rank}) greater than num_tasks ({num_tasks})")
+           </a> tidcs = torch.tril_indices(num_tasks, rank)
+            self.tidcs = tidcs[:, 1:]  &#47&#47 (1, 1) must be 1.0, no need to parameterize this
+            task_noise_corr = torch.randn(*batch_shape, self.tidcs.size(-1))
+            self.register_parameter("task_noise_corr", torch.nn.Parameter(task_noise_corr))</code></pre>

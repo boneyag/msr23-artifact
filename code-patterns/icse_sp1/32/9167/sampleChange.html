@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            index,
+        )
+
+    <a id="change">executor = concurrent.futures.ThreadPoolExecutor(max_workers=threads)</a>
+    &#47&#47 run map functions
+    for index, count in <a id="change">executor.map(candidates_map, range(n_tasks))</a>:
+        <a id="change">heap_update_counts[index]</a> = count
+
+    &#47&#47 sort and chunk heap updates so they can be applied in the reduce
+    max_count = heap_update_counts.max()
+    offsets = np.zeros((n_tasks, max_count), dtype=np.int64)
+
+    def shuffle(index):
+        return shuffle_jit(
+            heap_updates, heap_update_counts, offsets, chunk_size, n_vertices, index
+        )
+
+    <a id="change">for _ in executor.map(shuffle, range(n_tasks)):
+        pass
+
+    &#47&#47 then run reduce functions
+   </a> <a id="change">for _ in executor.map(candidates_reduce, range(n_tasks)):
+        pass
+
+   </a> return new_candidate_neighbors, old_candidate_neighbors
+
+
+def make_nn_descent_map_jit(dist, dist_args):</code></pre><h3>After Change</h3><pre><code class='java'>
+        )
+
+    &#47&#47 run map functions
+    for index, count in <a id="change">parallel(parallel_calls(candidates_map, n_tasks))</a>:
+        <a id="change">heap_update_counts[index]</a> = count
+
+    &#47&#47 sort and chunk heap updates so they can be applied in the reduce
+    max_count = heap_update_counts.max()
+    offsets = np.zeros((n_tasks, max_count), dtype=np.int64)
+
+    def shuffle(index):
+        return shuffle_jit(
+            heap_updates, heap_update_counts, offsets, chunk_size, n_vertices, index
+        )
+
+    <a id="change">parallel(parallel_calls(shuffle, n_tasks))</a>
+
+    &#47&#47 then run reduce functions
+    <a id="change">parallel(parallel_calls(candidates_reduce, n_tasks))</a>
+
+    return new_candidate_neighbors, old_candidate_neighbors
+
+</code></pre>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        rhs = rhs.unsqueeze(0)
+        rhs_size = list(rhs.size())
+        rhs_size[0] = self.batch_size()
+        <a id="change">rhs = rhs.expand(*rhs_size)</a>
+
+        res = self.base_lazy_tensor._matmul(rhs)
+        if self.sum_batch_size is not None:
+            res = res.view(-1, self.sum_batch_size, res.size(1), res.size(2))
+            res = res.sum(1)
+        else:
+            <a id="change">res = res.sum(0)</a>
+
+        if isvector:
+            res = res.squeeze(-1)
+        return res</code></pre><h3>After Change</h3><pre><code class='java'>
+            rhs = rhs.expand(self.base_lazy_tensor.size(0), *tuple(rhs.size())[1:])
+        else:
+            rhs = rhs.unsqueeze(1)
+            rhs = rhs.expand(rhs.size(0), self.num_blocks, *tuple(<a id="change">rhs.size()</a>)[2:])
+            rhs = rhs.contiguous().view(-1, rhs.size(-2), rhs.size(-1))
+
+        res = self.base_lazy_tensor._matmul(rhs)
+
+        if self.num_blocks is not None:
+            <a id="change">res = res.view(-1, self.num_blocks, res.size(1), res.size(2))</a>
+        res = res.sum(-3)
+
+        if isvector:
+            res = res.squeeze(-1)</code></pre>

@@ -1,0 +1,106 @@
+<html><h3>28876638114948711fd4bd4e350fdd6809013f1e,fairseq/models/lightconv.py,LightConvDecoderLayer,forward,#LightConvDecoderLayer#Any#Any#Any#Any#Any#Any#Any#Any#,601
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if incremental_state is None:
+                incremental_state = {}
+            self.conv._set_input_buffer(incremental_state, prev_conv_state)
+        <a id="change">x = F.dropout(x, p=self.input_dropout, training=self.training)</a>
+        x = self.linear1(x)
+        if self.act is not None:
+            x = self.act(x)
+        x = self.conv(x, incremental_state=incremental_state)
+        x = self.linear2(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        x = residual + x
+        x = self.maybe_layer_norm(self.conv_layer_norm, x, after=True)
+
+        attn = None
+        if self.encoder_attn is not None:
+            residual = x
+            x = self.maybe_layer_norm(self.encoder_attn_layer_norm, x, before=True)
+            if prev_attn_state is not None:
+                if incremental_state is None:
+                    incremental_state = {}
+                prev_key, prev_value = prev_attn_state
+                saved_state = {"prev_key": prev_key, "prev_value": prev_value}
+                self.encoder_attn._set_input_buffer(incremental_state, saved_state)
+            x, attn = self.encoder_attn(
+                query=x,
+                key=encoder_out,
+                value=encoder_out,
+                key_padding_mask=encoder_padding_mask,
+                incremental_state=incremental_state,
+                static_kv=True,
+                need_weights=(not self.training and self.need_attn),
+            )
+            x = <a id="change">F.dropout(x, p=self.dropout, training=self.training)</a>
+            x = residual + x
+            x = self.maybe_layer_norm(self.encoder_attn_layer_norm, x, after=True)
+
+        residual = x
+        x = self.maybe_layer_norm(self.final_layer_norm, x, before=True)
+        x = F.relu(self.fc1(x))
+        <a id="change">x = F.dropout(x, p=self.relu_dropout, training=self.training)</a>
+        x = self.fc2(x)
+        <a id="change">x = F.dropout(x, p=self.dropout, training=self.training)</a>
+        x = residual + x
+        x = self.maybe_layer_norm(self.final_layer_norm, x, after=True)
+        return x, attn
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.final_layer_norm = LayerNorm(self.embed_dim)
+        self.need_attn = True
+
+    def forward(<a id="change">self</a>, x, encoder_out, encoder_padding_mask, incremental_state,
+                prev_conv_state=None, prev_attn_state=None, conv_mask=None,
+                conv_padding_mask=None):
+        
+        Args:
+            x (Tensor): input to the layer of shape `(seq_len, batch, embed_dim)`
+            encoder_padding_mask (ByteTensor): binary ByteTensor of shape
+                `(batch, src_len)` where padding elements are indicated by ``1``.
+
+        Returns:
+            encoded output of shape `(batch, src_len, embed_dim)`
+        
+        residual = x
+        x = self.maybe_layer_norm(self.conv_layer_norm, x, before=True)
+        if prev_conv_state is not None:
+            if incremental_state is None:
+                incremental_state = {}
+            self.conv._set_input_buffer(incremental_state, prev_conv_state)
+        x = self.input_dropout_module(x)
+        x = self.linear1(x)
+        if self.act is not None:
+            x = self.act(x)
+        x = self.conv(x, incremental_state=incremental_state)
+        x = self.linear2(x)
+        <a id="change">x = self.dropout_module(x)</a>
+        x = residual + x
+        x = self.maybe_layer_norm(self.conv_layer_norm, x, after=True)
+
+        attn = None
+        if self.encoder_attn is not None:
+            residual = x
+            x = self.maybe_layer_norm(self.encoder_attn_layer_norm, x, before=True)
+            if prev_attn_state is not None:
+                if incremental_state is None:
+                    incremental_state = {}
+                prev_key, prev_value = prev_attn_state
+                saved_state = {"prev_key": prev_key, "prev_value": prev_value}
+                self.encoder_attn._set_input_buffer(incremental_state, saved_state)
+            x, attn = self.encoder_attn(
+                query=x,
+                key=encoder_out,
+                value=encoder_out,
+                key_padding_mask=encoder_padding_mask,
+                incremental_state=incremental_state,
+                static_kv=True,
+                need_weights=(not self.training and self.need_attn),
+            )
+            <a id="change">x = self.dropout_module(x)</a>
+            x = residual + x
+            x = self.maybe_layer_norm(self.encoder_attn_layer_norm, x, after=True)
+
+        residual = x</code></pre><img src="309094700.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 22</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-7a9a48f0957d16280cd591e4b716cbbb7014b99d5c772dbcd23b7cf277f08efcL601' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/models/lightconv.py</div><div id='class'> Class Name: LightConvDecoderLayer</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-6b13c5873f1c102ec844b4853a4b2b27c1c84fe72f577d3fe20f00093f971944L424' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/models/fconv.py</div><div id='class'> Class Name: FConvDecoder</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-7a9a48f0957d16280cd591e4b716cbbb7014b99d5c772dbcd23b7cf277f08efcL601' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/models/lightconv.py</div><div id='class'> Class Name: LightConvDecoderLayer</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-34b531834588b03bfe4bfea77ccc901911c45319cbe73700000da1742b6d3f8dL402' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/models/fconv_self_att.py</div><div id='class'> Class Name: FConvDecoder</div><div id='method'> Method Name: forward</div><BR>

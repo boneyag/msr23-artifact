@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def end(self, result):
+        self.result = result
+        <a id="change">self.samples = [s for s in self._samples_all if s.controlled]</a>
+        self.samples_uncontrolled = [s for s in self._samples_all if (not s.controlled) and (not s.observed)]
+        self.samples_observed = [s for s in self._samples_all if s.observed]
+
+
+        self.log_prob = util.to_variable(sum([s.log_prob for s in self._samples_all if s.controlled or s.observed])).view(-1)
+        self.log_p_obs = util.to_variable(sum([s.log_prob for s in self.samples_observed])).view(-1)
+
+        &#47&#47  pdb.set_trace()
+        self.observes_variable = util.pack_observes_to_variable([s.value for s in self.samples_observed])
+        <a id="change">self.length</a> = len(self.samples)
+
+    def add_sample(self, sample, replace=False, fresh=True):
+        if replace:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def end(self, result):
+        self.result = result
+        <a id="change">self.samples = []</a>
+        replaced_indices = []
+        <a id="change">for i in range(len(self._samples_all)):
+            sample = self._samples_all[i]
+            if sample.control and i not in replaced_indices:
+                if sample.replace:
+                    for j in range(i + 1, len(self._samples_all)):
+                        if self._samples_all[j].address_base == sample.address_base:
+                            sample = self._samples_all[j]
+                            replaced_indices.append(j)
+                self.samples.append(sample)
+       </a> self.samples_uncontrolled = [s for s in self._samples_all if (not s.control) and (not s.observed)]
+        self.samples_observed = [s for s in self._samples_all if s.observed]
+        self.log_prob_observed = util.to_variable(sum([s.log_prob for s in self.samples_observed])).view(-1)
+
+        self.log_prob = util.to_variable(sum([s.log_prob for s in self._samples_all if s.control or s.observed])).view(-1)
+        self.observes_variable = util.pack_observes_to_variable([s.value for s in self.samples_observed])
+        <a id="change">self.length</a> = len(self.samples)
+
+    def last_instance(self, address_base):
+        if address_base in self._samples_all_dict_adddress_base:</code></pre>

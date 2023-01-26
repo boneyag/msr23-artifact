@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def evaluate_single(self, individual, *consts):
+        Evaluate a single individual.
+        <a id="change">cache = {}</a>
+        payload = [self.make_str(t) for t in individual]
+        for k, v in zip(individual.pset.constants, consts):
+            payload = [s.replace(k, str(v)) for s in payload]
+
+        key = sum(map(hash, payload))   &#47&#47 constants may have been simplified, not in payload anymore.
+        if  <a id="change">key not in cache</a>:
+            self.send(dict(action="EXPERIMENT", payload=payload))
+            cache[key] = self.recv()["fitness"]
+            self.evaluations += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.queue.put((key, payload))
+        self.evaluations += 1
+
+        <a id="change">result = None</a>
+        <a id="change">while result is None:
+            sleep(1)
+            result = self.result_queue.get(key)
+       </a> return result
+
+    def measure(self, individual):
+        Construct fitness for given individual.</code></pre>

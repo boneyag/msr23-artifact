@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Phase 0
+    bounds = schedule.InferBound(sch)
+    stmt = schedule.ScheduleOps(sch, bounds, True)
+    stmt = <a id="change">ir_pass.StorageFlatten(stmt, binds, 64)</a>
+    stmt = ir_pass.CanonicalSimplify(stmt)
+    assert simple_mode
+    return stmt
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Phase 0
+    bounds = schedule.InferBound(sch)
+    stmt = schedule.ScheduleOps(sch, bounds, True)
+    <a id="change">func = schedule.SchedulePostProcToPrimFunc(args, stmt, None)</a>
+    mod = tvm.IRModule.from_expr(func._move())
+    mod = tvm.tir.transform.StorageFlatten(64)(<a id="change">mod._move()</a>)
+    mod = tvm.tir.transform.Simplify()(<a id="change">mod._move()</a>)
+    assert simple_mode
+    return mod["main"].body
+</code></pre>

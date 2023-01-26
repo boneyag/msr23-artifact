@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if time_step is None:
+      time_step = self.env.current_time_step()
+    if policy_state is None:
+      <a id="change">policy_state = self.policy.get_initial_state(self.env.batch_size)</a>
+
+    &#47&#47 Batch dim should be first index of tensors during data collection.
+    <a id="change">batch_dims = nest_utils.get_outer_shape(
+        time_step, self.env.time_step_spec())</a>
+    counter = tf.zeros(batch_dims, <a id="change">tf.int32</a>)
+
+    [_, time_step, policy_state] = <a id="change">tf.while_loop(
+        cond=self._loop_condition_fn(),
+        body=self._loop_body_fn(),
+        loop_vars=[
+            counter,
+            time_step,
+            policy_state],
+        back_prop=False,
+        parallel_iterations=1,
+        maximum_iterations=maximum_iterations,
+        name=&quotdriver_loop&quot
+    )</a>
+    return time_step, policy_state
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      time_step: TimeStep named tuple with final observation, reward, etc.
+      policy_state: Tensor with final step policy state.
+    
+    <a id="change">return self._run_fn(time_step=time_step, policy_state=policy_state,
+                        maximum_iterations=maximum_iterations)</a>
+
+  &#47&#47 TODO(b/113529538): Add tests for policy_state.
+  def _run(self,
+           time_step=None,</code></pre>

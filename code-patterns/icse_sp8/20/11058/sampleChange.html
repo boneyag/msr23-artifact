@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for n in range(n_epochs):
+        core.learn(n_steps=n_steps, n_steps_per_fit=1)
+        dataset = core.evaluate(n_episodes=n_episodes_test, render=True)
+        <a id="change">print(&quotEpoch: &quot, n,
+              &quot  J: &quot, np.mean(compute_J(dataset, gamma)),
+              &quot  Len_ep: &quot, int(np.round(np.mean(episodes_length(dataset))))
+              )</a>
+
+    print(&quotPress a button to visualize humanoid&quot)
+    input()
+    core.evaluate(n_episodes=10, render=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+def experiment(goal, use_muscles, n_epochs, n_steps, n_episodes_test):
+    np.random.seed(1)
+
+    <a id="change">logger = Logger(&quotSAC&quot, results_dir=None)</a>
+    <a id="change">logger.strong_line()</a>
+    <a id="change">logger.info(&quotHumanoid Experiment, Algorithm: SAC&quot)</a>
+
+    &#47&#47 MDP
+    gamma = 0.99
+    horizon = 2000
+    mdp = create_mdp(gamma, horizon, goal, use_muscles=use_muscles)
+
+    &#47&#47 Agent
+    agent = create_SAC_agent(mdp)
+
+    &#47&#47 normalization callback
+    normalizer = MinMaxPreprocessor(mdp_info=mdp.info)
+
+    &#47&#47 plotting callback
+    plotter = PlotDataset(mdp.info)
+
+    &#47&#47 Algorithm(with normalization and plotting)
+    core = Core(agent, mdp, callback_step=plotter, preprocessors=[normalizer])
+    <a id="change">dataset = core.evaluate(n_episodes=n_episodes_test, render=True)</a>
+
+    J = np.mean(compute_J(dataset, gamma))
+    L = int(np.round(np.mean(episodes_length(dataset))))
+
+    <a id="change">logger.epoch_info(0, J=J, episode_lenght=L)</a>
+
+    &#47&#47 training loop
+    for n in trange(n_epochs, leave=False):
+        core.learn(n_steps=n_steps, n_steps_per_fit=1)
+        dataset = core.evaluate(n_episodes=n_episodes_test, render=True)
+
+        <a id="change">J = np.mean(compute_J(dataset, gamma))</a>
+        L = int(np.round(<a id="change">np.mean(episodes_length(dataset))</a>))
+
+
+        <a id="change">logger.epoch_info(n+1, J=J, episode_lenght=L)</a>
+
+    logger.info(&quotPress a button to visualize humanoid&quot)
+    input()
+    core.evaluate(n_episodes=10, render=True)</code></pre>

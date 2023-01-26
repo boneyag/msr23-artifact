@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      embeddings = tf.matmul(one_hot_data, self.embeddings)
+    else:
+      embeddings = tf.gather(self.embeddings, flat_inputs)
+    embeddings = <a id="change">tf.reshape(embeddings, input_shape)</a>
+
+    return embeddings
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      embeddings = tf.matmul(one_hot_data, self.embeddings)
+    else:
+      embeddings = tf.gather(self.embeddings, flat_inputs)
+    <a id="change">embeddings = tf.reshape(
+        embeddings,
+        &#47&#47 Work around b/142213824: prefer concat to shape over a Python list.
+        tf.concat([tf.shape(inputs), [self._embedding_width]], axis=0))</a>
+    embeddings.set_shape(inputs.shape.as_list() + [self._embedding_width])
+    return embeddings
+</code></pre>

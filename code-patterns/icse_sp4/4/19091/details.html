@@ -1,0 +1,42 @@
+<html><h3>02ef279b852bad53771e02435d0caa0a64d17343,baseline/tf/classify/training/distributed.py,ClassifyTrainerDistributedTf,_test,#ClassifyTrainerDistributedTf#Any#Any#,142
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                step_loss, step_batchsz, distributed_cm = _distributed_test_step(next(test_iter))
+                total_loss.assign_add(step_loss)
+                total_norm.assign_add(step_batchsz)
+                cm._cm += <a id="change">distributed_cm.numpy()</a>
+
+            metrics = cm.get_all_metrics()
+            total_loss = total_loss.numpy()
+            total_norm = total_norm.numpy()</code></pre><h3>After Change</h3><pre><code class='java'>
+        with strategy.scope():
+
+            total_loss = tf.Variable(0.0)
+            total_acc = <a id="change">tf.Variable(0.0)</a>
+            total_norm = tf.Variable(0.0)
+
+            SET_TRAIN_FLAG(False)
+            test_iter = iter(loader)
+
+            for i in range(steps):
+                &#47&#47step_loss, step_batchsz, distributed_cm = _distributed_test_step(next(test_iter))
+                step_loss, step_batchsz, distributed_acc = _distributed_test_step(next(test_iter))
+
+                total_loss.assign_add(step_loss)
+                total_norm.assign_add(step_batchsz)
+                total_acc.assign_add(distributed_acc)
+                &#47&#47cm._cm += distributed_cm.numpy()
+
+            &#47&#47metrics = cm.get_all_metrics()
+            total_loss = total_loss.numpy()
+            total_norm = total_norm.numpy()
+            <a id="change">total_acc = total_acc.numpy()</a>
+            metrics = {}
+            metrics[&quotavg_loss&quot] = total_loss / float(total_norm)
+            <a id="change">metrics[&quotacc&quot] = total_acc / float(total_norm)</a>
+            &#47&#47verbose_output(verbose, cm)
+
+            return metrics
+</code></pre><img src="104588666.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/02ef279b852bad53771e02435d0caa0a64d17343#diff-a9aa80e4ec8173411cb08d7d1912756110b39193d7390bb9c3b07b1b92eff9c2L142' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: 02ef279b852bad53771e02435d0caa0a64d17343</div><div id='time'> Time: 2020-09-02</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: baseline/tf/classify/training/distributed.py</div><div id='class'> Class Name: ClassifyTrainerDistributedTf</div><div id='method'> Method Name: _test</div><BR><BR><div id='link'><a href='https://github.com/jonas-koehler/s2cnn/commit/192e33a99505947aedd3dd8b081d71b04f14eb85#diff-19cf35b44cf7959fb05a37231f2126221be90ec0b8c2f85bb07977b38bfdce79L34' target='_blank'>Link</a></div><div id='project'> Project Name: jonas-koehler/s2cnn</div><div id='commit'> Commit Name: 192e33a99505947aedd3dd8b081d71b04f14eb85</div><div id='time'> Time: 2017-10-30</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: examples/equivariance_error/main.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/ClementPinard/FlowNetPytorch/commit/c6a079c70368b41873f3288b05b74d38f74b6680#diff-53ebeb5bb252d44ee2375b613d81a7dba3ae4f147b1011bdfa4bafa022ec44d0L38' target='_blank'>Link</a></div><div id='project'> Project Name: ClementPinard/FlowNetPytorch</div><div id='commit'> Commit Name: c6a079c70368b41873f3288b05b74d38f74b6680</div><div id='time'> Time: 2018-03-30</div><div id='author'> Author: clement.pinard@parrot.com</div><div id='file'> File Name: run_inference.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR>

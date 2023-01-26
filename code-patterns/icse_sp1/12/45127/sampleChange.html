@@ -1,0 +1,80 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 empty/whitespace-only lines throughout the data matrix. We want
+    &#47&#47 to ignore those and only count the actual rows of data.
+    curr_row_idx = 0
+    <a id="change">for line in fh:
+        line = line.strip()
+
+        if not line:
+            continue
+        elif curr_row_idx &gt;= num_ids:
+            &#47&#47 We&quotve hit a nonempty line after we already filled the
+            &#47&#47 data matrix. Raise an error because we shouldn&quott ignore
+            &#47&#47 extra data.
+            raise DMFormatError(
+                "Encountered extra row(s) without corresponding IDs in "
+                "the header.")
+
+        tokens = line.split(delimiter)
+
+        &#47&#47 -1 because the first element contains the current ID.
+        if len(tokens) - 1 != num_ids:
+            raise DMFormatError(
+                "There are %d value(s) in row number %d, which is not"
+                " equal to the number of ID(s) in the header (%d)."
+                % (len(tokens) - 1, curr_row_idx + 1, num_ids))
+
+        curr_id = tokens[0].strip()
+        expected_id = ids[curr_row_idx]
+        if curr_id == expected_id:
+            data[curr_row_idx, :] = np.asarray(tokens[1:], dtype=float)
+        else:
+            raise DMFormatError(
+                "Encountered mismatched IDs while parsing the "
+                "dissimilarity matrix file. Found &quot%s&quot but expected "
+                "&quot%s&quot. Please ensure that the IDs match between the "
+                "dissimilarity matrix header (first row) and the row "
+                "labels (first column)." % (curr_id, expected_id))
+
+        curr_row_idx += 1
+
+   </a> if curr_row_idx != num_ids:
+        raise DMFormatError(
+            "Expected %d row(s) of data, but found %d." % (num_ids,
+                                                           curr_row_idx))</code></pre><h3>After Change</h3><pre><code class='java'>
+    data = np.empty((num_ids, num_ids), dtype=np.float64)
+
+    row_idx = -1
+    <a id="change">for row_idx, (row_id, row_data) in enumerate(_parse_data(fh, delimiter)):
+        if row_idx &gt;= num_ids:
+            &#47&#47 We&quotve hit a nonempty line after we already filled the data
+            &#47&#47 matrix. Raise an error because we shouldn&quott ignore extra data.
+            raise DMFormatError(
+                "Encountered extra row(s) without corresponding IDs in "
+                "the header.")
+
+        num_vals = len(row_data)
+        if num_vals != num_ids:
+            raise DMFormatError(
+                "There are %d value(s) in row number %d, which is not "
+                "equal to the number of ID(s) in the header (%d)."
+                % (num_vals, row_idx + 1, num_ids))
+
+        expected_id = ids[row_idx]
+        if row_id == expected_id:
+            data[row_idx, :] = np.asarray(row_data, dtype=float)
+        else:
+            raise DMFormatError(
+                "Encountered mismatched IDs while parsing the "
+                "dissimilarity matrix file. Found &quot%s&quot but expected "
+                "&quot%s&quot. Please ensure that the IDs match between the "
+                "dissimilarity matrix header (first row) and the row "
+                "labels (first column)." % (row_id, expected_id))
+
+   </a> if row_idx != num_ids - 1:
+        raise DMFormatError(
+            "Expected %d row(s) of data, but found %d." % (num_ids, row_idx + 1))
+</code></pre>

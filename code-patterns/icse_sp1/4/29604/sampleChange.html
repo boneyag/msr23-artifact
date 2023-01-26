@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    int(tuples_per_device) // int(self.per_device_batch_size))
+                logger.debug("== sgd epochs for {} ==".format(policy_id))
+                for i in range(self.num_sgd_iter):
+                    <a id="change">iter_extra_fetches = defaultdict(list)</a>
+                    permutation = np.random.permutation(num_batches)
+                    for batch_index in range(num_batches):
+                        batch_fetches = optimizer.optimize(
+                            self.sess, permutation[batch_index] *
+                            self.per_device_batch_size)
+                        <a id="change">for k, v in batch_fetches[LEARNER_STATS_KEY].items():
+                            iter_extra_fetches[k].append(v)
+                   </a> if logger.getEffectiveLevel() &lt;= logging.DEBUG:
+                        avg = averaged(iter_extra_fetches)
+                        logger.debug("{} {}".format(i, avg))
+                fetches[policy_id] = averaged(iter_extra_fetches, axis=0)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                &#47&#47 Reduce mean across all minibatch SGD steps (axis=0 to keep
+                &#47&#47 all shapes as-is).
+                fetches[policy_id] = <a id="change">tree.map_structure(
+                    lambda *s: np.nanmean(s, axis=0),
+                    *batch_fetches_all_towers)</a>
+
+        load_timer.push_units_processed(samples.count)
+        learn_timer.push_units_processed(samples.count)
+</code></pre>

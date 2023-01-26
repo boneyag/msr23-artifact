@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Finally, we combine the arrays that we got for each instance into one big array (or set
+        &#47&#47 of arrays) per field.
+        for field_name, field_array_list in field_arrays.items():
+            if isinstance(field_array_list[0], <a id="change">(list, tuple)</a>):
+                field_arrays[field_name] = [numpy.asarray(x) for x in zip(*field_array_list)]
+            else:
+                field_arrays[field_name] = numpy.asarray(field_array_list)</code></pre><h3>After Change</h3><pre><code class='java'>
+            if isinstance(field_array_list[0], dict):
+                &#47&#47 This is creating a dict of {token_indexer_key: batch_array} for each
+                &#47&#47 token indexer used to index this field. This is mostly utilised by TextFields.
+                <a id="change">token_indexer_key_to_batch_dict = defaultdict(list)</a>  &#47&#47 type: Dict[str, List[numpy.array]]
+                for namespace_dict in field_array_list:
+                    <a id="change">for indexer_name, array in namespace_dict.items():
+                        token_indexer_key_to_batch_dict[indexer_name].append(array)
+               </a> field_arrays[field_name] = {indexer_name: numpy.asarray(array_list) <a id="change">for</a>  &#47&#47 type: ignore
+                                            indexer_name, array_list in token_indexer_key_to_batch_dict.items()}
+            else:
+                field_arrays[field_name] = numpy.asarray(field_array_list)</code></pre>

@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    except ValueError:
+        current_page = 1
+
+    <a id="change">solr = Solr(settings.SOLR_URL)</a>
+    query = SolrQuery()
+    if multiple_tags:
+        query.set_query(" ".join("tag:\"" + tag + "\"" for tag in multiple_tags))
+    else:
+        query.set_query("*:*")
+    query.set_query_options(start=(current_page - 1) * settings.SOUNDS_PER_PAGE, rows=settings.SOUNDS_PER_PAGE, field_list=["id"], sort=["num_downloads desc"])
+    query.add_facet_fields("tag")
+    query.set_facet_options_default(limit=100, sort=True, mincount=1, count_missing=False)
+    query.set_group_field(group_field="grouping_pack")
+    query.set_group_options(group_func=None,
+                            group_query=None,
+                            group_rows=10,
+                            group_start=0,
+                            group_limit=1,
+                            group_offset=0,
+                            group_sort=None,
+                            group_sort_ingroup=None,
+                            group_format=&quotgrouped&quot,
+                            group_main=False,
+                            group_num_groups=True,
+                            group_cache_percent=0,
+                            group_truncate=True)  &#47&#47 Sets how many results from the same group are taken into account for computing the facets
+
+    page = None
+    num_results = 0
+    tags = []
+    error = False
+    docs = {}
+    non_grouped_number_of_results = 0
+    paginator = None
+    try:
+        <a id="change">results = SolrResponseInterpreter(solr.select(unicode(query)))</a>
+        paginator = SolrResponseInterpreterPaginator(results, settings.SOUNDS_PER_PAGE)
+        num_results = paginator.count
+        non_grouped_number_of_results = <a id="change">results.non_grouped_number_of_matches</a>
+        page = paginator.page(current_page)
+        tags = [dict(name=f[0], count=f[1]) for f in <a id="change">results</a>.facets["tag"]]
+
+        docs = results.docs
+        resultids = [d.get("id") for d in docs]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    except SolrException as e:
+        error = True
+        search_logger.warning(&quotSearch error: query: %s error %s&quot % <a id="change">(query, e)</a>)
+    except Exception as e:
+        error = True
+        search_logger.error(&quotCould probably not connect to Solr - %s&quot % e)</code></pre>

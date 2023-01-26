@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    xgb_model_data = sagemaker_session.upload_data(
+        path=os.path.join(xgboost_data_path, &quotxgb_model.tar.gz&quot),
+        key_prefix=&quotinteg-test-data/xgboost/model&quot)
+    schema = json.dumps(<a id="change">{
+        "input": [
+            {
+                "name": "Pclass",
+                "type": "float"
+            },
+            {
+                "name": "Embarked",
+                "type": "string"
+            },
+            {
+                "name": "Age",
+                "type": "float"
+            },
+            {
+                "name": "Fare",
+                "type": "float"
+            },
+            {
+                "name": "SibSp",
+                "type": "float"
+            },
+            {
+                "name": "Sex",
+                "type": "string"
+            }
+        ],
+        "output": {
+            "name": "features",
+            "struct": "vector",
+            "type": "double"
+        }
+    }</a>)
+    with timeout_and_delete_endpoint_by_name(endpoint_name, sagemaker_session):
+        sparkml_model = SparkMLModel(model_data=sparkml_model_data,
+                                     env={&quotSAGEMAKER_SPARKML_SCHEMA&quot: schema},</code></pre><h3>After Change</h3><pre><code class='java'>
+                                      serializer=json_serializer, content_type=CONTENT_TYPE_CSV,
+                                      accept=CONTENT_TYPE_CSV)
+
+        <a id="change">with open(VALID_DATA_PATH, &quotr&quot) as f:
+            valid_data = f.read()
+            assert predictor.predict(valid_data) == &quot0.714013934135&quot
+
+       </a> with open(INVALID_DATA_PATH, &quotr&quot) as f:
+            invalid_data = f.read()
+            assert (predictor.predict(invalid_data) is None)
+</code></pre>

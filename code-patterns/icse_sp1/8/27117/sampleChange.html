@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if register.read_only:
+            raise IOError("Trying to write to a point configured read only: {}".format(point_name))
+        if register.register_type not in ["setting", "hold", "vacation", "programs"]:
+            raise RuntimeError(<a id="change">"Register {} type {} does not support set_point".format(register.point_name,
+                                                                                       register.register_type)</a>)
+        try:
+            if register.register_type == "setting" or register.register_type == "hold":
+                register.set_state(value)</code></pre><h3>After Change</h3><pre><code class='java'>
+        register = self.get_register_by_name(point_name)
+        if register.read_only:
+            raise IOError("Trying to write to a point configured read only: {}".format(point_name))
+        <a id="change">if register.register_type == "status":
+            raise RuntimeError("Status register does not support set_point")
+       </a> try:
+            if register.register_type == "setting" or register.register_type == "hold":
+                register.set_state(value)
+            elif register.register_type in ["vacation", "programs"]:
+                register.set_state(value, **kwargs)
+        except (RemoteError, ConnectionError) as err:
+            <a id="change">_log.error("Error setting Ecobee point: {}. Refreshing tokens and sending again".format(err))</a>
+            self.authorization_stage = "REFRESH_TOKENS"
+            self.refresh_tokens()
+            if register.register_type == "setting" or register.register_type == "hold":
+                register.set_state(value)</code></pre>

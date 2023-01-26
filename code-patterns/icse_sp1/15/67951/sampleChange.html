@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            args = [tvm.runtime.const(0, &quotint32&quot)]
+        _internal_assert(isinstance(buf, Tensor), "LHS is supposed to be Tensor!")
+
+        read = <a id="change">tvm.tir.Call(buf.dtype, buf.name, args, _expr.Call.Halide, buf.op, buf.value_index)</a>
+        value = HybridParser._binop_maker[type(node.op)](read, rhs)
+
+        return tvm.tir.Provide(buf.op, 0, value, args)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+    def visit_AugAssign(self, node):
+        <a id="change">buf</a> = self.visit(node.target)
+        rhs = self.visit(node.value)
+        if isinstance(buf, tuple):
+            _internal_assert(len(buf) == 2, "LHS is supposed to be (buf, args)!")
+            buf, args = buf
+        else:
+            args = [tvm.runtime.const(0, &quotint32&quot)]
+        _internal_assert(isinstance(buf, Tensor), "LHS is supposed to be Tensor!")
+
+        read = <a id="change">tvm.tir.ProducerLoad(buf, args)</a>
+        value = HybridParser._binop_maker[type(node.op)](read, rhs)
+
+        return tvm.tir.Provide(buf.op, 0, value, args)
+</code></pre>

@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                deltas.append(delta)
+            return deltas
+
+        <a id="change">sync_frequency = self.sync_frequency.value()</a>
+        skip_sync = (time - self.last_sync &lt; sync_frequency)
+        return self.cond(pred=skip_sync, true_fn=no_sync, false_fn=apply_sync)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            List of delta tensors corresponding to the updates for each optimized variable.
+        
+        assert all(
+<a id="change">            util.shape(source) == util.shape(target)
+            for source, target in zip(source_variables, variables)
+        )
+
+        timestep = Module.retrieve_tensor(name=&quottimestep&quot)
+
+        def apply_sync():
+            update_weight = self.update_weight.value()
+            deltas = list()
+            for source_variable, target_variable in zip(source_variables, variables):
+                delta = update_weight * (source_variable - target_variable)
+                deltas.append(delta)
+
+            applied = self.apply_step(variables=variables, deltas=deltas)
+            last_sync_updated = self.last_sync.assign(value=timestep)
+
+            with tf.control_dependencies(control_inputs=(applied, last_sync_updated)):
+                &#47&#47 Trivial operation to enforce control dependency
+                return [util.identity_operation(x=delta) for delta in deltas]
+
+        def no_sync():
+            deltas = list()
+            for variable in variables:
+                delta = tf.zeros(shape=util.shape(variable))
+                deltas.append(delta)
+            return deltas
+
+        sync_frequency = self.sync_frequency.value()
+        skip_sync = (timestep - self.last_sync &lt; sync_</a>frequency)
+        return self.cond(pred=skip_sync, true_fn=no_sync, false_fn=apply_sync)
+</code></pre>

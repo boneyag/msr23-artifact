@@ -1,0 +1,346 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    elif prediction_type == PredictionType.MULTILABEL:
+        with tf.name_scope(&quotprediction_ops&quot):
+            prediction_probs = tf.nn.sigmoid(network_output, name=&quotsigmoid&quot)  &#47&#47 [B,H,W,C]
+            prediction_labels = <a id="change">tf.greater_equal(prediction_probs, 0.5, name=&quotlabels&quot)</a>  &#47&#47 [B,H,W,C]
+            predictions = {&quotprobs&quot: prediction_probs, &quotlabels&quot: prediction_labels}
+    else:
+        raise NotImplementedError
+
+    &#47&#47 Loss
+    &#47&#47 ----
+    if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
+        regularized_loss = tf.losses.get_regularization_loss()
+        if prediction_type == PredictionType.CLASSIFICATION:
+            onehot_labels = tf.one_hot(indices=labels, depth=model_params.n_classes)
+            with tf.name_scope("loss"):
+                per_pixel_loss = tf.nn.softmax_cross_entropy_with_logits(logits=network_output,
+                                                                         labels=onehot_labels, name=&quotper_pixel_loss&quot)
+                if training_params.focal_loss_gamma &gt; 0.0:
+                    modulation = tf.pow(tf.reduce_max(
+                        tf.multiply(-training_params.focal_loss_alpha*(1. - prediction_probs), onehot_labels)),
+                                        training_params.focal_loss_gamma)
+                    per_pixel_loss = tf.multiply(per_pixel_loss, modulation)
+
+                if training_params.weights_labels is not None:
+                    weight_mask = tf.reduce_sum(
+                        tf.constant(np.array(training_params.weights_labels, dtype=np.float32)[None, None, None]) *
+                        onehot_labels, axis=-1)
+                    per_pixel_loss = per_pixel_loss * weight_mask
+                if training_params.local_entropy_ratio &gt; 0:
+                    assert &quotweight_maps&quot in features
+                    r = training_params.local_entropy_ratio
+                    per_pixel_loss = per_pixel_loss * ((1 - r) + r * features[&quotweight_maps&quot])
+
+        elif prediction_type == PredictionType.REGRESSION:
+            per_pixel_loss = tf.squared_difference(labels, network_output, name=&quotper_pixel_loss&quot)
+        elif prediction_type == PredictionType.MULTILABEL:
+            with tf.name_scope(&quotsigmoid_xentropy_loss&quot):
+                labels_floats = tf.cast(labels, tf.float32)
+                per_pixel_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=labels_floats,
+                                                                         logits=network_output, name=&quotper_pixel_loss&quot)
+                if training_params.weights_labels is not None:
+                    weight_mask = tf.maximum(
+                        tf.reduce_max(tf.constant(
+                            np.array(training_params.weights_labels, dtype=np.float32)[None, None, None])
+                                      * labels_floats, axis=-1), 1.0)
+                    per_pixel_loss = per_pixel_loss * weight_mask[:, :, :, None]
+        else:
+            raise NotImplementedError
+
+        margin = training_params.training_margin
+        input_shapes = features[&quotshapes&quot]
+        with tf.name_scope(&quotLoss&quot):
+            def _fn(_in):
+                output, shape = _in
+                return tf.reduce_mean(output[margin:shape[0] - margin, margin:shape[1] - margin])
+
+            per_img_loss = tf.map_fn(_fn, (per_pixel_loss, input_shapes), dtype=tf.float32)
+            loss = tf.reduce_mean(per_img_loss, name=&quotloss&quot)
+
+        loss += regularized_loss
+    else:
+        loss, regularized_loss = None, None
+
+    &#47&#47 Train
+    &#47&#47 -----
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        &#47&#47 &gt;&gt; Stucks the training... Why ?
+        &#47&#47 ema = tf.train.ExponentialMovingAverage(0.9)
+        &#47&#47 tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, ema.apply([loss]))
+        &#47&#47 ema_loss = ema.average(loss)
+
+        if training_params.exponential_learning:
+            global_step = tf.train.get_or_create_global_step()
+            learning_rate = tf.train.exponential_decay(training_params.learning_rate, global_step, decay_steps=200,
+                                                       decay_rate=0.95, staircase=False)
+        else:
+            learning_rate = training_params.learning_rate
+        tf.summary.scalar(&quotlearning_rate&quot, learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate)
+        with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+            train_op = optimizer.minimize(loss, global_step=tf.train.get_or_create_global_step())
+    else:
+        ema_loss, train_op = None, None
+
+    &#47&#47 Summaries
+    &#47&#47 ---------
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        with tf.name_scope(&quotsummaries&quot):
+            tf.summary.scalar(&quotlosses/loss&quot, loss)
+            tf.summary.scalar(&quotlosses/loss_per_batch&quot, loss)
+            tf.summary.scalar(&quotlosses/regularized_loss&quot, regularized_loss)
+            if prediction_type == PredictionType.CLASSIFICATION:
+                tf.summary.image(&quotoutput/prediction&quot,
+                                 tf.image.resize_images(class_to_label_image(prediction_labels, classes_file),
+                                                        tf.cast(tf.shape(network_output)[1:3] / 3, tf.int32)),
+                                 max_outputs=1)
+                if model_params.n_classes == 3:
+                    tf.summary.image(&quotoutput/probs&quot,
+                                     tf.image.resize_images(prediction_probs[:, :, :, :],
+                                                            tf.cast(tf.shape(network_output)[1:3] / 3, tf.int32)),
+                                     max_outputs=1)
+                if model_params.n_classes == 2:
+                    tf.summary.image(&quotoutput/probs&quot,
+                                     tf.image.resize_images(prediction_probs[:, :, :, 1:2],
+                                                            tf.cast(tf.shape(network_output)[1:3] / 3, tf.int32)),
+                                     max_outputs=1)
+            elif prediction_type == PredictionType.REGRESSION:
+                summary_img = tf.nn.relu(network_output)[:, :, :, 0:1]  &#47&#47 Put negative values to zero
+                tf.summary.image(&quotoutput/prediction&quot, summary_img, max_outputs=1)
+            elif prediction_type == PredictionType.MULTILABEL:
+                labels_visualization = tf.cast(prediction_labels, tf.int32)
+                labels_visualization = utils.multiclass_to_label_image(labels_visualization, classes_file)
+                tf.summary.image(&quotoutput/prediction_image&quot,
+                                 tf.image.resize_images(labels_visualization,
+                                                        tf.cast(tf.shape(labels_visualization)[1:3] / 3, tf.int32)),
+                                 max_outputs=1)
+                class_dim = prediction_probs.get_shape().as_list()[-1]
+                for c in range(0, class_dim):
+                    tf.summary.image(&quotoutput/prediction_probs_{}&quot.format(c),
+                                     tf.image.resize_images(prediction_probs[:, :, :, c:c + 1],
+                                                            tf.cast(tf.shape(network_output)[1:3] / 3, tf.int32)),
+                                     max_outputs=1)
+
+                    &#47&#47 beta = tf.get_default_graph().get_tensor_by_name(&quotupsampling/deconv_5/conv5/batch_norm/beta/read:0&quot)
+                    &#47&#47 tf.summary.histogram(&quotBeta&quot, beta)
+
+    &#47&#47 Evaluation
+    &#47&#47 ----------
+    if mode == tf.estimator.ModeKeys.EVAL:
+        if prediction_type == PredictionType.CLASSIFICATION:
+            metrics = {&quotaccuracy&quot: tf.metrics.accuracy(labels, predictions=prediction_labels)}
+        elif prediction_type == PredictionType.REGRESSION:
+            metrics = {&quotaccuracy&quot: tf.metrics.mean_squared_error(labels, predictions=prediction_labels)}
+        elif prediction_type == PredictionType.MULTILABEL:
+            metrics = {&quoteval/MSE&quot: tf.metrics.mean_squared_error(tf.cast(labels, tf.float32),
+                                                                 predictions=prediction_probs),
+                       &quoteval/accuracy&quot: tf.metrics.accuracy(tf.cast(labels, tf.bool),
+                                                            predictions=tf.cast(prediction_labels, tf.bool))
+                       }
+    else:
+        metrics = None
+
+    &#47&#47 Export
+    &#47&#47 ------
+    if mode == tf.estimator.ModeKeys.PREDICT:
+
+        export_outputs = dict()
+
+        if &quotoriginal_shape&quot in features.keys():
+            with tf.name_scope(&quotResizeOutput&quot):
+                resized_predictions = dict()
+                &#47&#47 Resize all the elements in predictions
+                for k, v in predictions.items():
+                    &#47&#47 Labels is rank-3 so we need to be careful in using tf.image.resize_images
+                    assert isinstance(v, tf.Tensor)
+                    v2 = v if len(v.get_shape()) == 4 else v[:, :, :, None]
+                    v2 = tf.image.resize_images(v2, features[&quotoriginal_shape&quot],
+                                                method=tf.image.ResizeMethod.BILINEAR if v.dtype == tf.float32
+                                                else tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+                    v2 = v2 if len(v.get_shape()) == 4 else v2[:, :, :, 0]
+                    <a id="change">resized_predictions[k]</a> = v2
+                export_outputs[&quotresized_output&quot] = tf.estimator.export.PredictOutput(resized_predictions)
+
+            predictions[&quotoriginal_shape&quot] = features[&quotoriginal_shape&quot]
+
+        <a id="change">export_outputs[&quotoutput&quot]</a> = tf.estimator.export.PredictOutput(predictions)
+
+        <a id="change">export_outputs[tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY]</a> = export_outputs[&quotoutput&quot]
+    else:
+        export_outputs = None
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    elif prediction_type == PredictionType.MULTILABEL:
+        with tf.name_scope(&quotprediction_ops&quot):
+            prediction_probs = tf.nn.sigmoid(network_output, name=&quotsigmoid&quot)  &#47&#47 [B,H,W,C]
+            prediction_labels = <a id="change">tf.cast(tf.greater_equal(prediction_probs, 0.5, name=&quotlabels&quot), tf.int32)</a>  &#47&#47 [B,H,W,C]
+            predictions = {&quotprobs&quot: prediction_probs, &quotlabels&quot: prediction_labels}
+    else:
+        raise NotImplementedError
+
+    &#47&#47 Loss
+    &#47&#47 ----
+    if mode in [tf.estimator.ModeKeys.TRAIN, tf.estimator.ModeKeys.EVAL]:
+        regularized_loss = tf.losses.get_regularization_loss()
+        if prediction_type == PredictionType.CLASSIFICATION:
+            onehot_labels = tf.one_hot(indices=labels, depth=model_params.n_classes)
+            with tf.name_scope("loss"):
+                per_pixel_loss = tf.nn.softmax_cross_entropy_with_logits(logits=network_output,
+                                                                         labels=onehot_labels, name=&quotper_pixel_loss&quot)
+                if training_params.focal_loss_gamma &gt; 0.0:
+                    modulation = tf.pow(tf.reduce_max(
+                        tf.multiply(-training_params.focal_loss_alpha*(1. - prediction_probs), onehot_labels)),
+                                        training_params.focal_loss_gamma)
+                    per_pixel_loss = tf.multiply(per_pixel_loss, modulation)
+
+                if training_params.weights_labels is not None:
+                    weight_mask = tf.reduce_sum(
+                        tf.constant(np.array(training_params.weights_labels, dtype=np.float32)[None, None, None]) *
+                        onehot_labels, axis=-1)
+                    per_pixel_loss = per_pixel_loss * weight_mask
+                if training_params.local_entropy_ratio &gt; 0:
+                    assert &quotweight_maps&quot in features
+                    r = training_params.local_entropy_ratio
+                    per_pixel_loss = per_pixel_loss * ((1 - r) + r * features[&quotweight_maps&quot])
+
+        elif prediction_type == PredictionType.REGRESSION:
+            per_pixel_loss = tf.squared_difference(labels, network_output, name=&quotper_pixel_loss&quot)
+        elif prediction_type == PredictionType.MULTILABEL:
+            with tf.name_scope(&quotsigmoid_xentropy_loss&quot):
+                labels_floats = tf.cast(labels, tf.float32)
+                per_pixel_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=labels_floats,
+                                                                         logits=network_output, name=&quotper_pixel_loss&quot)
+                if training_params.weights_labels is not None:
+                    weight_mask = tf.maximum(
+                        tf.reduce_max(tf.constant(
+                            np.array(training_params.weights_labels, dtype=np.float32)[None, None, None])
+                                      * labels_floats, axis=-1), 1.0)
+                    per_pixel_loss = per_pixel_loss * weight_mask[:, :, :, None]
+        else:
+            raise NotImplementedError
+
+        margin = training_params.training_margin
+        input_shapes = features[&quotshapes&quot]
+        with tf.name_scope(&quotLoss&quot):
+            def _fn(_in):
+                output, shape = _in
+                return tf.reduce_mean(output[margin:shape[0] - margin, margin:shape[1] - margin])
+
+            per_img_loss = tf.map_fn(_fn, (per_pixel_loss, input_shapes), dtype=tf.float32)
+            loss = tf.reduce_mean(per_img_loss, name=&quotloss&quot)
+
+        loss += regularized_loss
+    else:
+        loss, regularized_loss = None, None
+
+    &#47&#47 Train
+    &#47&#47 -----
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        &#47&#47 &gt;&gt; Stucks the training... Why ?
+        &#47&#47 ema = tf.train.ExponentialMovingAverage(0.9)
+        &#47&#47 tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, ema.apply([loss]))
+        &#47&#47 ema_loss = ema.average(loss)
+
+        if training_params.exponential_learning:
+            global_step = tf.train.get_or_create_global_step()
+            learning_rate = tf.train.exponential_decay(training_params.learning_rate, global_step, decay_steps=200,
+                                                       decay_rate=0.95, staircase=False)
+        else:
+            learning_rate = training_params.learning_rate
+        tf.summary.scalar(&quotlearning_rate&quot, learning_rate)
+        optimizer = tf.train.AdamOptimizer(learning_rate)
+        with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
+            train_op = optimizer.minimize(loss, global_step=tf.train.get_or_create_global_step())
+    else:
+        ema_loss, train_op = None, None
+
+    &#47&#47 Summaries
+    &#47&#47 ---------
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        with tf.name_scope(&quotsummaries&quot):
+            tf.summary.scalar(&quotlosses/loss&quot, loss)
+            tf.summary.scalar(&quotlosses/loss_per_batch&quot, loss)
+            tf.summary.scalar(&quotlosses/regularized_loss&quot, regularized_loss)
+            if prediction_type == PredictionType.CLASSIFICATION:
+                tf.summary.image(&quotoutput/prediction&quot,
+                                 tf.image.resize_images(class_to_label_image(prediction_labels, classes_file),
+                                                        tf.cast(tf.shape(network_output)[1:3] / 3, tf.int32)),
+                                 max_outputs=1)
+                if model_params.n_classes == 3:
+                    tf.summary.image(&quotoutput/probs&quot,
+                                     tf.image.resize_images(prediction_probs[:, :, :, :],
+                                                            tf.cast(tf.shape(network_output)[1:3] / 3, tf.int32)),
+                                     max_outputs=1)
+                if model_params.n_classes == 2:
+                    tf.summary.image(&quotoutput/probs&quot,
+                                     tf.image.resize_images(prediction_probs[:, :, :, 1:2],
+                                                            tf.cast(tf.shape(network_output)[1:3] / 3, tf.int32)),
+                                     max_outputs=1)
+            elif prediction_type == PredictionType.REGRESSION:
+                summary_img = tf.nn.relu(network_output)[:, :, :, 0:1]  &#47&#47 Put negative values to zero
+                tf.summary.image(&quotoutput/prediction&quot, summary_img, max_outputs=1)
+            elif prediction_type == PredictionType.MULTILABEL:
+                labels_visualization = tf.cast(prediction_labels, tf.int32)
+                labels_visualization = utils.multiclass_to_label_image(labels_visualization, classes_file)
+                tf.summary.image(&quotoutput/prediction_image&quot,
+                                 tf.image.resize_images(labels_visualization,
+                                                        tf.cast(tf.shape(labels_visualization)[1:3] / 3, tf.int32)),
+                                 max_outputs=1)
+                class_dim = prediction_probs.get_shape().as_list()[-1]
+                for c in range(0, class_dim):
+                    tf.summary.image(&quotoutput/prediction_probs_{}&quot.format(c),
+                                     tf.image.resize_images(prediction_probs[:, :, :, c:c + 1],
+                                                            tf.cast(tf.shape(network_output)[1:3] / 3, tf.int32)),
+                                     max_outputs=1)
+
+                    &#47&#47 beta = tf.get_default_graph().get_tensor_by_name(&quotupsampling/deconv_5/conv5/batch_norm/beta/read:0&quot)
+                    &#47&#47 tf.summary.histogram(&quotBeta&quot, beta)
+
+    &#47&#47 Evaluation
+    &#47&#47 ----------
+    if mode == tf.estimator.ModeKeys.EVAL:
+        if prediction_type == PredictionType.CLASSIFICATION:
+            metrics = {&quotaccuracy&quot: tf.metrics.accuracy(labels, predictions=prediction_labels)}
+        elif prediction_type == PredictionType.REGRESSION:
+            metrics = {&quotaccuracy&quot: tf.metrics.mean_squared_error(labels, predictions=prediction_labels)}
+        elif prediction_type == PredictionType.MULTILABEL:
+            metrics = {&quoteval/MSE&quot: tf.metrics.mean_squared_error(tf.cast(labels, tf.float32),
+                                                                 predictions=prediction_probs),
+                       &quoteval/accuracy&quot: tf.metrics.accuracy(tf.cast(labels, tf.bool),
+                                                            predictions=tf.cast(prediction_labels, tf.bool))
+                       }
+    else:
+        metrics = None
+
+    &#47&#47 Export
+    &#47&#47 ------
+    if mode == tf.estimator.ModeKeys.PREDICT:
+
+        export_outputs = dict()
+
+        if &quotoriginal_shape&quot in features.keys():
+            with tf.name_scope(&quotResizeOutput&quot):
+                resized_predictions = dict()
+                &#47&#47 Resize all the elements in predictions
+                for k, v in predictions.items():
+                    &#47&#47 Labels is rank-3 so we need to be careful in using tf.image.resize_images
+                    assert isinstance(v, tf.Tensor)
+                    v2 = v if len(v.get_shape()) == 4 else v[:, :, :, None]
+                    v2 = tf.image.resize_images(v2, features[&quotoriginal_shape&quot],
+                                                method=tf.image.ResizeMethod.BILINEAR if v.dtype == tf.float32
+                                                else tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+                    v2 = v2 if len(v.get_shape()) == 4 else v2[:, :, :, 0]
+                    <a id="change">resized_predictions[k]</a> = v2
+                export_outputs[&quotresized_output&quot] = tf.estimator.export.PredictOutput(resized_predictions)
+
+            predictions[&quotoriginal_shape&quot] = features[&quotoriginal_shape&quot]
+
+        <a id="change">export_outputs[&quotoutput&quot]</a> = tf.estimator.export.PredictOutput(predictions)
+
+        <a id="change">export_outputs[tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY]</a> = export_outputs[&quotoutput&quot]
+    else:
+        export_outputs = None
+</code></pre>

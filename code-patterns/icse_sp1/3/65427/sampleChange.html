@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            print(msg.format(iteration, current))
+
+    &#47&#47 Compute the ratio of pixels perturbed by the algorithm
+    percent_perturbed = float(iteration * 2) / <a id="change">float(
+        FLAGS.img_rows * FLAGS.img_cols)</a>
+
+    &#47&#47 Report success when the adversarial example is misclassified in the
+    &#47&#47 target class
+    if current == target:</code></pre><h3>After Change</h3><pre><code class='java'>
+    adv_x = copy.copy(sample)
+    &#47&#47 count the number of features. For MNIST, 1x28x28 = 784; for
+    &#47&#47 CIFAR, 3x32x32 = 3072; etc.
+    <a id="change">nb_features = np.product(adv_x.shape[1:])</a>
+    &#47&#47 reshape sample for sake of standardization
+    original_shape = adv_x.shape
+    adv_x = np.reshape(adv_x, (1, nb_features))
+    &#47&#47 compute maximum number of iterations
+    max_iters = np.floor(nb_features * gamma / 2)
+    print(&quotMaximum number of iterations: {0}&quot.format(max_iters))
+
+    &#47&#47 Compute our initial search domain. We optimize the initial search domain
+    &#47&#47 by removing all features that are already at their maximum values (if
+    &#47&#47 increasing input features---otherwise, at their minimum value).
+    if increase:
+        search_domain = set([i for i in xrange(nb_features)
+                             if adv_x[0, i] &lt; clip_max])
+    else:
+        search_domain = set([i for i in xrange(nb_features)
+                             if adv_x[0, i] &gt; clip_min])
+
+    &#47&#47 Initialize the loop variables
+    iteration = 0
+    current = utils_tf.model_argmax(sess, x, predictions, <a id="change">np.reshape(adv_x, original_shape)</a>)
+
+    &#47&#47 Repeat this main loop until we have achieved misclassification
+    while (current != target and iteration &lt; max_iters</code></pre>

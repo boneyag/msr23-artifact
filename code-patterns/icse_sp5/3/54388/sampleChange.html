@@ -1,0 +1,108 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Owner / Admin
+    if users.can_manage_infrastructure(user_id=_current_user_id):
+        node.environments.delete_associations(environment_id=_worker_id)
+        <a id="change">node.environments.delete(id=_worker_id)</a>
+    else:  &#47&#47 Env Owner
+        envs = [
+            int(env.id)
+            for env in node.environments.get_environments(user=_current_user_id)</code></pre><h3>After Change</h3><pre><code class='java'>
+def del_worker_msg(
+    msg: DeleteWorkerMessage, node: AbstractNode, verify_key: VerifyKey
+) -&gt; DeleteWorkerResponse:
+    <a id="change">try:
+        &#47&#47 Get Payload Content
+        worker_id = msg.content.get("worker_id", None)
+        _current_user_id = msg.content.get("current_user", None)
+
+        users = node.users
+        if not _current_user_id:
+            _current_user_id = users.first(
+                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            ).id
+
+        is_admin = users.can_manage_infrastructure(user_id=_current_user_id)
+
+        envs = [
+            int(env.id)
+            for env in node.environments.get_environments(user=_current_user_id)
+        ]
+        created_by_current_user = int(worker_id) in envs
+
+        &#47&#47 Owner / Admin
+        if not is_admin and not created_by_current_user:
+            raise AuthorizationError("You&quotre not allowed to delete this worker!")
+
+        env = node.environments.first(id=worker_id)
+        _config = Config(provider=env.provider, app=Config(name="worker", id=worker_id))
+
+        success = Provider(_config).destroy()
+        if success:
+            node.environments.set(
+                id=worker_id, state=states["destroyed"], destroyed_at=datetime.now()
+            )
+        else:
+            raise Exception("Worker deletion failed")
+
+        return DeleteWorkerResponse(
+            address=msg.reply_to,
+            status_code=200,
+            content={"msg": "Worker was deleted successfully!"},
+        )
+    except Exception as e:
+        return DeleteWorkerResponse(
+            address=msg.reply_to, status_code=False, content={"error": str(e)}
+        )
+
+
+&#47&#47 def update_worker_msg(
+&#47&#47     msg: UpdateWorkerMessage,
+&#47&#47     node: AbstractNode,
+&#47&#47     verify_key: VerifyKey,
+&#47&#47 ) -&gt; UpdateWorkerResponse:
+&#47&#47     &#47&#47 Get Payload Content
+&#47&#47     _worker_id = msg.content.get("worker_id", None)
+&#47&#47     _current_user_id = msg.content.get("current_user", None)
+&#47&#47
+&#47&#47     env_parameters = {
+&#47&#47         i: msg.content[i]
+&#47&#47         for i in msg.content.keys()
+&#47&#47         if i in list(Environment.__table__.columns.keys())
+&#47&#47     }
+&#47&#47
+&#47&#47     users = node.users
+&#47&#47     if not _current_user_id:
+&#47&#47         _current_user_id = users.first(
+&#47&#47             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+&#47&#47         ).id
+&#47&#47
+&#47&#47     _current_user = users.first(id=_current_user_id)
+&#47&#47
+&#47&#47     &#47&#47 Owner / Admin
+&#47&#47     if users.can_manage_infrastructure(user_id=_current_user_id):
+&#47&#47         node.environments.modify({"id": _worker_id}, env_parameters)
+&#47&#47     else:  &#47&#47 Env Owner
+&#47&#47         envs = [
+&#47&#47             int(env.id)
+&#47&#47             for env in node.environments.get_environments(user=_current_user_id)
+&#47&#47         ]
+&#47&#47         if int(_worker_id) in envs:
+&#47&#47             node.environments.modify({"id": _worker_id}, env_parameters)
+&#47&#47         else:
+&#47&#47             raise AuthorizationError(
+&#47&#47                 "You&quotre not allowed to update this environment information!"
+&#47&#47             )
+&#47&#47     return UpdateWorkerResponse(
+&#47&#47         address=msg.reply_to,
+&#47&#47         status_code=200,
+&#47&#47         content={"msg": "Worker was updated succesfully!"},
+&#47&#47     )
+
+
+</a>class DomainInfrastructureService(ImmediateNodeServiceWithReply):
+
+    msg_handler_map = {
+        CreateWorkerMessage: create_worker_msg,</code></pre>

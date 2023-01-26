@@ -1,0 +1,33 @@
+<html><h3>b2756dda944a6a65e98bedc51cbe42238222ccf0,examples/toy_model_tpu.py,,toy_model,#Any#Any#,97
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  io_dim = mtf.Dimension(&quotio&quot, FLAGS.io_size)
+
+  x = mtf.import_tf_tensor(mesh, features, mtf.Shape([batch_dim, io_dim]))
+  h = <a id="change">mtf.layers.dense(x, hidden_dim, name=&quotlayer1&quot, use_bias=False)</a>
+  y = mtf.layers.dense(h, io_dim, name=&quotlayer2&quot, use_bias=False)
+
+  loss = mtf.reduce_sum(mtf.square(y - x))
+  return y, loss</code></pre><h3>After Change</h3><pre><code class='java'>
+  x = mtf.import_tf_tensor(mesh, features, mtf.Shape([batch_dim, io_dim]))
+  x = mtf.cast(x, activation_dtype)
+  h = x
+  <a id="change">for lnum in xrange(FLAGS.num_hidden_layers + 1):
+    if lnum + 1 == FLAGS.num_hidden_layers + 1:
+      dim = io_dim
+    elif lnum % 2 == 0:
+      dim = mtf.Dimension(&quothidden_even&quot, FLAGS.hidden_size)
+    else:
+      dim = mtf.Dimension(&quothidden_odd&quot, FLAGS.hidden_size)
+    h = mtf.layers.dense(
+        h, dim,
+        use_bias=False,
+        master_dtype=master_dtype,
+        slice_dtype=slice_dtype,
+        name=&quotlayer_%d&quot % lnum)
+ </a> y = h
+
+  loss = mtf.reduce_mean(mtf.square(y - x))
+  return y, loss</code></pre><img src="271754346.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/mesh/commit/b2756dda944a6a65e98bedc51cbe42238222ccf0#diff-38259b7d9e6023f2127b193be0a594f5329b697dbc479c3f3a2e7b6b449793bcL100' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/mesh</div><div id='commit'> Commit Name: b2756dda944a6a65e98bedc51cbe42238222ccf0</div><div id='time'> Time: 2018-10-31</div><div id='author'> Author: noam@google.com</div><div id='file'> File Name: examples/toy_model_tpu.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: toy_model</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-tf/commit/3c40fb8c1476e9f3e2acfbf9d6bbe56d3c1b0618#diff-819908a8096229cfb92a8f8bb029178989846b59a8ee84e8a7fc1085b3791d5dL18' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-tf</div><div id='commit'> Commit Name: 3c40fb8c1476e9f3e2acfbf9d6bbe56d3c1b0618</div><div id='time'> Time: 2019-07-04</div><div id='author'> Author: guillaume.klein@systrangroup.com</div><div id='file'> File Name: opennmt/tests/checkpoint_test.py</div><div id='class'> Class Name: _DummyModel</div><div id='method'> Method Name: call</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/4955b57810297f6a615273e8d8f46f5eb3f55197#diff-f59734838cbf3ab8c5b1ff3eff2bb221b4e8a817cb0f9b92b9c1e312a89d389fL137' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 4955b57810297f6a615273e8d8f46f5eb3f55197</div><div id='time'> Time: 2019-12-20</div><div id='author'> Author: pengchong@google.com</div><div id='file'> File Name: models/official/detection/modeling/architecture/heads.py</div><div id='class'> Class Name: FastrcnnHead</div><div id='method'> Method Name: __call__</div><BR>

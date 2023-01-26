@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        b(xnew), atol=1e-15, rtol=1e-15)
+
+        &#47&#47 scalar `x` is handled
+        ynew = <a id="change">[splev(x, b) for x in xnew]</a>
+        assert_allclose(ynew, b(xnew), atol=1e-15, rtol=1e-15)
+
+        &#47&#47 with n-D coefficients, there&quots a quirck.
+        &#47&#47 If everything is done with splrep/splprep and splev, there are no</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 With n-D coefficients, there&quots a quirck:
+        &#47&#47 splev(x, BSpline) is equivalent to BSpline(x)
+        <a id="change">with warnings.catch_warnings():
+            warnings.simplefilter(&quotignore&quot, DeprecationWarning)
+            assert_allclose(splev(xnew, b2),
+                            b2(xnew), atol=1e-15, rtol=1e-15)
+
+        &#47&#47 However, splev(x, BSpline.tck) needs some transposes. This is because
+        &#47&#47 BSpline interpolates along the first axis, while the legacy FITPACK
+        &#47&#47 wrapper does list(map(...)) which effectively interpolates along the
+        &#47&#47 last axis. Like so:
+       </a> sh = tuple(range(1, b2.c.ndim)) + (0,)   &#47&#47 sh = (1, 2, 0)
+        cc = b2.c.transpose(sh)
+        tck = (b2.t, cc, b2.k)
+        assert_allclose(splev(xnew, tck),</code></pre>

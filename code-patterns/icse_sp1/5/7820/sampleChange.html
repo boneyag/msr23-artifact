@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  Returns:
+    tpu_spec: the TPUEstimatorSpec to run training, evaluation, or prediction.
+  
+  <a id="change">cls_outputs, box_outputs = model(
+      features,
+      min_level=params[&quotmin_level&quot],
+      max_level=params[&quotmax_level&quot],
+      num_classes=params[&quotnum_classes&quot],
+      num_anchors=len(params[&quotaspect_ratios&quot] * params[&quotnum_scales&quot]),
+      resnet_depth=params[&quotresnet_depth&quot],
+      is_training_bn=params[&quotis_training_bn&quot])</a>
+  levels = cls_outputs.keys()
+
+  &#47&#47 First check if it is in PREDICT mode.
+  if mode == tf.estimator.ModeKeys.PREDICT:</code></pre><h3>After Change</h3><pre><code class='java'>
+        is_training_bn=params[&quotis_training_bn&quot])
+
+  if params[&quotuse_bfloat16&quot]:
+    <a id="change">with bfloat16.bfloat16_scope():
+      cls_outputs, box_outputs = _model_outputs()
+      levels = cls_outputs.keys()
+      for level in levels:
+        cls_outputs[level] = tf.cast(cls_outputs[level], tf.float32)
+        box_outputs[level] = tf.cast(box_outputs[level], tf.float32)
+ </a> else:
+    cls_outputs, box_outputs = _model_outputs()
+    levels = cls_outputs.keys()
+</code></pre>

@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Should we consider a sample be the instance, or the batch?
+        diff = X - self.m
+        incr = (1-alpha) * diff
+        <a id="change">self.m += incr.mean(axis=0)</a>
+        self.v += (diff * incr).mean(axis=0)
+        self.v *= alpha
+
+        Xhat = _forward(self.ops, X, mu, var)</code></pre><h3>After Change</h3><pre><code class='java'>
+        return y
+
+    def begin_update(self, X, drop=0.):
+        <a id="change">if drop is None:
+            return self.predict(X), None
+       </a> assert X.dtype == &quotfloat32&quot
+        X, backprop_child = self.child.begin_update(X, drop=0.)
+        N, mu, var = _get_moments(self.ops, X)
+        var += self.eps
+        self.r = min(self.rmax, max(1. / self.rmax, var / self.v))
+        self.d = min(self.dmax, max(-self.dmax, (mu-self.m) / self.v))
+        self.nr_upd += 1
+
+        &#47&#47 I&quotm not sure this is the best thing to do --
+        &#47&#47 Should we consider a sample be the instance, or the batch?
+        &#47&#47 If we want the variance of the inputs it should be like:
+        &quot&quot&quot
+        diff = X - self.m
+        incr = (1-alpha) * diff
+        self.m += incr.mean(axis=0)
+        self.v += (diff * incr).mean(axis=0)
+        self.v *= alpha
+        &quot&quot&quot
+        self.m += self.alpha * (mu - self.m)
+        <a id="change">self.v += self.alpha * (var - self.v)</a>
+        Xhat = _forward(self.ops, X, mu, var)
+        Xhat *= self.r
+        Xhat += self.d
+</code></pre>

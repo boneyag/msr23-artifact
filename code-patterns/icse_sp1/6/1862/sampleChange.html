@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+	&#47&#47 Choose dest folder
+	if destfolder is None:
+		<a id="change">destfolder = str(Path(video).parents[0])</a>
+	os.chdir(destfolder)
+	
+	print("Processing %s"%(video))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    cfg = auxiliaryfunctions.read_config(config)
+    scorer=auxiliaryfunctions.GetScorerName(cfg,shuffle,trainFraction = cfg[&quotTrainingFraction&quot][trainingsetindex])
+    
+    <a id="change">Videos=auxiliaryfunctions.Getlistofvideos(videos,videotype)</a>
+    <a id="change">for video in Videos:
+        print(video)
+        if destfolder is None:
+            videofolder = str(Path(video).parents[0])
+        else:
+            videofolder=destfolder
+        
+        print("Processing %s"%(video))
+        
+        dataname = str(Path(video).stem)+scorer
+        processedname=dataname.split(&quot.h5&quot)[0]+&quot_skeleton.h5&quot
+        try:
+            &#47&#47 See if file was already proccessed
+            Dataframe = pd.read_hdf(os.path.join(videofolder, processedname))
+            print("Video already processed...")
+        except FileNotFoundError:
+            try:
+                Dataframe = pd.read_hdf(os.path.join(videofolder,dataname+&quot.h5&quot))
+                &#47&#47 Process skeleton
+                bones = {}
+                for bp1, bp2 in cfg[&quotskeleton&quot]:
+                    name = "{}_{}".format(bp1, bp2)
+                    bones[name] = analyzebone(Dataframe[scorer][bp1], Dataframe[scorer][bp2])
+                
+                skeleton = pd.concat(bones, axis=1)
+                &#47&#47 save
+                skeleton.to_hdf(processedname, &quotdf_with_missing&quot, format=&quottable&quot, mode=&quotw&quot)
+                if save_as_csv:
+                    skeleton.to_csv(processedname.split(&quot.h5&quot)[0]+&quot.csv&quot)
+    
+            except FileNotFoundError:
+                print("Video not analyzed -- Run analyze_videos first.")
+                        
+</a>if __name__ == &quot__main__&quot:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(&quotconfig&quot)
+    parser.add_argument(&quotvideos&quot)</code></pre>

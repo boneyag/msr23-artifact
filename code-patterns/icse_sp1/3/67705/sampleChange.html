@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        model = load_tagger_model(basename, sess=sess, **kwargs)
+        softmax_output = tf.nn.softmax(model.probs)
+        values, indices = tf.nn.top_k(softmax_output, 1)
+        return <a id="change">model</a>, model.best, values
+
+    def _create_rpc_call(self, sess, basename):
+        model, classes, values = self._create_model(sess, basename)</code></pre><h3>After Change</h3><pre><code class='java'>
+        model = load_tagger_model(basename, sess=sess, **kwargs)
+        softmax_output = tf.nn.softmax(model.probs)
+        values, _ = tf.nn.top_k(softmax_output, 1)
+        <a id="change">indices = model.best</a>
+        if self.return_labels:
+            labels = read_json(basename + &quot.labels&quot)
+            list_of_labels = [&quot&quot] * len(labels)
+            for label, idval in labels.items():
+                list_of_labels[idval] = label
+            class_tensor = tf.constant(list_of_labels)
+            table = tf.contrib.lookup.index_to_string_table_from_tensor(class_tensor)
+            classes = <a id="change">table.lookup(tf.to_int64(indices))</a>
+            return model, classes, values
+        else:
+            return model, indices, values
+</code></pre>

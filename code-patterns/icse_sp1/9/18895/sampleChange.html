@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    logger.error(&quotexception processing {0}: {1}&quot.format(pcap_file, err))
+
+        if csv_out_dir is not None:
+            <a id="change">for pcap_file, pcap_sessions in pcap_file_sessions.items():
+                pcap_to_sessioncsv(csv_out_dir, pcap_file, pcap_sessions)
+       </a> return pcap_file_sessions
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &quot&quot&quot
+    &#47&#47 Process smaller files first - many small files can be processed in parallel.
+    pcap_files = sorted(pcap_files, key=os.path.getsize, reverse=True)
+    <a id="change">csv_filenames = {}</a>
+    for pcap_file in pcap_files:
+        if csv_out_dir is not None:
+            csv_dir = csv_out_dir
+        else:
+            csv_dir = <a id="change">os</a>.path.basename(pcap_file)
+        csv_file = pcap_filename_to_csv_filename(pcap_file, csv_dir)
+        csv_filenames[pcap_file] = csv_file
+
+    with ProcessPoolExecutor() as executor:
+        unparsed_pcaps = []
+        pcap_file_sessions = {}
+        &#47&#47 Retrieve pre-cached CSVs.
+        for pcap_file in pcap_files:
+            <a id="change">csv_file = csv_filenames[pcap_file]</a>
+            if <a id="change">os</a>.path.exists(csv_file):
+                pcap_file_sessions[pcap_file] = sessioncsv_to_sessions(csv_filename)
+            else:
+                unparsed_pcaps.append(pcap_file)
+        futures = {
+            executor.submit(sessionizer, pcap_file, duration, threshold_time): pcap_file
+            for pcap_file in unparsed_pcaps}
+        pcap_file_sessions = {}
+        for future in as_completed(futures):
+            pcap_file = futures.get(future, None)
+            if pcap_file:
+                logger.info(&quotgot sessionizer result from {0}&quot.format(pcap_file))
+                try:
+                    &#47&#47 24h timeout per file.
+                    pcap_file_sessions[pcap_file] = future.result(timeout=(24 * 60 * 60))
+                    csv_file = csv_filenames[pcap_file]
+                    pcap_to_sessioncsv(<a id="change">os.path.dirname(csv_file)</a>, pcap_file, pcap_file_sessions[pcap_file])
+                except Exception as err:
+                    logger.error(&quotexception processing {0}: {1}&quot.format(pcap_file, err))
+        return pcap_file_sessions</code></pre>

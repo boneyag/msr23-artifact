@@ -1,0 +1,35 @@
+<html><h3>bf4ccba3f001c0e1187a15d0f02ca251769c73c8,mlflow/store/sqlalchemy_store.py,SqlAlchemyStore,log_param,#SqlAlchemyStore#Any#Any#,200
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self._get_or_create(SqlParam, run_uuid=run_uuid, key=param.key,
+                                value=param.value)
+        except sqlalchemy.exc.IntegrityError:
+            <a id="change">raise MlflowException(&quotchanging parameter {} value is not allowed&quot.format((run_uuid,
+                                                                                      param)),
+                                  INVALID_PARAMETER_VALUE)</a>
+
+    def set_tag(self, run_uuid, tag):
+        run = self._get_run(run_uuid)
+        self._check_run_is_active(run)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Hence the rollback.
+            self.session.rollback()
+            existing_params = [p.value for p in run.params if p.key == param.key]
+            <a id="change">if len(existing_params) == 0:
+                raise MlflowException("Log param request failed for run ID={}. Attempted to log"
+                                      " param={}. Error={}".format(run_uuid,
+                                                                   (param.key, param.value),
+                                                                   str(ie)))
+            else:
+                old_value = existing_params[0]
+                raise MlflowException("Changing param value is not allowed. Param with key=&quot{}&quot was"
+                                      " already logged with value=&quot{}&quot for run ID=&quot{}. Attempted "
+                                      " logging new value &quot{}&quot.".format(param.key, old_value,
+                                                                        run_uuid, param.value),
+                                      INVALID_PARAMETER_VALUE)
+
+   </a> def get_param(self, run_uuid, param_name):
+        param = self.session.query(SqlParam).filter_by(run_uuid=run_uuid, key=param_name).first()
+        if param is None:
+            raise MlflowException(&quotParam={} does not exist&quot.format(param_name),</code></pre><img src="170869711.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mlflow/mlflow/commit/bf4ccba3f001c0e1187a15d0f02ca251769c73c8#diff-66bc108304bc8b841aa356538c453a6e9a7c60d7a8ee60527996914bea65794eL208' target='_blank'>Link</a></div><div id='project'> Project Name: mlflow/mlflow</div><div id='commit'> Commit Name: bf4ccba3f001c0e1187a15d0f02ca251769c73c8</div><div id='time'> Time: 2019-01-29</div><div id='author'> Author: mani@databricks.com</div><div id='file'> File Name: mlflow/store/sqlalchemy_store.py</div><div id='class'> Class Name: SqlAlchemyStore</div><div id='method'> Method Name: log_param</div><BR><BR><div id='link'><a href='https://github.com/mlflow/mlflow/commit/bf4ccba3f001c0e1187a15d0f02ca251769c73c8#diff-66bc108304bc8b841aa356538c453a6e9a7c60d7a8ee60527996914bea65794eL196' target='_blank'>Link</a></div><div id='project'> Project Name: mlflow/mlflow</div><div id='commit'> Commit Name: bf4ccba3f001c0e1187a15d0f02ca251769c73c8</div><div id='time'> Time: 2019-01-29</div><div id='author'> Author: mani@databricks.com</div><div id='file'> File Name: mlflow/store/sqlalchemy_store.py</div><div id='class'> Class Name: SqlAlchemyStore</div><div id='method'> Method Name: log_metric</div><BR><BR><div id='link'><a href='https://github.com/mlflow/mlflow/commit/469d93a7430bbb3e79140dfa31bd016b3b221c8a#diff-1eef12d971fc9ce2d4c18c7591f66bed137e0dcdee714880110ac0ff26e48128L174' target='_blank'>Link</a></div><div id='project'> Project Name: mlflow/mlflow</div><div id='commit'> Commit Name: 469d93a7430bbb3e79140dfa31bd016b3b221c8a</div><div id='time'> Time: 2020-08-03</div><div id='author'> Author: sueann@databricks.com</div><div id='file'> File Name: mlflow/store/artifact/dbfs_artifact_repo.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: dbfs_artifact_repo_factory</div><BR>

@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    tic = time.time()
+    for batch_id, seqs in enumerate(loader_dev):
+        input_ids, valid_len, type_ids, label = seqs
+        out = <a id="change">model(
+            input_ids.as_in_context(ctx), type_ids.as_in_context(ctx),
+            valid_len.astype(&quotfloat32&quot).as_in_context(ctx))</a>
+        ls = loss_function(out, label.as_in_context(ctx)).mean()
+
+        step_loss += ls.asscalar()
+        metric.update([label], [out])</code></pre><h3>After Change</h3><pre><code class='java'>
+    for batch_id, seqs in enumerate(loader_dev):
+        input_ids, valid_length, segment_ids, label = seqs
+        input_ids = input_ids.as_in_context(ctx)
+        valid_length = <a id="change">valid_length</a>.as_in_context(ctx).astype(&quotfloat32&quot)
+        label = label.as_in_context(ctx)
+        if use_roberta:
+            out = model(input_ids, valid_length)
+        else:
+            out = <a id="change">model(input_ids, segment_ids.as_in_context(ctx), valid_length)</a>
+        ls = loss_function(out, label).mean()
+
+        step_loss += ls.asscalar()
+        metric.update([label], [out])</code></pre>

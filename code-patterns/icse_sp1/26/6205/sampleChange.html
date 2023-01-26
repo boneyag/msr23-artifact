@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            imgs_x = np.vstack((missing_parts, generated_missing_parts))
+
+            &#47&#47 First half are valid and second are fake
+            <a id="change">valid_y = np.array([1] * half_batch + [0] * half_batch).reshape(-1, 1)</a>
+
+            &#47&#47 Train the discriminator
+            d_loss = self.discriminator.train_on_batch(imgs_x, [imgs_x, valid_y])</code></pre><h3>After Change</h3><pre><code class='java'>
+        X_train = 2 * X_train - 1
+        y_train = y_train.reshape(-1, 1)
+
+        <a id="change">half_batch</a> = int(batch_size / 2)
+
+        for epoch in range(epochs):
+
+
+            &#47&#47 ---------------------
+            &#47&#47  Train Discriminator
+            &#47&#47 ---------------------
+
+            &#47&#47 Select a random half batch of images
+            idx = np.random.randint(0, X_train.shape[0], half_batch)
+            imgs = X_train[idx]
+
+            masked_imgs, missing, _ = self.mask_randomly(imgs)
+            
+            &#47&#47 Generate a half batch of new images
+            gen_missing = self.generator.predict(masked_imgs)
+
+            valid = np.ones(<a id="change">(half_batch, 1)</a>)
+            fake = <a id="change">np.zeros((half_batch, 1))</a>
+
+            &#47&#47 Train the discriminator
+            d_loss_real = self.discriminator.train_on_batch(missing, valid)
+            <a id="change">d_loss_fake = self.discriminator.train_on_batch(gen_missing, fake)</a>
+            <a id="change">d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)</a>
+
+            &#47&#47 ---------------------
+            &#47&#47  Train Generator</code></pre>

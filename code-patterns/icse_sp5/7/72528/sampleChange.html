@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    d = self.gan.discriminator(interpolated)
+
+    grad = torch_grad(outputs=d, inputs=interpolated,
+                               grad_outputs=<a id="change">torch.ones(d.size()).cuda()</a>,
+                               create_graph=True, retain_graph=True)[0]
+
+    grad = grad.view(self.gan.batch_size(), -1) </code></pre><h3>After Change</h3><pre><code class='java'>
+
+    grad = torch_grad(outputs=d.mean(), inputs=parameters, create_graph=True, retain_graph=True)
+
+    grad = [_g.view(-1) <a id="change">for</a> _g in grad]
+    grad_loss = <a id="change">[((torch.sqrt(torch.sum(_g**2, dim=0) +1e-12) - 1) ** 2).mean() for _g in grad]</a>
+    <a id="change">grad_loss = sum(grad_loss)</a>
+
+    loss = gamma*grad_loss
+    return [loss, loss]
+</code></pre>

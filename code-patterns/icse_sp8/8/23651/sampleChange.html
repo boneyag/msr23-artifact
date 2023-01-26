@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+class GPRegressionModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood):
+        super(GPRegressionModel, self).__init__(train_x, train_y, likelihood)
+        <a id="change">self.mean_module</a> = ConstantMean(constant_bounds=<a id="change">[-1e-5, 1e-5]</a>)
+        self.base_covar_module = RBFKernel(log_lengthscale_bounds=(-5, 6))
+        self.covar_module = InducingPointKernel(self.base_covar_module, inducing_points=torch.linspace(0, 1, 32))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+class GPRegressionModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood):
+        super(GPRegressionModel, self).__init__(train_x, train_y, likelihood)
+        <a id="change">self.mean_module</a> = ConstantMean(prior=<a id="change">SmoothedBoxPrior(-1e-5, 1e-5)</a>)
+        self.base_covar_module = RBFKernel(
+            log_lengthscale_prior=SmoothedBoxPrior(exp(-5), exp(6), sigma=0.1, log_transform=True)
+        )</code></pre>

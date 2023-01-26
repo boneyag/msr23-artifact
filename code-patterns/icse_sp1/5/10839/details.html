@@ -1,0 +1,111 @@
+<html><h3>332759f41664989156b7a2994e8c21ebc9e7f798,sklearn/impute/_iterative.py,IterativeImputer,fit_transform,#IterativeImputer#Any#Any#,521
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            )
+
+        if self.add_indicator:
+            <a id="change">self.indicator_ = MissingIndicator(
+                missing_values=self.missing_values, error_on_new=False)</a>
+            <a id="change">X_trans_indicator = self.indicator_.fit_transform(X)</a>
+        else:
+            self.indicator_ = None
+
+        if self.estimator is None:
+            from ..linear_model import BayesianRidge
+            self._estimator = BayesianRidge()
+        else:
+            self._estimator = clone(self.estimator)
+
+        self.imputation_sequence_ = []
+
+        if hasattr(self._estimator, &quotrandom_state&quot):
+            self._estimator.random_state = self.random_state_
+
+        self._min_value = -np.inf if self.min_value is None else self.min_value
+        self._max_value = np.inf if self.max_value is None else self.max_value
+
+        self.initial_imputer_ = None
+        X, Xt, mask_missing_values = self._initial_imputation(X)
+        if self.max_iter == 0 or np.all(mask_missing_values):
+            self.n_iter_ = 0
+            return Xt
+
+        &#47&#47 Edge case: a single feature. We return the initial ...
+        if Xt.shape[1] == 1:
+            self.n_iter_ = 0
+            return Xt
+
+        &#47&#47 order in which to impute
+        &#47&#47 note this is probably too slow for large feature data (d &gt; 100000)
+        &#47&#47 and a better way would be good.
+        &#47&#47 see: https://goo.gl/KyCNwj and subsequent comments
+        ordered_idx = self._get_ordered_idx(mask_missing_values)
+        self.n_features_with_missing_ = len(ordered_idx)
+
+        abs_corr_mat = self._get_abs_corr_mat(Xt)
+
+        n_samples, n_features = Xt.shape
+        if self.verbose &gt; 0:
+            print("[IterativeImputer] Completing matrix with shape %s"
+                  % (X.shape,))
+        start_t = time()
+        if not self.sample_posterior:
+            Xt_previous = Xt.copy()
+            normalized_tol = self.tol * np.max(np.abs(X[~mask_missing_values]))
+        for self.n_iter_ in range(1, self.max_iter + 1):
+            if self.imputation_order == &quotrandom&quot:
+                ordered_idx = self._get_ordered_idx(mask_missing_values)
+
+            for feat_idx in ordered_idx:
+                neighbor_feat_idx = self._get_neighbor_feat_idx(n_features,
+                                                                feat_idx,
+                                                                abs_corr_mat)
+                Xt, estimator = self._impute_one_feature(
+                    Xt, mask_missing_values, feat_idx, neighbor_feat_idx,
+                    estimator=None, fit_mode=True)
+                estimator_triplet = _ImputerTriplet(feat_idx,
+                                                    neighbor_feat_idx,
+                                                    estimator)
+                self.imputation_sequence_.append(estimator_triplet)
+
+            if self.verbose &gt; 1:
+                print(&quot[IterativeImputer] Ending imputation round &quot
+                      &quot%d/%d, elapsed time %0.2f&quot
+                      % (self.n_iter_, self.max_iter, time() - start_t))
+
+            if not self.sample_posterior:
+                inf_norm = np.linalg.norm(Xt - Xt_previous, ord=np.inf,
+                                          axis=None)
+                if self.verbose &gt; 0:
+                    print(&quot[IterativeImputer] &quot
+                          &quotChange: {}, scaled tolerance: {} &quot.format(
+                            inf_norm, normalized_tol))
+                if inf_norm &lt; normalized_tol:
+                    if self.verbose &gt; 0:
+                        print(&quot[IterativeImputer] Early stopping criterion &quot
+                              &quotreached.&quot)
+                    break
+                Xt_previous = Xt.copy()
+        else:
+            if not self.sample_posterior:
+                warnings.warn("[IterativeImputer] Early stopping criterion not"
+                              " reached.", ConvergenceWarning)
+        Xt[~mask_missing_values] = X[~mask_missing_values]
+
+        if self.add_indicator:
+            Xt = np.hstack((Xt, X_trans_indicator))
+        <a id="change">return Xt</a>
+
+    def transform(self, X):
+        Imputes all missing values in X.
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        X, Xt, mask_missing_values = self._initial_imputation(X)
+        if self.max_iter == 0 or np.all(mask_missing_values):
+            self.n_iter_ = 0
+            <a id="change">return super()._concatenate_indicator(Xt, X_indicator)</a>
+
+        &#47&#47 Edge case: a single feature. We return the initial ...
+        if Xt.shape[1] == 1:
+            self.n_iter_ = 0</code></pre><img src="71573780.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/scikit-learn/scikit-learn/commit/332759f41664989156b7a2994e8c21ebc9e7f798#diff-98b0d06a02f4e074776f1e2ad1505ee6fe9ebd73272ac67233e48524c251befcL521' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-learn/scikit-learn</div><div id='commit'> Commit Name: 332759f41664989156b7a2994e8c21ebc9e7f798</div><div id='time'> Time: 2019-10-28</div><div id='author'> Author: g.lemaitre58@gmail.com</div><div id='file'> File Name: sklearn/impute/_iterative.py</div><div id='class'> Class Name: IterativeImputer</div><div id='method'> Method Name: fit_transform</div><BR><BR><div id='link'><a href='https://github.com/pavlin-policar/openTSNE/commit/46379cefade313fee9fa99c8a6ebb62668918f82#diff-4dec53a5dc10f4d04da61430d574c792a8cad3627057d19fbcb5881e004c865fL773' target='_blank'>Link</a></div><div id='project'> Project Name: pavlin-policar/openTSNE</div><div id='commit'> Commit Name: 46379cefade313fee9fa99c8a6ebb62668918f82</div><div id='time'> Time: 2018-10-28</div><div id='author'> Author: pavlin.g.p@gmail.com</div><div id='file'> File Name: fastTSNE/tsne.py</div><div id='class'> Class Name: TSNE</div><div id='method'> Method Name: generate_initial_coordinates</div><BR><BR><div id='link'><a href='https://github.com/KrishnaswamyLab/PHATE/commit/e5a98adc53c682047bd6873c127c9c94588b28ab#diff-33d42cc50fe1b3acd3aed401816f031af5727849c68091181736865a5019f05eL20' target='_blank'>Link</a></div><div id='project'> Project Name: KrishnaswamyLab/PHATE</div><div id='commit'> Commit Name: e5a98adc53c682047bd6873c127c9c94588b28ab</div><div id='time'> Time: 2019-12-01</div><div id='author'> Author: scottgigante@gmail.com</div><div id='file'> File Name: Python/phate/mds.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: cmdscale_fast</div><BR><BR><div id='link'><a href='https://github.com/EducationalTestingService/skll/commit/46c488aeb460cebff7b536c2450fcb249cea02e1#diff-36df819f6729839975f282cd35115a1fb1de73a7ebac34987d574d1e4ea68e95L80' target='_blank'>Link</a></div><div id='project'> Project Name: EducationalTestingService/skll</div><div id='commit'> Commit Name: 46c488aeb460cebff7b536c2450fcb249cea02e1</div><div id='time'> Time: 2013-09-04</div><div id='author'> Author: mheilman@ets.org</div><div id='file'> File Name: skll/data.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _features_for_gen_func</div><BR>

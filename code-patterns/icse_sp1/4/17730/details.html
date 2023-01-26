@@ -1,0 +1,102 @@
+<html><h3>3eea3791dc36fbfc521b45b9eebd854c73908b62,dataPrepScripts/CreateTensor.py,,OutputAlnTensor,#Any#,52
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    beginToEnd = {}
+    with open(can_fn) as f:
+        for row in <a id="change">f.readlines()</a>:
+            row = row.split()
+            pos = int(row[1])
+            if ctgStart != None and pos &lt; ctgStart: continue</code></pre><h3>After Change</h3><pre><code class='java'>
+    centerToAln = {}
+
+    tensor_fpo = open(tensor_fn, "wb")
+    <a id="change">tensor_fp = subprocess.Popen(shlex.split("gzip -c"), stdin=subprocess.PIPE, stdout=tensor_fpo, stderr=sys.stderr, bufsize=8388608)</a>
+
+    for l in p.stdout:
+        l = l.split()
+        if l[0][0] == "@":
+            continue
+
+        QNAME = l[0]
+        FLAG = int(l[1])
+        RNAME = l[2]
+        POS = int(l[3]) - 1 &#47&#47 switch from 1-base to 0-base to match sequence index
+        CIGAR = l[5]
+        SEQ = l[9]
+        refPos = POS
+        queryPos = 0
+
+        endToCenter = {}
+        activeSet = set()
+
+        for m in re.finditer(cigarRe, CIGAR):
+            advance = int(m.group(1))
+            if m.group(2) == "S":
+                queryPos += advance
+            if m.group(2) in ("M", "=", "X"):
+                matches = []
+                for i in xrange(advance):
+                    matches.append( (refPos, SEQ[queryPos]) )
+                    if refPos in beginToEnd:
+                        rEnd, rCenter = beginToEnd[refPos]
+                        if rCenter not in activeSet:
+                            endToCenter[rEnd] = rCenter
+                            activeSet.add(rCenter)
+                            centerToAln.setdefault(rCenter, [])
+                            centerToAln[rCenter].append([])
+                    for center in list(activeSet):
+                        centerToAln[center][-1].append( (refPos, 0, refSeq[refPos], SEQ[queryPos] ) )
+                    if refPos in endToCenter:
+                        center = endToCenter[refPos]
+                        activeSet.remove(center)
+                    refPos += 1
+                    queryPos += 1
+
+            elif m.group(2) == "I":
+                queryAdv = 0
+                for i in range(advance):
+                    for center in list(activeSet):
+                        centerToAln[center][-1].append( (refPos, queryAdv, "-", SEQ[queryPos] ))
+                    queryPos += 1
+                    queryAdv += 1
+
+            elif m.group(2) == "D":
+                for i in xrange(advance):
+                    for center in list(activeSet):
+                        centerToAln[center][-1].append( (refPos, 0, refSeq[refPos], "-" ))
+                    if refPos in beginToEnd:
+                        rEnd, rCenter = beginToEnd[refPos]
+                        if rCenter not in activeSet:
+                            endToCenter[rEnd] = rCenter
+                            activeSet.add(rCenter)
+                            centerToAln.setdefault(rCenter, [])
+                            centerToAln[rCenter].append([])
+                    if refPos in endToCenter:
+                        center = endToCenter[refPos]
+                        activeSet.remove(center)
+                    refPos += 1
+
+
+        for center in centerToAln.keys():
+            if center + (param.flankingBaseNum+1) &lt; POS:
+                l =  GenerateTensor(ctgName, centerToAln[center], center, refSeq)
+                tensor_fp.stdin.write(l)
+                <a id="change">tensor_fp</a>.stdin.write("\n")
+                del centerToAln[center]
+
+    for center in centerToAln.keys():
+        l =  GenerateTensor(ctgName, centerToAln[center], center, refSeq)
+        tensor_fp.stdin.write(l)
+        tensor_fp.stdin.write("\n")
+
+    p.stdout.close()
+    p.wait()
+    tensor_fp.stdin.close()
+    <a id="change">tensor_fp.wait()</a>
+    tensor_fpo.close()
+
+
+if __name__ == "__main__":</code></pre><img src="100321690.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/aquaskyline/Clairvoyante/commit/3eea3791dc36fbfc521b45b9eebd854c73908b62#diff-0fe9ba0cb10562ff4e974967f77d63523f7b4a7b926fb57e23515ccd2a3aae23L55' target='_blank'>Link</a></div><div id='project'> Project Name: aquaskyline/Clairvoyante</div><div id='commit'> Commit Name: 3eea3791dc36fbfc521b45b9eebd854c73908b62</div><div id='time'> Time: 2017-09-13</div><div id='author'> Author: aquaskyline@gmail.com</div><div id='file'> File Name: dataPrepScripts/CreateTensor.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: OutputAlnTensor</div><BR><BR><div id='link'><a href='https://github.com/mynlp/ccg2lambda/commit/b5c5ee14adc3d343ceb1f7510027b8965e1f9af4#diff-067d4d1b620d4e191538f9b915ae333f7bb2fcf737463080cb53e4e5bce6b586L125' target='_blank'>Link</a></div><div id='project'> Project Name: mynlp/ccg2lambda</div><div id='commit'> Commit Name: b5c5ee14adc3d343ceb1f7510027b8965e1f9af4</div><div id='time'> Time: 2017-05-31</div><div id='author'> Author: pascual@nii.ac.jp</div><div id='file'> File Name: scripts/semantic_tools.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: prove_statements</div><BR><BR><div id='link'><a href='https://github.com/aquaskyline/Clairvoyante/commit/3eea3791dc36fbfc521b45b9eebd854c73908b62#diff-ac2f1510f7bd19d8c9e6aa655fa3691e751dfe178ddeac048058c5b448c2117fL5' target='_blank'>Link</a></div><div id='project'> Project Name: aquaskyline/Clairvoyante</div><div id='commit'> Commit Name: 3eea3791dc36fbfc521b45b9eebd854c73908b62</div><div id='time'> Time: 2017-09-13</div><div id='author'> Author: aquaskyline@gmail.com</div><div id='file'> File Name: dataPrepScripts/GetTruth.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: OutputVariant</div><BR>

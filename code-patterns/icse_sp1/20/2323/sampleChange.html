@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            ConcatBatches(
+                min_batch_size=config["train_batch_size"],
+                count_steps_by=config["multiagent"][
+                    "count_steps_by"])).for_each(<a id="change">TrainOneStep(workers)</a>)
+
+    return StandardMetricsReporting(train_op, workers, config)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            .for_each(ApplyGradients(workers)))
+    else:
+        &#47&#47 In normal mode, we execute one SGD step per each train batch.
+        <a id="change">if config["simple_optimizer"]:
+            train_step_op = TrainOneStep(workers)
+        else:
+            train_step_op = TrainTFMultiGPU(
+                workers=workers,
+                sgd_minibatch_size=config["train_batch_size"],
+                num_sgd_iter=1,
+                num_gpus=config["num_gpus"],
+                shuffle_sequences=True,
+                _fake_gpus=config["_fake_gpus"],
+                framework=config.get("framework"))
+
+       </a> train_op = rollouts.combine(
+            ConcatBatches(
+                min_batch_size=config["train_batch_size"],
+                count_steps_by=config["multiagent"][</code></pre>

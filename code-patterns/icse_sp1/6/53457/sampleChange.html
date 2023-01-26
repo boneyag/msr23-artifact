@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    async def post(self):
+        email = self.get_query_params(&quotemail&quot, self.get_query_params(&quotusername&quot))
+        account = await self.db.fetchone(&quotSELECT id FROM account WHERE email=%s&quot, email)
+        <a id="change">if account:
+            self.write({&quoterrcode&quot: 1, &quoterrmsg&quot: &quotThe email has already exist&quot})
+            return
+
+       </a> username = self.get_query_params(&quotusername&quot)
+        password = self.get_query_params(&quotpassword&quot)
+        password = bcrypt.hashpw(password.encode(&quotutf8&quot), bcrypt.gensalt())
+
+        uid = await self.db.insert(&quotINSERT INTO account (email, username, password, ip_addr) VALUES (%s, %s, %s, %s)&quot,
+                                   email, username, password, self.client_ip)
+        self.set_current_user(uid, username)
+        self.set_header(&quotContent-Type&quot, &quotapplication/json&quot)
+        response = {
+            &quoterrcode&quot: 0,
+            &quotuserinfo&quot: {&quotuid&quot: uid, &quotusername&quot: username}
+        }
+        <a id="change">self.write(response)</a>
+
+
+class LoginHandler(BaseHandler):
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.send_error(403, reason=&quotThe password does not match&quot)
+            return
+
+        <a id="change">try:
+            uid = await self.create_account(username, email, password)
+            self.set_secure_cookie(&quotuser&quot, json_encode({&quotuid&quot: uid, &quotusername&quot: username}))
+            &#47&#47 token = self.jwt_encode({&quotuid&quot: uid})
+            self.write({&quotuid&quot: uid, &quotusername&quot: username})
+        except pymysql.IntegrityError as e:
+            if await self.account_exists(email):
+                self.send_error(403, reason=&quotAn account with this email address already exists.&quot)
+            else:
+                raise e
+
+   </a> async def create_account(self, username, email, password) -&gt; int:
+        password = await self.run_in_executor(bcrypt.hashpw, password.encode(&quotutf8&quot), bcrypt.gensalt())
+        return await self.db.insert(&quotINSERT INTO account (email, username, password, ip_addr) VALUES (%s,%s,%s,%s)&quot,
+                                    email, username, password, self.client_ip)</code></pre>

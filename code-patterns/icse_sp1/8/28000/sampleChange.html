@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.diff = (x0_c - x1_c) * self.weight
+        y = xp.square(self.diff)
+        mask = y &gt; (self.delta ** 2)
+        y -= mask * xp.square(<a id="change">abs(self.diff) - self.delta</a>)
+        <a id="change">y *= 0.5</a>
+        return xp.array(<a id="change">y.sum() / y.dtype.type(y.size)</a>, dtype=y.dtype),
+
+    def backward(self, inputs, gy):
+        xp = cuda.get_array_module(*inputs)</code></pre><h3>After Change</h3><pre><code class='java'>
+        x1_c = xp.clip(x1, self.clip[0], self.clip[1])
+        self.diff = (x0_c - x1_c) * self.weight
+
+        diff = <a id="change">xp.abs(self.diff)</a>
+        y = xp.square(diff)
+        <a id="change">diff -= diff.dtype.type(self.delta)</a>
+        xp.maximum(diff, 0, dtype=diff.dtype, out=diff)
+        xp.square(diff, out=diff)
+        <a id="change">y = (y - diff) * 0.5</a>
+
+        return y.mean(),
+
+    def backward(self, inputs, grad_outputs):</code></pre>

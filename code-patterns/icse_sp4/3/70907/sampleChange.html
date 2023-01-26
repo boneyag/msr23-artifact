@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            logits_ori, logits_tsf = model.decode_step(sess, batch)
+            loss, loss_g, ppl_g, loss_d, loss_d0, loss_d1 = model.eval_step(
+                sess, batch, self._hparams.rho, self._hparams.gamma_min)
+            batch_size = <a id="change">batch</a>["enc_inputs"].shape()[0]
+            word_size = np.sum(batch["weights"])
+            losses.append(loss, loss_g, ppl_g, loss_d, loss_d0, loss_d1,
+                          w_loss=batch_size, w_g=batch_size,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        data0_ori, data1_ori, data0_tsf, data1_tsf = [], [], [], []
+        while True:
+            <a id="change">try:
+                batch = sess.run(input_tensors,
+                                 {tx.global_mode(): tf.estimator.ModeKeys.EVAL})
+                logits_ori, logits_tsf = model.decode_step(sess, batch)
+                loss, loss_g, ppl_g, loss_d, loss_d0, loss_d1 = model.eval_step(
+                    sess, batch, self._hparams.rho, self._hparams.gamma_min)
+                batch_size = batch["enc_inputs"].shape[0]
+                word_size = np.sum(batch["weights"])
+                losses.append(loss, loss_g, ppl_g, loss_d, loss_d0, loss_d1,
+                              w_loss=batch_size, w_g=batch_size,
+                              w_ppl=word_size, w_d=batch_size,
+                              w_d0=batch_size, w_d1=batch_size)
+                ori = logits2word(logits_ori, id2word)
+                tsf = logits2word(logits_tsf, id2word)
+                half = self._hparams.batch_size // 2
+                data0_ori += ori[:half]
+                data1_ori += ori[half:]
+                data0_tsf += tsf[:half]
+                data1_tsf += tsf[half:]
+            except tf.errors.OutOfRangeError:
+                break
+
+       </a> n = dataset._dataset_size
+        data0_ori = data0_ori[:n]
+        data1_ori = data1_ori[:n]
+        data0_tsf = data0_tsf[:n]</code></pre>

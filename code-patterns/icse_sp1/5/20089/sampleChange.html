@@ -1,0 +1,79 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+for image, target in test_loader:
+
+    &#47&#47 transfer image to gpu
+    image = <a id="change">image.cuda()</a> if USE_CUDA else image
+
+    &#47&#47 get batch size from image
+    batch_size = image.size()[0]
+    
+    prediction = trainer.apply_model(image)
+
+    image = unwrap(image,      as_numpy=True, to_cpu=True)
+    <a id="change">prediction = unwrap(prediction, as_numpy=True, to_cpu=True)</a>
+
+
+    fig = pylab.figure()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    validate_label_transform = label_transform
+)
+
+<a id="change">image_channels = 1</a>   &#47&#47 &lt;-- number of channels of the image
+pred_channels = 1  &#47&#47 &lt;-- number of channels needed for the prediction
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Visualize Dataset
+&#47&#47 ~~~~~~~~~~~~~~~~~~~~~~
+fig = plt.figure()
+
+for i,(image, target) in enumerate(train_loader):
+    ax = fig.add_subplot(1, 2, 1)
+    ax.imshow(image[0,0,...])
+    ax.set_title(&quotraw data&quot)
+    ax = fig.add_subplot(1, 2, 2)
+    ax.imshow(target[0,...])
+    ax.set_title(&quotground truth&quot)
+    break
+fig.tight_layout()
+plt.show()
+
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Simple UNet
+&#47&#47 ----------------------------
+&#47&#47 We start with a very simple predefined
+&#47&#47 res block UNet. By default, this UNet uses  ReLUs (in conjunction with batchnorm) as nonlinearities  
+&#47&#47 With :code:`activated=False` we make sure that the last layer
+&#47&#47 is not activated since we chain the UNet with a sigmoid
+&#47&#47 activation function.
+from inferno.extensions.layers.unet import ResBlockUNet
+from inferno.extensions.layers import RemoveSingletonDimension
+
+model = torch.nn.Sequential(
+    ResBlockUNet(dim=2, in_channels=image_channels, out_channels=pred_channels,  activated=False),
+    RemoveSingletonDimension(dim=1),
+    torch.nn.Sigmoid()
+)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 while the model above will work in principal, it has some drawbacks.
+&#47&#47 Within the UNet, the number of features is increased by a multiplicative 
+&#47&#47 factor while going down, the so-called gain. The default value for the gain is 2.
+&#47&#47 Since we start with only a single channel we could either increase the gain,
+&#47&#47 or use a some convolutions to increase the number of channels 
+&#47&#47 before the the UNet.
+from inferno.extensions.layers import ConvReLU2D
+<a id="change">model_a = torch.nn.Sequential(
+    ConvReLU2D(in_channels=image_channels, out_channels=5, kernel_size=3),
+    ResBlockUNet(dim=2, in_channels=5, out_channels=pred_channels,  activated=False,
+        res_block_kwargs=dict(batchnorm=True,size=2)) ,
+    RemoveSingletonDimension(dim=1)
+    &#47&#47 torch.nn.Sigmoid()
+)</a>
+
+
+
+</code></pre>

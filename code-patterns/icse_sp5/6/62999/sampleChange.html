@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      &#47&#47 print update
+      print(&quotEpoch: %3d,  Steps: %7d,  Train loss: %7.5f,&quot % (epoch+1, steps, train_loss), end=&quot&quot)
+      print(&quot Valid loss: %7.5f,  Valid R2: %7.5f,&quot % (valid_loss, valid_r2), end=&quot&quot)
+      print(&quot Time: %s%s&quot % <a id="change">(time_str, best_str)</a>)
+      sys.stdout.flush()
+
+      &#47&#47 update epoch</code></pre><h3>After Change</h3><pre><code class='java'>
+                            FLAGS.ensemble_rc, ensemble_shifts)
+
+  &#47&#47 launch accuracy compute thread
+  <a id="change">acc_queue = Queue()</a>
+  <a id="change">acc_thread = AccuracyWorker(acc_queue)</a>
+  <a id="change">acc_thread.start()</a>
+
+  &#47&#47 checkpoints
+  saver = tf.train.Saver()
+
+  with tf.Session() as sess:
+    train_writer = tf.summary.FileWriter(FLAGS.logdir + &quot/train&quot,
+                                         sess.graph) if FLAGS.logdir else None
+
+    coord = tf.train.Coordinator()
+    tf.train.start_queue_runners(coord=coord)
+
+    if FLAGS.restart:
+      &#47&#47 load variables into session
+      saver.restore(sess, FLAGS.restart)
+    else:
+      &#47&#47 initialize variables
+      t0 = time.time()
+      print(&quotInitializing...&quot)
+      sess.run(tf.local_variables_initializer())
+      sess.run(tf.global_variables_initializer())
+      print(&quotInitialization time %f&quot % (time.time() - t0))
+
+    train_loss = None
+    best_loss = None
+    early_stop_i = 0
+
+    epoch = 0
+    while (train_epochs is not None and epoch &lt; train_epochs) or \
+          (train_epochs is None and early_stop_i &lt; FLAGS.early_stop):
+      t0 = time.time()
+
+      &#47&#47 save previous
+      train_loss_last = train_loss
+
+      &#47&#47 train epoch
+      sess.run(training_init_op)
+      train_loss, steps = model.train_epoch_tfr(sess, train_writer, train_epoch_batches)
+
+      &#47&#47 block for previous accuracy compute
+      <a id="change">acc_queue.join()</a>
+
+      &#47&#47 test validation
+      sess.run(test_init_op)
+      valid_acc = model.test_tfr(sess, test_epoch_batches)</code></pre>

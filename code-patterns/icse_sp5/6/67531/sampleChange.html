@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                self.run_pass("convert_frozen_ops_to_mkldnn", scripted_mod.graph)
+                FileCheck().check("ConvertToMKLDNN").check("aten::linear").check("ConvertFromMKLDNN").run(scripted_mod.graph)
+
+                <a id="change">if input_is_mkldnn:
+                    inp = inp.to_mkldnn()
+                    mod.weight = torch.nn.Parameter(mod.weight.to_mkldnn())
+                    mod.bias = mod.bias if mod.bias is None else torch.nn.Parameter(mod.bias.to_mkldnn())
+
+               </a> for _ in range(2):
+                    &#47&#47 aten::equal not defined for mkldnn tensors
+                    def to_dense(inp):
+                        return inp.to_dense() if inp.is_mkldnn else inp</code></pre><h3>After Change</h3><pre><code class='java'>
+                FileCheck().check("to_mkldnn").check("aten::linear").check("to_dense").run(scripted_mod.graph)
+
+                self.assertEqual(mod(inp), scripted_mod(inp))
+                <a id="change">self.assertEqual(mod(inp), scripted_mod(inp))</a>
+
+    @unittest.skipIf(not torch._C.has_mkldnn, "MKL-DNN build is disabled")
+    def test_collapse_adjacent_conversions(self):
+</code></pre>

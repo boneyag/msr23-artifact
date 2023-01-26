@@ -1,0 +1,39 @@
+<html><h3>9cf2bcdb24f23a17ec11e69b8885851771dfd3d8,cube/models/vocoder.py,BeeCoder,learn,#BeeCoder#Any#Any#Any#,121
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def learn(self, wave, mgc, batch_size):
+
+        <a id="change">signal_fft = self.vocoder.fft(np.array(wave, dtype=np.float32) / 32768 - 1.0,
+                                      sample_rate=self.params.target_sample_rate, use_preemphasis=False)</a>
+        &#47&#47 print(signal_fft)
+        last_proc = 0
+        dy.renew_cg()
+        total_loss = 0
+        losses = []
+        for mgc_index in range(len(mgc)):
+            curr_proc = int((mgc_index + 1) * 100 / len(mgc))
+            if curr_proc % 5 == 0 and curr_proc != last_proc:
+                while last_proc &lt; curr_proc:
+                    last_proc += 5
+                    sys.stdout.write(&quot &quot + str(last_proc))
+                    sys.stdout.flush()
+            output_power = self._predict_one(mgc[mgc_index], runtime=False)
+            &#47&#47 print(np.abs(signal_fft[mgc_index]))
+            fft_pow = 20 * np.log10(np.maximum(1e-5, <a id="change">np.abs(signal_fft[mgc_index])</a>))  &#47&#47 np.abs(signal_fft[mgc_index])
+            min_level_db = -100.0
+            fft_pow = np.clip((fft_pow - min_level_db) / -min_level_db, 0, 1)
+            &#47&#47 print (fft_pow)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            pred_output = self._predict_one(mgc[mgc_index], runtime=False)
+
+            <a id="change">if mgc_index != len(mgc) - 1:
+                losses.append(dy.squared_distance(pred_output, dy.inputVector(
+                    wave[mgc_index * self.UPSAMPLE_COUNT:mgc_index * self.UPSAMPLE_COUNT + self.UPSAMPLE_COUNT])))
+
+           </a> if len(losses) &gt;= batch_size:
+                loss = dy.esum(losses)
+                total_loss += loss.value()
+                loss.backward()</code></pre><img src="148606281.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tiberiu44/TTS-Cube/commit/9cf2bcdb24f23a17ec11e69b8885851771dfd3d8#diff-9d17b1c68e41c8fdd5b8f4fddb08fcad8f39df3ea7fa9bb8de1c41a95d338ea8L108' target='_blank'>Link</a></div><div id='project'> Project Name: tiberiu44/TTS-Cube</div><div id='commit'> Commit Name: 9cf2bcdb24f23a17ec11e69b8885851771dfd3d8</div><div id='time'> Time: 2018-10-25</div><div id='author'> Author: boros@adobe.com</div><div id='file'> File Name: cube/models/vocoder.py</div><div id='class'> Class Name: BeeCoder</div><div id='method'> Method Name: learn</div><BR><BR><div id='link'><a href='https://github.com/samuelclay/NewsBlur/commit/bd334ef20fdccb74d310ca00b1134388645ba0a5#diff-820da17b4f9f75173f196d1d37577401a5447311104ad3996d8fc7d162ff5d76L5' target='_blank'>Link</a></div><div id='project'> Project Name: samuelclay/NewsBlur</div><div id='commit'> Commit Name: bd334ef20fdccb74d310ca00b1134388645ba0a5</div><div id='time'> Time: 2014-07-21</div><div id='author'> Author: samuel@ofbrooklyn.com</div><div id='file'> File Name: vendor/readability/encoding.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_encoding</div><BR><BR><div id='link'><a href='https://github.com/shubhomoydas/ad_examples/commit/f707bd92107953e6d8ba05d2dff3ee3133b2d805#diff-51c2e11d8db898362cb9e4925d56bb9cdf82fac9305e675cc4a92a60947d2151L551' target='_blank'>Link</a></div><div id='project'> Project Name: shubhomoydas/ad_examples</div><div id='commit'> Commit Name: f707bd92107953e6d8ba05d2dff3ee3133b2d805</div><div id='time'> Time: 2018-11-25</div><div id='author'> Author: smd.shubhomoydas@gmail.com</div><div id='file'> File Name: python/graph/simple_gcn.py</div><div id='class'> Class Name: SimpleGCN</div><div id='method'> Method Name: _fit</div><BR>

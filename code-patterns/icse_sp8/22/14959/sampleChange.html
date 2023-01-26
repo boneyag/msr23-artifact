@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def test_respects_config_file(rule_runner: RuleRunner) -&gt; None:
+    <a id="change">target = make_target(rule_runner, [NEEDS_CONFIG_SOURCE])</a>
+    lint_results, fmt_result = <a id="change">run_black(
+        rule_runner, [target], config="[tool.black]\nskip-string-normalization = &quottrue&quot\n"
+    )</a>
+    assert len(lint_results) == 1
+    assert lint_results[0].exit_code == 0
+    assert "1 file would be left unchanged" in lint_results[0].stderr
+    assert "1 file left unchanged" in fmt_result.stderr</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_respects_config_file(rule_runner: RuleRunner) -&gt; None:
+    <a id="change">rule_runner.write_files(
+        {
+            "f.py": NEEDS_CONFIG_FILE,
+            "pyproject.toml": "[tool.black]\nskip-string-normalization = &quottrue&quot\n",
+            "BUILD": "python_library(name=&quott&quot)",
+        }
+    )</a>
+    <a id="change">tgt = rule_runner.get_target(Address("", target_name="t", relative_file_path="f.py"))</a>
+    lint_results, fmt_result = <a id="change">run_black(
+        rule_runner, [tgt], extra_args=["--black-config=pyproject.toml"]
+    )</a>
+    assert len(lint_results) == 1
+    assert lint_results[0].exit_code == 0
+    assert "1 file would be left unchanged" in lint_results[0].stderr
+    assert "1 file left unchanged" in fmt_result.stderr</code></pre>

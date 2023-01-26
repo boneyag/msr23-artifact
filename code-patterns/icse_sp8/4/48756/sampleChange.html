@@ -1,0 +1,71 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        target_update_period=target_update_period,
+        actor_optimizer=tf.train.AdamOptimizer(
+            learning_rate=actor_learning_rate),
+        critic_optimizer=<a id="change">tf.train.AdamOptimizer(
+            learning_rate=critic_learning_rate)</a>,
+        train_batch_size=batch_size,
+        dqda_clipping=dqda_clipping,
+        td_errors_loss_fn=td_errors_loss_fn,</code></pre><h3>After Change</h3><pre><code class='java'>
+        critic_net=critic_net,
+        actor_optimizer=tf.train.AdamOptimizer(
+            learning_rate=actor_learning_rate),
+        critic_optimizer=<a id="change">tf.train.AdamOptimizer(
+            learning_rate=critic_learning_rate)</a>,
+        ou_stddev=ou_stddev,
+        ou_damping=ou_damping,
+        target_update_tau=target_update_tau,
+        target_update_period=target_update_period,
+        dqda_clipping=dqda_clipping,
+        td_errors_loss_fn=td_errors_loss_fn,
+        gamma=gamma,
+        reward_scale_factor=reward_scale_factor,
+        gradient_clipping=gradient_clipping,
+        debug_summaries=debug_summaries,
+        summarize_grads_and_vars=summarize_grads_and_vars)
+
+    replay_buffer = batched_replay_buffer.BatchedReplayBuffer(
+        tf_agent.collect_data_spec(),
+        batch_size=tf_env.batch_size,
+        max_length=replay_buffer_capacity)
+
+    eval_py_policy = py_tf_policy.PyTFPolicy(tf_agent.policy())
+
+    train_metrics = [
+        tf_metrics.NumberOfEpisodes(),
+        tf_metrics.EnvironmentSteps(),
+        tf_metrics.AverageReturnMetric(),
+        tf_metrics.AverageEpisodeLengthMetric(),
+    ]
+
+    global_step = tf.train.get_or_create_global_step()
+
+    collect_policy = tf_agent.collect_policy()
+    initial_collect_op = dynamic_step_driver.DynamicStepDriver(
+        tf_env,
+        collect_policy,
+        observers=[replay_buffer.add_batch],
+        num_steps=initial_collect_steps).run()
+
+    collect_op = dynamic_step_driver.DynamicStepDriver(
+        tf_env,
+        collect_policy,
+        observers=[replay_buffer.add_batch] + train_metrics,
+        num_steps=collect_steps_per_iteration).run()
+
+    &#47&#47 Dataset generates trajectories with shape [Bx2x...]
+    dataset = replay_buffer.as_dataset(
+        num_parallel_calls=3,
+        sample_batch_size=batch_size,
+        num_steps=2,
+        time_stacked=True).prefetch(3)
+
+    <a id="change">iterator = dataset.make_initializable_iterator()</a>
+    <a id="change">trajectories, unused_ids, unused_probs = iterator.get_next()</a>
+    train_op = tf_agent.train(
+        experience=trajectories, train_step_counter=global_step)
+
+    train_checkpointer = common_utils.Checkpointer(</code></pre>

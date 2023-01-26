@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 Load clustering mask
+        self._clust_mask_img = nib.load(self.clust_mask)
+        <a id="change">self._mask_data = np.asarray(self._clust_mask_img.dataobj).astype(&quotbool&quot).astype(&quotuint8&quot)</a>
+
+        &#47&#47 Ensure mask does not inclue voxels outside of the brain
+        self._masked_fmri_vol = np.asarray(self._func_img.dataobj)[:, :, :, 0]
+        self._masked_fmri_vol = self._masked_fmri_vol.astype(&quotbool&quot)
+        <a id="change">self._mask_data[~self._masked_fmri_vol]</a> = 0
+        del self._masked_fmri_vol
+        self._clust_mask_corr = "%s%s%s%s" % (self._dir_path, &quot/&quot, mask_name, &quot.nii&quot)
+        self._clust_mask_corr_img = nib.Nifti1Image(self._mask_data, affine=self._clust_mask_img.affine,</code></pre><h3>After Change</h3><pre><code class='java'>
+                                            &quot.nii.gz&quot)
+
+        &#47&#47 Load clustering mask
+        <a id="change">func_vol_img = index_img(self._func_img, 1)</a>
+        <a id="change">clust_mask_res_img = resample_img(nib.load(self.clust_mask), target_affine=func_vol_img.affine,
+                                          target_shape=func_vol_img.shape, interpolation=&quotnearest&quot)</a>
+        if self._mask_img is not None:
+            mask_res_img = compute_gray_matter_mask(resample_img(self._mask_img, target_affine=<a id="change">func_vol_img.affine</a>,
+                                                                 target_shape=func_vol_img.shape,
+                                                                 interpolation=&quotnearest&quot))
+            self._clust_mask_corr_img = intersect_masks([math_img(&quotimg &gt; 0&quot, img=func_vol_img),
+                                                         math_img(&quotimg &gt; 0&quot, img=clust_mask_res_img),
+                                                         math_img(&quotimg &gt; 0&quot, img=mask_res_img)],
+                                                        threshold=1, connected=False)
+            self._mask_img.uncache()
+            mask_res_img.uncache()
+        else:
+            self._clust_mask_corr_img = intersect_masks([math_img(&quotimg &gt; 0&quot, img=func_vol_img),
+                                                         math_img(&quotimg &gt; 0&quot, img=clust_mask_res_img)],
+                                                        threshold=1, connected=False)
+        <a id="change">nib.save(self._clust_mask_corr_img, "%s%s%s%s" % (self._dir_path, &quot/&quot, mask_name, &quot.nii&quot))</a>
+
+        func_vol_img.uncache()
+        clust_mask_res_img.uncache()
+        gc.collect()</code></pre>

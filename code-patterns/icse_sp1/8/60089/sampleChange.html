@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    num_layers = len(pytorch_tlm.transformer.encoders)
+    mapped_keys = convert_transformers_keys(num_layers, d, replace_layers, replace_embeds)
+    unknown_keys = pytorch_tlm.load_state_dict(mapped_keys, strict=False)
+    <a id="change">print(&quotIgnored &quot, unknown_keys)</a></code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47   the usual LP embeddings with an added bias term set to weight 0
+    &#47&#47 Option 2: the user does care about token types and has provided a token type feature (presumed to be in the
+    &#47&#47   second key of the embeddings stack
+    <a id="change">if isinstance(pytorch_tlm.embeddings[k_0], LearnedPositionalLookupTableEmbeddingsWithBias):
+        old_embeddings_stack = pytorch_tlm.embeddings
+        &#47&#47 we need to temporarily monkey patch the embeddings to load them, and then we can reset them to what they were
+        d = {k_0: pytorch_tlm.embeddings[k_0], &quottt&quot:  LookupTableEmbeddings(vsz=2, dsz=pytorch_tlm.transformer.output_dim)}
+        pytorch_tlm.embeddings = EmbeddingsStack(d)
+   </a> unknown_keys = pytorch_tlm.load_state_dict(mapped_keys, strict=False)
+    if old_embeddings_stack:
+        old_embeddings_stack[k_0].bias = nn.Parameter(pytorch_tlm.embeddings[&quottt&quot].embeddings.weight[0])
+        pytorch_tlm.embeddings = old_embeddings_stack</code></pre>

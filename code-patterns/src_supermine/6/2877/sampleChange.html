@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def layer_op(self, inputs):
+        spatial_rank = layer_util.infer_spatial_rank(inputs)
+        kernel_shape = np.hstack(<a id="change">(
+            [self.border * 2 + 1] * spatial_rank, 1, 1)</a>).flatten()
+        &#47&#47 initializer a kernel with all 0s, and set the central element to 1
+        np_kernel = layer_util.trivial_kernel(kernel_shape)
+        <a id="change">crop_kernel = tf.constant(np_kernel, dtype=inputs.dtype)</a>
+        &#47&#47 split channel dim
+        output_tensor = [tf.expand_dims(x, -1)
+                         for x in tf.unstack(inputs, axis=-1)]
+        output_tensor = [tf.nn.convolution(input=inputs,</code></pre><h3>After Change</h3><pre><code class='java'>
+    def layer_op(self, inputs):
+        spatial_rank = layer_util.infer_spatial_rank(inputs)
+        offsets = [0, *([int(self.border)] * spatial_rank), 0]
+        <a id="change">out_shape = [-1, *[int(d) - 2 * int(self.border) for d in list(inputs.shape)[1:-1]], -1]</a>
+        output_tensor = tf.slice(inputs, offsets, out_shape)
+        return output_tensor
+</code></pre>

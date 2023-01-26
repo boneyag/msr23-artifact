@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                + self.equivalent_sample_size / num_parents_states
+            )
+
+            <a id="change">for state in var_states:
+                if state_counts[parents_state][state] &gt; 0:
+                    score += lgamma(
+                        state_counts[parents_state][state]
+                        + self.equivalent_sample_size
+                        / (num_parents_states * var_cardinality)
+                    ) - lgamma(
+                        self.equivalent_sample_size
+                        / (num_parents_states * var_cardinality)
+                    )
+       </a> return score
+
+
+class BicScore(StructureScore):</code></pre><h3>After Change</h3><pre><code class='java'>
+        num_parents_states = float(state_counts.shape[1])
+
+        counts = np.asarray(state_counts)
+        <a id="change">log_gamma_counts = np.zeros_like(counts, dtype=np.float_)</a>
+
+        alpha = self.equivalent_sample_size / num_parents_states
+        <a id="change">beta = self.equivalent_sample_size / counts.size</a>
+
+        &#47&#47 Compute log(gamma(counts + beta))
+        gammaln(counts + beta, out=log_gamma_counts)
+
+        &#47&#47 Compute the log-gamma conditional sample size
+        <a id="change">log_gamma_conds = np.sum(counts, axis=0, dtype=np.float_)</a>
+        gammaln(log_gamma_conds + alpha, out=log_gamma_conds)
+
+        <a id="change">score = (
+            np.sum(log_gamma_counts)
+            - np.sum(log_gamma_conds)
+            + num_parents_states * lgamma(alpha)
+            - counts.size * lgamma(beta)
+        )</a>
+
+        return score
+
+</code></pre>

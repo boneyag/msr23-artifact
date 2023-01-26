@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+         dimensions.
+    
+    dim_types = [check_dimension(d) for d in dimensions]
+    <a id="change">is_cat</a> = all([<a id="change">isinstance(d, Categorical)</a> for d in dim_types])
+    <a id="change">if is_cat:
+        transformed_dims = [check_dimension(d, transform="identity")
+                            for d in dimensions]
+    else:
+        transformed_dims = []
+        for dim_type, dim in zip(dim_types, dimensions):
+            if isinstance(dim_type, Categorical):
+                transformed_dims.append(
+                    check_dimension(dim, transform="onehot")
+                    )
+            &#47&#47 To make sure that GP operates in the [0, 1] space
+            else:
+                transformed_dims.append(
+                    check_dimension(dim, transform="normalize")
+                    )
+   </a> return transformed_dims
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            if isinstance(dimension, Categorical):
+                transformed_dimensions.append(dimension)
+            &#47&#47 To make sure that GP operates in the [0, 1] space
+            elif <a id="change">isinstance</a>(dimension, Real):
+                transformed_dimensions.append(
+                    Real(dimension.low, dimension.high, dimension.prior,
+                         transform="normalize")
+                    )
+            elif <a id="change">isinstance</a>(dimension, Integer):
+                transformed_dimensions.append(
+                    Integer(dimension.low, dimension.high,
+                            transform="normalize")
+                    )
+            else:
+                <a id="change">raise RuntimeError("Unknown dimension type "
+                                   "(%s)" % type(dimension))</a>
+
+    return Space(transformed_dimensions)
+</code></pre>

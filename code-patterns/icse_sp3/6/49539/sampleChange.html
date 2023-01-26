@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    x = converter.get_variable(tf_op.inputs[0])  &#47&#47 NHWC
+    assert tf_op.get_attr("data_format") == b"NHWC"
+    <a id="change">x.order.unify(OrderNHWC)</a>
+
+    ksize_nhwc = tf_op.get_attr("ksize")  &#47&#47 type: List[int]
+    assert ksize_nhwc[0] == 1
+    assert ksize_nhwc[3] == 1</code></pre><h3>After Change</h3><pre><code class='java'>
+    data_format = tf_op.get_attr("data_format")
+    check_data_format(x, data_format)
+
+    ksize = <a id="change">tuple(tf_op.get_attr("ksize"))</a>  &#47&#47 type: Tuple[int,...]
+    assert ksize[x.order.axes_dict[Axis.N]] == 1
+    assert ksize[x.order.axes_dict[Axis.C]] == 1
+    <a id="change">ksize = (ksize[x.order.axes_dict[Axis.H]], ksize[x.order.axes_dict[Axis.W]])</a>
+
+    stride = tuple(tf_op.get_attr("strides"))  &#47&#47 type: Tuple[int,...]
+    assert stride[x.order.axes_dict[Axis.N]] == 1
+    assert stride[x.order.axes_dict[Axis.C]] == 1</code></pre>

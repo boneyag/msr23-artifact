@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        timeout = global_options.pantsd_pailgun_quit_timeout
+        pantsd_signal_handler = PailgunClientSignalHandler(client, pid=pid, timeout=timeout)
+        with ExceptionSink.trapped_signals(pantsd_signal_handler), <a id="change">STTYSettings</a>.preserved():
+            &#47&#47 Execute the command on the pailgun.
+            return <a id="change">client.execute(self._args[0], self._args[1:], modified_env)</a>
+
+    def _extract_remote_exception(self, pantsd_pid, nailgun_error):
+        Given a NailgunError, returns a Terminated exception with additional info (where
+        possible).</code></pre><h3>After Change</h3><pre><code class='java'>
+            logger.debug(f"Connecting to pantsd on port {port} attempt {attempt}/{retries}")
+
+            with ExceptionSink.trapped_signals(pantsd_signal_handler), STTYSettings.preserved():
+                <a id="change">try:
+                    output = rust_nailgun_client.execute(signal_fn, command, args, modified_env)
+                    return output
+
+                &#47&#47 NailgunConnectionException represents a failure connecting to pantsd, so we retry
+                &#47&#47 up to the retry limit.
+                except native.lib.NailgunConnectionException as e:
+                    if attempt &gt; retries:
+                        raise self.Fallback(e)
+
+                    &#47&#47 Wait one second before retrying
+                    logger.warning(f"Pantsd was unresponsive on port {port}, retrying.")
+                    time.sleep(1)
+                    attempt += 1</a>
+</code></pre>

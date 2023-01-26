@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      for step, promise in step_batch:
+        keyed_request, result = self._maybe_cache_get(step)
+        if result is None:
+          <a id="change">result = step(node_builder)</a>
+        self._maybe_cache_put(keyed_request, result)
+        <a id="change">promise.success(result)</a>
+
+
+def _try_pickle(obj):
+  try:</code></pre><h3>After Change</h3><pre><code class='java'>
+  def reduce(self, execution_request):
+    generator = self._scheduler.schedule(execution_request)
+    for runnable_batch in generator:
+      <a id="change">completed = []</a>
+      for entry, runnable in runnable_batch:
+        key, result = self._maybe_cache_get(entry, runnable)
+        if result is None:
+          try:
+            result = Return(runnable.func(*runnable.args))
+            self._maybe_cache_put(key, result)
+          except Exception as e:
+            result = Throw(e)
+        <a id="change">completed.append((entry, result))</a>
+      generator.send(completed)
+
+
+def _try_pickle(obj):</code></pre>

@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tgt_mask = tgt_tgt_mask[0, :, :] == 0
+        memory_mask = tgt_src_mask[0, :, :] == 0
+        output = super(DecoderPyTorch, self).forward(tgt, memory, tgt_mask, memory_mask)
+        <a id="change">return output.transpose(0, 1)</a>
+
+
+class MultiHeadedAttention(nn.Module):
+    def __init__(self, num_heads, dim_model):</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 tgt_tgt_mask shape: batch_size, tgt_seq_len, tgt_seq_len
+
+        &#47&#47 Adapt to PyTorch format
+        tgt_embed = <a id="change">tgt_embed.transpose(0, 1)</a>
+        memory = memory.transpose(0, 1)
+
+        <a id="change">output = tgt_embed</a>
+
+        for mod in self.layers:
+            <a id="change">output = mod(
+                output,
+                memory,
+                tgt_mask=tgt_tgt_mask,
+                memory_mask=tgt_src_mask,
+            )</a>
+
+        batch_size, tgt_seq_len, _ = output.shape
+        <a id="change">probs_for_placeholders = torch.zeros(
+            batch_size, tgt_seq_len, 2, device=output.device
+        )</a>
+        <a id="change">probs = torch.cat((probs_for_placeholders, output), dim=2)</a>
+        <a id="change">return probs</a>
+
+
+class MultiHeadedAttention(nn.Module):
+    def __init__(self, num_heads, dim_model):</code></pre>

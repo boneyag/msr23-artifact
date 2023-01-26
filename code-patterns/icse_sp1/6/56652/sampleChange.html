@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.input, self.transposed = input, transposed
+        if isinstance(input, string_types):
+            input = open(input)
+        <a id="change">header = next(input).strip()</a>
+        if not header.lower().startswith(&quot%%matrixmarket matrix coordinate real general&quot):
+            raise ValueError("File %s not in Matrix Market format with coordinate real general; instead found: \n%s" %
+                             (self.input, header))
+        self.num_docs = self.num_terms = self.num_nnz = 0</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        logger.info("initializing corpus reader from %s" % input)
+        self.input, self.transposed = input, transposed
+        <a id="change">with utils.file_or_filename(self.input) as lines:
+            header = utils.to_unicode(next(lines)).strip()
+            if not header.lower().startswith(&quot%%matrixmarket matrix coordinate real general&quot):
+                raise ValueError("File %s not in Matrix Market format with coordinate real general; instead found: \n%s" %
+                                 (self.input, header))
+            self.num_docs = self.num_terms = self.num_nnz = 0
+            for lineno, line in enumerate(lines):
+                line = utils.to_unicode(line)
+                if not line.startswith(&quot%&quot):
+                    self.num_docs, self.num_terms, self.num_nnz = map(int, line.split())
+                    if not self.transposed:
+                        self.num_docs, self.num_terms = self.num_terms, self.num_docs
+                    break
+
+       </a> logger.info("accepted corpus with %i documents, %i features, %i non-zero entries" %
+                     (self.num_docs, self.num_terms, self.num_nnz))
+
+    def __len__(self):</code></pre>

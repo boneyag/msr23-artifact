@@ -1,0 +1,65 @@
+<html><h3>b2fbc8b75787e58c77d212f499ce34fbd0c55f79,train_fc-cnn.py,,,#,9
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    estimator.evaluate(input.input_fn(eval_images_dir, eval_labels_dir, num_epochs=1))
+
+&#47&#47 Exporting model
+<a id="change">estimator.export_savedmodel(args[&quotmodel_output_dir&quot]+&quot/export&quot,
+                            tf.estimator.export.build_raw_serving_input_receiver_fn({&quotimages&quot:
+                                                                                     tf.placeholder(tf.float32,
+                                                                                                    [None, 688, 1024, 3])}))</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+from tqdm import trange
+
+
+<a id="change">if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-t", "--train-dir", required=True, help="Folder with training and label images")
+    ap.add_argument("-e", "--eval-dir", required=True, help="Folder with the evaluation images and labels")
+    ap.add_argument("-o", "--model-output-dir", required=True, help="Where the model will be saved")
+    ap.add_argument("-c", "--classes-file", required=False, help="Text file describing the classes (only for classification)")
+    ap.add_argument("--nb-epochs", default=20, type=int, help="Number of epochs")
+    args = vars(ap.parse_args())
+
+    model_params = {
+        &quotlearning_rate&quot: 1e-5,
+        &quotnum_classes&quot: 3,
+        &#47&#47TODO batch_norm usage
+        &quotmodel_params&quot: [
+            [(32, 7), (32, 5)],
+            [(64, 5), (64, 5)],
+            [(128, 5), (128, 5)],
+            [(128, 5), (128, 5)],
+            [(128, 5), (128, 5)]
+        ],
+        &quotprediction_type&quot: utils.PredictionType.CLASSIFICATION
+    }
+    classes_file = args.get(&quotclasses_file&quot)
+    if model_params[&quotprediction_type&quot] == utils.PredictionType.CLASSIFICATION:
+        assert classes_file is not None
+
+    session_config = tf.ConfigProto()
+    session_config.gpu_options.visible_device_list = &quot0&quot
+    session_config.gpu_options.per_process_gpu_memory_fraction = 0.7
+    estimator_config = tf.estimator.RunConfig().replace(session_config=session_config,
+                                                        save_summary_steps=10)
+    estimator = tf.estimator.Estimator(model.model_fn, model_dir=args[&quotmodel_output_dir&quot],
+                                       params=model_params, config=estimator_config)
+
+    train_images_dir, train_labels_dir = os.path.join(args[&quottrain_dir&quot], &quotimages&quot), os.path.join(args[&quottrain_dir&quot], &quotlabels&quot)
+    eval_images_dir, eval_labels_dir = os.path.join(args[&quoteval_dir&quot], &quotimages&quot), os.path.join(args[&quoteval_dir&quot], &quotlabels&quot)
+    for i in trange(args[&quotnb_epochs&quot]):
+        &#47&#47 Train for one epoch
+        estimator.train(input.input_fn(classes_file, train_images_dir, train_labels_dir, num_epochs=1,
+                                       data_augmentation=True, image_summaries=True))
+        &#47&#47 Evaluate
+        estimator.evaluate(input.input_fn(classes_file, eval_images_dir, eval_labels_dir, num_epochs=1))
+
+    &#47&#47 Exporting model
+    export_input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn({
+        &quotimages&quot: tf.placeholder(tf.float32, [None, None, None, 3])
+    })
+    estimator.export_savedmodel(args[&quotmodel_output_dir&quot]+&quot/export&quot, export_input_fn)</a>
+</code></pre><img src="128293767.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dhlab-epfl/dhSegment/commit/b2fbc8b75787e58c77d212f499ce34fbd0c55f79#diff-be3d5655236965fdc70b3e651561cca8b1f87f1b99f3aaadc5767bb1dde53960L12' target='_blank'>Link</a></div><div id='project'> Project Name: dhlab-epfl/dhSegment</div><div id='commit'> Commit Name: b2fbc8b75787e58c77d212f499ce34fbd0c55f79</div><div id='time'> Time: 2017-07-13</div><div id='author'> Author: seg.benoit@gmail.com</div><div id='file'> File Name: train_fc-cnn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/yahoo/TensorFlowOnSpark/commit/b5db074f69f553a99f827c5e9d8ba097302d8948#diff-3076274f90be764fbbd9de6b60636ecf8208dcdcd7e36386bdbeac01e5f1ed9bL39' target='_blank'>Link</a></div><div id='project'> Project Name: yahoo/TensorFlowOnSpark</div><div id='commit'> Commit Name: b5db074f69f553a99f827c5e9d8ba097302d8948</div><div id='time'> Time: 2018-08-27</div><div id='author'> Author: leewyang@gmail.com</div><div id='file'> File Name: examples/mnist/keras/mnist_mlp_estimator.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main_fun</div><BR><BR><div id='link'><a href='https://github.com/dhlab-epfl/dhSegment/commit/854d78a7d7a60bf464d435a1468db85c573a6cd2#diff-ed183d67207df065a11e1289f19d34cc2abbc5448dea952683cfe9728c342b95L59' target='_blank'>Link</a></div><div id='project'> Project Name: dhlab-epfl/dhSegment</div><div id='commit'> Commit Name: 854d78a7d7a60bf464d435a1468db85c573a6cd2</div><div id='time'> Time: 2018-10-04</div><div id='author'> Author: seg.benoit@gmail.com</div><div id='file'> File Name: train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: run</div><BR>

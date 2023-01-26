@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    &#47&#47 so that
+                    &#47&#47 (\otimes K_i + \otimes D_i)^{-1} = (\otimes D_i^{1/2})^{-1}
+                    &#47&#47   \tilde Q (\tilde \Lambda + I)^{-1} \tilde Q (\otimes D_i^{1/2})
+                    <a id="change">dlt_inv_root = dlt.sqrt().inverse()</a>
+                    symm_prod = KroneckerProductLazyTensor(
+                        *[d.matmul(k).matmul(d) for k, d in zip(lt.lazy_tensors, dlt_inv_root.lazy_tensors)]
+                    )
+                    evals, evecs = symm_prod.symeig(eigenvectors = True)</code></pre><h3>After Change</h3><pre><code class='java'>
+                res1 = evecs._transpose_nonbatch().matmul(dlt_inv_root.matmul(rhs))
+                res2 = evals_p_i.inv_matmul(res1)
+                res3 = evecs.matmul(res2)
+                res = <a id="change">dlt_inv_root.matmul(res3)</a>
+                return res.to(rhs_dtype)
+
+            tmp_term = S.matmul(Lambda_I.inv_matmul(S._transpose_nonbatch().matmul(rhs)))
+            res = lt._inv_matmul(rhs - tmp_term)</code></pre>

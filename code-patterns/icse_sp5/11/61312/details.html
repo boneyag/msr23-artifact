@@ -1,0 +1,48 @@
+<html><h3>23aef76ed2a1a3d2fc0c3f1949a66b09d3829844,memcnn/models/additive.py,AdditiveBlockFunction,backward,#Any#Any#,163
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with set_grad_enabled(True):
+            &#47&#47 compute outputs building a sub-graph
+            x1_ = Variable(x1.data, requires_grad=True)
+            <a id="change">x2_ = Variable(x2.data, requires_grad=True)</a>
+            x1_.requires_grad = True
+            x2_.requires_grad = True
+
+            y1_ = x1_ + Fm.forward(x2_)
+            <a id="change">y2_</a> = x2_ + Gm.forward(y1_)
+            y = torch.cat(<a id="change">[y1_, y2_]</a>, dim=1)
+
+            &#47&#47 perform full backward pass on graph...
+            dd = torch.autograd.grad(y, <a id="change">(x1_, x2_ )</a> + tuple(Gm.parameters()) + tuple(Fm.parameters()), grad_output)
+
+            GWgrads = dd[2:2+len(GWeights)]
+            FWgrads = dd[2+len(GWeights):]
+            grad_input = torch.cat([dd[0], dd[1]], dim=1)
+
+            &#47&#47 cleanup sub-graph
+            y1_.detach_()
+            <a id="change">y2_.detach_()</a>
+            del y1_, y2_
+
+        &#47&#47 restore input
+        x.data.set_(torch.cat([x1, x2], dim=1).data.contiguous())</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            y1 = x1 + Fm.forward(x2)
+            y2 = x2 + Gm.forward(y1)
+            y = torch.cat(<a id="change">[y1, y2]</a>, dim=1)
+
+            &#47&#47 perform full backward pass on graph...
+            dd = torch.autograd.grad(y, (x1, x2 ) + tuple(Gm.parameters()) + tuple(Fm.parameters()), grad_output)
+
+            GWgrads = dd[2:2+len(GWeights)]
+            FWgrads = dd[2+len(GWeights):]
+            grad_input = torch.cat([dd[0], dd[1]], dim=1)
+
+            &#47&#47 cleanup sub-graph
+            <a id="change">y1.detach_()</a>
+            y2.detach_()
+            del y1, y2
+
+        &#47&#47 restore input</code></pre><img src="285012452.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/silvandeleemput/memcnn/commit/23aef76ed2a1a3d2fc0c3f1949a66b09d3829844#diff-2b004f1c84f58ff4989d2c82f4bbf6fb9bc0393ef5f7b279feff4716ad67f2e3L168' target='_blank'>Link</a></div><div id='project'> Project Name: silvandeleemput/memcnn</div><div id='commit'> Commit Name: 23aef76ed2a1a3d2fc0c3f1949a66b09d3829844</div><div id='time'> Time: 2018-10-15</div><div id='author'> Author: tychovdo@gmail.com</div><div id='file'> File Name: memcnn/models/additive.py</div><div id='class'> Class Name: AdditiveBlockFunction</div><div id='method'> Method Name: backward</div><BR><BR><div id='link'><a href='https://github.com/silvandeleemput/memcnn/commit/b73a3eec743aec2411dae5f8a2be7c54d020fb02#diff-97deb8e0fa9c2d269ff7d56b047ad4c158c7d04d8e19fd046e6864a729ef6461L313' target='_blank'>Link</a></div><div id='project'> Project Name: silvandeleemput/memcnn</div><div id='commit'> Commit Name: b73a3eec743aec2411dae5f8a2be7c54d020fb02</div><div id='time'> Time: 2018-10-15</div><div id='author'> Author: tychovdo@gmail.com</div><div id='file'> File Name: memcnn/models/affine.py</div><div id='class'> Class Name: AffineBlockInverseFunction</div><div id='method'> Method Name: backward</div><BR><BR><div id='link'><a href='https://github.com/silvandeleemput/memcnn/commit/23aef76ed2a1a3d2fc0c3f1949a66b09d3829844#diff-2b004f1c84f58ff4989d2c82f4bbf6fb9bc0393ef5f7b279feff4716ad67f2e3L168' target='_blank'>Link</a></div><div id='project'> Project Name: silvandeleemput/memcnn</div><div id='commit'> Commit Name: 23aef76ed2a1a3d2fc0c3f1949a66b09d3829844</div><div id='time'> Time: 2018-10-15</div><div id='author'> Author: tychovdo@gmail.com</div><div id='file'> File Name: memcnn/models/additive.py</div><div id='class'> Class Name: AdditiveBlockFunction</div><div id='method'> Method Name: backward</div><BR><BR><div id='link'><a href='https://github.com/silvandeleemput/memcnn/commit/b73a3eec743aec2411dae5f8a2be7c54d020fb02#diff-97deb8e0fa9c2d269ff7d56b047ad4c158c7d04d8e19fd046e6864a729ef6461L192' target='_blank'>Link</a></div><div id='project'> Project Name: silvandeleemput/memcnn</div><div id='commit'> Commit Name: b73a3eec743aec2411dae5f8a2be7c54d020fb02</div><div id='time'> Time: 2018-10-15</div><div id='author'> Author: tychovdo@gmail.com</div><div id='file'> File Name: memcnn/models/affine.py</div><div id='class'> Class Name: AffineBlockFunction</div><div id='method'> Method Name: backward</div><BR>

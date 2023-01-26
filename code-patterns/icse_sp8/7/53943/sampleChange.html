@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    self._lease_extension_thread.daemon = False
+    self._lease_extension_thread.start()
+
+    <a id="change">self._garbage_collection_thread = threading.Thread(target=self._garbage_collect)</a>
+    self._garbage_collection_thread.daemon = False
+    <a id="change">self._garbage_collection_thread.start()</a>
+
+    while not self.is_killed:
+      time.sleep(1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  def run(self):
+    Main service entrypoint. Called via Thread.start() via PantsDaemon.run().
+    <a id="change">jobs = (self._extend_lease, self._garbage_collect)</a>
+    threads = <a id="change">[self._launch_thread(job) for job in jobs]</a>
+
+    while not self.is_killed:
+      <a id="change">for thread in threads:
+        &#47&#47 If any job threads die, we want to exit the `PantsService` thread to cause
+        &#47&#47 a daemon teardown.
+        if not thread.isAlive():
+          self._logger.warn(&quotthread {} died - aborting!&quot.format(thread))
+          return
+        thread.join(.1)</a>
+</code></pre>

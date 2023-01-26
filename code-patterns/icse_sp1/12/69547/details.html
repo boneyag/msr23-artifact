@@ -1,0 +1,41 @@
+<html><h3>29b8a4deb58ca9798b61690a31de1ea57de92122,fairseq/trainer.py,Trainer,_check_grad_norms,#Trainer#Any#,840
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self._grad_norm_buf.zero_()
+            self._grad_norm_buf[self.data_parallel_rank] = grad_norm
+            distributed_utils.all_reduce(self._grad_norm_buf, group=self.data_parallel_process_group)
+            <a id="change">if not (self._grad_norm_buf == self._grad_norm_buf[0]).all():
+                raise RuntimeError(
+                    "Fatal error: gradients are inconsistent between workers. "
+                    "Try --ddp-backend=no_c10d."
+                )
+
+   </a> def _reduce_and_log_stats(self, logging_outputs, sample_size, grad_norm=None):
+        if grad_norm is not None:
+            metrics.log_speed("ups", 1., priority=100, round=2)
+            metrics.log_scalar("gnorm", grad_norm, priority=400, round=3)</code></pre><h3>After Change</h3><pre><code class='java'>
+                group=self.data_parallel_process_group
+            )
+
+            <a id="change">if not self._is_grad_norms_consistent(self._grad_norm_buf):
+                pretty_detail = "\n".join(
+                    "rank {:3d} = {:.8f}".format(r, n)
+                    for r, n in enumerate(self._grad_norm_buf.tolist())
+                )
+                error_detail = "grad_norm across the workers:\n{}\n".format(pretty_detail)
+                raise RuntimeError(
+                    "Fatal error: gradients are inconsistent between workers. "
+                    "Try --ddp-backend=no_c10d. "
+                    "Or are you mixing up different generation of GPUs in training?"
+                    + "\n"
+                    + "-" * 80
+                    + "\n{}\n".format(error_detail)
+                    + "-" * 80
+                )
+
+   </a> def _reduce_and_log_stats(self, logging_outputs, sample_size, grad_norm=None):
+        if grad_norm is not None:
+            metrics.log_speed("ups", 1., priority=100, round=2)
+            metrics.log_scalar("gnorm", grad_norm, priority=400, round=3)</code></pre><img src="318986099.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/29b8a4deb58ca9798b61690a31de1ea57de92122#diff-1d9c528283eebce84124f45bd2f04e9c1b50dc4d3f63e867776eb89dc55dd95fL846' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 29b8a4deb58ca9798b61690a31de1ea57de92122</div><div id='time'> Time: 2020-05-29</div><div id='author'> Author: yqw@fb.com</div><div id='file'> File Name: fairseq/trainer.py</div><div id='class'> Class Name: Trainer</div><div id='method'> Method Name: _check_grad_norms</div><BR><BR><div id='link'><a href='https://github.com/VOLTTRON/volttron/commit/13cb16b9edbb868505c41401dc951a8c8accb396#diff-2f150fb2a2dee4792812225cbd5b549afb69713af7610228d087d790f9e4db20L386' target='_blank'>Link</a></div><div id='project'> Project Name: VOLTTRON/volttron</div><div id='commit'> Commit Name: 13cb16b9edbb868505c41401dc951a8c8accb396</div><div id='time'> Time: 2020-06-22</div><div id='author'> Author: james.larson@pnnl.gov</div><div id='file'> File Name: services/core/MasterDriverAgent/master_driver/interfaces/ecobee.py</div><div id='class'> Class Name: Interface</div><div id='method'> Method Name: _set_point</div><BR><BR><div id='link'><a href='https://github.com/VOLTTRON/volttron/commit/694383ee05139068146f021d19f80143f98011f6#diff-2f150fb2a2dee4792812225cbd5b549afb69713af7610228d087d790f9e4db20L386' target='_blank'>Link</a></div><div id='project'> Project Name: VOLTTRON/volttron</div><div id='commit'> Commit Name: 694383ee05139068146f021d19f80143f98011f6</div><div id='time'> Time: 2020-06-01</div><div id='author'> Author: james.larson@pnnl.gov</div><div id='file'> File Name: services/core/MasterDriverAgent/master_driver/interfaces/ecobee.py</div><div id='class'> Class Name: Interface</div><div id='method'> Method Name: _set_point</div><BR>

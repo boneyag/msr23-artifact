@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        adv_x_best = None
+        rate_best = None
+
+        for _ in <a id="change">trange(max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose)</a>:
+            adv_x = x.astype(ART_NUMPY_DTYPE)
+
+            &#47&#47 Compute perturbation with batching</code></pre><h3>After Change</h3><pre><code class='java'>
+                batch_eps = self.eps
+                batch_eps_step = self.eps_step
+
+            <a id="change">for rand_init_num in range(max(1, self.num_random_init)):
+                adversarial_batch = self._generate_batch(x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step)
+                if rand_init_num == 0:
+                    &#47&#47 first iteration: use the adversarial examples as they are the only ones we have now
+                    adv_x[batch_index_1:batch_index_2] = np.copy(adversarial_batch)
+                else:
+                    &#47&#47 return the successful adversarial examples
+                    attack_success = compute_success_array(
+                        self.estimator,
+                        batch,
+                        batch_labels,
+                        adversarial_batch,
+                        self.targeted,
+                        batch_size=self.batch_size,
+                    )
+                    adv_x[batch_index_1:batch_index_2][attack_success] = adversarial_batch[attack_success]
+
+       </a> logger.info(
+            "Success rate of attack: %.2f%%",
+            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
+        )</code></pre>

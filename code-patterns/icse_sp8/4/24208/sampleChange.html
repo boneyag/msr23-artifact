@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &quot&quot&quot
+
+        &#47&#47 throw away a buffer region on the side
+        outputs = <a id="change">outputs[self.batch_buffer:-self.batch_buffer]</a>
+
+        &#47&#47 make final predictions
+        preds_length = []
+        for li in range(self.batch_length - 2*self.batch_buffer):</code></pre><h3>After Change</h3><pre><code class='java'>
+        sq_diff = tf.squared_difference(self.preds, self.targets[:,self.batch_buffer:self.batch_length-self.batch_buffer,:])
+
+        &#47&#47 set any NaN&quots to zero
+        <a id="change">nan_indexes = tf.is_nan(sq_diff)</a>
+        tens0 = tf.zeros_like(sq_diff)
+        sq_diff = tf.select(nan_indexes, tens0, sq_diff)
+
+        &#47&#47 take the mean
+        <a id="change">self.loss_op = tf.reduce_mean(sq_diff)</a>
+
+        &#47&#47 define optimization
+        if self.optimization == &quotadam&quot:
+            opt = tf.train.AdamOptimizer(self.learning_rate, self.adam_beta1, self.adam_beta2)</code></pre>

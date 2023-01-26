@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 extend the [min, max] interval to ensure that it contains 0.
+    &#47&#47 Otherwise, we would not meet the requirement that 0 be an exactly
+    &#47&#47 representable value.
+    <a id="change">if rmin.is_cuda:
+        rmin = torch.min(rmin, torch.Tensor([0]).cuda())
+        rmax = torch.max(rmax, torch.Tensor([0]).cuda())
+        qmin = torch.Tensor([0]).cuda()
+        qmax = torch.Tensor([(1 &lt;&lt; bits) - 1]).cuda()
+    else:
+        rmin = torch.min(rmin, torch.Tensor([0]))
+        rmax = torch.max(rmax, torch.Tensor([0]))
+        qmin = torch.Tensor([0])
+        qmax = torch.Tensor([(1 &lt;&lt; bits) - 1])
+
+    &#47&#47 First determine the scale.
+   </a> <a id="change">scale</a> = (rmax - rmin) / (qmax - qmin)
+
+    &#47&#47 Zero-point computation.
+    <a id="change">initial_zero_point</a> = qmin - rmin / scale
+
+    &#47&#47 Now we need to nudge the zero point to be an integer
+    nudged_zero_point = 0
+    if initial_zero_point &lt; qmin:
+        nudged_zero_point = qmin
+    elif initial_zero_point &gt; qmax:
+        nudged_zero_point = qmax
+    else:
+        <a id="change">nudged_zero_point</a> = torch.round(initial_zero_point)
+
+    return scale, nudged_zero_point
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 extend the [min, max] interval to ensure that it contains 0.
+    &#47&#47 Otherwise, we would not meet the requirement that 0 be an exactly
+    &#47&#47 representable value.
+    <a id="change">rmin</a> = torch.min(rmin, torch.Tensor([0]).to(rmin.device))
+    rmax = torch.max(rmax, torch.Tensor([0]).to(rmin.device))
+    qmin = torch.Tensor([0]).to(rmin.device)
+    <a id="change">qmax</a> = <a id="change">torch.Tensor([(1 &lt;&lt; bits) - 1]).to(rmin.device)</a>
+
+    &#47&#47 First determine the scale.
+    <a id="change">scale</a> = (rmax - rmin) / (qmax - qmin)
+
+    &#47&#47 Zero-point computation.
+    <a id="change">initial_zero_point</a> = qmin - rmin / scale
+
+    &#47&#47 Now we need to nudge the zero point to be an integer
+    if initial_zero_point &lt; qmin:
+        nudged_zero_point = qmin
+    elif initial_zero_point &gt; qmax:
+        nudged_zero_point = qmax
+    else:
+        <a id="change">nudged_zero_point</a> = torch.round(initial_zero_point)
+
+    return scale, nudged_zero_point
+</code></pre>

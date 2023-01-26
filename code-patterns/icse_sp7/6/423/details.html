@@ -1,0 +1,79 @@
+<html><h3>06278c94dd2e9d572840ee2133f0d9b366effaf8,pyannote/audio/applications/feature_extraction.py,,extract,#Any#Any#Any#Any#Any#Any#,92
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    protocol = database.get_protocol(task_name, protocol_name, progress=True)
+
+    if isinstance(protocol, SpeakerDiarizationProtocol):
+        items = itertools.chain(<a id="change">protocol.train()</a>,
+                                protocol.development(),
+                                protocol.test())
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    f.attrs[&quotdimension&quot] = dimension
+    f.close()
+
+    <a id="change">for subset in [&quotdevelopment&quot, &quottest&quot, &quottrain&quot]:
+
+        try:
+            file_generator = getattr(protocol, subset)()
+            first_item = next(file_generator)
+        except NotImplementedError as e:
+            continue
+
+        file_generator = getattr(protocol, subset)()
+
+        for current_file in file_generator:
+
+            uri = get_unique_identifier(current_file)
+            path = Precomputed.get_path(experiment_dir, current_file)
+
+            if os.path.exists(path):
+                continue
+
+            try:
+                &#47&#47 NOTE current_file contains the &quotchannel&quot key
+                features = feature_extraction(current_file)
+            except PyannoteFeatureExtractionError as e:
+                if robust:
+                    msg = &quotFeature extraction failed for file "{uri}".&quot
+                    msg = msg.format(uri=uri)
+                    warnings.warn(msg)
+                    continue
+                else:
+                    raise e
+
+            if features is None:
+                msg = &quotFeature extraction returned None for file "{uri}".&quot
+                msg = msg.format(uri=uri)
+                if not robust:
+                    raise PyannoteFeatureExtractionError(msg)
+                warnings.warn(msg)
+                continue
+
+            data = features.data
+
+            if np.any(np.isnan(data)):
+                msg = &quotFeature extraction returned NaNs for file "{uri}".&quot
+                msg = msg.format(uri=uri)
+                if not robust:
+                    raise PyannoteFeatureExtractionError(msg)
+                warnings.warn(msg)
+                continue
+
+            &#47&#47 create parent directory
+            mkdir_p(os.path.dirname(path))
+
+            f = h5py.File(path)
+            f.attrs[&quotstart&quot] = sliding_window.start
+            f.attrs[&quotduration&quot] = sliding_window.duration
+            f.attrs[&quotstep&quot] = sliding_window.step
+            f.attrs[&quotdimension&quot] = dimension
+            f.create_dataset(&quotfeatures&quot, data=data)
+            f.close()
+
+
+</a>def main():
+
+    arguments = docopt(__doc__, version=&quotFeature extraction&quot)
+</code></pre><img src="4177661.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pyannote/pyannote-audio/commit/06278c94dd2e9d572840ee2133f0d9b366effaf8#diff-0679c93b6134a537873aac8ed34937a3b732e1d00ddda176c81a3936f2a65433L95' target='_blank'>Link</a></div><div id='project'> Project Name: pyannote/pyannote-audio</div><div id='commit'> Commit Name: 06278c94dd2e9d572840ee2133f0d9b366effaf8</div><div id='time'> Time: 2017-10-15</div><div id='author'> Author: bredin@limsi.fr</div><div id='file'> File Name: pyannote/audio/applications/feature_extraction.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: extract</div><BR><BR><div id='link'><a href='https://github.com/r9y9/wavenet_vocoder/commit/3210d75451d5d78ebe884c712f31800ca1ccd0b3#diff-ed183d67207df065a11e1289f19d34cc2abbc5448dea952683cfe9728c342b95L580' target='_blank'>Link</a></div><div id='project'> Project Name: r9y9/wavenet_vocoder</div><div id='commit'> Commit Name: 3210d75451d5d78ebe884c712f31800ca1ccd0b3</div><div id='time'> Time: 2018-01-03</div><div id='author'> Author: zryuichi@gmail.com</div><div id='file'> File Name: train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/1d4823c0ec446e93d00df8ca654db4b45b63b3d4#diff-eb17a1293e88aa3c014db9d25a782040771c1c2c4ebc971376f54a925c71cffeL14' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 1d4823c0ec446e93d00df8ca654db4b45b63b3d4</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: sven@anyscale.io</div><div id='file'> File Name: rllib/agents/dqn/tests/test_dqn.py</div><div id='class'> Class Name: TestDQN</div><div id='method'> Method Name: test_dqn_compilation</div><BR>

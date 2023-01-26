@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 TODO: Second loop can be removed with using segment_axis. No large gain.
+    reverb_tail = list()
+    <a id="change">for tau_minus_delay in range(0, K):
+        reverb_tail.append(tf.einsum(
+            &quotde,dt&quot,
+            filter_matrix_conj[tau_minus_delay, :, :],
+            Y[:, (K - 1 - tau_minus_delay):(T - delay - tau_minus_delay)]
+        ))
+   </a> reverb_tail = tf.add_n(reverb_tail)
+    return tf.concat(
+        [Y[:, :(delay + K - 1)],
+         Y[:, (delay + K - 1):] - reverb_tail], axis=-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+            filter_matrix_conj[tau_minus_delay, :, :],
+            Y[:, (K - 1 - tau_minus_delay):(T - delay - tau_minus_delay)]
+        )
+    <a id="change">reverb_tail = tf.foldl(
+        add_tap, tf.range(0, K),
+        initializer=tf.zeros_like(Y[:, (delay + K - 1):])
+    )</a>
+    return tf.concat(
+        [Y[:, :(delay + K - 1)],
+         Y[:, (delay + K - 1):] - reverb_tail], axis=-1)
+</code></pre>

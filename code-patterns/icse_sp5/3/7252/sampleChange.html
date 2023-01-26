@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    image_transform = Compose(
+        [
+            ConvertImageMode("RGB"),
+            <a id="change">Resize(target_size, Image.BILINEAR)</a>,
+            CenterCrop(target_size),
+            ImageToTensor(),
+            Normalize(mean=mean, std=std),</code></pre><h3>After Change</h3><pre><code class='java'>
+    mean, std = dataset["stats"]["mean"], dataset["stats"]["std"]
+
+    transform = JointCompose(
+        <a id="change">[
+            JointTransform(ConvertImageMode("RGB"), ConvertImageMode("P")),
+            JointTransform(Resize(target_size, Image.BILINEAR), Resize(target_size, Image.NEAREST)),
+            JointTransform(CenterCrop(target_size), CenterCrop(target_size)),
+            JointRandomVerticalFlip(0.5),
+            JointRandomHorizontalFlip(0.5),
+            JointRandomRotation(0.5, 90),
+            JointRandomRotation(0.5, 180),
+            JointRandomRotation(0.5, 270),
+            JointTransform(ImageToTensor(), MaskToTensor()),
+            JointTransform(Normalize(mean=mean, std=std), None),
+        ]</a>
+    )
+
+    train_dataset = SlippyMapTilesConcatenation(
+        [os.path.join(path, "training", "images")], os.path.join(path, "training", "labels"), transform</code></pre>

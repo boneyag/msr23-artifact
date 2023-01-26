@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+async def get_sources(request: SetupPySourcesRequest) -&gt; SetupPySources:
+    targets = request.targets
+    stripped_srcs_list = await MultiGet(
+        <a id="change">Get(
+            SourceRootStrippedSources,
+            StripSourcesFieldRequest(
+                target.get(Sources),
+                for_sources_types=(PythonSources, ResourcesSources),
+                enable_codegen=True,
+            ),
+        )</a>
+        for target in targets
+    )
+
+    &#47&#47 Create a chroot with all the sources, and any ancestor __init__.py files that might be needed
+    &#47&#47 for imports to work.  Note that if a repo has multiple exported targets under a single ancestor
+    &#47&#47 package, then that package must be a namespace package, which in Python 3 means it must not
+    &#47&#47 have an __init__.py. We don&quott validate this here, because it would require inspecting *all*
+    &#47&#47 targets, whether or not they are in the target set for this run - basically the entire repo.
+    &#47&#47 So it&quots the repo owners&quot responsibility to ensure __init__.py hygiene.
+    stripped_srcs_digests = [
+        stripped_sources.snapshot.digest <a id="change">for</a> stripped_sources in stripped_srcs_list
+    ]
+    ancestor_init_pys = await Get(AncestorInitPyFiles, Targets, targets)
+    <a id="change">sources_digest = await Get(
+        Digest, MergeDigests((*stripped_srcs_digests, *ancestor_init_pys.digests))
+    )</a>
+    init_py_digest_contents = await Get(
+        DigestContents, DigestSubset(sources_digest, PathGlobs(["**/__init__.py"]))
+    )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+@rule
+async def get_sources(request: SetupPySourcesRequest) -&gt; SetupPySources:
+    <a id="change">python_sources = await Get(
+        StrippedPythonSources,
+        StrippedPythonSourcesRequest(
+            targets=request.targets, include_resources=False, include_files=False
+        ),
+    )</a>
+    all_sources = await Get(
+        StrippedPythonSources,
+        StrippedPythonSourcesRequest(
+            targets=request.targets, include_resources=True, include_files=True
+        ),
+    )
+
+    python_files = set(<a id="change">python_sources</a>.snapshot.files)
+    all_files = set(all_sources.snapshot.files)
+    <a id="change">resource_files = all_files - python_files</a>
+
+    init_py_digest_contents = await Get(
+        DigestContents, DigestSubset(python_sources.snapshot.digest, PathGlobs(["**/__init__.py"]))
+    )</code></pre>

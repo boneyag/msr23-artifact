@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      &#47&#47 zip file names are UTF-8 encoded.
+      compressed_file_name = compressed_file_name.encode(&quotutf-8&quot)
+
+      <a id="change">if compressed_file_name not in namelist:
+        raise MusicXMLParseException(
+            &quotScore file %s not found in zip archive&quot % compressed_file_name)
+
+     </a> score_string = mxlzip.read(compressed_file_name)
+      try:
+        score = ET.fromstring(score_string)
+      except ET.ParseError as exception:</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 which is almost definitely wrong. Here we need to explicitly check
+        &#47&#47 for when this has occurred and change the encoding to utf-8.
+        &#47&#47 https://stackoverflow.com/questions/37723505/namelist-from-zipfile-returns-strings-with-an-invalid-encoding
+        <a id="change">zip_filename_utf8_flag = 0x800</a>
+        for info in infolist:
+          <a id="change">if info.flag_bits & zip_filename_utf8_flag == 0:
+            filename_bytes = info.filename.encode(&quot437&quot)
+            filename = filename_bytes.decode(&quotutf-8&quot, &quotreplace&quot)
+            info.filename = filename
+
+     </a> container_file = [x for x in infolist
+                        if x.filename == &quotMETA-INF/container.xml&quot]
+      compressed_file_name = &quot&quot
+</code></pre>

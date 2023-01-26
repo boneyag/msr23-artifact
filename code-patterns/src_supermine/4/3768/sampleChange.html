@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            lengthscales = tf.zeros((D,), dtype=settings.tf_float) + kern.lengthscales
+
+        vec = tf.expand_dims(Xmu, 2) - tf.expand_dims(<a id="change">tf.transpose(Z)</a>, 0)  &#47&#47 NxDxM
+        chols = tf.cholesky(tf.expand_dims(tf.matrix_diag(lengthscales ** 2), 0) + Xcov)
+        Lvec = tf.matrix_triangular_solve(chols, vec)
+        q = tf.reduce_sum(Lvec ** 2, [1])</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        chol_L_plus_Xcov = tf.cholesky(tf.matrix_diag(lengthscales ** 2) + Xcov)  &#47&#47 NxDxD
+
+        all_diffs = <a id="change">tf.transpose(Z)</a> - tf.expand_dims(Xmu, 2)  &#47&#47 NxDxM
+        exponent_mahalanobis = tf.matrix_triangular_solve(chol_L_plus_Xcov, all_diffs, lower=True)  &#47&#47 NxDxM
+        <a id="change">exponent_mahalanobis = tf.reduce_sum(tf.square(exponent_mahalanobis), 1)</a>  &#47&#47 NxM
+        <a id="change">exponent_mahalanobis = tf.exp(-0.5 * exponent_mahalanobis)</a>  &#47&#47 NxM
+
+        sqrt_det_L = tf.reduce_prod(lengthscales)
+        sqrt_det_L_plus_Xcov = tf.exp(tf.reduce_sum(tf.log(tf.matrix_diag_part(chol_L_plus_Xcov)), axis=1))</code></pre>

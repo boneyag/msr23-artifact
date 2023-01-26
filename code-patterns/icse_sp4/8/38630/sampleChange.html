@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Restore original model to keep upstream callers unaffected.
+    idx = 0
+    for layer in <a id="change">model.layers[1:]</a>:
+        if hasattr(layer, &quotactivation&quot):
+            layer.activation = original_activations[idx]
+            idx += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        for i, layer in utils.reverse_enumerate(modified_model.layers):
+            if hasattr(layer, &quotactivation&quot):
+                layer.activation = tf.nn.relu
+            <a id="change">if isinstance(layer, _ADVANCED_ACTIVATIONS):
+                &#47&#47 NOTE: This code is brittle as it makes use of Keras internal serialization knowledge and might
+                &#47&#47 break in the future.
+                modified_layer = Activation(&quotrelu&quot)
+                modified_layer.inbound_nodes = layer.inbound_nodes
+                modified_layer.name = layer.name
+                modified_model.layers[i] = modified_layer
+
+        &#47&#47 3. Save model with modifications.
+       </a> modified_model.save(model_path)
+
+        &#47&#47 4. Register modifier and load modified model under custom context.
+        modifier_fn = _BACKPROP_MODIFIERS.get(backprop_modifier)</code></pre>

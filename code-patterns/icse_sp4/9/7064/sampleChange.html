@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            num_seq_probs = sum(x is not None for x in merged_logprobs)
+            num_probs += num_seq_probs
+            &#47&#47 number of &lt;unk&gt;&quots (just for reporting)
+            <a id="change">num_unks += len(merged_logprobs) - num_seq_probs</a>
+            &#47&#47 number of sequences
+            num_sentences += 1
+
+            if word_level:</code></pre><h3>After Change</h3><pre><code class='java'>
+    num_words = 0
+    num_probs = 0
+    num_unks = 0
+    <a id="change">num_zeroprobs = 0</a>
+    for word_ids, words, mask in scoring_iter:
+        class_ids, membership_probs = vocabulary.get_class_memberships(word_ids)
+        logprobs = scorer.score_batch(word_ids, class_ids, membership_probs,
+                                      mask)
+        for seq_index, seq_logprobs in enumerate(logprobs):
+            seq_word_ids = word_ids[:, seq_index]
+            seq_mask = mask[:, seq_index]
+            seq_word_ids = seq_word_ids[seq_mask == 1]
+            seq_words = words[seq_index]
+            merged_words, merged_logprobs = _merge_subwords(seq_words,
+                                                            seq_logprobs,
+                                                            subword_marking)
+
+            &#47&#47 total logprob of this sequence
+            seq_logprob = sum(lp for lp in merged_logprobs
+                              if (lp is not None) and (not numpy.isneginf(lp)))
+            &#47&#47 total logprob of all sequences
+            total_logprob += seq_logprob
+            &#47&#47 number of tokens, which may be subwords, including &lt;unk&gt;&quots
+            num_tokens += len(seq_word_ids)
+            &#47&#47 number of words, including &lt;s&gt;&quots and &lt;unk&gt;&quots
+            num_words += len(merged_words)
+            &#47&#47 number of word probabilities computed (may not include &lt;unk&gt;&quots)
+            num_seq_probs = sum((lp is not None) and (not numpy.isneginf(lp))
+                                for lp in merged_logprobs)
+            num_probs += num_seq_probs
+            &#47&#47 number of unks and zeroprobs (just for reporting)
+            num_unks += sum(lp is None for lp in merged_logprobs)
+            <a id="change">num_zeroprobs += sum(numpy.isneginf(lp) for lp in merged_logprobs)</a>
+            &#47&#47 number of sequences
+            num_sentences += 1
+
+            if word_level:</code></pre>

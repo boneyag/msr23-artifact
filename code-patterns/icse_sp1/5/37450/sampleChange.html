@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        classes_color_values = tf.cast(get_classes_color_from_file(classes_file), tf.int32)
+        fn = lambda x: tf.py_func(multilabel_to_img, [x, classes_color_values], tf.int32, name=&quotpy_label2img&quot)
+        image_tf = tf.map_fn(fn, class_label_tensor, name=&quotmap_for_batch&quot)
+        <a id="change">_shape = class_label_tensor.get_shape().as_list()</a>
+        image_tf.set_shape([_shape[0], _shape[1], _shape[2], 3])
+        return image_tf
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    classes_color_values, colors_labels = get_classes_color_from_file_multilabel(classes_file)
+
+    n_classes = colors_labels.shape[1]
+    <a id="change">c = np.zeros((2,)*n_classes+(3,), np.int32)</a>
+    for c_value, inds in zip(classes_color_values, colors_labels):
+        c[tuple(inds)] = c_value
+
+    with tf.name_scope(&quotLabel2Img&quot):
+        return <a id="change">tf.gather_nd(c, tf.cast(class_label_tensor, tf.int32))</a>
+
+
+def get_classes_color_from_file(classes_file: str) -&gt; np.ndarray:
+    if not os.path.exists(classes_file):</code></pre>

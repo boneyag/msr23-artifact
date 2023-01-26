@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def forward(self, x1, x2):
+        lengthscale = (self.log_lengthscale.exp() + self.eps).sqrt_()
+        period_length = (self.log_period_length.exp() + self.eps).sqrt_()
+        diff = torch.sum((<a id="change">x1.unsqueeze(2)</a> - <a id="change">x2.unsqueeze(1)</a>).abs(), -1)
+        res = -2 * torch.sin(<a id="change">math</a>.pi * diff / period_length).pow(2) / lengthscale
+        return res.exp()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        return self.log_period_length.exp().clamp(self.eps, 1e5)
+
+    def forward(self, x1, x2):
+        <a id="change">x1_, x2_ = self._create_input_grid(x1, x2)</a>
+        x1_ = x1_.div(self.period_length)
+        x2_ = x2_.div(self.period_length)
+
+        diff = torch.sum((x1_ - x2_).abs(), -1)</code></pre>

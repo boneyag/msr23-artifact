@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 If number_of_organisms isn&quott specified, default to surveying
+        &#47&#47 all organisms in the division.
+        try:
+            <a id="change">number_of_organisms = int(
+                SurveyJobKeyValue
+                .objects
+                .get(survey_job_id=self.survey_job.id,
+                     key__exact="number_of_organisms")
+                .value
+            )</a>
+        except SurveyJobKeyValue.DoesNotExist:
+            number_of_organisms = -1
+
+        logger.info("Surveying %s division of ensembl.",
+                    ensembl_division,
+                    survey_job=self.survey_job.id)
+
+        &#47&#47 The main division has a different base URL for its REST API.
+        if ensembl_division == "Ensembl":
+            r = utils.requests_retry_session().get(MAIN_DIVISION_URL_TEMPLATE)
+
+            &#47&#47 Yes I&quotm aware that specieses isn&quott a word. However I need to
+            &#47&#47 distinguish between a singlular species and multiple species.
+            specieses = r.json()["species"]
+        else:
+            r = utils.requests_retry_session().get(DIVISION_URL_TEMPLATE.format(division=ensembl_division))
+            specieses = r.json()
+
+        try:
+            organism_name = SurveyJobKeyValue.objects.get(survey_job_id=self.survey_job.id, key__exact="organism_name").value
+            organism_name = organism_name.lower().replace(&quot &quot, "_")
+        except SurveyJobKeyValue.DoesNotExist:
+            organism_name = None
+
+        &#47&#47 Survey jobs are on a per-organism basis.
+        for species in specieses:
+            if species[&quotname&quot] == organism_name:
+                specieses = [species]
+                logger.info("Found species " + organism_name + " on Ensembl.",
+                            survey_job=self.survey_job.id)
+                break
+
+        species_surveyed = 0
+        all_new_species = []
+        for species in specieses:
+            <a id="change">if number_of_organisms != -1 and species_surveyed &gt;= number_of_organisms:
+                break
+
+           </a> all_new_species.append(self._generate_files(species))
+            species_surveyed += 1
+
+        return all_new_species</code></pre><h3>After Change</h3><pre><code class='java'>
+            for species in specieses:
+                all_new_species.append(self._generate_files(species))
+
+        <a id="change">if len(all_new_species) == 0:
+            logger.error("Unable to find any species!",
+                         ensembl_division=ensembl_division,
+                         organism_name=organism_name)
+
+       </a> return all_new_species
+</code></pre>

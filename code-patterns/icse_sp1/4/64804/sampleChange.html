@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def process(self, element, counts_iter):
+    del element
+    <a id="change">counts = list(counts_iter)</a>
+    self._vocab_size.update(len(counts))
+
+    if not counts:
+      &#47&#47 TODO(b/62272023) remove this workaround if/when fixed on tensorflow.</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  def process(self, element, batched_counts_iter):
+    del element
+    <a id="change">counts = []</a>
+    for c in batched_counts_iter:
+      counts.extend(c)
+    self._vocab_size.update(len(counts))
+
+    if not counts:
+      &#47&#47 TODO(b/62272023) remove this workaround if/when fixed on tensorflow.
+      &#47&#47 If the vocabulary is empty add a dummy value with count one so
+      &#47&#47 the tensorflow index operations don&quott fail to initialize with empty
+      &#47&#47 tensors downstream.
+      dummy_value = (b&quot49d0cd50-04bb-48c0-bc6f-5b575dce351a&quot
+                     if tf.dtypes.as_dtype(self._input_dtype) == tf.string else
+                     b&quot-1&quot)
+      counts = [(1, dummy_value)]
+
+    <a id="change">counts.sort(**self._sort_kwargs)</a>
+
+    for count, entry in counts:
+      if self._store_frequency:
+        &#47&#47 Converts `entry` (bytes) to unicode first as otherwise the result will</code></pre>

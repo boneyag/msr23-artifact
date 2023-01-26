@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Need to threshold the melody stft since the synthesized
+        &#47&#47 F0 sequence overtones are at different weights.
+        normalized_melody_stft = log_magnitude &gt; -20
+        normalized_melody_stft = <a id="change">normalized_melody_stft / (normalized_melody_stft.max() + 1e-7)</a>
+        <a id="change">normalized_melody_stft = normalized_melody_stft.astype(float)</a>
+        mask = np.empty(self.audio_signal.stft().shape)
+
+        &#47&#47 Smoothing the mask row-wise using a low-pass filter to
+        &#47&#47 get rid of discontuinities in the mask.</code></pre><h3>After Change</h3><pre><code class='java'>
+        Creates a harmonic mask from the melody signal. The mask is smoothed to reduce 
+        the effects of discontinuities in the melody synthesizer.
+        
+        stft = <a id="change">np.abs(melody_signal.stft())</a>
+
+        &#47&#47 Need to threshold the melody stft since the synthesized
+        &#47&#47 F0 sequence overtones are at different weights.
+        stft = stft ** 2
+        stft /= np.maximum(np.max(stft, axis=1, keepdims=True), 1e-7)
+
+        mask = np.empty(self.stft.shape)
+
+        &#47&#47 Smoothing the mask row-wise using a low-pass filter to
+        &#47&#47 get rid of discontuinities in the mask.
+        kernel =  np.full((1, self.smooth_length), 1/self.smooth_length)
+        for ch in range(self.audio_signal.num_channels):
+            mask[..., ch] = convolve(stft[..., ch], kernel)
+            mask[..., ch] = maximum_filter(mask[..., ch], size=(5, 1))
+            <a id="change">mask[..., ch] = gaussian_filter(mask[..., ch], sigma=1)</a>
+        return mask
+
+    def run(self):
+        high_low = HighLowPassFilter(self.audio_signal, self.high_pass_cutoff)</code></pre>

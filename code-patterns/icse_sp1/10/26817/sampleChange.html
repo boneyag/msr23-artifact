@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                rows = io.BytesIO()
+            else:
+                rows = io.StringIO()
+            <a id="change">batch = 0</a>
+            <a id="change">while batch * batch_size &lt; len(dataframe):
+                rows.seek(0)
+                slice = dataframe.iloc[batch * batch_size:(batch + 1) * batch_size]
+                slice.to_csv(rows, index=False, header=False, sep=&quot|&quot, na_rep=&quot\\N&quot, quoting=csv.QUOTE_NONE)
+                rows.seek(0)
+                self._connection.connection.cursor().copy_from(rows, table, null=&quot\\N&quot, sep=&quot|&quot, columns=dataframe.columns)
+                batch += 1
+       </a> else:
+            dataframe.to_sql(
+                table,
+                self._connection,</code></pre><h3>After Change</h3><pre><code class='java'>
+            self._connection = self._engine.connect()
+
+        if self._engine.dialect.name in [&quotpostgresql&quot, &quotredshift&quot]:
+            <a id="change">for batch in range(int(math.ceil(float(len(dataframe)) / batch_size))):
+                if sys.version_info[0] == 2:
+                    rows = io.BytesIO()
+                else:
+                    rows = io.StringIO()
+                slice = dataframe.iloc[batch * batch_size:(batch + 1) * batch_size]
+                slice.to_csv(rows, index=False, header=False, sep=&quot|&quot, na_rep=&quot\\N&quot, quoting=csv.QUOTE_NONE)
+                rows.seek(0)
+                self._connection.connection.cursor().copy_from(rows, table, null=&quot\\N&quot, sep=&quot|&quot, columns=dataframe.columns)
+                del rows
+                gc.collect()
+       </a> else:
+            dataframe.to_sql(
+                table,
+                self._connection,</code></pre>

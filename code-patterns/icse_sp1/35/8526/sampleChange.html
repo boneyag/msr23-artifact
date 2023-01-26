@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  @classmethod
+  def args_check(cls, node, **kwargs):
+    <a id="change">unsupported_dtype = [
+        tf.int8, tf.int16, tf.uint8, tf.uint16, tf.uint32, tf.uint64
+    ]</a>
+    x = kwargs["tensor_dict"][node.inputs[0]]
+    y = kwargs["tensor_dict"][node.inputs[1]]
+    <a id="change">if x.dtype in unsupported_dtype:
+      exception.OP_UNSUPPORTED_EXCEPT("Mod Dividend in " + str(x.dtype),
+                                      "Tensorflow")
+   </a> if y.dtype in unsupported_dtype:
+      exception.OP_UNSUPPORTED_EXCEPT("Mod Divisor in " + str(y.dtype),
+                                      "Tensorflow")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 throw an error if the data type is not natively supported by
+    &#47&#47 Tensorflow, cannot be safely cast, and auto-cast option is False
+    <a id="change">if x.dtype in cls.cast_map and cls.cast_map[x.dtype] is None:
+      exception.DTYPE_NOT_CAST_EXCEPT(
+          "Mod input " + node.inputs[0] + " with data type &quot" +
+          data_type.tf_to_np_str(x.dtype) + "&quot",
+          data_type.tf_to_np_str_list(cls.supported_types))
+
+    &#47&#47 throw an error if inputs A and B are not in the same data type
+   </a> if x.dtype != y.dtype:
+      exception.OP_UNSUPPORTED_EXCEPT("Mod with inputs in different data types",
+                                      "Tensorflow")
+</code></pre>

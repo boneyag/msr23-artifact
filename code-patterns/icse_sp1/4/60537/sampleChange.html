@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def test_junit_xml_option(self):
+    basedir = os.path.join(self.build_root, &quotdist&quot, &quotjunit_option&quot)
+    <a id="change">self.assert_expected_junit_xml(basedir, junit_xml_dir=basedir)</a>
+
+  def test_junit_xml_env(self):
+    basedir = os.path.join(self.build_root, &quotdist&quot, &quotjunit_env&quot)
+    with environment_as(JUNIT_XML_BASE=basedir):</code></pre><h3>After Change</h3><pre><code class='java'>
+    self.run_failing_tests(targets=[self.green, self.red], failed_targets=[self.red],
+                           junit_xml_dir=report_basedir)
+
+    <a id="change">files = glob.glob(os.path.join(report_basedir, &quot*.xml&quot))</a>
+    self.assertEqual(1, len(files), &quotExpected 1 file, found: {}&quot.format(files))
+    junit_xml = files[0]
+    root = <a id="change">DOM</a>.parse(junit_xml).documentElement
+
+    self.assertEqual(2, len(root.childNodes))
+    self.assertEqual(2, int(root.getAttribute(&quottests&quot)))
+    self.assertEqual(1, int(root.getAttribute(&quotfailures&quot)))
+    self.assertEqual(0, int(root.getAttribute(&quoterrors&quot)))
+    self.assertEqual(0, int(root.getAttribute(&quotskips&quot)))
+
+    children_by_test_name = dict((elem.getAttribute(&quotname&quot), elem) <a id="change">for</a> elem in root.childNodes)
+    self.assertEqual(0, len(children_by_test_name[&quottest_one&quot].childNodes))
+    self.assertEqual(1, len(children_by_test_name[&quottest_two&quot].childNodes))
+    self.assertEqual(&quotfailure&quot, children_by_test_name[&quottest_two&quot].firstChild.nodeName)</code></pre>

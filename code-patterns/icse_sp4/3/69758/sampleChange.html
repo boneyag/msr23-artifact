@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        with tf.variable_scope("rnn1"):
+            (fw_h, bw_h), _ = bidirectional_dynamic_rnn(cell, cell, xx, x_len, dtype=&quotfloat&quot, scope=&quotstart&quot)  &#47&#47 [N, M, JX, 2d]
+            <a id="change">tf</a>.get_variable_scope().reuse_variables()
+            (fw_us, bw_us), (_, (fw_u, bw_u)) = bidirectional_dynamic_rnn(cell, cell, qq, q_len, dtype=&quotfloat&quot, scope=&quotstart&quot)  &#47&#47 [N, J, d], [N, d]
+            h = tf.concat(3, [fw_h, bw_h])
+            u = tf.concat(1, [fw_u, bw_u])</code></pre><h3>After Change</h3><pre><code class='java'>
+        with tf.variable_scope("rnn1"):
+            (fw_us, bw_us), (_, (fw_u, bw_u)) = bidirectional_dynamic_rnn(cell, cell, qq, q_len, dtype=&quotfloat&quot, scope=&quotu&quot)  &#47&#47 [N, J, d], [N, d]
+            u = tf.concat(1, [fw_u, bw_u])
+            u = tf.tile(tf.expand_dims(tf.expand_dims(u, 1), 1), <a id="change">[1, M, JX, 1]</a>)
+
+            <a id="change">xx = tf.concat(3, [xx, u])</a>
+
+            (fw_h, bw_h), _ = bidirectional_dynamic_rnn(cell, cell, xx, x_len, dtype=&quotfloat&quot, scope=&quoth1&quot)  &#47&#47 [N, M, JX, 2d]
+            h = tf.concat(3, [fw_h, bw_h])
+            (fw_h, bw_h), _ = bidirectional_dynamic_rnn(cell, cell, h, x_len, dtype=&quotfloat&quot, scope=&quoth2&quot)  &#47&#47 [N, M, JX, 2d]</code></pre>

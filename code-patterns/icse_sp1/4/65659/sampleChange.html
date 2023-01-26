@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    super(Normalization, self).build(input_shape)
+
+    <a id="change">if (self.mean_val is not None and self.variance_val is not None):
+      mean_val = self.mean_val * np.ones(mean_and_var_shape)
+      variance_val = self.variance_val * np.ones(mean_and_var_shape)
+      self.set_weights([mean_val, variance_val])
+
+   </a> self.built = True
+
+  def update_state(self, data):
+    if not self.built:</code></pre><h3>After Change</h3><pre><code class='java'>
+    ]
+    mean_and_var_shape = tuple(input_shape[d] for d in self._keep_axis)
+
+    <a id="change">if self.input_mean is None:
+      self.adapt_mean = self.add_weight(
+          name=&quotmean&quot,
+          shape=mean_and_var_shape,
+          dtype=self.dtype,
+          initializer=init_ops.zeros_initializer,
+          trainable=False)
+      self.adapt_variance = self.add_weight(
+          name=&quotvariance&quot,
+          shape=mean_and_var_shape,
+          dtype=self.dtype,
+          initializer=init_ops.ones_initializer,
+          trainable=False)
+      self.count = self.add_weight(
+          name=&quotcount&quot,
+          shape=(),
+          dtype=dtypes.int64,
+          initializer=init_ops.zeros_initializer,
+          trainable=False)
+      self.finalize_state()
+    else:
+      &#47&#47 In the no adapt case, make constant tensors for mean and variance with
+      &#47&#47 proper broadcast shape for use during call.
+      mean = self.input_mean * np.ones(mean_and_var_shape)
+      variance = self.input_variance * np.ones(mean_and_var_shape)
+      mean = array_ops.reshape(mean, self._broadcast_shape)
+      variance = array_ops.reshape(variance, self._broadcast_shape)
+      self.mean = math_ops.cast(mean, self.dtype)
+      self.variance = math_ops.cast(variance, self.dtype)
+
+ </a> def update_state(self, data):
+    if self.input_mean is not None:
+      raise ValueError(
+          &quotCannot `adapt` a Normalization layer that is initialized with &quot</code></pre>

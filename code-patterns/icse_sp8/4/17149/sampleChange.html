@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      tf.summary.histogram("softmax_weights", sm_w)
+
+      &#47&#47 Placeholders or QueueRunner/Readers for input data
+      num_epochs = <a id="change">None if args.epochs == 0 else args.epochs</a>
+      images = TFNode.hdfs_path(ctx, args.tfrecord_dir)
+      x, y_ = read_tfr_examples(images, 100, num_epochs)
+
+      x_img = tf.reshape(x, [-1, IMAGE_PIXELS, IMAGE_PIXELS, 1])</code></pre><h3>After Change</h3><pre><code class='java'>
+      tfr_files = tf.gfile.Glob(tf_record_pattern)
+      ds = tf.data.TFRecordDataset(tfr_files)
+      parse_fn = _parse_tfr
+      ds = <a id="change">ds</a>.shard(num_workers, task_index).repeat(args.epochs).shuffle(args.shuffle_size)
+      ds = ds.map(parse_fn).batch(args.batch_size)
+      <a id="change">iterator = ds.make_initializable_iterator()</a>
+      x, y_ = iterator.get_next()
+
+      x_img = tf.reshape(x, [-1, IMAGE_PIXELS, IMAGE_PIXELS, 1])
+      tf.summary.image("x_img", x_img)</code></pre>

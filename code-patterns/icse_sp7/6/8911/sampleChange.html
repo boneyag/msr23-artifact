@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        assert self._nonterminal_stack[-1] == left_side, (f"Tried to expand {self._nonterminal_stack[-1]}"
+                                                          "but got rule f{left_side}-&gt;f{right_side}")
+        new_stack = self._nonterminal_stack[:-1]
+        <a id="change">new_lambda_stacks = deepcopy(self._lambda_stacks)</a>
+        for key, lambda_stack in new_lambda_stacks.items():
+            assert lambda_stack[-1] == left_side
+            lambda_stack.pop()  &#47&#47 pop to modify the value in the dictionary
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        assert all(self._lambda_stacks[key][-1] == left_side for key in self._lambda_stacks)
+
+        new_stack = self._nonterminal_stack[:-1]
+        <a id="change">new_lambda_stacks = {key: self._lambda_stacks[key][:-1] for key in self._lambda_stacks}</a>
+
+        productions = self._get_productions_from_string(right_side)
+        &#47&#47 Looking for lambda productions, but not for cells or columns with the word "lambda" in
+        &#47&#47 them.
+        if &quotlambda&quot in productions[0] and &quotfb:&quot not in productions[0]:
+            production = productions[0]
+            if production[0] == "&quot" and production[-1] == "&quot":
+                &#47&#47 The production rule with a lambda is typically "&lt;t,d&gt; -&gt; [&quotlambda x&quot, d]".  We
+                &#47&#47 need to strip the quotes.
+                production = production[1:-1]
+            lambda_variable = production.split(&quot &quot)[1]
+            &#47&#47 The left side must be formatted as "&lt;t,d&gt;", where "t" is the type of the lambda
+            &#47&#47 variable, and "d" is the return type of the lambda function.  We need to pull out the
+            &#47&#47 "t" here.  TODO(mattg): this is pretty limiting, but I&quotm not sure how general we
+            &#47&#47 should make this.
+            if len(left_side) != 5:
+                raise NotImplementedError("Can&quott handle this type yet:", left_side)
+            lambda_type = left_side[1]
+            new_lambda_stacks[(lambda_type, lambda_variable)] = []
+
+        for production in reversed(productions):
+            if self._is_nonterminal(production):
+                new_stack.append(production)
+                for lambda_stack in new_lambda_stacks.values():
+                    lambda_stack.append(production)
+
+        &#47&#47 If any of the lambda stacks have now become empty, we remove them from our dictionary.
+        <a id="change">new_lambda_stacks = {key: new_lambda_stacks[key]
+                             for key in new_lambda_stacks if new_lambda_stacks[key]}</a>
+
+        return GrammarState(nonterminal_stack=new_stack,
+                            lambda_stacks=new_lambda_stacks,
+                            valid_actions=self._valid_actions,</code></pre>

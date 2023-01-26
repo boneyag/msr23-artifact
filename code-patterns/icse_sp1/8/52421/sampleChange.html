@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def build_model(self, params=None):
+    params = params or self.task_config.model
+    <a id="change">return bert.instantiate_pretrainer_from_cfg(params)</a>
+
+  def build_losses(self,
+                   labels,
+                   model_outputs,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  def build_model(self, params=None):
+    config = params or self.task_config.model
+    <a id="change">encoder_cfg = config.encoder</a>
+    encoder_network = encoders.build_encoder(encoder_cfg)
+    cls_heads = [
+        layers.ClassificationHead(**cfg.as_dict()) for cfg in config.cls_heads
+    ] if config.cls_heads else []
+    <a id="change">return models.BertPretrainerV2(
+        mlm_activation=tf_utils.get_activation(config.mlm_activation),
+        mlm_initializer=tf.keras.initializers.TruncatedNormal(
+            stddev=config.mlm_initializer_range),
+        encoder_network=encoder_network,
+        classification_heads=cls_heads)</a>
+
+  def build_losses(self,
+                   labels,
+                   model_outputs,</code></pre>

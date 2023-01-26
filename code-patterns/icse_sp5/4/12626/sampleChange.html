@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                word = vocabulary.id_to_word[word_id]
+            else:
+                word = word_id
+                <a id="change">logging.debug("Out-of-vocabulary word in lattice: %s", word)</a>
+
+            &#47&#47 Find the incoming link that corresponds to the token that was kept
+            &#47&#47 during recombination.
+            try:</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.links.append(link)
+
+        &#47&#47 Add recombined tokens.
+        <a id="change">oov_words = set()</a>
+        for token, new_history, nn_lm_logprob in reversed(recomb_tokens):
+            assert new_history[-1] == token.history[-1]
+            word_id = token.history[-1]
+            if isinstance(word_id, int):
+                word = vocabulary.id_to_word[word_id]
+            else:
+                word = word_id
+                oov_words.add(word)
+
+            &#47&#47 Find the incoming link that corresponds to the token that was kept
+            &#47&#47 during recombination.
+            try:
+                recomb_from_node = follow_word_ids(new_history[:-1], False)
+            except NodeNotFoundError:
+                continue
+            &#47&#47 Our new lattice doesn&quott contain null links, so word_to_link maps
+            &#47&#47 never skip nodes.
+            if word not in recomb_from_node.word_to_link:
+                continue
+            recomb_link = recomb_from_node.word_to_link[word]
+
+            &#47&#47 Add a link from the previous word in the token history to the node
+            &#47&#47 that was kept during recombination. The difference in LM log
+            &#47&#47 probability can be computed from the token (path) NNLM log
+            &#47&#47 probabilities.
+            from_node = follow_word_ids(token.history[:-1])
+            lm_logprob_diff = token.nn_lm_logprob - nn_lm_logprob
+            new_link = self.Link(from_node, recomb_link.end_node, word,
+                                 recomb_link.ac_logprob,
+                                 recomb_link.lm_logprob + lm_logprob_diff,
+                                 recomb_link.transitions)
+            from_node.out_links.append(new_link)
+            &#47&#47 Tokens never contain null words, so we can be sure that
+            &#47&#47 word_to_link maps in our new lattice never skip nodes.
+            assert word is not None
+            from_node.word_to_link[word] = new_link
+            self.links.append(new_link)
+
+        <a id="change">if oov_words:
+            logging.debug("Out-of-vocabulary words in lattice: %s",
+                          &quot, &quot.join(oov_words))
+
+       </a> final_node.id = len(self.nodes)
+        self.nodes.append(final_node)
+
+    def _add_word_maps(self, nodes):</code></pre>

@@ -1,0 +1,39 @@
+<html><h3>6294677f8acc6bc040baf922910473e1c82995ba,python/dgl/ops/spmm.py,,gspmm,#Any#Any#Any#Any#Any#,11
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        deg_shape = (ret_shape[0],) + (1,) * (len(ret_shape) - 1)
+        return ret / F.reshape(deg, deg_shape)
+    else:
+        <a id="change">return gspmm_internal(g._graph, op, reduce_op, lhs_data, rhs_data)</a>
+
+
+def _gen_spmm_func(binary_op, reduce_op):
+    name = "u_{}_e_{}".format(binary_op, reduce_op)</code></pre><h3>After Change</h3><pre><code class='java'>
+    deg = g.in_degrees()
+    min_deg = F.as_scalar(F.min(deg, dim=0))
+    if min_deg == 0:
+        <a id="change">non_zero_nids = F.nonzero_1d(deg == 0)</a>
+        if backend_name == &quotpytorch&quot:
+            ret[non_zero_nids] = 0.
+        else:
+            <a id="change">dtype = F.dtype(ret)</a>
+            <a id="change">ctx = F.context(ret)</a>
+            ret = F.scatter_row(ret, non_zero_nids,
+                                F.zeros((len(non_zero_nids),) + F.shape(ret)[1:], dtype, ctx))
+
+    &#47&#47 divide in degrees for mean reducer.
+    if reduce_op == &quotmean&quot:
+        ret_shape = F.shape(ret)
+        if min_deg == 0:
+            dgl_warning(&quotZero-degree nodes encountered in mean reducer. Setting the mean to 0.&quot)
+        deg = F.astype(F.clamp(deg, 1, g.number_of_edges()), F.dtype(ret))
+        deg_shape = (ret_shape[0],) + (1,) * (len(ret_shape) - 1)
+        return ret / F.reshape(deg, deg_shape)
+    else:
+        <a id="change">return ret</a>
+
+
+def _gen_spmm_func(binary_op, reduce_op):
+    name = "u_{}_e_{}".format(binary_op, reduce_op)</code></pre><img src="39519244.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/6294677f8acc6bc040baf922910473e1c82995ba#diff-9034c65e56174ad6a37ee6d69fcf420c3230a2534f44009d56660d6a1dcc860dL60' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: 6294677f8acc6bc040baf922910473e1c82995ba</div><div id='time'> Time: 2020-08-12</div><div id='author'> Author: expye@outlook.com</div><div id='file'> File Name: python/dgl/ops/spmm.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: gspmm</div><BR><BR><div id='link'><a href='https://github.com/tensorly/tensorly/commit/6be1f6d9be00190becf2ea3ee0eee28ab3af8943#diff-9a369b099baae7789b140f00d0013509d33ab7f89d9db618f4efcd8d6b425ad7L156' target='_blank'>Link</a></div><div id='project'> Project Name: tensorly/tensorly</div><div id='commit'> Commit Name: 6be1f6d9be00190becf2ea3ee0eee28ab3af8943</div><div id='time'> Time: 2018-09-08</div><div id='author'> Author: zli@wustl.edu</div><div id='file'> File Name: tensorly/backend/mxnet_backend.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: inverse</div><BR><BR><div id='link'><a href='https://github.com/tensorly/tensorly/commit/975c84b15a5bdec14d2b326b985e2ac15bc099b8#diff-9a369b099baae7789b140f00d0013509d33ab7f89d9db618f4efcd8d6b425ad7L156' target='_blank'>Link</a></div><div id='project'> Project Name: tensorly/tensorly</div><div id='commit'> Commit Name: 975c84b15a5bdec14d2b326b985e2ac15bc099b8</div><div id='time'> Time: 2018-09-19</div><div id='author'> Author: zli@wustl.edu</div><div id='file'> File Name: tensorly/backend/mxnet_backend.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: inverse</div><BR>

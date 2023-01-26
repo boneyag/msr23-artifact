@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 Broadcasting only supported on first dimension in CoreML. See onnx-coreml/_operators.py
+            &#47&#47 p_cls = F.softmax(p_cls, 2) * p_conf  &#47&#47 SSD-like conf
+            p_cls = torch.exp(p_cls).permute((2, 1, 0))
+            <a id="change">p_cls = p_cls / p_cls.sum(0).unsqueeze(0) * p_conf.permute((2, 1, 0))</a>  &#47&#47 F.softmax() equivalent
+            p_cls = p_cls.permute(2, 1, 0)
+            return torch.cat((xy / ngu, wh, p_conf, p_cls), 2).squeeze().t()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            xy = torch.sigmoid(p[..., 0:2]) + grid_xy[0]  &#47&#47 x, y
+            wh = torch.exp(p[..., 2:4]) * anchor_wh[0]  &#47&#47 width, height
+            p_conf = torch.sigmoid(p[:, 4:5])  &#47&#47 Conf
+            <a id="change">p_cls = F.softmax(p[:, 5:85], 1) * p_conf</a>  &#47&#47 SSD-like conf
+            return torch.cat((xy / ngu[0], wh, p_conf, p_cls), 1).t()
+
+            &#47&#47 p = p.view(1, -1, 5 + self.nc)</code></pre>

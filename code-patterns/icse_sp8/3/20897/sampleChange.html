@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        vars = variables
+      grads = tape.gradient(batch_loss, vars)
+      self._tf_optimizer.apply_gradients(zip(grads, vars))
+      <a id="change">self._global_step.assign_add(1)</a>
+      current_step = self._global_step.numpy()
+
+      avg_loss += batch_loss
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if loss is None:
+      loss = self._loss_fn
+    var_key = None
+    <a id="change">if variables is not None:
+      var_key = tuple(v.experimental_ref() for v in variables)
+
+      &#47&#47 The optimizer creates internal variables the first time apply_gradients()
+      &#47&#47 is called for a new set of variables.  If that happens inside a function
+      &#47&#47 annotated with tf.function it throws an exception, so call it once here.
+
+      zero_grads = [tf.zeros(v.shape) for v in variables]
+      self._tf_optimizer.apply_gradients(zip(zero_grads, variables))
+   </a> if var_key not in self._gradient_fn_for_vars:
+      self._gradient_fn_for_vars[var_key] = self._create_gradient_fn(variables)
+    apply_gradient_for_batch = self._gradient_fn_for_vars[var_key]
+    time1 = time.time()</code></pre>

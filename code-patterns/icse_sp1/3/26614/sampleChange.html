@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        precomputed_cache = self.covar_cache
+        covar_inv_quad_form_root = self._exact_predictive_covar_inv_quad_form_root(precomputed_cache,
+                                                                                   test_train_covar)
+        <a id="change">return test_test_covar + RootLazyTensor(covar_inv_quad_form_root).mul(-1)</a>
+
+
+@register_prediction_strategy(InterpolatedLazyTensor)
+class InterpolatedPredictionStrategy(DefaultPredictionStrategy):</code></pre><h3>After Change</h3><pre><code class='java'>
+            train_test_covar = test_train_covar.transpose(-1, -2)
+            covar_correction_rhs = train_train_covar.inv_matmul(train_test_covar).mul(-1)
+            if torch.is_tensor(test_test_covar):
+                <a id="change">return lazify(test_test_covar + test_train_covar @ covar_correction_rhs)</a>
+            else:
+                return test_test_covar + MatmulLazyTensor(test_train_covar, covar_correction_rhs)
+
+        precomputed_cache = self.covar_cache</code></pre>

@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            start = last_downloads[0].created
+            start = start.replace(hour=0, minute=0, second=0)
+            PackDownload.objects.filter(created__gt=start).delete()
+            <a id="change">PackDownloadJson</a>.objects.filter(created__gt=start).delete()
+        else:
+            first_downloads = Download.objects.order_by(&quotcreated&quot)
+            start = first_downloads.first().created</code></pre><h3>After Change</h3><pre><code class='java'>
+                    .prefetch_related(&quotpack__sound_set&quot)
+            start += td
+            more_downloads = downloads.count() != 0
+            <a id="change">with transaction.atomic():
+                for download in downloads.all():
+                    &#47&#47 create both PackDownload and PackDownloadJson
+                    sounds = []
+                    pd = PackDownload.objects.create(user=download.user, created=download.created, pack_id=download.pack_id)
+                    pds = []
+                    for sound in download.pack.sound_set.all():
+                        pds.append(PackDownloadSound(sound=sound, license=sound.license, pack_download=pd))
+                        sounds.append({&quotsound_id&quot: sound.id, &quotlicense_id&quot: sound.license_id})
+                    PackDownloadSound.objects.bulk_create(pds, batch_size=1000)
+                    PackDownloadJson.objects.create(user=download.user, created=download.created, pack_id=download.pack_id, sounds=sounds)
+
+           </a> logger.info("Copy of Download for %d sounds of the date: %s " % (downloads.count(), start.strftime("%Y-%m-%d")))
+        logger.info(&quotCopy Downloads to new PackDownload finished&quot)
+</code></pre>

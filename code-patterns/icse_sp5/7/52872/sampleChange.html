@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    with tf.Graph().as_default() as g:
+      tf.train.create_global_step(g)
+      features, labels = <a id="change">input_fn()</a>
+      labels["alignment"] = None  &#47&#47 Add alignment key to force the model to return attention.
+      outputs, _ = self._model(
+          features,
+          labels,</code></pre><h3>After Change</h3><pre><code class='java'>
+    if checkpoint_path is None:
+      raise ValueError("could not find a trained model in %s" % self._config["model_dir"])
+
+    <a id="change">model = copy.deepcopy(self._model)</a>
+    with tf.Graph().as_default():
+      dataset = model.examples_inputter.make_evaluation_dataset(
+          features_file,
+          predictions_file,
+          self._config["score"]["batch_size"],
+          num_threads=self._config["score"].get("num_threads"),
+          prefetch_buffer_size=self._config["score"].get("prefetch_buffer_size"))
+      <a id="change">iterator</a> = dataset.make_initializable_iterator()
+      features, labels = <a id="change">iterator.get_next()</a>
+      labels["alignment"] = None  &#47&#47 Add alignment key to force the model to return attention.
+      outputs, _ = model(
+          features,
+          labels,
+          self._config["params"],
+          tf.estimator.ModeKeys.EVAL)
+
+      cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
+          logits=outputs["logits"], labels=labels["ids_out"])
+      weights = tf.sequence_mask(labels["length"], dtype=cross_entropy.dtype)
+      masked_cross_entropy = cross_entropy * weights
+      scores = tf.reduce_sum(masked_cross_entropy, axis=1)
+      results = {
+          "attention": outputs["attention"],
+          "cross_entropy": cross_entropy,
+          "score": scores,
+          "tokens": labels["tokens"],
+          "length": labels["length"] - 1  &#47&#47 -1 for the special token.
+      }
+
+      if output_file:
+        stream = io.open(output_file, encoding="utf-8", mode="w")
+      else:
+        stream = sys.stdout
+
+      with tf.train.MonitoredSession(
+          session_creator=tf.train.ChiefSessionCreator(
+              checkpoint_filename_with_path=checkpoint_path,
+              config=self._session_config)) as sess:
+        <a id="change">sess.run(iterator.initializer)</a>
+        while not sess.should_stop():
+          for batch in misc.extract_batches(sess.run(results)):
+            tokens = batch["tokens"][:batch["length"]]
+            sentence = self._model.labels_inputter.tokenizer.detokenize(tokens)</code></pre>

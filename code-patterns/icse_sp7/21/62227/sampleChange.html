@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _test_trainer_sarsa_factorized(self, use_gpu=False, use_all_avail_gpus=False):
+        environment = GridworldContinuous()
+        <a id="change">samples = environment.generate_samples(100000, 1.0, DISCOUNT)</a>
+        trainer = self.get_sarsa_trainer(
+            environment,
+            self.get_sarsa_parameters_factorized(),
+            use_gpu=use_gpu,
+            use_all_avail_gpus=use_all_avail_gpus,
+        )
+        predictor = trainer.predictor()
+        evaluator = GridworldContinuousEvaluator(
+            environment, False, DISCOUNT, False, samples
+        )
+        <a id="change">tdps = environment.preprocess_samples(
+            samples, self.minibatch_size, use_gpu=use_gpu
+        )</a>
+
+        <a id="change">for tdp in tdps:
+            trainer.train(tdp)
+
+       </a> predictor = trainer.predictor()
+        evaluator.evaluate(predictor)
+
+        self.assertLess(evaluator.evaluate(predictor), 0.15)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def test_modular_trainer_sarsa_all_gpus(self):
+        self._test_trainer_sarsa(use_gpu=True, use_all_avail_gpus=True, modular=True)
+
+    def _test_trainer_sarsa_factorized(<a id="change">self</a>, use_gpu=False, use_all_avail_gpus=False):
+        <a id="change">self.check_tolerance = False</a>
+        <a id="change">self.tolerance_threshold = 0.15</a>
+        environment = GridworldContinuous()
+        trainer, exporter = self.get_sarsa_trainer_exporter(
+            environment,
+            self.get_sarsa_parameters_factorized(),
+            use_gpu,
+            use_all_avail_gpus,
+        )
+        evaluator = GridworldContinuousEvaluator(environment, False, DISCOUNT, False)
+        <a id="change">self.evaluate_gridworld(environment, evaluator, trainer, exporter, use_gpu)</a>
+
+    def test_trainer_sarsa_factorized(self):
+        self._test_trainer_sarsa_factorized()
+</code></pre>

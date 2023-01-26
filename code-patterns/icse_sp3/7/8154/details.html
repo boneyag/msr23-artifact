@@ -1,0 +1,121 @@
+<html><h3>a5f63384ac283ea71ca2668963da77db00cafa46,pycorrector/rnn_lm/infer.py,,ppl,#Any#,71
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def ppl(sentence_list):
+    <a id="change">ppl_list = []</a>
+    &#47&#47 load data dict
+    word_to_int = load_word_dict(conf.word_dict_path)
+    &#47&#47 init params
+    batch_size = 1
+    tf.reset_default_graph()
+    input_data = tf.placeholder(tf.int32, [batch_size, None])
+    output_targets = tf.placeholder(tf.int32, [batch_size, None])
+    &#47&#47 init model
+    end_points = rnn_model(model=&quotlstm&quot,
+                           input_data=input_data,
+                           output_data=output_targets,
+                           vocab_size=len(word_to_int),
+                           rnn_size=128,
+                           num_layers=2,
+                           batch_size=batch_size,
+                           learning_rate=conf.learning_rate)
+    saver = tf.train.Saver(tf.global_variables())
+    init_op = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
+    with tf.Session() as sess:
+        &#47&#47 init op
+        sess.run(init_op)
+        checkpoint = tf.train.latest_checkpoint(conf.model_dir)
+        saver.restore(sess, checkpoint)
+        print("loading model from the checkpoint {0}".format(checkpoint))
+
+        &#47&#47 infer each sentence
+        for sentence in sentence_list:
+            ppl = 0
+            &#47&#47 data idx
+            x = [word_to_int[c] if c in word_to_int else word_to_int[UNK_TOKEN] for c in sentence]
+            x = [word_to_int[START_TOKEN]] + x + [word_to_int[END_TOKEN]]
+            print(&quotx:&quot, x)
+            &#47&#47 reshape
+            y = np.array(x[1:]).reshape((-1, batch_size))
+            x = np.array(x[:-1]).reshape((-1, batch_size))
+            print(x.shape)
+            print(y.shape)
+            &#47&#47 get each word perplexity
+            word_count = x.shape[0]
+            for i in range(word_count):
+                perplexity = sess.run(end_points[&quotperplexity&quot],
+                                      feed_dict={input_data: x[i:i + 1, :],
+                                                 output_targets: y[i:i + 1, :]})
+                print(&quot{0} -&gt; {1}, perplexity: {2}&quot.format(x[i:i + 1, :], y[i:i + 1, :], perplexity))
+                if i == 0 or i == word_count:
+                    continue
+                ppl += perplexity
+            ppl /= (word_count - 2)
+            print(&quotperplexity:&quot + str(ppl))
+            <a id="change">ppl_list.append(ppl)</a>
+    return ppl_list
+
+
+def infer_generate():</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def ppl(sentence_list):
+    <a id="change">result = dict()</a>
+    &#47&#47 load data dict
+    word_to_idx = load_word_dict(config.word_dict_path)
+    idx_to_word = {v: k for k, v in word_to_idx.items()}
+    &#47&#47 init params
+    batch_size = 1
+    tf.reset_default_graph()
+    input_data = tf.placeholder(tf.int32, [batch_size, None])
+    output_targets = tf.placeholder(tf.int32, [batch_size, None])
+    &#47&#47 init model
+    end_points = rnn_model(model=&quotlstm&quot,
+                           input_data=input_data,
+                           output_data=output_targets,
+                           vocab_size=len(word_to_idx),
+                           rnn_size=128,
+                           num_layers=2,
+                           batch_size=batch_size,
+                           learning_rate=config.learning_rate)
+    saver = tf.train.Saver(tf.global_variables())
+    init_op = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
+    with tf.Session() as sess:
+        &#47&#47 init op
+        sess.run(init_op)
+        checkpoint = tf.train.latest_checkpoint(config.model_dir)
+        saver.restore(sess, checkpoint)
+        print("loading model from the checkpoint {0}".format(checkpoint))
+
+        &#47&#47 infer each sentence
+        for sentence in sentence_list:
+            ppl = 0
+            &#47&#47 data idx
+            x = [word_to_idx[c] if c in word_to_idx else word_to_idx[UNK_TOKEN] for c in sentence]
+            x = [word_to_idx[START_TOKEN]] + x + [word_to_idx[END_TOKEN]]
+            &#47&#47 print(&quotx:&quot, x)
+            &#47&#47 reshape
+            y = np.array(x[1:]).reshape((-1, batch_size))
+            x = np.array(x[:-1]).reshape((-1, batch_size))
+            &#47&#47 get each word perplexity
+            word_count = x.shape[0]
+            for i in range(word_count):
+                perplexity = sess.run(end_points[&quotperplexity&quot],
+                                      feed_dict={input_data: x[i:i + 1, :],
+                                                 output_targets: y[i:i + 1, :]})
+                print(&quot{0} -&gt; {1}, perplexity: {2}&quot.format(idx_to_word[x[i:i + 1, :].tolist()[0][0]],
+                                                           idx_to_word[y[i:i + 1, :].tolist()[0][0]],
+                                                           perplexity))
+                if i == 0 or i == word_count:
+                    continue
+                ppl += perplexity
+            ppl /= (word_count - 2)
+            <a id="change">result[sentence] = ppl</a>
+    return result
+
+
+def infer_generate():</code></pre><img src="58647470.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 7</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/shibing624/pycorrector/commit/a5f63384ac283ea71ca2668963da77db00cafa46#diff-ba47e34bfd0a64ade91111786676be23f3c9bcb8931bf6cebb60f66611a9064dL1' target='_blank'>Link</a></div><div id='project'> Project Name: shibing624/pycorrector</div><div id='commit'> Commit Name: a5f63384ac283ea71ca2668963da77db00cafa46</div><div id='time'> Time: 2019-07-08</div><div id='author'> Author: 507153809@qq.com</div><div id='file'> File Name: pycorrector/rnn_lm/infer.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: ppl</div><BR><BR><div id='link'><a href='https://github.com/dirty-cat/dirty_cat/commit/f819a34e2fbea2dab4997b3b236b517fa12d115d#diff-687074a9424d2ec73413c9c6e19ae408d3f34c75fdeb709aae0f83a920152737L115' target='_blank'>Link</a></div><div id='project'> Project Name: dirty-cat/dirty_cat</div><div id='commit'> Commit Name: f819a34e2fbea2dab4997b3b236b517fa12d115d</div><div id='time'> Time: 2018-06-08</div><div id='author'> Author: gael.varoquaux@normalesup.org</div><div id='file'> File Name: examples/02_predict_employee_salaries.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/cb091ce8cd52691e9eb569dacd960cd326030c8b#diff-73b682c339e6752f9e92abfbddc4608fac57a01ad298a975fbf53552f964372eL273' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: cb091ce8cd52691e9eb569dacd960cd326030c8b</div><div id='time'> Time: 2014-02-20</div><div id='author'> Author: jsirois@twitter.com</div><div id='file'> File Name: src/python/twitter/pants/tasks/builddictionary.py</div><div id='class'> Class Name: BuildBuildDictionary</div><div id='method'> Method Name: _gen_goals_reference</div><BR><BR><div id='link'><a href='https://github.com/openml/openml-python/commit/7dba90f659bd36cbc82290fe8a5d2f83f4e5169a#diff-491fb58b03db98619cea574c8cac5f89049b8c4e7645c712aeb9dcb744d96c7dL452' target='_blank'>Link</a></div><div id='project'> Project Name: openml/openml-python</div><div id='commit'> Commit Name: 7dba90f659bd36cbc82290fe8a5d2f83f4e5169a</div><div id='time'> Time: 2016-09-05</div><div id='author'> Author: janvanrijn@gmail.com</div><div id='file'> File Name: openml/runs/functions.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _list_runs</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/36101ab4095065a4196ff4f6437e94f0d91df4e9#diff-51109b82b5b9f7756f6d8fdda9fc942acf6263796c011739392afc6e42624068L385' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 36101ab4095065a4196ff4f6437e94f0d91df4e9</div><div id='time'> Time: 2020-07-21</div><div id='author'> Author: hongkuny@google.com</div><div id='file'> File Name: official/nlp/modeling/layers/transformer.py</div><div id='class'> Class Name: TransformerDecoderLayer</div><div id='method'> Method Name: call</div><BR><BR><div id='link'><a href='https://github.com/onnx/onnx-tensorflow/commit/58ace0a10f2859a7bfbb9b56238ba47e4175f5ac#diff-8593fbd757d6aab96c4eb5a5780a3c8cabaa2afc05ea0aceeff1c6c3997495f2L117' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnx-tensorflow</div><div id='commit'> Commit Name: 58ace0a10f2859a7bfbb9b56238ba47e4175f5ac</div><div id='time'> Time: 2020-10-09</div><div id='author'> Author: wtsang@us.ibm.com</div><div id='file'> File Name: onnx_tf/backend.py</div><div id='class'> Class Name: TensorflowBackend</div><div id='method'> Method Name: _onnx_graph_to_tensorflow_rep</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/570d9a2b06fd6269c930d7fddf38bc60b212ebee#diff-51109b82b5b9f7756f6d8fdda9fc942acf6263796c011739392afc6e42624068L385' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 570d9a2b06fd6269c930d7fddf38bc60b212ebee</div><div id='time'> Time: 2020-07-21</div><div id='author'> Author: hongkuny@google.com</div><div id='file'> File Name: official/nlp/modeling/layers/transformer.py</div><div id='class'> Class Name: TransformerDecoderLayer</div><div id='method'> Method Name: call</div><BR>

@@ -1,0 +1,45 @@
+<html><h3>100f6cbd2f03bbd90d7b6a41cc81f711ed466491,petastorm/etl/dataset_metadata.py,,load_row_groups,#Any#,169
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for piece in sorted_pieces:
+        &#47&#47 If we are not using absolute paths, we need to convert the path to a relative path for
+        &#47&#47 looking up the number of row groups.
+        row_groups_key = piece.path if use_absolute_paths else <a id="change">os.path.relpath(piece.path, dataset.paths)</a>
+        for row_group in range(row_groups_per_file[row_groups_key]):
+            rowgroups.append(pq.ParquetDatasetPiece(piece.path, row_group, piece.partition_keys))
+    return rowgroups
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    num_row_groups = metadata.num_row_groups
+
+    <a id="change">if num_row_groups &gt; 0:
+        &#47&#47 Use the new metadata file
+        return _split_row_groups(dataset)
+
+    &#47&#47 If we don&quott have row groups in the common metadata we look for the old way of loading it
+   </a> logger.warning(&quotYou are using a deprecated metadata version. Please run petastorm.etl.metadata_index_run&quot
+                   &quot on spark to update.&quot)
+    dataset_metadata_dict = dataset.common_metadata.metadata
+    if ROW_GROUPS_PER_FILE_KEY not in dataset_metadata_dict:
+        raise ValueError(&quotCould not find row group metadata in _metadata file.&quot
+                         &quot Use materialize_dataset(..) in petastorm.etl.dataset_metadata.py to generate&quot
+                         &quot this file in your ETL code.&quot
+                         &quot You can generate it on an existing dataset using petastorm.etl.metadata_index_run&quot)
+    metadata_dict_key = ROW_GROUPS_PER_FILE_KEY
+    row_groups_per_file = json.loads(dataset_metadata_dict[metadata_dict_key].decode())
+
+    rowgroups = []
+    &#47&#47 Force order of pieces. The order is not deterministic since it depends on multithreaded directory
+    &#47&#47 listing implementation inside pyarrow. We stabilize order here, this way we get reproducable order
+    &#47&#47 when pieces shuffling is off. This also enables implementing piece shuffling given a seed
+    sorted_pieces = sorted(dataset.pieces, key=attrgetter(&quotpath&quot))
+    for piece in sorted_pieces:
+        &#47&#47 If we are not using absolute paths, we need to convert the path to a relative path for
+        &#47&#47 looking up the number of row groups.
+        row_groups_key = <a id="change">os.path.relpath(piece.path, dataset.paths)</a>
+        for row_group in range(row_groups_per_file[row_groups_key]):
+            rowgroups.append(pq.ParquetDatasetPiece(piece.path, row_group, piece.partition_keys))
+    return rowgroups
+</code></pre><img src="246455003.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/uber/petastorm/commit/100f6cbd2f03bbd90d7b6a41cc81f711ed466491#diff-d3f1f1e6e63bc51148dab759f3675ec5f6ba808ed79745b29485565606e74c24L176' target='_blank'>Link</a></div><div id='project'> Project Name: uber/petastorm</div><div id='commit'> Commit Name: 100f6cbd2f03bbd90d7b6a41cc81f711ed466491</div><div id='time'> Time: 2018-08-13</div><div id='author'> Author: robbieg@uber.com</div><div id='file'> File Name: petastorm/etl/dataset_metadata.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: load_row_groups</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/c615fa154f16600c8aaefbbcce8b819a558e0cdd#diff-6e5599b2dcd99a2cd92c1488d30fbe096fbb7d6911e2cff13ebbec5becdc5165L69' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: c615fa154f16600c8aaefbbcce8b819a558e0cdd</div><div id='time'> Time: 2015-09-01</div><div id='author'> Author: fedor.korotkov@gmail.com</div><div id='file'> File Name: src/python/pants/backend/core/wrapped_globs.py</div><div id='class'> Class Name: FilesetRelPathWrapper</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/bcef7effe4821a6b3c8d5857d8eb5c28a440c1a4#diff-d0bdc52e7faf98d58d2f22ed95f922dc34b491d63806e5fb747070891d4fcd87L163' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: bcef7effe4821a6b3c8d5857d8eb5c28a440c1a4</div><div id='time'> Time: 2011-07-14</div><div id='author'> Author: jsirois@twitter.com</div><div id='file'> File Name: src/python/twitter/pants/commands/ide.py</div><div id='class'> Class Name: Project</div><div id='method'> Method Name: configure</div><BR>

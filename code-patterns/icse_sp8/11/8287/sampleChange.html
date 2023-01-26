@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        m = M().eval()
+        mp = prepare_fx(m, {&quot&quot: torch.quantization.default_qconfig})
+        <a id="change">mp(torch.randn(1, 1, 4, 4))</a>
+        &#47&#47 TODO(future PR): prevent the need for copying here, we can copy the
+        &#47&#47 modules but should reuse the underlying tensors
+        mp_copy = copy.deepcopy(mp)
+        mq = convert_fx(mp_copy)
+
+        mp_shadows_mq = add_shadow_loggers(
+            &quotfp32_prepared&quot, mp, &quotint8&quot, mq, OutputLogger, should_log_inputs=True)
+        <a id="change">mp_shadows_mq(torch.randn(1, 1, 4, 4))</a>
+
+        act_compare_dict = extract_shadow_logger_info(
+            mp_shadows_mq, OutputLogger)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                return x
+
+        m = M().eval()
+        <a id="change">self._test_match_shadow_activations(
+            m, (torch.randn(1, 1, 4, 4),),
+            results_len=2,
+            should_log_inputs=True)</a>
+
+
+class TestFXNumericSuiteCoreAPIsModels(FXNumericSuiteQuantizationTestCase):
+    </code></pre>

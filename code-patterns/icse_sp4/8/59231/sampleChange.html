@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.global_step = global_step
+            gen_average_steps += 1
+            gen_train_fraction -= 1.0
+        <a id="change">self.global_step</a> = global_step + 1
+
+        &#47&#47 Write checkpoints and report progress.
+
+        if discrim_average_steps == checkpoint_interval:
+          <a id="change">saver.save(self.session, self.save_file, global_step=self.global_step)</a>
+          discrim_loss = discrim_error / max(1, discrim_average_steps)
+          gen_loss = gen_error / max(1, gen_average_steps)
+          print(
+              &quotEnding global_step %d: generator average loss %g, discriminator average loss %g&quot</code></pre><h3>After Change</h3><pre><code class='java'>
+    with self._get_tf("Graph").as_default():
+      if checkpoint_interval &gt; 0:
+        manager = tf.train.CheckpointManager(
+            self._get_tf(&quotCheckpoint&quot), <a id="change">self.model_dir</a>, max_checkpoints_to_keep)
+      for feed_dict in batches:
+        &#47&#47 Every call to fit_generator() will increment global_step, but we only
+        &#47&#47 want it to get incremented once for the entire batch, so record the
+        &#47&#47 value and keep resetting it.
+
+        global_step = self.global_step
+
+        &#47&#47 Train the discriminator.
+
+        feed_dict = dict(feed_dict)
+        feed_dict[self.noise_input] = self.get_noise_batch(self.batch_size)
+        discrim_error += self.fit_generator(
+            [feed_dict],
+            submodel=self.discriminator_submodel,
+            checkpoint_interval=0)
+        self.global_step = global_step
+        discrim_average_steps += 1
+
+        &#47&#47 Train the generator.
+
+        if generator_steps &gt; 0.0:
+          gen_train_fraction += generator_steps
+          while gen_train_fraction &gt;= 1.0:
+            feed_dict[self.noise_input] = self.get_noise_batch(self.batch_size)
+            gen_error += self.fit_generator(
+                [feed_dict],
+                submodel=self.generator_submodel,
+                checkpoint_interval=0)
+            self.global_step = global_step
+            gen_average_steps += 1
+            gen_train_fraction -= 1.0
+        self.global_step = global_step + 1
+
+        &#47&#47 Write checkpoints and report progress.
+
+        if discrim_average_steps == checkpoint_interval:
+          <a id="change">self._exec_with_session(lambda: manager.save())</a>
+          discrim_loss = discrim_error / max(1, discrim_average_steps)
+          gen_loss = gen_error / max(1, gen_average_steps)
+          print(
+              &quotEnding global_step %d: generator average loss %g, discriminator average loss %g&quot</code></pre>

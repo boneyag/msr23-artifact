@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        feat_h, feat_w = featmap_size
+        valid_h, valid_w = valid_size
+        assert valid_h &lt;= feat_h and valid_w &lt;= feat_w
+        <a id="change">valid_x = torch.zeros(feat_w, dtype=torch.uint8, device=device)</a>
+        <a id="change">valid_y = torch.zeros(feat_h, dtype=torch.uint8, device=device)</a>
+        <a id="change">valid_x[:valid_w] = 1</a>
+        valid_y[:valid_h] = 1
+        <a id="change">valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)</a>
+        valid = valid_xx & valid_yy
+        valid = valid[:,
+                      None].expand(valid.size(0),
+                                   self.num_base_anchors).contiguous().view(-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+        assert self.num_levels == len(featmap_sizes)
+        multi_level_flags = []
+        for i in range(self.num_levels):
+            <a id="change">anchor_stride = self.strides[i]</a>
+            feat_h, feat_w = featmap_sizes[i]
+            h, w = pad_shape[:2]
+            valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
+            <a id="change">valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)</a>
+            flags = self.single_level_valid_flags((feat_h, feat_w),
+                                                  (valid_feat_h, valid_feat_w),
+                                                  self.num_base_anchors[i],
+                                                  device=device)</code></pre>

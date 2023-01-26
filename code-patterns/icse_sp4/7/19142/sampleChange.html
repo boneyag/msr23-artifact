@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        weight of component distributions (default = 1)
+    
+    def __init__(self, means=0, sigmas=1, weights=1):
+        <a id="change">data = np.array([t for t in np.broadcast(means, sigmas, weights)])</a>
+
+        precisions = [1/s**2 for s in sigmas]
+        self._gmm = GaussianMixture(<a id="change">data</a>.shape[0],
+                                    weights_init=data[:, 2] / data[:, 2].sum(),
+                                    means_init=data[:, :1],
+                                    covariance_type=&quotspherical&quot,</code></pre><h3>After Change</h3><pre><code class='java'>
+        weight of component distributions (default = 1)
+    
+    def __init__(self, means=0, sigmas=1, weights=1):
+        components = <a id="change">len(means)</a>
+        self._gmm = GaussianMixture(components, covariance_type=&quotspherical&quot)
+
+        self._gmm.weights_ = weights / weights.sum()
+        self._gmm.means_ = means.reshape(-1, 1)
+        self._gmm.covariances_ = sigmas ** 2
+
+        <a id="change">self._gmm.precisions_cholesky_ = 1 / np.sqrt(self._gmm.covariances_)</a>
+
+        self._gmm.fit = None  &#47&#47 disable fit method for safety
+
+    def sample(self, size):</code></pre>

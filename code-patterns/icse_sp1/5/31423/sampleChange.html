@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        The Data Loader iterator stops the for-loop when reader runs out of samples.
+        
+        <a id="change">batch = []</a>
+        for row in self.reader:
+            &#47&#47 Default collate does not work nicely on namedtuples and treat them as lists
+            &#47&#47 Using dict will result in the yielded structures being dicts as well
+            row_as_dict = row._asdict()
+
+            &#47&#47 Promote some types that are incompatible with pytorch to be pytorch friendly.
+            _sanitize_pytorch_types(row_as_dict)
+
+            &#47&#47 Add rows to shuffling buffer
+            self._shuffling_buffer.add_many([row_as_dict])
+
+            &#47&#47 If the shuffling buffer is ready, pull the resampled rows out and try add to our accumulated batch
+            while self._shuffling_buffer.can_retrieve():
+                post_shuffled_row = self._shuffling_buffer.retrieve()
+                batch.append(post_shuffled_row)
+
+                &#47&#47 Batch is ready? Collate and emmit
+                if len(batch) == self.batch_size:
+                    <a id="change">yield self.collate_fn(batch)</a>
+                    batch = []
+
+        &#47&#47 Once reader can not emit new rows, we might still have a bunch of rows waiting in the shuffling buffer.
+        &#47&#47 Telling shuffling buffer thatt we are finished allows to deplete the buffer completely, regardless its</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Using dict will result in the yielded structures being dicts as well
+            row_as_dict = row._asdict()
+
+            <a id="change">keys = row_as_dict.keys()</a>
+
+            &#47&#47 Promote some types that are incompatible with pytorch to be pytorch friendly.
+            _sanitize_pytorch_types(row_as_dict)
+
+            &#47&#47 Add rows to shuffling buffer
+            if not self.reader.is_batched_reader:
+                self._shuffling_buffer.add_many([row_as_dict])
+            else:
+                &#47&#47 Transposition:
+                &#47&#47   row_as_dict:        {&quota&quot: [1,2,3], &quotb&quot:[4,5,6]}
+                &#47&#47   row_group_as_tuple: [(1, 4), (2, 5), (3, 6)]
+                &#47&#47 The order within a tuple is defined by key order in &quotkeys&quot
+                <a id="change">row_group_as_tuple = list(zip(*(row_as_dict[k] for k in keys)))</a>
+
+                &#47&#47 Adding data as &quotrow-by-row&quot into a shuffling buffer. This is a pretty
+                &#47&#47 slow implementation though. Probably can comeup with a faster way to shuffle,
+                &#47&#47 perhaps at the expense of a larger memory consumption...</code></pre>

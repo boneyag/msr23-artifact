@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    input_pad: torch.Tensor = F.pad(input, padding_shape, mode=border_type)
+
+    &#47&#47 convolve the tensor with the kernel.
+    <a id="change">return F.conv3d(input_pad, tmp_kernel.expand(c, -1, -1, -1, -1), groups=c, padding=0, stride=1)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        tmp_kernel = normalize_kernel2d(tmp_kernel.view(
+            bk, dk, hk * wk)).view_as(tmp_kernel)
+
+    tmp_kernel = <a id="change">tmp_kernel.expand(-1, c, -1, -1, -1)</a>
+
+    &#47&#47 pad the input tensor
+    depth, height, width = tmp_kernel.shape[-3:]
+    padding_shape: List[int] = compute_padding([depth, height, width])
+    input_pad: torch.Tensor = F.pad(input, padding_shape, mode=border_type)
+
+    &#47&#47 kernel and input tensor reshape to align element-wise or batch-wise params
+    <a id="change">tmp_kernel = tmp_kernel.reshape(-1, 1, depth, height, width)</a>
+    input_pad = input_pad.view(-1, tmp_kernel.size(0), input_pad.size(-3), input_pad.size(-2), input_pad.size(-1))
+
+    &#47&#47 convolve the tensor with the kernel.
+    <a id="change">output = F.conv3d(input_pad, tmp_kernel, groups=tmp_kernel.size(0), padding=0, stride=1)</a>
+    <a id="change">return output.view(b, c, d, h, w)</a>
+</code></pre>

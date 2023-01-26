@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    dataset = dataset.map(_parse_example, num_parallel_calls=64)
+
+    dataset = dataset.prefetch(batch_size)
+    dataset = <a id="change">dataset.batch(batch_size, drop_remainder=True)</a>
+    <a id="change">dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)</a>
+
+    return dataset
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 TODO(taylorrobie): Confirm that this is MLPerf rules compliant.
+    dataset = dataset.filter(
+        lambda data: tf.greater(tf.shape(data[&quotgroundtruth_boxes&quot])[0], 0))
+    dataset = <a id="change">dataset.apply(batching.map_and_batch(
+        map_func=_parse_example,
+        batch_size=batch_size_per_split,
+        num_parallel_batches=num_splits,
+        drop_remainder=True))</a>
+    dataset = dataset.prefetch(buffer_size=num_splits)
+    return dataset
+</code></pre>

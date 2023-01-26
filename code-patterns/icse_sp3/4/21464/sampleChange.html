@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            conn.send_bytes(x)
+
+    def recv_from(self, conn):
+        bufs = <a id="change">[np.empty(shape=x[0], dtype=x[1]) for x in self.info]</a>
+        for buf in bufs:
+            conn.recv_bytes_into(buf)
+        return bufs
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        for info in self.info:
+            buf = np.empty(shape=(int(np.prod(info[0])),), dtype=info[1])
+
+            item_size = int(<a id="change">np.prod(info[0][1:])</a>)
+            if np.prod(info[0]) &gt; self.max_len:
+                seg = int(self.max_len // item_size)
+                <a id="change">for pt in range(0, int(np.prod(info[0])), seg * item_size):
+                    conn.recv_bytes_into(buf[pt:pt+seg * item_size])
+           </a> else:
+               conn.recv_bytes_into(buf)
+            bufs.append(buf.reshape(info[0]))
+        return bufs</code></pre>

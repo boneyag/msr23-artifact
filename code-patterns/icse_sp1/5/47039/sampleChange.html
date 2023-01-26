@@ -1,0 +1,91 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        opti_proto_dict = {}
+        for o in opti_proto.optimizer:
+            opti_proto_dict[o.name] = o
+        <a id="change">for o in info.optimizers.values():
+            if o.name in opti_proto_dict:
+                o.solver.set_states_from_protobuf(opti_proto_dict[o.name])
+
+   </a> info.monitors = _monitors(
+        proto, default_context, info.networks, info.datasets)
+
+    info.executors = _executors(proto, info.networks)</code></pre><h3>After Change</h3><pre><code class='java'>
+    opti_proto = nnabla_pb2.NNablaProtoBuf()
+    OPTI_BUF_EXT = [&quot.optimizer&quot]
+    opti_h5_files = {}
+    <a id="change">tmpdir = tempfile.mkdtemp()</a>
+
+    if isinstance(filenames, list) or isinstance(filenames, tuple):
+        pass
+    elif isinstance(filenames, str) or hasattr(filenames, &quotread&quot):
+        filenames = [filenames]
+
+    for filename in filenames:
+        if isinstance(filename, str):
+            _, ext = os.path.splitext(filename)
+        else:
+            ext = extension
+
+        &#47&#47 TODO: Here is some known problems.
+        &#47&#47   - Even when protobuf file includes network structure,
+        &#47&#47     it will not loaded.
+        &#47&#47   - Even when prototxt file includes parameter,
+        &#47&#47     it will not loaded.
+
+        if ext in [&quot.nntxt&quot, &quot.prototxt&quot]:
+            if not parameter_only:
+                with get_file_handle_load(filename, ext) as f:
+                    try:
+                        text_format.Merge(f.read(), proto)
+                    except:
+                        logger.critical(&quotFailed to read {}.&quot.format(filename))
+                        logger.critical(
+                            &quot2 byte characters may be used for file name or folder name.&quot)
+                        raise
+            if len(proto.parameter) &gt; 0:
+                if not exclude_parameter:
+                    nn.load_parameters(filename, extension=ext)
+        elif ext in [&quot.protobuf&quot, &quot.h5&quot]:
+            if not exclude_parameter:
+                nn.load_parameters(filename, extension=ext)
+            else:
+                logger.info(&quotSkip loading parameter.&quot)
+
+        elif ext == &quot.nnp&quot:
+            with get_file_handle_load(filename, ext) as nnp:
+                for name in nnp.namelist():
+                    _, ext = os.path.splitext(name)
+                    if name == &quotnnp_version.txt&quot:
+                        pass  &#47&#47 TODO currently do nothing with version.
+                    elif ext in [&quot.nntxt&quot, &quot.prototxt&quot]:
+                        if not parameter_only:
+                            with nnp.open(name, &quotr&quot) as f:
+                                text_format.Merge(f.read(), proto)
+                        if len(proto.parameter) &gt; 0:
+                            if not exclude_parameter:
+                                with nnp.open(name, &quotr&quot) as f:
+                                    nn.load_parameters(f, extension=ext)
+                    elif ext in [&quot.protobuf&quot, &quot.h5&quot]:
+                        if not exclude_parameter:
+                            with nnp.open(name, &quotr&quot) as f:
+                                nn.load_parameters(f, extension=ext)
+                        else:
+                            logger.info(&quotSkip loading parameter.&quot)
+                    elif ext in OPTI_BUF_EXT:
+                        buf_type = get_buf_type(name)
+                        if buf_type == &quotprotobuf&quot:
+                            with nnp.open(name, &quotr&quot) as f:
+                                with get_file_handle_load(f, &quot.protobuf&quot) as opti_p:
+                                    opti_proto.MergeFromString(
+                                        opti_p.read())
+                        elif buf_type == &quoth5&quot:
+                            nnp.extract(name, tmpdir)
+                            <a id="change">opti_h5_files[name] = os.path.join(
+                                tmpdir, name)</a>
+
+    default_context = None
+    if proto.HasField(&quotglobal_config&quot):
+        info.global_config = _global_config(proto)</code></pre>

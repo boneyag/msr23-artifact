@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def min_handler(converter: TensorFlowConverter, tf_op: "tf.Operation"):
+    x = converter.get_variable(tf_op.inputs[0])
+    axis = converter.get_variable(tf_op.inputs[1])
+    <a id="change">v = x</a>
+
+    assert isinstance(axis, ConstantVariable), "[TensorFlowConverter] Operation &quotMin&quot with dynamic axis  is not supported yet."
+    for i_axis in <a id="change">sorted(axis.data.astype(int).flatten().tolist(), reverse=True)</a>:
+        <a id="change">axis = v.order.axes[i_axis]</a>
+
+        v, = Min(None, axis=axis)(v)
+
+    <a id="change">if not tf_op.get_attr("keep_dims") and v.ndim &gt; 1:
+        v = v.squeeze(axis)
+
+   </a> converter.set_variable(tf_op.outputs[0], v)
+
+
+@TensorFlowConverter.register_handler("Minimum")</code></pre><h3>After Change</h3><pre><code class='java'>
+    axis = converter.get_variable(tf_op.inputs[1])
+    assert isinstance(axis, ConstantVariable), "[TensorFlowConverter] Operation &quotMin&quot with dynamic axis  is not supported yet."
+
+    for axis in <a id="change">[x.order.axes[i] for i in axis.data.astype(int).flatten().tolist()]</a>:
+        x, = Min(None, axis=axis)(x)
+
+        <a id="change">if not tf_op.get_attr("keep_dims") and x.ndim &gt; 1:
+            x = x.squeeze(axis)
+
+   </a> converter.set_variable(tf_op.outputs[0], x)
+
+
+@TensorFlowConverter.register_handler("Minimum")</code></pre>

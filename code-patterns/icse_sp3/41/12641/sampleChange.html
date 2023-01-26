@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def on_batch_end(self, batch, logs={}):
+        batch_size = logs.get(&quotsize&quot, 0)
+        self.seen += batch_size
+        <a id="change">self.tot_loss += logs.get(&quotloss&quot, 0.) * batch_size</a>
+        <a id="change">if self.params[&quotshow_accuracy&quot]:
+            self.tot_accuracy += logs.get(&quotaccuracy&quot, 0.) * batch_size
+
+   </a> def on_epoch_end(self, epoch, logs={}):
+        val_loss = logs.get(&quotval_loss&quot)
+        val_acc = logs.get(&quotval_accuracy&quot)
+        self.epoch.append(epoch)</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.totals = {}
+
+    def on_batch_end(self, batch, logs={}):
+        <a id="change">batch_size</a> = logs.get(&quotsize&quot, 0)
+        self.seen += batch_size
+        <a id="change">for k, v in logs.items():
+            if k in self.totals:
+                self.totals[k] += v * batch_size
+            else:
+                self.totals[k] = v * batch_size
+
+   </a> def on_epoch_end(self, epoch, logs={}):
+        self.epoch.append(epoch)
+        for k, v in self.totals.items():
+            self.history[k] = v / self.seen</code></pre>

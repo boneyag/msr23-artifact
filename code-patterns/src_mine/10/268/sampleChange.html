@@ -1,0 +1,76 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 compute kernel stuff
+    num_data = tf.shape(X)[0]
+    Kmn = kern.K(X, Xnew)
+    Kmm = kern.K(X) + <a id="change">eye(num_data)</a>
+    Lm = tf.cholesky(Kmm)
+
+    &#47&#47 Compute the projection matrix A
+    A = tf.matrix_triangular_solve(Lm, Kmn, lower=True)
+
+    &#47&#47 compute the covariance due to the conditioning
+    if full_cov:
+        <a id="change">fvar</a> = kern.K(Xnew) - tf.matmul(tf.transpose(A), A)
+        fvar = tf.tile(tf.expand_dims(fvar, 2), [1, 1, num_columns])
+    else:
+        fvar = kern.Kdiag(Xnew) - tf.reduce_sum(tf.square(A), 0)
+        fvar = tf.tile(tf.expand_dims(fvar, 1), [1, num_columns])
+
+    &#47&#47 another backsubstitution in the unwhitened case
+    if not whiten:
+        A = tf.matrix_triangular_solve(tf.transpose(Lm), A, lower=False)
+
+    &#47&#47 construct the conditional mean
+    fmean = tf.matmul(tf.transpose(A), f)
+
+    &#47&#47 add extra projected variance from q(f) if needed
+    if q_sqrt is not None:
+        projected_var = []
+        for d in range(num_columns):
+            if q_sqrt.get_shape().ndims == 2:
+                LTA = A * q_sqrt[:, d:d + 1]
+            elif q_sqrt.get_shape().ndims == 3:
+                L = tf.user_ops.triangle(q_sqrt[:, :, d], &quotlower&quot)
+                <a id="change">LTA</a> = tf.matmul(tf.transpose(L), A)
+            else:  &#47&#47 pragma no cover
+                raise ValueError("Bad dimension for q_sqrt: %s" %
+                                 str(q_sqrt.get_shape().ndims))</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 compute kernel stuff
+    num_data = tf.shape(X)[0]
+    Kmn = kern.K(X, Xnew)
+    Kmm = kern.K(X) + <a id="change">eye(num_data)</a> * 1e-6
+    Lm = tf.cholesky(Kmm)
+
+    &#47&#47 Compute the projection matrix A
+    A = tf.matrix_triangular_solve(Lm, Kmn, lower=True)
+
+    &#47&#47 compute the covariance due to the conditioning
+    if full_cov:
+        <a id="change">fvar</a> = kern.K(Xnew) - tf.matmul(tf.transpose(A), A)
+        fvar = tf.tile(tf.expand_dims(fvar, 2), [1, 1, num_columns])
+    else:
+        fvar = kern.Kdiag(Xnew) - tf.reduce_sum(tf.square(A), 0)
+        fvar = tf.tile(tf.expand_dims(fvar, 1), [1, num_columns])
+
+    &#47&#47 another backsubstitution in the unwhitened case
+    if not whiten:
+        A = tf.matrix_triangular_solve(tf.transpose(Lm), A, lower=False)
+
+    &#47&#47 construct the conditional mean
+    fmean = tf.matmul(tf.transpose(A), f)
+
+    &#47&#47 add extra projected variance from q(f) if needed
+    if q_sqrt is not None:
+        projected_var = []
+        for d in range(num_columns):
+            if q_sqrt.get_shape().ndims == 2:
+                LTA = A * q_sqrt[:, d:d + 1]
+            elif q_sqrt.get_shape().ndims == 3:
+                L = tf.user_ops.triangle(q_sqrt[:, :, d], &quotlower&quot)
+                <a id="change">LTA</a> = tf.matmul(tf.transpose(L), A)
+            else:  &#47&#47 pragma no cover
+                raise ValueError("Bad dimension for q_sqrt: %s" %
+                                 str(q_sqrt.get_shape().ndims))</code></pre>

@@ -1,0 +1,542 @@
+<html><h3>1433cacb29820788a569e1669439a65d3b96d56d,theano/tensor/nnet/neighbours.py,Images2Neibs,c_code,#Images2Neibs#Any#Any#Any#Any#Any#,346
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        fail = sub[&quotfail&quot]
+        mode = self.mode
+        <a id="change">return 
+&#47&#47ifndef CEIL_INTDIV
+&#47&#47define CEIL_INTDIV(a, b) ((a/b) + ((a %% b) ? 1: 0))
+&#47&#47endif
+
+        int grid_c = -1; //number of patch in height
+        int grid_d = -1; //number of patch in width
+        {
+        if (PyArray_NDIM(%(ten4)s) != 4)
+        {
+            PyErr_Format(PyExc_TypeError, "ten4 wrong rank");
+            %(fail)s;
+        }
+        if (PyArray_NDIM(%(neib_shape)s) != 1)
+        {
+            PyErr_Format(PyExc_TypeError, "neib_shape wrong rank");
+            %(fail)s;
+        }
+        if ( (PyArray_DIMS(%(neib_shape)s))[0] != 2)
+        {
+            PyErr_Format(PyExc_TypeError, "neib_shape wrong shape ; has to"
+                                          " contain 2 elements");
+            %(fail)s;
+        }
+        if (PyArray_NDIM(%(neib_step)s) != 1)
+        {
+            PyErr_Format(PyExc_TypeError, "neib_step wrong rank");
+            %(fail)s;
+        }
+        if ( (PyArray_DIMS(%(neib_step)s))[0] != 2)
+        {
+            PyErr_Format(PyExc_TypeError,
+                         "neib_step wrong step ; has to contain 2 elements");
+            %(fail)s;
+        }
+
+        // (c,d) = neib_shape
+        const npy_intp c = (npy_intp) *(dtype_%(neib_shape)s*) PyArray_GETPTR1(%(neib_shape)s, 0);
+        const npy_intp d = (npy_intp) *(dtype_%(neib_shape)s*) PyArray_GETPTR1(%(neib_shape)s, 1);
+        // (step_x,step_y) = neib_step
+        const dtype_%(neib_step)s step_x = *(dtype_%(neib_step)s*) PyArray_GETPTR1(%(neib_step)s, 0);
+        const dtype_%(neib_step)s step_y = *(dtype_%(neib_step)s*) PyArray_GETPTR1(%(neib_step)s, 1);
+
+        if (step_x &lt;=0 || step_y &lt;=0)
+        {
+            PyErr_Format(PyExc_ValueError,
+                         "neib_step wrong step ; values &lt;= 0. Got %%lld %%lld.",
+                         (long long) step_x, (long long) step_y);
+            %(fail)s;
+        }
+
+        if (c &lt;=0 || d &lt;=0)
+        {
+            PyErr_Format(PyExc_ValueError,
+                         "neib_shape values &lt;= 0. Got %%lld %%lld.",
+                         (long long)c, (long long)d);
+            %(fail)s;
+        }
+
+        if ( "%(mode)s" == "wrap_centered") {
+            if (c%%2!=1 || d%%2!=1){
+                PyErr_Format(PyExc_TypeError,
+                             "Images2Neibs: in mode wrap_centered"
+                             " need patch with odd shapes");
+                %(fail)s;
+            }
+            if ( (PyArray_DIMS(%(ten4)s))[2] &lt; c ||
+                 (PyArray_DIMS(%(ten4)s))[3] &lt; d)
+            {
+                PyErr_Format(PyExc_TypeError,
+                    "Images2Neibs: in wrap_centered mode, don&quott support image"
+                    " shapes smaller then the patch shapes:"
+                    " neib_shape=(%%ld,%%ld), ten4[2:]=[%%ld,%%ld]",
+                    (long int)c, (long int)d,
+                    (long int)(PyArray_DIMS(%(ten4)s)[2]),
+                    (long int)(PyArray_DIMS(%(ten4)s)[3]));
+                %(fail)s;
+            }
+            grid_c = CEIL_INTDIV(((PyArray_DIMS(%(ten4)s))[2]),step_x);
+            grid_d = CEIL_INTDIV(((PyArray_DIMS(%(ten4)s))[3]),step_y);
+
+        }else if ( "%(mode)s" == "valid") {
+            if ( ((PyArray_DIMS(%(ten4)s))[2] &lt; c) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[2]-c) %% step_x)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[0]=%%ld, neib_step[0]=%%ld and"
+                             " ten4.shape[2]=%%ld not consistent",
+                             (long int)c, (long int)step_x,
+                             (long int)(PyArray_DIMS(%(ten4)s)[2]));
+                %(fail)s;
+            }
+            if ( ((PyArray_DIMS(%(ten4)s))[3] &lt; d) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[3]-d) %% step_y)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[1]=%%ld, neib_step[1]=%%ld and"
+                             " ten4.shape[3]=%%ld not consistent",
+                             (long int)d, (long int)step_y,
+                             (long int)(PyArray_DIMS(%(ten4)s)[3]));
+                %(fail)s;
+            }
+            //number of patch in height
+            grid_c = 1+(((PyArray_DIMS(%(ten4)s))[2]-c)/step_x);
+            //number of patch in width
+            grid_d = 1+(((PyArray_DIMS(%(ten4)s))[3]-d)/step_y);
+        }else if ( "%(mode)s" == "ignore_borders") {
+            //number of patch in height
+            grid_c = 1+(((PyArray_DIMS(%(ten4)s))[2]-c)/step_x);
+            //number of patch in width
+            grid_d = 1+(((PyArray_DIMS(%(ten4)s))[3]-d)/step_y);
+        }else if ( "%(mode)s" == "half") {
+            if ( ((PyArray_DIMS(%(ten4)s))[2] &lt; c) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[2]-(c%%2)) %% step_x)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[0]=%%ld, neib_step[0]=%%ld and"
+                             " ten4.shape[2]=%%ld not consistent",
+                             (long int)c, (long int)step_x,
+                             (long int)(PyArray_DIMS(%(ten4)s)[2]));
+                %(fail)s;
+            }
+            if ( ((PyArray_DIMS(%(ten4)s))[3] &lt; d) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[3]-(d%%2)) %% step_y)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[1]=%%ld, neib_step[1]=%%ld and"
+                             " ten4.shape[3]=%%ld not consistent",
+                             (long int)d, (long int)step_y,
+                             (long int)(PyArray_DIMS(%(ten4)s)[3]));
+                %(fail)s;
+            }
+            //number of patch in height
+            grid_c = 1+(((PyArray_DIMS(%(ten4)s))[2]-(c%%2))/step_x);
+            //number of patch in width
+            grid_d = 1+(((PyArray_DIMS(%(ten4)s))[3]-(d%%2))/step_y);
+        }else if ( "%(mode)s" == "full") {
+            if ( ((PyArray_DIMS(%(ten4)s))[2] &lt; c) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[2]+c-2) %% step_x)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[0]=%%ld, neib_step[0]=%%ld and"
+                             " ten4.shape[2]=%%ld not consistent",
+                             (long int)c, (long int)step_x,
+                             (long int)(PyArray_DIMS(%(ten4)s)[2]));
+                %(fail)s;
+            }
+            if ( ((PyArray_DIMS(%(ten4)s))[3] &lt; d) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[3]+d-2) %% step_y)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[1]=%%ld, neib_step[1]=%%ld and"
+                             " ten4.shape[3]=%%ld not consistent",
+                             (long int)d, (long int)step_y,
+                             (long int)(PyArray_DIMS(%(ten4)s)[3]));
+                %(fail)s;
+            }
+            //number of patch in height
+            grid_c = 1+(((PyArray_DIMS(%(ten4)s))[2]+c-2)/step_x);
+            //number of patch in width
+            grid_d = 1+(((PyArray_DIMS(%(ten4)s))[3]+d-2)/step_y);
+        }else {
+            PyErr_Format(PyExc_TypeError,
+                         "Images2Neibs: unknow mode &quot%(mode)s&quot");
+            %(fail)s;
+        }
+
+        // new dimensions for z
+        const npy_intp z_dim1 = c * d;
+        const npy_intp z_dim0 =  grid_c
+                            * grid_d
+                            * (PyArray_DIMS(%(ten4)s))[1]
+                            * (PyArray_DIMS(%(ten4)s))[0];
+
+        if ((NULL == %(z)s)
+            || ((PyArray_DIMS(%(z)s))[0] != z_dim0 )
+            || ((PyArray_DIMS(%(z)s))[1] != z_dim1 )
+        )
+        {
+            Py_XDECREF(%(z)s);
+            npy_intp dims[2];
+            dims[0] = z_dim0;
+            dims[1] = z_dim1;
+
+            %(z)s = (PyArrayObject*) PyArray_EMPTY(2,
+                dims,
+                PyArray_TYPE((PyArrayObject*) py_%(ten4)s),
+                0);
+
+            if (!%(z)s)
+            {
+                PyErr_SetString(PyExc_MemoryError, "failed to alloc z output");
+                %(fail)s;
+            }
+        }
+        }
+
+        { // NESTED SCOPE
+
+        const int nb_batch = (PyArray_DIMS(%(ten4)s))[0];
+        const int nb_stack = (PyArray_DIMS(%(ten4)s))[1];
+        const int height = (PyArray_DIMS(%(ten4)s))[2];
+        const int width = (PyArray_DIMS(%(ten4)s))[3];
+
+        // (c,d) = neib_shape
+        const npy_intp c = (npy_intp) *(dtype_%(neib_shape)s*) PyArray_GETPTR1(%(neib_shape)s, 0);
+        const npy_intp d = (npy_intp) *(dtype_%(neib_shape)s*) PyArray_GETPTR1(%(neib_shape)s, 1);
+        // (step_x,step_y) = neib_step
+        const npy_intp step_x = (npy_intp) *(dtype_%(neib_step)s*) PyArray_GETPTR1(%(neib_step)s, 0);
+        const npy_intp step_y = (npy_intp) *(dtype_%(neib_step)s*) PyArray_GETPTR1(%(neib_step)s, 1);
+
+        const int wrap_centered_half_idx_shift_x = c/2;
+        const int wrap_centered_half_idx_shift_y = d/2;
+        // Oh this is messed up...
+        for (int n = 0; n &lt; nb_batch; n++)              // loop over batches
+            for (int s = 0; s &lt; nb_stack; s++)          // loop over stacks
+                for (int a = 0; a &lt; grid_c; a++)        // loop over the number of patch in height
+                    for (int b = 0; b &lt; grid_d; b++)    // loop over the number of patch in width
+                    {
+                        int z_row = b + grid_d*(a + grid_c*(s + nb_stack*n));
+                        for (int i = 0; i &lt; c; i++)     // loop over c
+                        {
+                            int ten4_2 = i + a * step_x;
+                            if ( "%(mode)s" == "wrap_centered" ){
+                                ten4_2 -= wrap_centered_half_idx_shift_x;
+                                if ( ten4_2 &lt; 0 ) ten4_2 += height;
+                                else if (ten4_2 &gt;= height) ten4_2 -= height;
+                            } else if ( "%(mode)s" == "half" ){
+                                ten4_2 -= wrap_centered_half_idx_shift_x;
+                            } else if ( "%(mode)s" == "full" ){
+                                ten4_2 -= c - 1;
+                            }
+                            if (ten4_2 &lt; 0 | ten4_2 &gt;= height) {
+                                dtype_%(z)s* curr_z = (dtype_%(z)s*) PyArray_GETPTR2(%(z)s, z_row, d * i);
+                                memset(curr_z, 0, d*sizeof(*curr_z));
+                            } else {
+                                for (int j = 0; j &lt; d; j++)  // loop over d
+                                {
+                                    int ten4_3 = j + b * step_y;
+                                    if ( "%(mode)s" == "wrap_centered" ){
+                                        ten4_3 -= wrap_centered_half_idx_shift_y;
+                                        if ( ten4_3 &lt; 0 ) ten4_3 += width;
+                                        else if (ten4_3 &gt;= width) ten4_3 -= width;
+                                    } else if ( "%(mode)s" == "half" ){
+                                        ten4_3 -= wrap_centered_half_idx_shift_y;
+                                    } else if ( "%(mode)s" == "full" ){
+                                        ten4_3 -= d - 1;
+                                    }
+                                    int z_col = j + d * i;
+                                    dtype_%(z)s* curr_z = (dtype_%(z)s*) PyArray_GETPTR2(%(z)s, z_row, z_col);
+                                    if (ten4_3 &lt; 0 | ten4_3 &gt;= width) {
+                                        *curr_z = 0;
+                                    } else {
+                                        *curr_z = *( (dtype_%(ten4)s*) PyArray_GETPTR4(%(ten4)s, n, s, ten4_2, ten4_3));
+                                    }
+                                }
+                            }
+                        }
+                    }
+        } // END NESTED SCOPE
+         % locals()</a>
+
+
+def images2neibs(ten4, neib_shape, neib_step=None, mode=&quotvalid&quot):
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+        return [(z_dim0, z_dim1)]
+
+    def c_code(self, node, name, inp, out, sub):
+        <a id="change">return 
+&#47&#47ifndef CEIL_INTDIV
+&#47&#47define CEIL_INTDIV(a, b) ((a/b) + ((a %% b) ? 1: 0))
+&#47&#47endif
+
+        int grid_c = -1; //number of patch in height
+        int grid_d = -1; //number of patch in width
+        {
+        if (PyArray_NDIM(%(ten4)s) != 4)
+        {
+            PyErr_Format(PyExc_TypeError, "ten4 wrong rank");
+            %(fail)s;
+        }
+        if (PyArray_NDIM(%(neib_shape)s) != 1)
+        {
+            PyErr_Format(PyExc_TypeError, "neib_shape wrong rank");
+            %(fail)s;
+        }
+        if ( (PyArray_DIMS(%(neib_shape)s))[0] != 2)
+        {
+            PyErr_Format(PyExc_TypeError, "neib_shape wrong shape ; has to"
+                                          " contain 2 elements");
+            %(fail)s;
+        }
+        if (PyArray_NDIM(%(neib_step)s) != 1)
+        {
+            PyErr_Format(PyExc_TypeError, "neib_step wrong rank");
+            %(fail)s;
+        }
+        if ( (PyArray_DIMS(%(neib_step)s))[0] != 2)
+        {
+            PyErr_Format(PyExc_TypeError,
+                         "neib_step wrong step ; has to contain 2 elements");
+            %(fail)s;
+        }
+
+        // (c,d) = neib_shape
+        const npy_intp c = (npy_intp) *(dtype_%(neib_shape)s*) PyArray_GETPTR1(%(neib_shape)s, 0);
+        const npy_intp d = (npy_intp) *(dtype_%(neib_shape)s*) PyArray_GETPTR1(%(neib_shape)s, 1);
+        // (step_x,step_y) = neib_step
+        const dtype_%(neib_step)s step_x = *(dtype_%(neib_step)s*) PyArray_GETPTR1(%(neib_step)s, 0);
+        const dtype_%(neib_step)s step_y = *(dtype_%(neib_step)s*) PyArray_GETPTR1(%(neib_step)s, 1);
+
+        if (step_x &lt;=0 || step_y &lt;=0)
+        {
+            PyErr_Format(PyExc_ValueError,
+                         "neib_step wrong step ; values &lt;= 0. Got %%lld %%lld.",
+                         (long long) step_x, (long long) step_y);
+            %(fail)s;
+        }
+
+        if (c &lt;=0 || d &lt;=0)
+        {
+            PyErr_Format(PyExc_ValueError,
+                         "neib_shape values &lt;= 0. Got %%lld %%lld.",
+                         (long long)c, (long long)d);
+            %(fail)s;
+        }
+
+        if (%(mode)s == MODE_WRAP_CENTERED) {
+            if (c%%2!=1 || d%%2!=1){
+                PyErr_Format(PyExc_TypeError,
+                             "Images2Neibs: in mode wrap_centered"
+                             " need patch with odd shapes");
+                %(fail)s;
+            }
+            if ( (PyArray_DIMS(%(ten4)s))[2] &lt; c ||
+                 (PyArray_DIMS(%(ten4)s))[3] &lt; d)
+            {
+                PyErr_Format(PyExc_TypeError,
+                    "Images2Neibs: in wrap_centered mode, don&quott support image"
+                    " shapes smaller then the patch shapes:"
+                    " neib_shape=(%%ld,%%ld), ten4[2:]=[%%ld,%%ld]",
+                    (long int)c, (long int)d,
+                    (long int)(PyArray_DIMS(%(ten4)s)[2]),
+                    (long int)(PyArray_DIMS(%(ten4)s)[3]));
+                %(fail)s;
+            }
+            grid_c = CEIL_INTDIV(((PyArray_DIMS(%(ten4)s))[2]),step_x);
+            grid_d = CEIL_INTDIV(((PyArray_DIMS(%(ten4)s))[3]),step_y);
+
+        } else if (%(mode)s == MODE_VALID) {
+            if ( ((PyArray_DIMS(%(ten4)s))[2] &lt; c) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[2]-c) %% step_x)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[0]=%%ld, neib_step[0]=%%ld and"
+                             " ten4.shape[2]=%%ld not consistent",
+                             (long int)c, (long int)step_x,
+                             (long int)(PyArray_DIMS(%(ten4)s)[2]));
+                %(fail)s;
+            }
+            if ( ((PyArray_DIMS(%(ten4)s))[3] &lt; d) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[3]-d) %% step_y)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[1]=%%ld, neib_step[1]=%%ld and"
+                             " ten4.shape[3]=%%ld not consistent",
+                             (long int)d, (long int)step_y,
+                             (long int)(PyArray_DIMS(%(ten4)s)[3]));
+                %(fail)s;
+            }
+            //number of patch in height
+            grid_c = 1+(((PyArray_DIMS(%(ten4)s))[2]-c)/step_x);
+            //number of patch in width
+            grid_d = 1+(((PyArray_DIMS(%(ten4)s))[3]-d)/step_y);
+        } else if (%(mode)s == MODE_IGNORE_BORDERS) {
+            //number of patch in height
+            grid_c = 1+(((PyArray_DIMS(%(ten4)s))[2]-c)/step_x);
+            //number of patch in width
+            grid_d = 1+(((PyArray_DIMS(%(ten4)s))[3]-d)/step_y);
+        } else if (%(mode)s == MODE_HALF) {
+            if ( ((PyArray_DIMS(%(ten4)s))[2] &lt; c) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[2]-(c%%2)) %% step_x)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[0]=%%ld, neib_step[0]=%%ld and"
+                             " ten4.shape[2]=%%ld not consistent",
+                             (long int)c, (long int)step_x,
+                             (long int)(PyArray_DIMS(%(ten4)s)[2]));
+                %(fail)s;
+            }
+            if ( ((PyArray_DIMS(%(ten4)s))[3] &lt; d) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[3]-(d%%2)) %% step_y)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[1]=%%ld, neib_step[1]=%%ld and"
+                             " ten4.shape[3]=%%ld not consistent",
+                             (long int)d, (long int)step_y,
+                             (long int)(PyArray_DIMS(%(ten4)s)[3]));
+                %(fail)s;
+            }
+            //number of patch in height
+            grid_c = 1+(((PyArray_DIMS(%(ten4)s))[2]-(c%%2))/step_x);
+            //number of patch in width
+            grid_d = 1+(((PyArray_DIMS(%(ten4)s))[3]-(d%%2))/step_y);
+        } else if (%(mode)s == MODE_FULL) {
+            if ( ((PyArray_DIMS(%(ten4)s))[2] &lt; c) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[2]+c-2) %% step_x)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[0]=%%ld, neib_step[0]=%%ld and"
+                             " ten4.shape[2]=%%ld not consistent",
+                             (long int)c, (long int)step_x,
+                             (long int)(PyArray_DIMS(%(ten4)s)[2]));
+                %(fail)s;
+            }
+            if ( ((PyArray_DIMS(%(ten4)s))[3] &lt; d) ||
+                 ( (((PyArray_DIMS(%(ten4)s))[3]+d-2) %% step_y)!=0))
+            {
+                PyErr_Format(PyExc_TypeError,
+                             "neib_shape[1]=%%ld, neib_step[1]=%%ld and"
+                             " ten4.shape[3]=%%ld not consistent",
+                             (long int)d, (long int)step_y,
+                             (long int)(PyArray_DIMS(%(ten4)s)[3]));
+                %(fail)s;
+            }
+            //number of patch in height
+            grid_c = 1+(((PyArray_DIMS(%(ten4)s))[2]+c-2)/step_x);
+            //number of patch in width
+            grid_d = 1+(((PyArray_DIMS(%(ten4)s))[3]+d-2)/step_y);
+        } else {
+            PyErr_Format(PyExc_TypeError,
+                         "Images2Neibs: unknow mode %%d", %(mode)s);
+            %(fail)s;
+        }
+
+        // new dimensions for z
+        const npy_intp z_dim1 = c * d;
+        const npy_intp z_dim0 =  grid_c
+                            * grid_d
+                            * (PyArray_DIMS(%(ten4)s))[1]
+                            * (PyArray_DIMS(%(ten4)s))[0];
+
+        if ((NULL == %(z)s)
+            || ((PyArray_DIMS(%(z)s))[0] != z_dim0 )
+            || ((PyArray_DIMS(%(z)s))[1] != z_dim1 )
+        )
+        {
+            Py_XDECREF(%(z)s);
+            npy_intp dims[2];
+            dims[0] = z_dim0;
+            dims[1] = z_dim1;
+
+            %(z)s = (PyArrayObject*) PyArray_EMPTY(2,
+                dims,
+                PyArray_TYPE((PyArrayObject*) py_%(ten4)s),
+                0);
+
+            if (!%(z)s)
+            {
+                PyErr_SetString(PyExc_MemoryError, "failed to alloc z output");
+                %(fail)s;
+            }
+        }
+        }
+
+        { // NESTED SCOPE
+
+        const int nb_batch = (PyArray_DIMS(%(ten4)s))[0];
+        const int nb_stack = (PyArray_DIMS(%(ten4)s))[1];
+        const int height = (PyArray_DIMS(%(ten4)s))[2];
+        const int width = (PyArray_DIMS(%(ten4)s))[3];
+
+        // (c,d) = neib_shape
+        const npy_intp c = (npy_intp) *(dtype_%(neib_shape)s*) PyArray_GETPTR1(%(neib_shape)s, 0);
+        const npy_intp d = (npy_intp) *(dtype_%(neib_shape)s*) PyArray_GETPTR1(%(neib_shape)s, 1);
+        // (step_x,step_y) = neib_step
+        const npy_intp step_x = (npy_intp) *(dtype_%(neib_step)s*) PyArray_GETPTR1(%(neib_step)s, 0);
+        const npy_intp step_y = (npy_intp) *(dtype_%(neib_step)s*) PyArray_GETPTR1(%(neib_step)s, 1);
+
+        const int wrap_centered_half_idx_shift_x = c/2;
+        const int wrap_centered_half_idx_shift_y = d/2;
+        // Oh this is messed up...
+        for (int n = 0; n &lt; nb_batch; n++)              // loop over batches
+            for (int s = 0; s &lt; nb_stack; s++)          // loop over stacks
+                for (int a = 0; a &lt; grid_c; a++)        // loop over the number of patch in height
+                    for (int b = 0; b &lt; grid_d; b++)    // loop over the number of patch in width
+                    {
+                        int z_row = b + grid_d*(a + grid_c*(s + nb_stack*n));
+                        for (int i = 0; i &lt; c; i++)     // loop over c
+                        {
+                            int ten4_2 = i + a * step_x;
+                            if (%(mode)s == MODE_WRAP_CENTERED) {
+                                ten4_2 -= wrap_centered_half_idx_shift_x;
+                                if ( ten4_2 &lt; 0 ) ten4_2 += height;
+                                else if (ten4_2 &gt;= height) ten4_2 -= height;
+                            } else if ( "%(mode)s" == "half" ){
+                                ten4_2 -= wrap_centered_half_idx_shift_x;
+                            } else if ( "%(mode)s" == "full" ){
+                                ten4_2 -= c - 1;
+                            }
+                            if (ten4_2 &lt; 0 | ten4_2 &gt;= height) {
+                                dtype_%(z)s* curr_z = (dtype_%(z)s*) PyArray_GETPTR2(%(z)s, z_row, d * i);
+                                memset(curr_z, 0, d*sizeof(*curr_z));
+                            } else {
+                                for (int j = 0; j &lt; d; j++)  // loop over d
+                                {
+                                    int ten4_3 = j + b * step_y;
+                                    if (%(mode)s == MODE_WRAP_CENTERED) {
+                                        ten4_3 -= wrap_centered_half_idx_shift_y;
+                                        if ( ten4_3 &lt; 0 ) ten4_3 += width;
+                                        else if (ten4_3 &gt;= width) ten4_3 -= width;
+                                    } else if (%(mode)s == MODE_HALF) {
+                                        ten4_3 -= wrap_centered_half_idx_shift_y;
+                                    } else if (%(mode)s == MODE_FULL) {
+                                        ten4_3 -= d - 1;
+                                    }
+                                    int z_col = j + d * i;
+                                    dtype_%(z)s* curr_z = (dtype_%(z)s*) PyArray_GETPTR2(%(z)s, z_row, z_col);
+                                    if (ten4_3 &lt; 0 | ten4_3 &gt;= width) {
+                                        *curr_z = 0;
+                                    } else {
+                                        *curr_z = *( (dtype_%(ten4)s*) PyArray_GETPTR4(%(ten4)s, n, s, ten4_2, ten4_3));
+                                    }
+                                }
+                            }
+                        }
+                    }
+        } // END NESTED SCOPE
+         % dict(ten4=inp[0], neib_shape=inp[1], neib_step=inp[2], z=out[0],
+                   fail=sub[&quotfail&quot], mode=sub[&quotparams&quot])</a>
+
+
+def images2neibs(ten4, neib_shape, neib_step=None, mode=&quotvalid&quot):
+    </code></pre><img src="175300690.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 11</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/Theano/Theano/commit/1433cacb29820788a569e1669439a65d3b96d56d#diff-9c4b11061de3f4f8d77292b594c3a87c66f628346af0c170567e8635be6f197aL346' target='_blank'>Link</a></div><div id='project'> Project Name: Theano/Theano</div><div id='commit'> Commit Name: 1433cacb29820788a569e1669439a65d3b96d56d</div><div id='time'> Time: 2017-06-30</div><div id='author'> Author: stevenbocco@gmail.com</div><div id='file'> File Name: theano/tensor/nnet/neighbours.py</div><div id='class'> Class Name: Images2Neibs</div><div id='method'> Method Name: c_code</div><BR><BR><div id='link'><a href='https://github.com/Theano/Theano/commit/927aac6a7fa4e040440056ae23f767815b14b088#diff-8d74b624689c554ff71d4e85889f7a36bf3d06dfbf659bba73ee92ab92e02f01L374' target='_blank'>Link</a></div><div id='project'> Project Name: Theano/Theano</div><div id='commit'> Commit Name: 927aac6a7fa4e040440056ae23f767815b14b088</div><div id='time'> Time: 2017-05-10</div><div id='author'> Author: stevenbocco@gmail.com</div><div id='file'> File Name: theano/sandbox/rng_mrg.py</div><div id='class'> Class Name: mrg_uniform</div><div id='method'> Method Name: c_code</div><BR><BR><div id='link'><a href='https://github.com/Theano/Theano/commit/8b24ff5d2e47feee017528d56a1992a7af93568f#diff-d0a2560982db27e4be6a7a7973000035cf1953137f885cf2b4dc7c5926b40eaeL170' target='_blank'>Link</a></div><div id='project'> Project Name: Theano/Theano</div><div id='commit'> Commit Name: 8b24ff5d2e47feee017528d56a1992a7af93568f</div><div id='time'> Time: 2017-06-30</div><div id='author'> Author: stevenbocco@gmail.com</div><div id='file'> File Name: theano/gpuarray/rng_mrg.py</div><div id='class'> Class Name: GPUA_mrg_uniform</div><div id='method'> Method Name: c_code</div><BR>

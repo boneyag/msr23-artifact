@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    @cached(name="svd")
+    def _svd(self) -&gt; Tuple["LazyTensor", Tensor, "LazyTensor"]:
+        diag = self._diag_tensor.diag()
+        if torch.equal(diag, <a id="change">diag[..., :1].expand(diag.shape)</a>):
+            U, S_, V = self._lazy_tensor.svd()
+            S = S_ + diag  &#47&#47 this assumes all diagonal entries are positive
+            return U, S, V</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    @cached(name="svd")
+    def _svd(self) -&gt; Tuple["LazyTensor", Tensor, "LazyTensor"]:
+        if <a id="change">isinstance(self._diag_tensor, ConstantDiagLazyTensor)</a>:
+            U, S_, V = self._lazy_tensor.svd()
+            S = S_ + self._diag_tensor.diag()  &#47&#47 this assumes all diagonal entries are positive
+            return U, S, V</code></pre>

@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        row, col = edge_index
+        x = x.unsqueeze(-1) if x.dim() == 1 else x
+
+        <a id="change">x_row</a>, x_col = x.index_select(0, row), x.index_select(0, col)
+        out = torch.cat([x_row, x_col - x_row], dim=1)
+        out = self.nn(out)
+        <a id="change">out = scatter_(self.aggr, out, row, dim_size=x.size(0))</a>
+
+        return out
+
+    def __repr__(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+        row, col = edge_index
+        x = x.unsqueeze(-1) if x.dim() == 1 else x
+
+        return <a id="change">self.propagate(edge_index, x=x)</a>
+
+    def message(self, x_i, x_j):
+        return self.nn(torch.cat([x_i, x_j - x_i], dim=1))
+</code></pre>

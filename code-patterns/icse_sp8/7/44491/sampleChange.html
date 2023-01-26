@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        prediction = self.model(inputs)
+
+        if self.classes:
+            <a id="change">gradient = torch.zeros((1, self.classes), dtype=prediction.dtype, device=self.device)</a>
+            cam_class = cam_class or np.argmax(prediction.detach().cpu().numpy()[0])
+            gradient[0][cam_class] = 1
+        else:
+            gradient = prediction.clone()</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.model.eval()
+        prediction = self.model(inputs)
+
+        <a id="change">if isinstance(gradient_mode, np.ndarray):
+            gradient = self._fill_value(gradient_mode)
+        elif &quotoh&quot in gradient_mode:
+            gradient = torch.zeros_like(prediction)[0:1]
+            cam_class = cam_class or np.argmax(prediction.detach().cpu().numpy()[0])
+            gradient[0][cam_class] = 1
+        else:
+            gradient = prediction.clone()
+
+       </a> self.model.zero_grad()
+        prediction.backward(gradient=gradient, retain_graph=True)
+        self.model.zero_grad()
+</code></pre>

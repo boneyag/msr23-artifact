@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  
+  with tf.name_scope(name, "cross_replica_mean", [tensor]):
+    num_shards = get_num_tpu_shards()
+    <a id="change">if num_shards is None:
+      raise ValueError(
+          "Cannot take cross_replica_mean() outside of TPU Context.")
+   </a> if num_shards == 1:
+      return tensor
+    return tf.contrib.tpu.cross_replica_sum(tensor / num_shards)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  num_replicas = get_num_replicas()
+
+  <a id="change">if num_replicas and num_replicas &gt; 1:
+    with tf.name_scope(name, "cross_replica_mean", nest.flatten(structure)):
+      return nest.map_structure(
+          lambda x: tf.contrib.tpu.cross_replica_sum(x / num_replicas),
+          structure)
+  else:
+    return structure
+
+
+</a>def cross_replica_sum(structure, name=None):
+  Sums the contents of a nested structure across all replicas.
+
+  Args:</code></pre>

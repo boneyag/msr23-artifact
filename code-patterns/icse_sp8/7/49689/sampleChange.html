@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        props = skimage.measure.regionprops(labels, pixel_data)
+        per_label = [self.run_mahotas(prop, scale, n_directions) for prop in props]
+        features = dask.compute(per_label, scheduler=&quotthreads&quot)
+        <a id="change">features = numpy.array(features)[0].transpose(1,2,0)</a>
+
+        for direction, direction_features in enumerate(features):
+            for feature_name, feature in zip(F_HARALICK, direction_features):
+                statistics += self.record_measurement(</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        features = numpy.empty((n_directions, 13, len(unique_labels)))
+
+        <a id="change">for index, prop in enumerate(props):
+            label_data = prop[&quotintensity_image&quot]
+            try:
+                features[:, :, index] = mahotas.features.haralick(
+                    label_data, distance=scale, ignore_zeros=True
+                )
+            except ValueError:
+                features[:, :, index] = numpy.nan
+
+       </a> for direction, direction_features in enumerate(features):
+            for feature_name, feature in zip(F_HARALICK, direction_features):
+                statistics += self.record_measurement(
+                    image=image_name,</code></pre>

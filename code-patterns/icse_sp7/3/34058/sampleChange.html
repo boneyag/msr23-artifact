@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        jarpath = JAR.create(root, destdir, &quotoutput&quot)
+      return jarpath
+
+    <a id="change">safe_mkdir(self.workdir)</a>
+    for target in targets:
+      entries = classpath_products.get_internal_classpath_entries_for_targets([target])
+      for conf, entry in entries:
+        if ClasspathUtil.is_dir(entry.path):</code></pre><h3>After Change</h3><pre><code class='java'>
+    Convert loose directories in classpath_products into jars. 
+
+    with self.invalidated(targets=targets, invalidate_dependents=True) as invalidation:
+      <a id="change">for vt in invalidation.all_vts:
+        entries = classpath_products.get_internal_classpath_entries_for_targets([vt.target])
+        for index, (conf, entry) in enumerate(entries):
+          if ClasspathUtil.is_dir(entry.path):
+            &#47&#47 regenerate artifact for invalid vts
+            if not vt.valid:
+              JAR.create(entry.path, vt.results_dir, &quotoutput-{}&quot.format(index))
+
+            &#47&#47 replace directory classpath entry with its jarpath
+            jarpath = os.path.join(vt.results_dir, &quotoutput-{}.jar&quot.format(index))
+            classpath_products.remove_for_target(vt.target, [(conf, entry.path)])
+            classpath_products.add_for_target(vt.target, [(conf, jarpath)])
+
+ </a> def find_consolidate_classpath_candidates(self, classpath_products, targets):
+    targets_with_directory_in_classpath = []
+    for target in targets:
+      entries = classpath_products.get_internal_classpath_entries_for_targets([target])</code></pre>

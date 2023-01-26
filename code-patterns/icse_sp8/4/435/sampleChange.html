@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Take the messy free-form construction_type and plant_kind fields, and
+        &#47&#47 do our best to map them to some canonical categories... this is
+        &#47&#47 necessarily imperfect:
+        pipe(pudl.helpers.cleanstrings, <a id="change">[&quottype_const&quot, &quotplant_kind&quot]</a>,
+             [pc.ferc1_const_type_strings, pc.ferc1_plant_kind_strings],
+             unmapped=&quot&quot)
+    )
+
+    &#47&#47 Force the construction and installation years to be numeric values, and
+    &#47&#47 set them to NA if they can&quott be converted. (table has some junk values)
+    ferc1_steam_df[&quotyr_const&quot] = pd.to_numeric(
+        ferc1_steam_df[&quotyr_const&quot], errors=&quotcoerce&quot)
+    ferc1_steam_df[&quotyr_installed&quot] = pd.to_numeric(
+        ferc1_steam_df[&quotyr_installed&quot], errors=&quotcoerce&quot)
+    &#47&#47 There are also a few zeroes... which are not valid years for us:
+    ferc1_steam_df = ferc1_steam_df.replace(
+        {"yr_const": 0, "yr_installed": 0}, np.nan)
+
+    &#47&#47 Converting everything to per MW and MWh units...
+    <a id="change">ferc1_steam_df[&quotcost_per_mw&quot] = 1000 * ferc1_steam_df[&quotcost_per_kw&quot]</a>
+    ferc1_steam_df.drop(&quotcost_per_kw&quot, axis=1, inplace=True)
+    ferc1_steam_df[&quotnet_generation_mwh&quot] = ferc1_steam_df[&quotnet_generation&quot] / 1000
+    ferc1_steam_df.drop(&quotnet_generation&quot, axis=1, inplace=True)
+    ferc1_steam_df[&quotexpns_per_mwh&quot] = 1000 * ferc1_steam_df[&quotexpns_kwh&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def _plants_steam_clean(ferc1_steam_df):
+    ferc1_steam_df = (
+        <a id="change">ferc1_steam_df</a>.rename(columns={
+            "plant_name": "plant_name_ferc1",
+            "yr_const": &quotconstruction_year&quot,
+            "plant_kind": &quotplant_type&quot,
+            "type_const": &quotconstruction_type&quot,
+            "asset_retire_cost": &quotasset_retirement_cost&quot,
+            "yr_installed": &quotinstallation_year&quot,
+            "tot_capacity": &quotcapacity_mw&quot,
+            "peak_demand": &quotpeak_demand_mw&quot,
+            "plant_hours": &quotplant_hours_connected_while_generating&quot,
+            "plnt_capability": &quotplant_capability_mw&quot,
+            "when_limited": &quotwater_limited_capacity_mw&quot,
+            "when_not_limited": &quotnot_water_limited_capacity_mw&quot,
+            "avg_num_of_emp": &quotavg_num_employees&quot,
+            "net_generation": &quotnet_generation_kwh&quot,
+            "cost_land": &quotcapex_land&quot,
+            "cost_structure": &quotcapex_structures&quot,
+            "cost_equipment": &quotcapex_equipment&quot,
+            "cost_of_plant_to": &quotcapex_total&quot,
+            "cost_per_kw": &quotcapex_per_kw&quot,
+            "expns_operations": &quotopex_operations&quot,
+            "expns_fuel": &quotopex_fuel&quot,
+            "expns_coolants": &quotopex_coolants&quot,
+            "expns_steam": &quotopex_steam&quot,
+            "expns_steam_othr": &quotopex_steam_other&quot,
+            "expns_transfer": &quotopex_transfer&quot,
+            "expns_electric": &quotopex_electric&quot,
+            "expns_misc_power": &quotopex_misc_power&quot,
+            "expns_rents": &quotopex_rents&quot,
+            "expns_allowances": &quotopex_allowances&quot,
+            "expns_engnr": &quotopex_engineering&quot,
+            "expns_structures": &quotopex_structures&quot,
+            "expns_boiler": &quotopex_boiler&quot,
+            "expns_plants": &quotopex_plants&quot,
+            "expns_misc_steam": &quotopex_misc_steam&quot,
+            "tot_prdctn_expns": &quotopex_production_total&quot,
+            "expns_kwh": &quotopex_per_kwh&quot})
+        .pipe(_clean_cols, "f1_steam")
+        .pipe(pudl.helpers.strip_lower, [&quotplant_name&quot])
+        .pipe(pudl.helpers.cleanstrings,
+              [&quotconstruction_type&quot, &quotplant_type&quot],
+              [pc.ferc1_const_type_strings, pc.ferc1_plant_kind_strings],
+              unmapped=&quot&quot)
+        .pipe(<a id="change">oob_to_nan</a>, cols=["construction_year", "installation_year"],
+              lb=1850, ub=max(pc.working_years["ferc1"]) + 1)
+        .assign(
+            capex_per_mw=lambda x: 1000.0 * x.capex_per_kw,</code></pre>

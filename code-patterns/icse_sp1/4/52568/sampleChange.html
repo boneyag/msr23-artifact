@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                              dense_shape=[n_voxels, n_classes])
+    one_hotB = 1 - tf.sparse_tensor_to_dense(one_hot)
+    SensSpec = tf.reduce_mean(
+        <a id="change">tf.add(tf.multiply(r, tf.reduce_sum(tf.multiply(tf.square(-1 * tf.sparse_add(-1 * pred, one_hot)) \
+                                                        , tf.sparse_tensor_to_dense(one_hot)),
+                                            0) / tf.sparse_reduce_sum(one_hot, 0)), \
+               tf.multiply((1 - r), tf.reduce_sum(tf.multiply(tf.square(-1 * tf.sparse_add(-1 * pred, one_hot)), \
+                                                              one_hotB), 0) / tf.reduce_sum(one_hotB, 0)))</a>)
+    return SensSpec
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 value of unity everywhere except for the previous &quothot&quot locations
+    one_cold = 1 - one_hot
+
+    <a id="change">squared_error = tf.square(one_hot - pred)</a>
+    specificity_part = tf.reduce_sum(squared_error * one_hot, 0) / tf.reduce_sum(one_hot, 0)
+    sensitivity_part = <a id="change">tf.reduce_sum(tf.multiply(squared_error, one_cold), 0)</a> / tf.reduce_sum(one_cold, 0)
+
+    return tf.reduce_sum(<a id="change">r * specificity_part + (1 - r) * sensitivity_part</a>)
+
+
+def l2_reg_loss(scope):</code></pre>

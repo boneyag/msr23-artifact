@@ -1,0 +1,82 @@
+<html><h3>79d0265a90a7ee0847807dc299983aaef9e875a5,se3cnn/batchnorm.py,SE3BatchNorm,forward,#SE3BatchNorm#Any#,40
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if d == 1:  &#47&#47 scalars
+                if self.training:
+                    field_mean = field.mean(0).mean(-1).view(-1)  &#47&#47 [feature]
+                    self.running_mean[irm: irm + m] = (1 - self.momentum) * self.running_mean[irm: irm + m] + self.momentum * <a id="change">field_mean.detach()</a>
+                else:
+                    field_mean = self.running_mean[irm: irm + m]
+                irm += m
+                field = field - field_mean.view(1, m, 1, 1)  &#47&#47 [batch, feature, repr, x * y * z]</code></pre><h3>After Change</h3><pre><code class='java'>
+        &quot&quot&quot
+
+        new_means = []
+        <a id="change">new_vars = []</a>
+
+        fields = []
+        ix = 0
+        irm = 0
+        irv = 0
+        iw = 0
+        ib = 0
+        for m, d in self.Rs:
+            field = input[:, ix: ix + m * d]  &#47&#47 [batch, feature * repr, x, y, z]
+            ix += m * d
+            field = field.contiguous().view(input.size(0), m, d, -1)  &#47&#47 [batch, feature, repr, x * y * z]
+
+            if d == 1:  &#47&#47 scalars
+                if self.training:
+                    field_mean = field.mean(0).mean(-1).view(-1).detach()  &#47&#47 [feature]
+                    new_means.append(self._roll_avg(self.running_mean[irm:irm+m], field_mean))
+                else:
+                    field_mean = self.running_mean[irm: irm + m]
+                irm += m
+                field = field - field_mean.view(1, m, 1, 1)  &#47&#47 [batch, feature, repr, x * y * z]
+
+            if self.training:
+                field_norm = torch.sum(field ** 2, dim=2)  &#47&#47 [batch, feature, x * y * z]
+                if self.reduce == &quotmean&quot:
+                    field_norm = field_norm.mean(-1)  &#47&#47 [batch, feature]
+                elif self.reduce == &quotmax&quot:
+                    field_norm = field_norm.max(-1)[0]  &#47&#47 [batch, feature]
+                else:
+                    raise ValueError("Invalid reduce option")
+                field_norm = field_norm.mean(0).detach()  &#47&#47 [feature]
+                <a id="change">new_vars.append(self._roll_avg(self.running_var[irv: irv+m], field_norm))</a>
+            else:
+                field_norm = self.running_var[irv: irv + m]
+            irv += m
+
+            field_norm = (field_norm + self.eps).pow(-0.5).view(1, m, 1, 1)  &#47&#47 [batch, feature, repr, x * y * z]
+
+            if self.affine:
+                weight = self.weight[iw: iw + m]  &#47&#47 [feature]
+                iw += m
+                field_norm = field_norm * weight.view(1, m, 1, 1)  &#47&#47 [batch, feature, repr, x * y * z]
+
+            field = field * field_norm  &#47&#47 [batch, feature, repr, x * y * z]
+
+            if self.affine and d == 1:  &#47&#47 scalars
+                bias = self.bias[ib: ib + m]  &#47&#47 [feature]
+                ib += m
+                field += bias.view(1, m, 1, 1)  &#47&#47 [batch, feature, repr, x * y * z]
+
+            fields.append(field.view(input.size(0), m * d, *input.size()[2:]))
+
+        assert ix == input.size(1)
+        if self.training:
+            assert irm == self.running_mean.numel()
+            assert irv == self.running_var.size(0)
+        if self.affine:
+            assert iw == self.weight.size(0)
+            assert ib == self.bias.numel()
+
+        self.running_mean = torch.cat(new_means) 
+        <a id="change">self.running_var = torch.cat(new_vars)</a>
+
+        return torch.cat(fields, dim=1)  &#47&#47 [batch, stacked feature, x, y, z]
+
+</code></pre><img src="23310866.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mariogeiger/se3cnn/commit/79d0265a90a7ee0847807dc299983aaef9e875a5#diff-e7ed64295f7e6b75063cb14210a5c367a4ca53a8830376fba14c38d8b09f0d29L40' target='_blank'>Link</a></div><div id='project'> Project Name: mariogeiger/se3cnn</div><div id='commit'> Commit Name: 79d0265a90a7ee0847807dc299983aaef9e875a5</div><div id='time'> Time: 2018-10-16</div><div id='author'> Author: michal.tyszkiewicz@gmail.com</div><div id='file'> File Name: se3cnn/batchnorm.py</div><div id='class'> Class Name: SE3BatchNorm</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/a0cf5566d88533c5caa7a490beb6eb0760eee9b4#diff-e5ea47a2193f1cfb039210c5c0ff83e8175739afc0551866052f6ad31bb91482L77' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: a0cf5566d88533c5caa7a490beb6eb0760eee9b4</div><div id='time'> Time: 2021-01-21</div><div id='author'> Author: wanchaol@users.noreply.github.com</div><div id='file'> File Name: torch/optim/sgd.py</div><div id='class'> Class Name: SGD</div><div id='method'> Method Name: step</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/e21ef336207b0f9ae378c77430d298945827830a#diff-6919a2dfe30728fa2663270e78bb7c97a68c14f9308dc2b5d31cbe6eca2e5599L338' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: e21ef336207b0f9ae378c77430d298945827830a</div><div id='time'> Time: 2019-02-12</div><div id='author'> Author: M.N.Tran@ibm.com</div><div id='file'> File Name: art/classifiers/pytorch.py</div><div id='class'> Class Name: PyTorchClassifier</div><div id='method'> Method Name: get_activations</div><BR>

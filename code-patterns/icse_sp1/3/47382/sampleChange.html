@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def _forward_internal(self, vector: torch.Tensor, matrix: torch.Tensor) -&gt; torch.Tensor:
+        &#47&#47 TODO(mattg): Remove the need for this tiling.
+        &#47&#47 https://github.com/allenai/allennlp/pull/1235&#47&#47issuecomment-391540133
+        tiled_vector = <a id="change">vector.unsqueeze(1).expand(vector.size()[0],
+                                                  matrix.size()[1],
+                                                  vector.size()[1])</a>
+
+        combined_tensors = util.combine_tensors(self._combination, [tiled_vector, matrix])
+        <a id="change">dot_product = torch.matmul(combined_tensors, self._weight_vector)</a>
+        return self._activation(dot_product + self._bias)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        combined_tensors = util.combine_tensors_and_multiply(self._combination,
+                                                             [vector.unsqueeze(1), matrix],
+                                                             self._weight_vector)
+        return self._activation(<a id="change">combined_tensors.squeeze(1)</a> + self._bias)
+</code></pre>

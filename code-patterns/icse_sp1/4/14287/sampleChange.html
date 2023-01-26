@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      auth = None  &#47&#47 requests will use the netrc creds.
+    response = requests.get(url, auth=auth)
+    if response.status_code != requests.codes.ok:
+      <a id="change">raise BasicAuthException(&quotFailed to auth against {}. Status code {}.&quot.format(
+        response, response.status_code))</a>
+    cookies.update(response.cookies)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    if response.status_code != requests.codes.ok:
+      if response.status_code == requests.codes.unauthorized:
+        <a id="change">parsed = www_authenticate.parse(response.headers.get(&quotWWW-Authenticate&quot, &quot&quot))</a>
+        if &quotBasic&quot in parsed:
+          raise Challenged(url, response.status_code, response.reason, <a id="change">parsed</a>[&quotBasic&quot][&quotrealm&quot])
+      raise BasicAuthException(url, response.status_code, response.reason)
+
+    cookies.update(response.cookies)</code></pre>

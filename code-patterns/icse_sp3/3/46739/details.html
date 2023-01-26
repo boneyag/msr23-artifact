@@ -1,0 +1,83 @@
+<html><h3>fa17621d9c8c5e5a0b7f9a89be489dd0c5ba0445,ilastik-shell/applets/pixelClassification/pixelClassificationGui.py,PixelClassificationGui,onTrainAndPredictButtonClicked,#PixelClassificationGui#,695
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.predictionSerializer.predictionStorageEnabled = True
+            traceLogger.debug("Starting prediction save")
+            self.shellRequestSignal.emit( ShellRequest.RequestSave )
+            <a id="change">traceLogger.debug("Finished prediction save?")</a>
+            self.predictionSerializer.predictionStorageEnabled = False
+
+            &#47&#47 Restore original cache state
+            self.pipeline.FreezePredictions.setValue(predictionsFrozen)</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        with Tracer(traceLogger):
+            &#47&#47 The button does double-duty as a cancel button while predictions are being stored
+            <a id="change">if self._currentlySavingPredictions:
+                self.predictionSerializer.cancel()
+            else:
+                &#47&#47 Compute new predictions as needed
+                predictionsFrozen = self.pipeline.FreezePredictions.value
+                self.pipeline.FreezePredictions.setValue(False)
+                self._currentlySavingPredictions = True
+                
+                originalButtonText = "Save Predictions"
+                self._predictionControlUi.trainAndPredictButton.setText("Cancel Save")
+    
+                def saveThreadFunc():
+                    with Tracer(traceLogger):
+                        &#47&#47 First, do a regular save.
+                        &#47&#47 During a regular save, predictions are not saved to the project file.
+                        &#47&#47 (It takes too much time if the user only needs the classifier.)
+                        self.shellRequestSignal.emit( ShellRequest.RequestSave )
+                        
+                        &#47&#47 Enable prediction storage and ask the shell to save the project again.
+                        &#47&#47 (This way the second save will occupy the whole progress bar.)
+                        self.predictionSerializer.predictionStorageEnabled = True
+                        self.shellRequestSignal.emit( ShellRequest.RequestSave )
+                        self.predictionSerializer.predictionStorageEnabled = False
+        
+                        &#47&#47 Restore original states (must use events for UI calls)
+                        self.thunkEventHandler.post(self._predictionControlUi.trainAndPredictButton.setText, originalButtonText)
+                        self.pipeline.FreezePredictions.setValue(predictionsFrozen)
+                        self._currentlySavingPredictions = False
+
+                saveThread = threading.Thread(target=saveThreadFunc)
+                saveThread.start()
+            
+&#47&#47            &#47&#47 Can&quott change labels while we&quotre in the middle of a prediction
+&#47&#47            self._labelControlUi.labelListModel.allowRemove(False)
+&#47&#47            
+&#47&#47            &#47&#47 Disable the parts of the GUI that can&quott be used while we&quotre predicting . . .
+&#47&#47            self._labelControlUi.AddLabelButton.setEnabled(False)
+&#47&#47
+&#47&#47            &#47&#47 TODO: Need a way to disable upstream inputs while this is going on . . .
+&#47&#47            &#47&#47self._featureSelectionUi.SelectFeaturesButton.setEnabled(False)
+&#47&#47            self._predictionControlUi.trainAndPredictButton.setEnabled(False)
+&#47&#47    
+&#47&#47            &#47&#47 Closure to call when the prediction is finished
+&#47&#47            def onPredictionComplete(predictionResults):
+&#47&#47                with Tracer(traceLogger):
+&#47&#47                    logger.debug("Prediction shape={}".format(predictionResults.shape))
+&#47&#47                    
+&#47&#47                    &#47&#47 Re-enable the GUI
+&#47&#47                    self._labelControlUi.AddLabelButton.setEnabled(True)
+&#47&#47                    self._predictionControlUi.trainAndPredictButton.setEnabled(True)
+&#47&#47                    self._labelControlUi.labelListModel.allowRemove(True)
+&#47&#47                    
+&#47&#47                    &#47&#47 Re-fix the operators now that the computation is complete.
+&#47&#47                    for o in self.fixableOperators:
+&#47&#47                        o.inputs["fixAtCurrent"].setValue(True)
+&#47&#47        
+&#47&#47                    &#47&#47 Redraw the image in the GUI
+&#47&#47                    self.editor.scheduleSlicesRedraw()
+&#47&#47    
+&#47&#47            &#47&#47 Request the prediction for the entire image stack.
+&#47&#47            &#47&#47 Call our callback when it&quots finished
+&#47&#47            self.pipeline.CachedPredictionProbabilities[self.imageIndex][:].notify( onPredictionComplete )
+    
+   </a> def addPredictionLayer(self, icl, ref_label):
+        
+        Add a prediction layer to the editor.
+        </code></pre><img src="218648408.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/fa17621d9c8c5e5a0b7f9a89be489dd0c5ba0445#diff-94a12c93f8e1b07ef9d453899eb0e7aad9709e313c044223e22306441a577cb9L700' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: fa17621d9c8c5e5a0b7f9a89be489dd0c5ba0445</div><div id='time'> Time: 2012-07-11</div><div id='author'> Author: bergs@janelia.hhmi.org</div><div id='file'> File Name: ilastik-shell/applets/pixelClassification/pixelClassificationGui.py</div><div id='class'> Class Name: PixelClassificationGui</div><div id='method'> Method Name: onTrainAndPredictButtonClicked</div><BR><BR><div id='link'><a href='https://github.com/deepfakes/faceswap/commit/533025215d6629a1f506838fc9eeed33f2417591#diff-c0c472d0fc32f95b22c486a31d5c509b773f62ad455c7781e8a4b9b12767f237L335' target='_blank'>Link</a></div><div id='project'> Project Name: deepfakes/faceswap</div><div id='commit'> Commit Name: 533025215d6629a1f506838fc9eeed33f2417591</div><div id='time'> Time: 2019-06-28</div><div id='author'> Author: 36920800+torzdf@users.noreply.github.com</div><div id='file'> File Name: lib/gui/wrapper.py</div><div id='class'> Class Name: FaceswapControl</div><div id='method'> Method Name: terminate</div><BR><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/28d0002b4e47820a25ed0e19c289e86875bc1b08#diff-cd74bc20ad652b3b2e48679ffa2c3c4b8cce95bdad35e91bb4c47c5082c13e7cL236' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: 28d0002b4e47820a25ed0e19c289e86875bc1b08</div><div id='time'> Time: 2019-02-17</div><div id='author'> Author: ben.bog@gmail.com</div><div id='file'> File Name: src/sos/controller.py</div><div id='class'> Class Name: Controller</div><div id='method'> Method Name: handle_master_push_msg</div><BR>

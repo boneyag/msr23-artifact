@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        edge_index = torch.stack([row, batch], dim=0)
+
+        out = global_add_pool(xs[-1], batch)
+        <a id="change">for conv, gru, x in zip(self.mol_convs, self.mol_grus, xs):
+            h = F.elu_(conv((x, out), edge_index))
+            out = gru(h, out)
+
+        &#47&#47 Predictor:
+       </a> out = F.dropout(out, p=self.dropout, training=self.training)
+        return self.lin2(out)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        x = F.leaky_relu_(self.lin1(x))
+
+        h = F.elu_(self.atom_convs[0](x, edge_index, edge_attr))
+        h = <a id="change">F.dropout(h, p=self.dropout, training=self.training)</a>
+        x = self.atom_grus[0](h, x).relu_()
+
+        for conv, gru in zip(self.atom_convs[1:], self.atom_grus[1:]):
+            h = F.elu_(conv(x, edge_index))
+            h = F.dropout(h, p=self.dropout, training=self.training)
+            x = gru(h, x).relu_()
+
+        &#47&#47 Molecule Embedding:
+        row = torch.arange(batch.size(0), device=batch.device)
+        edge_index = torch.stack([row, batch], dim=0)
+
+        out = global_add_pool(x, batch).relu_()
+        for t in range(self.num_timesteps):
+            h = F.elu_(self.mol_conv((x, out), edge_index))
+            <a id="change">h = F.dropout(h, p=self.dropout, training=self.training)</a>
+            out = self.mol_gru(h, out).relu_()
+
+        &#47&#47 Predictor:
+        out = F.dropout(out, p=self.dropout, training=self.training)</code></pre>

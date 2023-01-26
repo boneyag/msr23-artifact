@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tf.cast(predictions[common.OUTPUT_TYPE], tf.float32),
+        _RAW_OUTPUT_NAME)
+    &#47&#47 Crop the valid regions from the predictions.
+    <a id="change">semantic_predictions = tf.slice(
+        raw_predictions,
+        [0, 0, 0],
+        [1, resized_image_size[0], resized_image_size[1]])</a>
+    &#47&#47 Resize back the prediction to the original image size.
+    def _resize_label(label, label_size):
+      &#47&#47 Expand dimension of label to [1, height, width, 1] for resize operation.
+      label = tf.expand_dims(label, 3)</code></pre><h3>After Change</h3><pre><code class='java'>
+    raw_predictions = tf.identity(
+        tf.cast(predictions[common.OUTPUT_TYPE], tf.float32),
+        _RAW_OUTPUT_NAME)
+    raw_probabilities = <a id="change">tf.identity(
+        predictions[common.OUTPUT_TYPE + model.PROB_SUFFIX],
+        _RAW_OUTPUT_PROB_NAME)</a>
+
+    &#47&#47 Crop the valid regions from the predictions.
+    semantic_predictions = raw_predictions[
+        :, :resized_image_size[0], :resized_image_size[1]]
+    semantic_probabilities = raw_probabilities[
+        :, :resized_image_size[0], :resized_image_size[1]]
+
+    &#47&#47 Resize back the prediction to the original image size.
+    def _resize_label(label, label_size):
+      &#47&#47 Expand dimension of label to [1, height, width, 1] for resize operation.
+      label = tf.expand_dims(label, 3)
+      resized_label = tf.image.resize_images(
+          label,
+          label_size,
+          method=tf.image.ResizeMethod.NEAREST_NEIGHBOR,
+          align_corners=True)
+      return tf.cast(tf.squeeze(resized_label, 3), tf.int32)
+    semantic_predictions = _resize_label(semantic_predictions, image_size)
+    semantic_predictions = tf.identity(semantic_predictions, name=_OUTPUT_NAME)
+
+    <a id="change">semantic_probabilities = tf.image.resize_bilinear(
+        semantic_probabilities, image_size, align_corners=True,
+        name=_OUTPUT_PROB_NAME)</a>
+
+    if FLAGS.quantize_delay_step &gt;= 0:
+      contrib_quantize.create_eval_graph()
+</code></pre>

@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                else:
+                    &#47&#47 We were passed a regular layer, and it should
+                    &#47&#47 know about its input shape. Otherwise, that&quots an error.
+                    <a id="change">if not hasattr(layer, &quotbatch_input_shape&quot):
+                        raise ValueError(&quotThe first layer in a &quot
+                                         &quotSequential model must &quot
+                                         &quotget an `input_shape` or &quot
+                                         &quot`batch_input_shape` argument.&quot)
+                   </a> batch_shape = layer.batch_input_shape
+                    dtype = layer.dtype
+                &#47&#47 Instantiate the input layer.
+                x = Input(batch_shape=batch_shape,</code></pre><h3>After Change</h3><pre><code class='java'>
+                    batch_shape = first_layer.batch_input_shape
+                    dtype = first_layer.dtype
+
+                <a id="change">if hasattr(first_layer, &quotbatch_input_shape&quot):
+                    batch_shape = first_layer.batch_input_shape
+                    dtype = first_layer.dtype
+                    &#47&#47 Instantiate the input layer.
+                    x = Input(
+                        batch_shape=batch_shape,
+                        dtype=dtype,
+                        name=layer.name + &quot_input&quot)
+                    &#47&#47 This will build the current layer
+                    &#47&#47 and create the node connecting the current layer
+                    &#47&#47 to the input layer we just created.
+                    layer(x)
+                    set_inputs = True
+                else:
+                    &#47&#47 The layer doesn&quott know about its expected shape.
+                    &#47&#47 We will have to
+                    &#47&#47 build the model lazily on `fit`/etc.
+                    batch_shape = None
+           </a> else:
+                &#47&#47 Corner case where the user passes an InputLayer via `add`.
+                assert len(layer._inbound_nodes[-1].output_tensors) == 1
+                set_inputs = True</code></pre>

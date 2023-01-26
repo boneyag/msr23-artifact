@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 TODO(nina): profile this code to study performance,
+        &#47&#47 i.e. what to do with sq_dists_between_iterates.
+
+        <a id="change">if isinstance(points, list):
+            points = gs.vstack(points)
+
+       </a> if point_type == &quotvector&quot:
+            points = gs.to_ndarray(points, to_ndim=2)
+        if point_type == &quotmatrix&quot:
+            points = gs.to_ndarray(points, to_ndim=3)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        sq_dists_between_iterates = []
+        iteration = 0
+        sq_dist = <a id="change">gs.array([[0.]])</a>
+        <a id="change">variance = gs.array([[0.]])</a>
+
+        &#47&#47iteration = gs.constant(0)
+
+        def while_loop_body(iteration, mean, variance, sq_dist):
+            tangent_mean = gs.zeros_like(mean)
+
+            logs = self.log(point=points, base_point=mean)
+            tangent_mean += gs.einsum(&quotnk,nj-&gt;j&quot, weights, logs)
+
+            tangent_mean /= sum_weights
+
+            mean_next = self.exp(
+                tangent_vec=tangent_mean,
+                base_point=mean)
+
+            sq_dist = self.squared_dist(mean_next, mean)
+            sq_dists_between_iterates.append(sq_dist)
+
+            variance = self.variance(points=points,
+                                     weights=weights,
+                                     base_point=mean_next)
+
+            mean = mean_next
+            iteration += 1
+            return [iteration, mean, variance, sq_dist]
+
+        def while_loop_cond(iteration, mean, variance, sq_dist):
+            result = gs.logical_or(
+                gs.isclose(variance, 0.),
+                gs.less_equal(sq_dist, epsilon * variance))
+            return result[0, 0]
+
+        <a id="change">last_iteration, mean, variance, sq_dist = gs.while_loop(
+            lambda i, m, v, sq: while_loop_cond(i, m, v, sq),
+            lambda i, m, v, sq: while_loop_body(i, m, v, sq),
+            loop_vars=[iteration, mean, variance, sq_dist],
+            maximum_iterations=n_max_iterations)</a>
+        &#47&#47while iteration &lt; n_max_iterations:
+
+        &#47&#47    if gs.isclose(variance, 0.)[0, 0]:
+        &#47&#47        break</code></pre>

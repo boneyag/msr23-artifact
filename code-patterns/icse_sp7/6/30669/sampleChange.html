@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                                self._var_form_base, self._operator,
+                                                self._optimizer)
+            &#47&#47 pick maximum gradients and choose that excitation
+            <a id="change">max_grad = max(cur_grads, key=lambda item: np.abs(item[0]))</a>
+            if prev_max != () and prev_max[1] == max_grad[1]:
+                cur_grads_red = [g for g in cur_grads if g[1] != prev_max[1]]
+                max_grad = max(cur_grads_red, key=lambda item: np.abs(item[0]))
+            if prev_prev_max != () and prev_prev_max[1] == max_grad[1]:</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 -&gt; this results in any number of repeating numbers being detected
+
+        threshold_satisfied = False
+        <a id="change">prev_op_indices = []</a>
+        theta = []
+        iteration = 0
+        while not threshold_satisfied:
+            iteration += 1
+            logger.info(&quot--- Iteration &#47&#47%s ---&quot, str(iteration))
+            &#47&#47 compute gradients
+            cur_grads = self._compute_gradients(self._excitation_pool, theta, self._delta,
+                                                self._var_form_base, self._operator,
+                                                self._optimizer)
+            &#47&#47 pick maximum gradients and choose that excitation
+            max_grad_index, max_grad = max(enumerate(cur_grads),
+                                           key=lambda item: np.abs(item[1][0]))
+            <a id="change">prev_op_indices.append(max_grad_index)</a>
+            &#47&#47 check indices of picked gradients for cycles
+            if cycle_regex.search(&quot &quot.join(map(str, prev_op_indices))) is not None:
+                logger.info("Alternating sequence found. Finishing.")
+                logger.info("Final maximum gradient: %s", str(np.abs(max_grad[0])))</code></pre>

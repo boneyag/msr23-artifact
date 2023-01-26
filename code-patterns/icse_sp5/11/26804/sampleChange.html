@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  inputs_per_batch, outputs_per_batch = get_batches_for_epoch(model,
+                                                              checkpoint)
+  eval_dict = model.maybe_evaluate(inputs_per_batch, outputs_per_batch)
+  <a id="change">deco_print("Finished evaluation")</a>
+  return eval_dict
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def evaluate(model, checkpoint):
+  inputs_per_batch, outputs_per_batch = restore_and_get_batches(model,
+                                                                checkpoint)
+  <a id="change">if not model.on_horovod or model.hvd.rank() == 0:
+    eval_dict = model.maybe_evaluate(inputs_per_batch, outputs_per_batch)
+    deco_print("Finished evaluation")
+    return eval_dict
+  else:
+    return None</a>
+</code></pre>

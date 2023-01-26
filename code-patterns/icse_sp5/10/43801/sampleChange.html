@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    vox_bool = mgz_data == vol_id
+
+    &#47&#47 Get the 3 dimensional indices in voxel space
+    <a id="change">vox_ijk = np.array(np.where(vox_bool)).T</a>
+
+    &#47&#47 Transform to MRI coordinates (where our surfaces live)
+    _, vox_mri_t, _, _, _ = _read_mri_info(mri)
+    rr_voi = apply_trans(vox_mri_t, vox_ijk)  &#47&#47 mri voxels -&gt; MRI surface RAS
+    &#47&#47 Filter out points too far from volume region voxels
+    <a id="change">dists = _compute_nearest(rr_voi, rr, return_dists=True)[1]</a>
+    &#47&#47 Maximum distance from center of mass of a voxel to any of its corners
+    maxdist = linalg.norm(vox_mri_t[&quottrans&quot][:3, :3].sum(0) / 2.)
+    return dists &lt;= maxdist
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    _, vox_mri_t, _, _, _ = _read_mri_info(mri)
+    mri_vox_t = invert_transform(vox_mri_t)
+    rr_vox = apply_trans(mri_vox_t, rr)
+    <a id="change">good = (rr_vox &gt;= -.5).all(-1)</a>
+    idx = np.empty(rr.shape[::-1], np.int64)
+    <a id="change">for ii in range(3):
+        good &= rr_vox[:, ii] &lt; mgz_data.shape[ii] - 0.5
+        idx[ii] = np.clip(np.round(rr_vox[:, ii]).astype(np.int64),
+                          0, mgz_data.shape[ii] - 1)
+   </a> good &= mgz_data[tuple(idx)] == vol_id
+    return good
+
+</code></pre>

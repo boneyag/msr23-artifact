@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def hybrid_forward(self, F, x):
+        match = F.contrib.bipartite_matching(x, threshold=self._threshold,
+                                             is_ascend=self._is_ascend)
+        <a id="change">return match[0]</a>
+
+
+class MaximumMatcher(gluon.HybridBlock):
+    A Matcher implementing maximum matching strategy.</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 make sure if iou(a, y) == iou(b, y), then b should also be a good match
+        &#47&#47 otherwise positive/negative samples are confusing
+        &#47&#47 potential argmax and max
+        pargmax = <a id="change">x.argmax(axis=-1, keepdims=True)</a>  &#47&#47 (B, num_anchor, 1)
+        maxs = x.max(axis=-2, keepdims=True)  &#47&#47 (B, 1, num_gt)
+        pmax = F.pick(x, pargmax, axis=-1, keepdims=True)   &#47&#47 (B, num_anchor, 1)
+        mask = F.broadcast_greater_equal(pmax + self._eps, maxs)  &#47&#47 (B, num_anchor, num_gt)
+        mask = F.pick(mask, pargmax, axis=-1, keepdims=True)  &#47&#47 (B, num_anchor, 1)
+        new_match = F.where(mask &gt; 0, pargmax, F.ones_like(pargmax) * -1)
+        result = F.where(match[0] &lt; 0, new_match.squeeze(axis=-1), match[0])
+        <a id="change">return result</a>
+
+
+class MaximumMatcher(gluon.HybridBlock):
+    A Matcher implementing maximum matching strategy.</code></pre>

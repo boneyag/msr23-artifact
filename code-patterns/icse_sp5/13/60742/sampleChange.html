@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                logger.debug("Adding model inputs %s: %s", self._input_names, self._inputs)
+                model = layer(self._inputs)
+            else:
+                <a id="change">layer_inputs = [compiled_layers[inp] for inp in inbound]</a>
+                logger.debug("Compiling layer &quot%s&quot: layer inputs: %s", name, layer_inputs)
+                model = layer(layer_inputs)
+            compiled_layers[name] = model
+        retval = KerasModel(self._inputs, model, name="{}_inference".format(saved_model.name))</code></pre><h3>After Change</h3><pre><code class='java'>
+        struct = self._get_filtered_structure()
+        model_inputs = self._get_inputs(saved_model.inputs)
+        compiled_layers = dict()
+        <a id="change">for layer in saved_model.layers:
+            if layer.name not in struct:
+                logger.debug("Skipping unused layer: &quot%s&quot", layer.name)
+                continue
+            inbound = struct[layer.name]
+            logger.debug("Processing layer &quot%s&quot: (layer: %s, inbound_nodes: %s)",
+                         layer.name, layer, inbound)
+            if not inbound:
+                model = model_inputs
+                logger.debug("Adding model inputs %s: %s", layer.name, model)
+            else:
+                layer_inputs = []
+                for inp in inbound:
+                    inbound_layer = compiled_layers[inp[0]]
+                    if isinstance(inbound_layer, list) and len(inbound_layer) &gt; 1:
+                        &#47&#47 Multi output inputs
+                        inbound_output_idx = inp[1]
+                        logger.debug("Selecting output index %s from multi output inbound "
+                                     "layer: %s", inbound_output_idx, inbound_layer)
+                        layer_inputs.append(inbound_layer[inbound_output_idx])
+                    else:
+                        layer_inputs.append(inbound_layer)
+
+                logger.debug("Compiling layer &quot%s&quot: layer inputs: %s", layer.name, layer_inputs)
+                model = layer(layer_inputs)
+            compiled_layers[layer.name] = model
+            retval = KerasModel(model_inputs, model, name="{}_inference".format(saved_model.name))
+       </a> logger.debug("Compiled inference model &quot%s&quot: %s", retval.name, retval)
+        return retval
+
+    def _get_filtered_structure(self):</code></pre>

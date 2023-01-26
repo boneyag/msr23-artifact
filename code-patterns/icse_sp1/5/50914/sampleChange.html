@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def __call__(self, inputs):
+        assert type(inputs) in {list, tuple}
+        <a id="change">names = [getattr(v, &quotname&quot, None) for v in self.inputs]</a>
+        feed_dict = dict(zip(names, inputs))
+        session = get_session()
+        updated = session.run(self.outputs + [self.updates_op], feed_dict=feed_dict)
+        return updated[:len(self.outputs)]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def __call__(self, inputs):
+        assert type(inputs) in {list, tuple}
+        <a id="change">feed_dict = {}</a>
+        for tensor, value in zip(self.inputs, inputs):
+            if is_sparse(tensor):
+                sparse_coo = value.tocoo()
+                indices = np.concatenate((np.expand_dims(sparse_coo.row, 1), np.expand_dims(sparse_coo.col, 1)), 1)
+                value = (indices, value.data, value.shape)
+            <a id="change">feed_dict[tensor]</a> = value
+        session = get_session()
+        updated = session.run(self.outputs + [self.updates_op], feed_dict=feed_dict)
+        return updated[:len(self.outputs)]</code></pre>

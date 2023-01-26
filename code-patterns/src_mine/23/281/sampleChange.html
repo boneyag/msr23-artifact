@@ -1,0 +1,144 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                mean=torch.zeros(policy_tp1.size()),
+                std=policy.config["target_noise"]), -target_noise_clip,
+            target_noise_clip)
+        policy_tp1_smoothed = <a id="change">torch.clamp(policy_tp1 + clipped_normal_sample,
+                                          policy.action_space.low.item(0),
+                                          policy.action_space.high.item(0))</a>
+    else:
+        &#47&#47 No smoothing, just use deterministic actions.
+        policy_tp1_smoothed = policy_tp1
+
+    &#47&#47 Q-net(s) evaluation.
+    &#47&#47 prev_update_ops = set(tf1.get_collection(tf.GraphKeys.UPDATE_OPS))
+    &#47&#47 Q-values for given actions & observations in given current
+    q_t = model.get_q_values(model_out_t, train_batch[SampleBatch.ACTIONS])
+
+    &#47&#47 Q-values for current policy (no noise) in given current state
+    q_t_det_policy = model.get_q_values(model_out_t, policy_t)
+
+    actor_loss = -torch.mean(q_t_det_policy)
+
+    if twin_q:
+        twin_q_t = model.get_twin_q_values(model_out_t,
+                                           train_batch[SampleBatch.ACTIONS])
+    &#47&#47 q_batchnorm_update_ops = list(
+    &#47&#47     set(tf1.get_collection(tf.GraphKeys.UPDATE_OPS)) - prev_update_ops)
+
+    &#47&#47 Target q-net(s) evaluation.
+    q_tp1 = policy.target_model.get_q_values(target_model_out_tp1,
+                                             policy_tp1_smoothed)
+
+    if twin_q:
+        <a id="change">twin_q_tp1</a> = policy.target_model.get_twin_q_values(
+            target_model_out_tp1, policy_tp1_smoothed)
+
+    q_t_selected = torch.squeeze(q_t, axis=len(q_t.shape) - 1)
+    if twin_q:
+        twin_q_t_selected = torch.squeeze(twin_q_t, axis=len(q_t.shape) - 1)
+        q_tp1 = torch.min(q_tp1, twin_q_tp1)
+
+    q_tp1_best = torch.squeeze(input=q_tp1, axis=len(q_tp1.shape) - 1)
+    q_tp1_best_masked = \
+        (1.0 - train_batch[SampleBatch.DONES].float()) * \
+        q_tp1_best
+
+    &#47&#47 Compute RHS of bellman equation.
+    q_t_selected_target = (train_batch[SampleBatch.REWARDS] +
+                           gamma**n_step * q_tp1_best_masked).detach()
+
+    &#47&#47 Compute the error (potentially clipped).
+    if twin_q:
+        td_error = q_t_selected - q_t_selected_target
+        twin_td_error = twin_q_t_selected - q_t_selected_target
+        td_error = td_error + twin_td_error
+        if use_huber:
+            errors = huber_loss(td_error, huber_threshold) \
+                + huber_loss(twin_td_error, huber_threshold)
+        else:
+            errors = 0.5 * \
+                (torch.pow(td_error, 2.0) + torch.pow(twin_td_error, 2.0))
+    else:
+        td_error = q_t_selected - q_t_selected_target
+        if use_huber:
+            <a id="change">errors</a> = huber_loss(td_error, huber_threshold)
+        else:
+            errors = 0.5 * torch.pow(td_error, 2.0)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            -target_noise_clip,
+            target_noise_clip)
+
+        policy_tp1_smoothed = <a id="change">torch.min(
+            torch.max(
+                policy_tp1 + clipped_normal_sample,
+                torch.tensor(
+                    policy.action_space.low,
+                    dtype=torch.float32,
+                    device=policy_tp1.device)),
+            torch.tensor(
+                policy.action_space.high,
+                dtype=torch.float32,
+                device=policy_tp1.device))</a>
+    else:
+        &#47&#47 No smoothing, just use deterministic actions.
+        policy_tp1_smoothed = policy_tp1
+
+    &#47&#47 Q-net(s) evaluation.
+    &#47&#47 prev_update_ops = set(tf1.get_collection(tf.GraphKeys.UPDATE_OPS))
+    &#47&#47 Q-values for given actions & observations in given current
+    q_t = model.get_q_values(model_out_t, train_batch[SampleBatch.ACTIONS])
+
+    &#47&#47 Q-values for current policy (no noise) in given current state
+    q_t_det_policy = model.get_q_values(model_out_t, policy_t)
+
+    actor_loss = -torch.mean(q_t_det_policy)
+
+    if twin_q:
+        twin_q_t = model.get_twin_q_values(model_out_t,
+                                           train_batch[SampleBatch.ACTIONS])
+    &#47&#47 q_batchnorm_update_ops = list(
+    &#47&#47     set(tf1.get_collection(tf.GraphKeys.UPDATE_OPS)) - prev_update_ops)
+
+    &#47&#47 Target q-net(s) evaluation.
+    q_tp1 = policy.target_model.get_q_values(target_model_out_tp1,
+                                             policy_tp1_smoothed)
+
+    if twin_q:
+        <a id="change">twin_q_tp1</a> = policy.target_model.get_twin_q_values(
+            target_model_out_tp1, policy_tp1_smoothed)
+
+    q_t_selected = torch.squeeze(q_t, axis=len(q_t.shape) - 1)
+    if twin_q:
+        twin_q_t_selected = torch.squeeze(twin_q_t, axis=len(q_t.shape) - 1)
+        q_tp1 = torch.min(q_tp1, twin_q_tp1)
+
+    q_tp1_best = torch.squeeze(input=q_tp1, axis=len(q_tp1.shape) - 1)
+    q_tp1_best_masked = \
+        (1.0 - train_batch[SampleBatch.DONES].float()) * \
+        q_tp1_best
+
+    &#47&#47 Compute RHS of bellman equation.
+    q_t_selected_target = (train_batch[SampleBatch.REWARDS] +
+                           gamma**n_step * q_tp1_best_masked).detach()
+
+    &#47&#47 Compute the error (potentially clipped).
+    if twin_q:
+        td_error = q_t_selected - q_t_selected_target
+        twin_td_error = twin_q_t_selected - q_t_selected_target
+        td_error = td_error + twin_td_error
+        if use_huber:
+            errors = huber_loss(td_error, huber_threshold) \
+                + huber_loss(twin_td_error, huber_threshold)
+        else:
+            errors = 0.5 * \
+                (torch.pow(td_error, 2.0) + torch.pow(twin_td_error, 2.0))
+    else:
+        td_error = q_t_selected - q_t_selected_target
+        if use_huber:
+            <a id="change">errors</a> = huber_loss(td_error, huber_threshold)
+        else:
+            errors = 0.5 * torch.pow(td_error, 2.0)
+</code></pre>

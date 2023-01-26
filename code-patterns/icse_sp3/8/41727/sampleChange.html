@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            "ellipse shape should be must be [BxNx5]. "
+            "Got {}".format(ells.size()))
+
+    ell_shape = <a id="change">torch</a>.cat(<a id="change">[torch.cat([ells[..., 2:3], ells[..., 3:4]], dim=2).unsqueeze(2),
+                           torch.cat([ells[..., 3:4], ells[..., 4:5]], dim=2).unsqueeze(2)]</a>, dim=2).view(-1, 2, 2)
+    out = torch.matrix_power(torch.cholesky(ell_shape, False), -1).view(B, N, 2, 2)
+    out = torch.cat([out, ells[..., :2].view(B, N, 2, 1)], dim=3)
+    return out</code></pre><h3>After Change</h3><pre><code class='java'>
+    a11 = ells[..., 2:3].abs().sqrt()
+    a12 = torch.zeros_like(a11)
+    a22 = ells[..., 4:5].abs().sqrt()
+    <a id="change">a21 = ells[..., 3:4] / (a11 + a22).clamp(1e-9)</a>
+    A = <a id="change">torch.stack([a11, a12, a21, a22], dim=-1).view(B, N, 2, 2).inverse()</a>
+    out = torch.cat([A, ells[..., :2].view(B, N, 2, 1)], dim=3)
+    return out
+
+</code></pre>

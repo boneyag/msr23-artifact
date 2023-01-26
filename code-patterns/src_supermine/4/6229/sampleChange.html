@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                ti = tgt_vocab.stoi[sw]
+                if ti != 0:
+                    scores[:, b, ti] += scores[:, b, offset + i]
+                    <a id="change">scores[:, b, offset + i].fill_(1e-20)</a>
+        return scores
+
+    @staticmethod
+    def make_text_examples_nfeats_tpl(path, truncate, side):</code></pre><h3>After Change</h3><pre><code class='java'>
+        offset = len(tgt_vocab)
+        for b in range(batch.batch_size):
+            blank = []
+            <a id="change">fill = []</a>
+            index = batch.indices.data[b]
+            src_vocab = src_vocabs[index]
+            for i in range(1, len(src_vocab)):
+                sw = src_vocab.itos[i]
+                ti = tgt_vocab.stoi[sw]
+                if ti != 0:
+                    blank.append(offset + i)
+                    <a id="change">fill.append(ti)</a>
+            blank = torch.LongTensor(blank).cuda()
+            fill = torch.LongTensor(fill).cuda()
+            scores[:, b].index_add_(1, fill,
+                                    scores[:, b].index_select(1, blank))</code></pre>

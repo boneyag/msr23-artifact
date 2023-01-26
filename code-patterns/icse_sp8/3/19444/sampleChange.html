@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _embed_observe(self, observe=None):
+        if observe is None:
+            <a id="change">raise ValueError(&quotAll observes in observe_embeddings are needed to initialize a new trace.&quot)</a>
+        return self._layer_observe_embedding_final(torch.cat([layer.forward(observe[name]).view(-1) for name, layer in self._layer_observe_embedding.items()]))
+
+    def infer_trace_init(self, observe=None):
+        self._infer_observe = observe</code></pre><h3>After Change</h3><pre><code class='java'>
+        super().to(device=device, *args, *kwargs)
+
+    def _embed_observe(self, traces=None):
+        embedding = <a id="change">[]</a>
+        for name, layer in self._layer_observe_embedding.items():
+            values = torch.stack([trace.named_variables[name].value for trace in traces]).view(len(traces), -1)
+            embedding.append(layer(values))
+        embedding = <a id="change">torch.cat(embedding, dim=1)</a>
+        embedding = self._layer_observe_embedding_final(embedding)
+        return embedding
+
+    def infer_trace_init(self, observe=None):</code></pre>

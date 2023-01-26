@@ -1,0 +1,125 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.embedding_size = embedding_size
+        self.beam_width = beam_width
+        self.num_layers = num_layers
+        <a id="change">self.attention_mechanism</a> = attention_mechanism
+        self.tied_embeddings = tied_embeddings
+        self.initializer = initializer
+        self.regularize = regularize
+        self.is_timeseries = is_timeseries
+        self.num_classes = num_classes
+        self.max_sequence_length = max_sequence_length
+
+        if is_timeseries:
+            self.vocab_size = 1
+        else:
+            self.vocab_size = self.num_classes
+
+        <a id="change">self.embeddings_dec = Embedding(num_classes, embedding_size)</a>
+        <a id="change">self.decoder_cell</a> = LSTMCell(state_size)
+
+        if attention_mechanism:
+            if attention_mechanism == &quotbahdanau&quot:
+                pass
+            elif <a id="change">attention_mechanism</a> == &quotluong&quot:
+                <a id="change">self.attention_mechanism = tfa.seq2seq.LuongAttention(
+                    state_size,
+                    None,  &#47&#47 todo tf2: confirm on need
+                    memory_sequence_length=max_sequence_length  &#47&#47 todo tf2: confirm inputs or output seq length
+                )</a>
+            else:
+                raise ValueError(
+                    "Attention specificaiton &quot{}&quot is invalid.  Valid values are "
+                    "&quotbahdanau&quot or &quotluong&quot.".format(self.attention_mechanism))
+
+            <a id="change">self.decoder_cell</a> = tfa.seq2seq.AttentionWrapper(
+                <a id="change">self.decoder_cell</a>,
+                self.attention_mechanism
+            )
+
+        <a id="change">self.sampler</a> = tfa.seq2seq.sampler.TrainingSampler()
+
+        <a id="change">self.projection_layer = Dense(
+            units=num_classes,
+            use_bias=use_bias,
+            kernel_initializer=weights_initializer,
+            bias_initializer=bias_initializer,
+            kernel_regularizer=weights_regularizer,
+            bias_regularizer=bias_regularizer,
+            activity_regularizer=activity_regularizer
+        )</a>
+
+        self.decoder = \
+            tfa.seq2seq.basic_decoder.BasicDecoder(self.decoder_cell,
+                                                    self.sampler,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+class SequenceGeneratorDecoder(Layer):
+    def __init__(
+            <a id="change">self</a>,
+            num_classes,
+            cell_type=&quotrnn&quot,
+            state_size=256,
+            embedding_size=64,
+            beam_width=1,
+            num_layers=1,
+            attention_mechanism=None,
+            tied_embeddings=None,
+            initializer=None,
+            regularize=True,
+            is_timeseries=False,
+            max_sequence_length=0,
+            use_bias=True,
+            weights_initializer=&quotglorot_uniform&quot,
+            bias_initializer=&quotzeros&quot,
+            weights_regularizer=None,
+            bias_regularizer=None,
+            activity_regularizer=None,
+            **kwargs
+    ):
+        super(SequenceGeneratorDecoder, self).__init__()
+
+        self.cell_type = cell_type
+        self.state_size = state_size
+        self.embedding_size = embedding_size
+        self.beam_width = beam_width
+        self.num_layers = num_layers
+        self.attention_mechanism = attention_mechanism
+        self.tied_embeddings = tied_embeddings
+        self.initializer = initializer
+        self.regularize = regularize
+        self.is_timeseries = is_timeseries
+        self.num_classes = num_classes
+        self.max_sequence_length = max_sequence_length
+
+        if is_timeseries:
+            self.vocab_size = 1
+        else:
+            self.vocab_size = self.num_classes
+
+        <a id="change">self.decoder_embedding = tf.keras.layers.Embedding(
+            input_dim=output_vocab_size,
+            output_dim=embedding_dims)</a>
+        <a id="change">self.dense_layer = tf.keras.layers.Dense(output_vocab_size)</a>
+        <a id="change">self.decoder_rnncell = tf.keras.layers.LSTMCell(rnn_units)</a>
+
+        &#47&#47 Sampler
+        <a id="change">self.sampler</a> = tfa.seq2seq.sampler.TrainingSampler()
+
+        self.attention_mechanism = None
+        <a id="change">self.rnn_units = rnn_units</a>
+
+        print(&quotsetting up attention for&quot, attention_mechanism)
+        <a id="change">if attention_mechanism is not None:
+            self.attention_mechanism = self.build_attention_mechanism(
+                attention_mechanism,
+                dense_units
+            )
+            self.decoder_rnncell = self.build_rnn_cell()
+
+       </a> self.decoder = tfa.seq2seq.BasicDecoder(self.decoder_rnncell,
+                                                sampler=self.sampler,
+                                                output_layer=self.dense_layer)
+</code></pre>

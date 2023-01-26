@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        raise RuntimeError("Batch get indices is not implmeneted yet")
+
+    def _get_indices(self, left_indices, right_indices):
+        <a id="change">batch_indices = self.tensor_cls(self.batch_size()).long()</a>
+        torch.arange(0, self.batch_size(), out=batch_indices.data)
+        batch_indices = batch_indices.unsqueeze(1).repeat(1, len(left_indices)).view(-1)
+        left_indices = left_indices.unsqueeze(1).repeat(self.batch_size(), 1).view(-1)
+        right_indices = right_indices.unsqueeze(1).repeat(self.batch_size(), 1).view(-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+        return res
+
+    def _get_indices(self, left_indices, right_indices):
+        <a id="change">batch_indices = torch.arange(0, self.base_lazy_tensor.size(0), dtype=torch.long, device=left_indices.device)</a>
+        batch_indices = batch_indices.unsqueeze(1).repeat(1, len(left_indices)).view(-1)
+        left_indices = left_indices.unsqueeze(1).repeat(self.base_lazy_tensor.size(0), 1).view(-1)
+        right_indices = right_indices.unsqueeze(1).repeat(self.base_lazy_tensor.size(0), 1).view(-1)
+        res = self.base_lazy_tensor._batch_get_indices(batch_indices, left_indices, right_indices)</code></pre>

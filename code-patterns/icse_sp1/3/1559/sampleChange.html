@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            cur_values = cur_values + partition.contiguous().view(bat_size, self.tagset_size, 1).expand(bat_size, self.tagset_size, self.tagset_size)
+            cur_partition = utils.log_sum_exp(cur_values, self.tagset_size)
+                  &#47&#47 (bat_size * from_target * to_target) -&gt; (bat_size * to_target)
+            partition = <a id="change">utils</a>.switch(partition, cur_partition,
+                                     mask[idx].view(bat_size, 1).expand(bat_size, self.tagset_size)).view(bat_size, -1)
+            &#47&#47 the following two may achieve higher speed, but raise run-time error
+            &#47&#47 new_partition = partition.clone()</code></pre><h3>After Change</h3><pre><code class='java'>
+            cur_partition = utils.log_sum_exp(cur_values, self.tagset_size)
+                  &#47&#47 (bat_size * from_target * to_target) -&gt; (bat_size * to_target)
+            &#47&#47 partition = utils.switch(partition, cur_partition, mask[idx].view(bat_size, 1).expand(bat_size, self.tagset_size)).view(bat_size, -1)
+            mask_idx = mask[<a id="change">idx, :</a>].view(bat_size, 1).expand(bat_size, self.tagset_size)
+            partition.masked_scatter_(mask_idx, cur_partition.masked_select(mask_idx))  &#47&#470 for partition, 1 for cur_partition
+            
+        &#47&#47only need end at end_tag</code></pre>

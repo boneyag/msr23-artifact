@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def test_deploy_model(mxnet_training_job, sagemaker_session):
+    with <a id="change">timeout(minutes=15)</a>:
+        desc = sagemaker_session.sagemaker_client.describe_training_job(TrainingJobName=mxnet_training_job)
+        model_data = desc[&quotModelArtifacts&quot][&quotS3ModelArtifacts&quot]
+        script_path = os.path.join(DATA_DIR, &quotmxnet_mnist&quot, &quotmnist.py&quot)
+        model = MXNetModel(model_data, &quotSageMakerRole&quot, entry_point=script_path, sagemaker_session=sagemaker_session)
+        predictor = model.deploy(1, &quotml.m4.xlarge&quot, endpoint_name=&quottest-mxnet-deploy-model-{}&quot.format(int(time.time())))
+        <a id="change">try:
+            data = numpy.zeros(shape=(1, 1, 28, 28))
+            predictor.predict(data)
+        finally:
+            sagemaker_session.delete_endpoint(predictor.endpoint)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_deploy_model(mxnet_training_job, sagemaker_session):
+    endpoint_name = &quottest-mxnet-deploy-model-{}&quot.format(int(time.time()))
+
+    with <a id="change">timeout_and_delete_endpoint_by_name(endpoint_name, sagemaker_session, minutes=15)</a>:
+        desc = sagemaker_session.sagemaker_client.describe_training_job(TrainingJobName=mxnet_training_job)
+        model_data = desc[&quotModelArtifacts&quot][&quotS3ModelArtifacts&quot]
+        script_path = os.path.join(DATA_DIR, &quotmxnet_mnist&quot, &quotmnist.py&quot)
+        model = MXNetModel(model_data, &quotSageMakerRole&quot, entry_point=script_path, sagemaker_session=sagemaker_session)
+        predictor = model.deploy(1, &quotml.m4.xlarge&quot, endpoint_name=endpoint_name)
+
+        <a id="change">data = numpy.zeros(shape=(1, 1, 28, 28))</a>
+        predictor.predict(data)
+</code></pre>

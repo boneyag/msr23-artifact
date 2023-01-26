@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            dtype = theano.config.floatX
+        spec = self.__param_spec__[name]
+        shape = tuple(eval(s, {&quotd&quot: self.dim}) for s in spec)
+        <a id="change">if self.islocal:
+            if user is None:
+                raise LocalGroupError(&quotNeed parameters for local group flow&quot)
+            else:
+                shape = (-1,) + shape
+                return tt.as_tensor(user).reshape(shape)
+        else:
+            if user is None:
+                return theano.shared(
+                    np.asarray(np.random.normal(size=shape) * self.__jitter + ref).astype(dtype),
+                    name=name
+                )
+            else:
+                return tt.as_tensor(user).reshape(shape)
+
+   </a> @property
+    def params(self):
+        return collect_shared_to_list(self.shared_params)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            if self.islocal:
+                raise opvi.LocalGroupError(&quotNeed parameters for local group flow&quot)
+            if self.batched:
+                <a id="change">if self.batch_size is None:
+                    raise opvi.BatchedGroupError(&quotNeed batch size to infer parameter shape&quot)
+               </a> shape = (self.batch_size,) + shape
+            return theano.shared(
+                np.asarray(np.random.normal(size=shape) * self.__jitter + ref).astype(dtype),
+                name=name</code></pre>

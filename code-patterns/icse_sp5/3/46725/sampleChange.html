@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return
+
+        &#47&#47 Building the docker image
+        <a id="change">try:
+            status = builder.build(build_job=build_job)
+        except DockerException as e:
+            builder.send_status(
+                build_job=build_job,
+                status=JobLifeCycle.FAILED,
+                message=&quotFailed to build job %s&quot % e)
+            _logger.exception(&quotFailed to build job %s&quot, e)
+            status = False
+        except Exception as e:  &#47&#47 Other exceptions
+            builder.send_status(
+                build_job=build_job,
+                status=JobLifeCycle.FAILED,
+                message=&quotFailed to build job %s&quot % e)
+            _logger.exception(&quotFailed to create build job %s&quot, e)
+            status = False
+
+       </a> if not status:
+            builder.send_status(
+                build_job=build_job,
+                status=JobLifeCycle.FAILED,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Building the docker image
+        error = {}
+        <a id="change">try:
+            status = builder.build(build_job=build_job)
+            if not status:
+                error = {
+                    &quotraised&quot: True,
+                    &quotmessage&quot: &quotFailed to build job.&quot
+                }
+        except DockerException as e:
+            error = {
+                &quotraised&quot: True,
+                &quottraceback&quot: traceback.format_exc(),
+                &quotmessage&quot: &quotFailed to build job encountered an {} exception&quot.format(
+                    e.__class__.__name__)
+            }
+        except Exception as e:  &#47&#47 Other exceptions
+            error = {
+                &quotraised&quot: True,
+                &quottraceback&quot: traceback.format_exc(),
+                &quotmessage&quot: &quotFailed to build job encountered an {} exception&quot.format(
+                    e.__class__.__name__)
+            }
+
+       </a> if error.get(&quotraised&quot):
+            builder.send_status(
+                build_job=build_job,
+                status=JobLifeCycle.FAILED,</code></pre>

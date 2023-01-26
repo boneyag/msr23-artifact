@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 If you actually passed in Variables here instead of Tensors, this will be a huge memory
+        &#47&#47 leak, because it will prevent garbage collection for the computation graph.  We&quotll ensure
+        &#47&#47 that we&quotre using tensors here first.
+        <a id="change">if isinstance(predictions, Variable):
+            predictions = predictions.data
+       </a> <a id="change">if isinstance(gold_labels, Variable):
+            gold_labels = gold_labels.data
+       </a> <a id="change">if isinstance(mask, Variable):
+            mask = mask.data
+
+       </a> if mask is not None:
+            &#47&#47 We can multiply by the mask up front, because we&quotre just checking equality below, and
+            &#47&#47 this way everything that&quots masked will be equal.
+            predictions = predictions * mask
+            gold_labels = gold_labels * mask
+
+        batch_size = predictions.size(0)
+        predictions = predictions.view(batch_size, -1)
+        gold_labels = gold_labels.view(batch_size, -1)
+
+        &#47&#47 The .prod() here is functioning as a logical and.
+        correct = predictions.eq(gold_labels).prod(dim=1).float()
+        count = torch.ones(gold_labels.size(0))
+        <a id="change">self._correct_count</a> += correct.sum()
+        self._total_count += count.sum()
+
+    def get_metric(self, reset: bool = False):</code></pre><h3>After Change</h3><pre><code class='java'>
+            A tensor of the same shape as ``predictions``.
+        
+        &#47&#47 Get the data from the Variables.
+        <a id="change">predictions, gold_labels, mask = self.unwrap_to_tensors(predictions, gold_labels, mask)</a>
+
+        if mask is not None:
+            &#47&#47 We can multiply by the mask up front, because we&quotre just checking equality below, and
+            &#47&#47 this way everything that&quots masked will be equal.</code></pre>

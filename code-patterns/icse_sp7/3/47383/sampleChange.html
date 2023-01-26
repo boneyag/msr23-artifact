@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            current_tag, next_tag = tags[i], tags[i+1]
+
+            &#47&#47 The scores for transitioning from current_tag to next_tag
+            <a id="change">transition_score = (
+                    broadcast_transitions
+                    &#47&#47 Choose the current_tag-th row for each input
+                    .gather(1, current_tag.view(batch_size, 1, 1).expand(batch_size, 1, num_tags))
+                    &#47&#47 Squeeze down to (batch_size, num_tags)
+                    .squeeze(1)
+                    &#47&#47 Then choose the next_tag-th column for each of those
+                    .gather(1, next_tag.view(batch_size, 1))
+                    &#47&#47 And squeeze down to (batch_size,)
+                    .squeeze(1)
+            )</a>
+
+            &#47&#47 The score for using current_tag
+            emit_score = logits[i].gather(1, current_tag.view(batch_size, 1)).squeeze(1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Transition from last state to "stop" state. To start with, we need to find the last tag
+        &#47&#47 for each instance.
+        last_tag_index = mask.sum(0).long() - 1
+        last_tags = <a id="change">tags.gather(0, last_tag_index.view(1, batch_size)).squeeze(0)</a>
+
+        &#47&#47 Compute score of transitioning to `stop_tag` from each "last tag".
+        if self.include_start_end_transitions:
+            last_transition_score = self.end_transitions.index_select(0, last_tags)</code></pre>

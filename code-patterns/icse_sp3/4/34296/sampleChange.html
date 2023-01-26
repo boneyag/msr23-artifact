@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    g_mu, g_var = independent_cond(Xnew, feat, kern, f, white=white, q_sqrt=q_sqrt,
+                                   full_output_cov=False, full_cov=False)  &#47&#47 [N, L], [N, L]
+    g_sample = sample_mvn(g_mu, g_var, "diag")  &#47&#47 [N, L]
+    f_sample = <a id="change">tf.einsum("pl, nl -&gt; np", kern.W(), g_sample)</a>
+    return f_sample
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    logger.debug("(MixedKernelSharedMof, MixedKernelSeparateMof), SeparateMixedMok")
+    if full_cov:
+        raise NotImplementedError("full_cov not yet implemented")
+    <a id="change">if full_output_cov:
+        raise NotImplementedError("full_output_cov not yet implemented")
+
+   </a> ind_conditional = conditional.dispatch(object, SeparateIndependentMof, SeparateIndependentMok, object)
+    g_mu, g_var = ind_conditional(Xnew, feat, kern, f,
+                                  white=white, q_sqrt=q_sqrt)  &#47&#47 [..., N, L], [..., N, L]
+    g_sample = sample_mvn(g_mu, g_var, "diag", num_samples=num_samples)  &#47&#47 [..., (S), N, L]</code></pre>

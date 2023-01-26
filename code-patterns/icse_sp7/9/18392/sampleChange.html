@@ -1,0 +1,104 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        color = cycle([color])
+
+    times = evoked[0].times
+    <a id="change">if not all((e.times == times).all() for e in evoked):
+        raise ValueError(&quotAll evoked.times must be the same&quot)
+
+   </a> noise_cov = _check_cov(noise_cov, evoked[0].info)
+    if noise_cov is not None:
+        evoked = [whiten_evoked(e, noise_cov) for e in evoked]
+    else:
+        evoked = [e.copy() for e in evoked]
+    info = evoked[0].info
+    ch_names = evoked[0].ch_names
+    scalings = _handle_default(&quotscalings&quot, scalings)
+    if not all(e.ch_names == ch_names for e in evoked):
+        raise ValueError(&quotAll evoked.picks must be the same&quot)
+    ch_names = _clean_names(ch_names)
+    if merge_grads:
+        picks = _pair_grad_sensors(info, topomap_coords=False)
+        chs = list()
+        for pick in picks[::2]:
+            ch = info[&quotchs&quot][pick]
+            ch[&quotch_name&quot] = ch[&quotch_name&quot][:-1] + &quotX&quot
+            chs.append(ch)
+        info[&quotchs&quot] = chs
+        info[&quotbads&quot] = list()  &#47&#47 bads dropped on pair_grad_sensors
+        info._update_redundant()
+        info._check_consistency()
+        new_picks = list()
+        for e in evoked:
+            data = _merge_grad_data(e.data[picks])
+            if noise_cov is None:
+                data *= scalings[&quotgrad&quot]
+            e.data = data
+            new_picks.append(range(len(data)))
+        picks = new_picks
+        types_used = [&quotgrad&quot]
+        unit = _handle_default(&quotunits&quot)[&quotgrad&quot] if noise_cov is None else &quotNA&quot
+        y_label = &quotRMS amplitude (%s)&quot % unit
+
+    if layout is None:
+        layout = find_layout(info)
+
+    if not merge_grads:
+        &#47&#47 XXX. at the moment we are committed to 1- / 2-sensor-types layouts
+        chs_in_layout = set(layout.names) & set(ch_names)
+        types_used = set(channel_type(info, ch_names.index(ch))
+                         for ch in chs_in_layout)
+        &#47&#47 remove possible reference meg channels
+        types_used = set.difference(types_used, set(&quotref_meg&quot))
+        &#47&#47 one check for all vendors
+        meg_types = set((&quotmag&quot, &quotgrad&quot))
+        is_meg = len(set.intersection(types_used, meg_types)) &gt; 0
+        if is_meg:
+            types_used = list(types_used)[::-1]  &#47&#47 -&gt; restore kwarg order
+            picks = [pick_types(info, meg=kk, ref_meg=False, exclude=[])
+                     for kk in types_used]
+        else:
+            types_used_kwargs = dict((t, True) for t in types_used)
+            picks = [pick_types(info, meg=False, exclude=[],
+                                **types_used_kwargs)]
+        assert isinstance(picks, list) and len(types_used) == len(picks)
+
+        if noise_cov is None:
+            for e in evoked:
+                for pick, ch_type in zip(picks, types_used):
+                    e.data[pick] *= scalings[ch_type]
+
+        if proj is True and all(e.proj is not True for e in evoked):
+            evoked = [e.apply_proj() for e in evoked]
+        elif proj == &quotinteractive&quot:  &#47&#47 let it fail early.
+            for e in evoked:
+                _check_delayed_ssp(e)
+        &#47&#47 Y labels for picked plots must be reconstructed
+        y_label = list()
+        for ch_idx in range(len(chs_in_layout)):
+            if noise_cov is None:
+                unit = _handle_default(&quotunits&quot)[channel_type(info, ch_idx)]
+            else:
+                unit = &quotNA&quot
+            y_label.append(&quotAmplitude (%s)&quot % unit)
+
+    if ylim is None:
+        def set_ylim(x):
+            return np.abs(x).max()
+        ylim_ = [set_ylim([e.data[t] for e in evoked]) for t in picks]
+        ymax = np.array(ylim_)
+        <a id="change">ylim_ = (-ymax, ymax)</a>
+    elif isinstance(ylim, dict):
+        ylim_ = _handle_default(&quotylim&quot, ylim)
+        ylim_ = [ylim_[kk] for kk in types_used]
+        &#47&#47 extra unpack to avoid bug &#47&#471700</code></pre><h3>After Change</h3><pre><code class='java'>
+                         labels=comments)
+
+    time_min = min([t[0] for t in times])
+    <a id="change">time_max = max([t[-1] for t in times])</a>
+    fig = _plot_topo(info=info, times=[time_min, time_max],
+                     show_func=show_func, click_func=click_func, layout=layout,
+                     colorbar=False, ylim=ylim_, cmap=None,
+                     layout_scale=layout_scale, border=border,</code></pre>

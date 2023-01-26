@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            &#47&#47 Return the entire object table.
+            object_keys = self._keys(gcs_utils.TablePrefix_OBJECT_string + "*")
+            <a id="change">object_ids_binary = {
+                key[len(gcs_utils.TablePrefix_OBJECT_string):]
+                for key in object_keys
+            }</a>
+
+            results = {}
+            for object_id_binary in object_ids_binary:
+                results[binary_to_object_id(object_id_binary)] = (</code></pre><h3>After Change</h3><pre><code class='java'>
+        if object_id is not None:
+            object_id = ray.ObjectID(hex_to_binary(object_id))
+            object_info = self.global_state_accessor.get_object_info(object_id)
+            <a id="change">if object_info is None:
+                return {}
+            else:
+                object_location_info = gcs_utils.ObjectLocationInfo.FromString(
+                    object_info)
+                return self._gen_object_info(object_location_info)
+       </a> else:
+            object_table = self.global_state_accessor.get_object_table()
+            results = {}
+            for i in range(len(object_table)):
+                <a id="change">object_location_info = gcs_utils.ObjectLocationInfo.FromString(
+                    object_table[i])</a>
+                <a id="change">results[binary_to_hex(object_location_info.object_id)] = \
+                    self._gen_object_info(object_location_info)</a>
+            return results
+
+    def _gen_object_info(self, object_location_info):
+        Parse object location info.</code></pre>

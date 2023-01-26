@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    experim_output = experim_outputs[0]
+    grad = torch.randn_like(control_output)
+    control_grads = torch.autograd.grad([control_output], control_params, grad)
+    <a id="change">experim_grads = torch.autograd.grad([experim_output], experim_params, grad)</a>
+    assertEqual(experim_grads, control_grads)
+
+    if verbose:
+        print(experim_rnn.graph_for(*experim_inputs))</code></pre><h3>After Change</h3><pre><code class='java'>
+    control_backward_inputs = control.backward_setup(control_outputs, seed)
+    experim_backward_inputs = experim.backward_setup(experim_outputs, seed)
+
+    <a id="change">control.backward(*control_backward_inputs)</a>
+    experim.backward(*experim_backward_inputs)
+
+    control_grads = [p.grad for p in control.params]
+    experim_grads = [p.grad for p in experim.params]</code></pre>

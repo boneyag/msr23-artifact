@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 torch.max(keepdim=True), for instance, simplifies things here.
+        &#47&#47 Here we get normalized log probabilities for enhanced numerical stability.
+        input_masked = mask * vector
+        shifted = mask * (input_masked - <a id="change">torch</a>.max(input_masked, dim=<a id="change">1</a>)[0].expand_as(input_masked))
+        &#47&#47 We add epsilon to avoid numerical instability when the sum in the log yields 0.
+        <a id="change">normalization_constant = ((mask * shifted.exp()).sum(dim=1) + 1e-7).log()</a>
+        normalized_log_probabilities = (shifted - normalization_constant.expand_as(shifted))
+        probabilities = normalized_log_probabilities.exp()
+        return <a id="change">mask * probabilities</a>
+    else:
+        &#47&#47 There is no mask, so we use the provided ``torch.nn.functional.softmax`` function.
+        return torch.nn.functional.softmax(vector)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    that uses categorical cross-entropy loss.
+    
+    if mask is not None:
+        return mask * <a id="change">_get_normalized_masked_log_probablities(vector, mask).exp()</a>
+    else:
+        &#47&#47 There is no mask, so we use the provided ``torch.nn.functional.softmax`` function.
+        return torch.nn.functional.softmax(vector)
+</code></pre>

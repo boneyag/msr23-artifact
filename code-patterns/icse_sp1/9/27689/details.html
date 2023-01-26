@@ -1,0 +1,129 @@
+<html><h3>f25bc176d0365234ebb051d5069edff24ad2de4d,python/dgl/nn/tensorflow/conv/graphconv.py,GraphConv,call,#GraphConv#Any#Any#Any#,100
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tf.Tensor
+            The output feature
+        
+        <a id="change">graph = graph.local_var()</a>
+
+        if self._norm == &quotboth&quot:
+            degs = tf.clip_by_value(tf.cast(graph.out_degrees(), tf.float32),
+                                    clip_value_min=1,
+                                    clip_value_max=np.inf)
+            norm = tf.pow(degs, -0.5)
+            shp = norm.shape + (1,) * (feat.ndim - 1)
+            norm = tf.reshape(norm, shp)
+            feat = feat * norm
+
+        if weight is not None:
+            if self.weight is not None:
+                raise DGLError(&quotExternal weight is provided while at the same time the&quot
+                               &quot module has defined its own weight parameter. Please&quot
+                               &quot create the module with flag weight=False.&quot)
+        else:
+            weight = self.weight
+
+        if self._in_feats &gt; self._out_feats:
+            &#47&#47 mult W first to reduce the feature size for aggregation.
+            if weight is not None:
+                feat = tf.matmul(feat, weight)
+            <a id="change">graph.srcdata[&quoth&quot]</a> = feat
+            graph.update_all(fn.copy_src(src=&quoth&quot, out=&quotm&quot),
+                             fn.sum(msg=&quotm&quot, out=&quoth&quot))
+            rst = graph.dstdata[&quoth&quot]
+        else:
+            &#47&#47 aggregate first then mult W
+            <a id="change">graph.srcdata[&quoth&quot]</a> = feat
+            graph.update_all(fn.copy_src(src=&quoth&quot, out=&quotm&quot),
+                             fn.sum(msg=&quotm&quot, out=&quoth&quot))
+            rst = graph.dstdata[&quoth&quot]
+            if weight is not None:
+                rst = tf.matmul(rst, weight)
+
+        if self._norm != &quotnone&quot:
+            degs = tf.clip_by_value(tf.cast(graph.in_degrees(), tf.float32),
+                                    clip_value_min=1,
+                                    clip_value_max=np.inf)
+            if self._norm == &quotboth&quot:
+                norm = tf.pow(degs, -0.5)
+            else:
+                norm = 1.0 / degs
+            shp = norm.shape + (1,) * (feat.ndim - 1)
+            norm = tf.reshape(norm, shp)
+            rst = rst * norm
+
+        if self.bias is not None:
+            rst = rst + self.bias
+
+        if self._activation is not None:
+            rst = self._activation(rst)
+
+        <a id="change">return rst</a>
+
+    def extra_repr(self):
+        Set the extra representation of the module,
+        which will come into effect when printing the model.</code></pre><h3>After Change</h3><pre><code class='java'>
+        tf.Tensor
+            The output feature
+        
+        <a id="change">with graph.local_scope():
+            if self._norm == &quotboth&quot:
+                degs = tf.clip_by_value(tf.cast(graph.out_degrees(), tf.float32),
+                                        clip_value_min=1,
+                                        clip_value_max=np.inf)
+                norm = tf.pow(degs, -0.5)
+                shp = norm.shape + (1,) * (feat.ndim - 1)
+                norm = tf.reshape(norm, shp)
+                feat = feat * norm
+
+            if weight is not None:
+                if self.weight is not None:
+                    raise DGLError(&quotExternal weight is provided while at the same time the&quot
+                                   &quot module has defined its own weight parameter. Please&quot
+                                   &quot create the module with flag weight=False.&quot)
+            else:
+                weight = self.weight
+
+            if self._in_feats &gt; self._out_feats:
+                &#47&#47 mult W first to reduce the feature size for aggregation.
+                if weight is not None:
+                    feat = tf.matmul(feat, weight)
+                graph.srcdata[&quoth&quot] = feat
+                graph.update_all(fn.copy_src(src=&quoth&quot, out=&quotm&quot),
+                                 fn.sum(msg=&quotm&quot, out=&quoth&quot))
+                rst = graph.dstdata[&quoth&quot]
+            else:
+                &#47&#47 aggregate first then mult W
+                graph.srcdata[&quoth&quot] = feat
+                graph.update_all(fn.copy_src(src=&quoth&quot, out=&quotm&quot),
+                                 fn.sum(msg=&quotm&quot, out=&quoth&quot))
+                rst = graph.dstdata[&quoth&quot]
+                if weight is not None:
+                    rst = tf.matmul(rst, weight)
+
+            if self._norm != &quotnone&quot:
+                degs = tf.clip_by_value(tf.cast(graph.in_degrees(), tf.float32),
+                                        clip_value_min=1,
+                                        clip_value_max=np.inf)
+                if self._norm == &quotboth&quot:
+                    norm = tf.pow(degs, -0.5)
+                else:
+                    norm = 1.0 / degs
+                shp = norm.shape + (1,) * (feat.ndim - 1)
+                norm = tf.reshape(norm, shp)
+                rst = rst * norm
+
+            if self.bias is not None:
+                rst = rst + self.bias
+
+            if self._activation is not None:
+                rst = self._activation(rst)
+
+            return rst
+
+   </a> def extra_repr(self):
+        Set the extra representation of the module,
+        which will come into effect when printing the model.
+        </code></pre><img src="141577984.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f25bc176d0365234ebb051d5069edff24ad2de4d#diff-822c1a407c307a6d78965453fe2158e659d70d58ee520bd2b8f0189c95265517L125' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f25bc176d0365234ebb051d5069edff24ad2de4d</div><div id='time'> Time: 2020-05-01</div><div id='author'> Author: wmjlyjemaine@gmail.com</div><div id='file'> File Name: python/dgl/nn/tensorflow/conv/graphconv.py</div><div id='class'> Class Name: GraphConv</div><div id='method'> Method Name: call</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f25bc176d0365234ebb051d5069edff24ad2de4d#diff-16a5a8e32244708a6d37d345595b48b7a9489dabf90614c988acfec9f286fa5fL128' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f25bc176d0365234ebb051d5069edff24ad2de4d</div><div id='time'> Time: 2020-05-01</div><div id='author'> Author: wmjlyjemaine@gmail.com</div><div id='file'> File Name: python/dgl/nn/pytorch/conv/graphconv.py</div><div id='class'> Class Name: GraphConv</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f25bc176d0365234ebb051d5069edff24ad2de4d#diff-ab83dbd616cb456b3359e6e64fbc5bfdb338860b7810210b31a7d592c2ad078dL122' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f25bc176d0365234ebb051d5069edff24ad2de4d</div><div id='time'> Time: 2020-05-01</div><div id='author'> Author: wmjlyjemaine@gmail.com</div><div id='file'> File Name: python/dgl/nn/mxnet/conv/graphconv.py</div><div id='class'> Class Name: GraphConv</div><div id='method'> Method Name: forward</div><BR>

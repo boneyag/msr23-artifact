@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if self._top_k == 1:
+                top_k = predictions.max(-1)[1].unsqueeze(-1)
+            else:
+                top_k = predictions.topk(<a id="change">min(self._top_k, predictions.shape[-1])</a>, -1)[1]
+
+            &#47&#47 This is of shape (batch_size, ..., top_k).
+            correct = top_k.eq(gold_labels.unsqueeze(-1)).float()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if is_distributed():
+            _correct_count = torch.tensor(self.correct_count).to(device)
+            <a id="change">_total_count = torch.tensor(self.total_count).to(device)</a>
+            dist.all_reduce(_correct_count, op=dist.ReduceOp.SUM)
+            dist.all_reduce(_total_count, op=dist.ReduceOp.SUM)
+            self.correct_count = _correct_count.item()
+            self.total_count = _total_count.item()</code></pre>

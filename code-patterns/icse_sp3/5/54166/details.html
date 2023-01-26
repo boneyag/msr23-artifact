@@ -1,0 +1,45 @@
+<html><h3>f7fbaa4af00336eebc0c9c0f31ee4f72c158d653,tests/onnx/test_onnx_model_export.py,,test_model_log_evaluate_pyfunc_format,#Any#Any#Any#,351
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if should_start_run:
+                mlflow.start_run()
+            artifact_path = "onnx_model"
+            <a id="change">mlflow.onnx.log_model(onnx_model=onnx_model, artifact_path=artifact_path)</a>
+            model_uri = "runs:/{run_id}/{artifact_path}".format(
+                run_id=mlflow.active_run().info.run_id, artifact_path=artifact_path
+            )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_model_log_evaluate_pyfunc_format(onnx_model, data, predicted):
+    x = data[0]
+
+    <a id="change">with mlflow.start_run() as run:
+        artifact_path = "onnx_model"
+        mlflow.onnx.log_model(onnx_model=onnx_model, artifact_path=artifact_path)
+        model_uri = "runs:/{run_id}/{artifact_path}".format(
+            run_id=run.info.run_id, artifact_path=artifact_path
+        )
+
+        &#47&#47 Loading pyfunc model
+        pyfunc_loaded = mlflow.pyfunc.load_pyfunc(model_uri=model_uri)
+        assert np.allclose(
+            pyfunc_loaded.predict(x).values.flatten(), predicted, rtol=1e-05, atol=1e-05
+        )
+        &#47&#47 test with a single numpy array
+        np_ary = x.values
+
+        &#47&#47 NB: Onnx wrapper returns a dictionary for non-dataframe inputs, we want to get the
+        &#47&#47 numpy array belonging to the first (and only) model output.
+        def get_ary_output(args):
+            return next(iter(pyfunc_loaded.predict(args).values())).flatten()
+
+        assert np.allclose(get_ary_output(np_ary), predicted, rtol=1e-05, atol=1e-05)
+        &#47&#47 test with a dict with a single tensor
+        assert np.allclose(get_ary_output({"input": np_ary}), predicted, rtol=1e-05, atol=1e-05)
+
+
+</a>@pytest.mark.large
+def test_model_save_evaluate_pyfunc_format_multi_tensor(
+    multi_tensor_onnx_model, data, multi_tensor_model_prediction
+):</code></pre><img src="251141826.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mlflow/mlflow/commit/f7fbaa4af00336eebc0c9c0f31ee4f72c158d653#diff-ba4bbd024f524c888486dc16d0727754635e9c7cf177dbcac69567ef4eb0733aL355' target='_blank'>Link</a></div><div id='project'> Project Name: mlflow/mlflow</div><div id='commit'> Commit Name: f7fbaa4af00336eebc0c9c0f31ee4f72c158d653</div><div id='time'> Time: 2021-02-12</div><div id='author'> Author: 33237569+tomasatdatabricks@users.noreply.github.com</div><div id='file'> File Name: tests/onnx/test_onnx_model_export.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_model_log_evaluate_pyfunc_format</div><BR><BR><div id='link'><a href='https://github.com/polyaxon/polyaxon/commit/3866d7dc073ae983c7390bc5b1e604fea4360217#diff-b84b196318521af857bf26d608e22cef7ed8c2ac1b7d39cd8e9f54004151aa03L978' target='_blank'>Link</a></div><div id='project'> Project Name: polyaxon/polyaxon</div><div id='commit'> Commit Name: 3866d7dc073ae983c7390bc5b1e604fea4360217</div><div id='time'> Time: 2020-04-24</div><div id='author'> Author: mouradmourafiq@gmail.com</div><div id='file'> File Name: core/tests/test_tracking/test_run_tracking.py</div><div id='class'> Class Name: TestRunLogging</div><div id='method'> Method Name: test_log_model_dir</div><BR><BR><div id='link'><a href='https://github.com/polyaxon/polyaxon/commit/3866d7dc073ae983c7390bc5b1e604fea4360217#diff-b84b196318521af857bf26d608e22cef7ed8c2ac1b7d39cd8e9f54004151aa03L939' target='_blank'>Link</a></div><div id='project'> Project Name: polyaxon/polyaxon</div><div id='commit'> Commit Name: 3866d7dc073ae983c7390bc5b1e604fea4360217</div><div id='time'> Time: 2020-04-24</div><div id='author'> Author: mouradmourafiq@gmail.com</div><div id='file'> File Name: core/tests/test_tracking/test_run_tracking.py</div><div id='class'> Class Name: TestRunLogging</div><div id='method'> Method Name: test_log_model_file</div><BR>

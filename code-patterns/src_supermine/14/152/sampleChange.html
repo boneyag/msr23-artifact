@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        absolute_errors = torch.abs(predictions - gold_labels)
+        if mask is not None:
+            absolute_errors *= mask
+            <a id="change">self._total_count</a> += torch.sum(mask)
+        else:
+            self._total_count += gold_labels.numel()
+        <a id="change">self._absolute_error</a> += torch.sum(absolute_errors)
+
+        if is_distributed():
+            _absolute_error = torch.tensor(<a id="change">self._absolute_error</a>).to(device)
+            _total_count = torch.tensor(<a id="change">self._total_count</a>).to(device)
+            dist.all_reduce(_absolute_error, op=dist.ReduceOp.SUM)
+            dist.all_reduce(_total_count, op=dist.ReduceOp.SUM)
+            <a id="change">self._absolute_error = _absolute_error.item()</a>
+            self._total_count = _total_count.item()
+
+    def get_metric(self, reset: bool = False):
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+            total_count = torch.tensor(_total_count).to(device)
+            dist.all_reduce(absolute_error, op=dist.ReduceOp.SUM)
+            dist.all_reduce(total_count, op=dist.ReduceOp.SUM)
+            <a id="change">_absolute_error = absolute_error.item()</a>
+            _total_count = total_count.item()
+
+        <a id="change">self._absolute_error += _absolute_error</a>
+        self._total_count += _total_count
+
+    def get_metric(self, reset: bool = False):
+        </code></pre>

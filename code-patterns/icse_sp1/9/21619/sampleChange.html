@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.assertTrue(torch.allclose(mean_skip_var, likelihood_mean))
+
+    def test_gp_posterior_mean_skip_variances_slow_cuda(self):
+        <a id="change">if torch.cuda.is_available():
+            train_x, test_x, train_y, _ = self._get_data(cuda=True)
+            likelihood = GaussianLikelihood()
+            gp_model = ExactGPModel(train_x, train_y, likelihood)
+
+            gp_model.cuda()
+            likelihood.cuda()
+
+            &#47&#47 Compute posterior distribution
+            gp_model.eval()
+            likelihood.eval()
+
+            with gpytorch.settings.fast_pred_var(False):
+                with gpytorch.settings.skip_posterior_variances(True):
+                    mean_skip_var = gp_model(test_x).mean
+                mean = gp_model(test_x).mean
+                likelihood_mean = likelihood(gp_model(test_x)).mean
+            self.assertTrue(torch.allclose(mean_skip_var, mean))
+            self.assertTrue(torch.allclose(mean_skip_var, likelihood_mean))
+
+   </a> def test_posterior_latent_gp_and_likelihood_with_optimization(self, cuda=False):
+        train_x, test_x, train_y, test_y = self._get_data(cuda=cuda)
+        &#47&#47 We&quotre manually going to set the hyperparameters to something they shouldn&quott be
+        likelihood = GaussianLikelihood(noise_prior=SmoothedBoxPrior(exp(-3), exp(3), sigma=0.1))</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.assertTrue(torch.allclose(mean_skip_var, likelihood_mean))
+
+    def test_gp_posterior_mean_skip_variances_slow_cuda(self):
+        <a id="change">if not torch.cuda.is_available():
+            return
+       </a> <a id="change">with least_used_cuda_device():
+            train_x, test_x, train_y, _ = self._get_data(cuda=True)
+            likelihood = GaussianLikelihood()
+            gp_model = ExactGPModel(train_x, train_y, likelihood)
+
+            gp_model.cuda()
+            likelihood.cuda()
+
+            &#47&#47 Compute posterior distribution
+            gp_model.eval()
+            likelihood.eval()
+
+            with gpytorch.settings.fast_pred_var(False):
+                with gpytorch.settings.skip_posterior_variances(True):
+                    mean_skip_var = gp_model(test_x).mean
+                mean = gp_model(test_x).mean
+                likelihood_mean = likelihood(gp_model(test_x)).mean
+            self.assertTrue(torch.allclose(mean_skip_var, mean))
+            self.assertTrue(torch.allclose(mean_skip_var, likelihood_mean))
+
+   </a> def test_posterior_latent_gp_and_likelihood_with_optimization(self, cuda=False):
+        train_x, test_x, train_y, test_y = self._get_data(cuda=cuda)
+        &#47&#47 We&quotre manually going to set the hyperparameters to something they shouldn&quott be
+        likelihood = GaussianLikelihood(noise_prior=SmoothedBoxPrior(exp(-3), exp(3), sigma=0.1))</code></pre>

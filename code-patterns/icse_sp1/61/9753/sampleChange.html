@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        for epoch in range(args.epochs):
+            print(&quotEPOCH ::: &quot + str(epoch+1))
+            <a id="change">data_time = AverageMeter()</a>
+            <a id="change">batch_time = AverageMeter()</a>
+            pi_losses = AverageMeter()
+            v_losses = AverageMeter()
+            <a id="change">end = time.time()</a>
+
+            <a id="change">bar</a> = <a id="change">Bar(&quotTraining Net&quot, max=int(len(examples)/args.batch_size))</a>
+            <a id="change">batch_idx = 0</a>
+
+            &#47&#47 self.sess.run(tf.local_variables_initializer())
+            <a id="change">while batch_idx &lt; int(len(examples)/args.batch_size):
+                sample_ids = np.random.randint(len(examples), size=args.batch_size)
+                boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
+
+                &#47&#47 predict and compute gradient and do SGD step
+                input_dict = {self.nnet.input_boards: boards, self.nnet.target_pis: pis, self.nnet.target_vs: vs, self.nnet.dropout: args.dropout, self.nnet.isTraining: True}
+
+                &#47&#47 measure data loading time
+                data_time.update(time.time() - end)
+
+                &#47&#47 record loss
+                self.sess.run(self.nnet.train_step, feed_dict=input_dict)
+                pi_loss, v_loss = self.sess.run([self.nnet.loss_pi, self.nnet.loss_v], feed_dict=input_dict)
+                pi_losses.update(pi_loss, len(boards))
+                v_losses.update(v_loss, len(boards))
+
+                &#47&#47 measure elapsed time
+                batch_time.update(time.time() - end)
+                end = time.time()
+                batch_idx += 1
+
+                &#47&#47 plot progress
+                bar.suffix  = &quot({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss_pi: {lpi:.4f} | Loss_v: {lv:.3f}&quot.format(
+                            batch=batch_idx,
+                            size=int(len(examples)/args.batch_size),
+                            data=data_time.avg,
+                            bt=batch_time.avg,
+                            total=bar.elapsed_td,
+                            eta=bar.eta_td,
+                            lpi=pi_losses.avg,
+                            lv=v_losses.avg,
+                            )
+                bar.next()
+           </a> <a id="change">bar.finish()</a>
+
+
+    def predict(self, board):
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+            print(&quotEPOCH ::: &quot + str(epoch + 1))
+            pi_losses = AverageMeter()
+            v_losses = AverageMeter()
+            batch_count = <a id="change">int(len(examples) / args.batch_size)</a>
+
+            &#47&#47 self.sess.run(tf.local_variables_initializer())
+            <a id="change">t = tqdm(range(batch_count), desc=&quotTraining Net&quot)</a>
+            <a id="change">for _ in t:
+                sample_ids = np.random.randint(len(examples), size=args.batch_size)
+                boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
+
+                &#47&#47 predict and compute gradient and do SGD step
+                input_dict = {self.nnet.input_boards: boards, self.nnet.target_pis: pis, self.nnet.target_vs: vs,
+                              self.nnet.dropout: args.dropout, self.nnet.isTraining: True}
+
+                &#47&#47 record loss
+                self.sess.run(self.nnet.train_step, feed_dict=input_dict)
+                pi_loss, v_loss = self.sess.run([self.nnet.loss_pi, self.nnet.loss_v], feed_dict=input_dict)
+                pi_losses.update(pi_loss, len(boards))
+                v_losses.update(v_loss, len(boards))
+                t.set_postfix(Loss_pi=pi_losses, Loss_v=v_losses)
+
+   </a> def predict(self, board):
+        
+        board: np array with board
+        </code></pre>

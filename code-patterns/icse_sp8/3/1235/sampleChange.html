@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def test_set_invalid_log_location(self):
+    self.assertFalse(os.path.isdir(&quot/does/not/exist&quot))
+    sink = self._gen_sink_subclass()
+    err_rx = <a id="change">re.escape(
+      "The provided exception sink path at &quot/does/not/exist&quot is not writable or could not be created: [Errno 13]")</a>
+    with self.assertRaisesRegexp(ExceptionSink.ExceptionSinkError, err_rx):
+      sink.reset_log_location(&quot/does/not/exist&quot)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 creating a new directory with safe_mkdir(), Linux errors out trying to create the directory
+    &#47&#47 for its log files with safe_open(). This may be due to differences in the filesystems.
+    &#47&#47 TODO: figure out why we error out at different points here!
+    <a id="change">err_str = Platform.current.match({
+      Platform.darwin: "The provided exception sink path at &quot/&quot is not writable or could not be created: [Errno 21] Is a directory: &quot/&quot.",
+      Platform.linux: "Error opening fatal error log streams for log location &quot/&quot: [Errno 13] Permission denied: &quot/.pids&quot"
+    })</a>
+    with self.assertRaisesWithMessageContaining(ExceptionSink.ExceptionSinkError, err_str):
+      sink.reset_log_location(&quot/&quot)
+
+  def test_log_exception(self):</code></pre>

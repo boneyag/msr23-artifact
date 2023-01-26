@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            step_size = gs.floor(iteration / n_repetitions) + 1
+
+            random_index = gs.random.randint(low=0, high=n_points, size=(1,))
+            point = points[<a id="change">gs.ix_(random_index, gs.arange(dimension))</a>]
+
+            index_to_update = self.closest_neighbor_index(point, centers)
+            center_to_update = centers[index_to_update, :]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        random_indices = gs.random.randint(low=0, high=n_points,
+                                           size=(n_centers,))
+        centers = points[<a id="change">gs.indexing(random_indices), :</a>]
+
+        gap = 1.0
+        iteration = 0
+
+        while iteration &lt; n_max_iterations:
+            iteration += 1
+            step_size = gs.floor(iteration / n_repetitions) + 1
+
+            random_index = gs.random.randint(low=0, high=n_points, size=(1,))
+            point = points[gs.indexing(random_index), :]
+
+            index_to_update = self.closest_neighbor_index(point, centers)
+            center_to_update = centers[index_to_update, :]
+
+            tangent_vec_update = self.log(
+                    point=point, base_point=center_to_update
+                    ) / (step_size+1)
+            new_center = self.exp(
+                    tangent_vec=tangent_vec_update, base_point=center_to_update
+                    )
+            gap = self.dist(center_to_update, new_center)
+            gap = gs.byte_to_float(gap != 0) * gap + gs.byte_to_float(gap == 0)
+
+            centers[index_to_update, :] = new_center
+
+            if gs.isclose(gap, 0, atol=tolerance):
+                break
+
+        if iteration == n_max_iterations-1:
+            print(&quotMaximum number of iterations {} reached. The&quot
+                  &quotquantization may be inaccurate&quot.format(n_max_iterations))
+
+        clusters = dict()
+        weights = gs.zeros((n_centers,))
+        index_list = list()
+
+        for point in points:
+            index = self.closest_neighbor_index(point, centers)
+            <a id="change">index = index.item()</a>
+            if index not in index_list:
+                clusters[index] = list()
+                index_list.append(index)
+            clusters[index].append(point)</code></pre>

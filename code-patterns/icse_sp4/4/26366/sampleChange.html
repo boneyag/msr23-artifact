@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    dns = self.support.expand_as(pns) * pns  &#47&#47 Distribution d_t+n = (z, p(s_t+n, ·; θonline))
+    argmax_indices_ns = dns.sum(2).max(1)[1]  &#47&#47 Perform argmax action selection using online network: argmax_a[(z, p(s_t+n, a; θonline))]
+    self.target_net.reset_noise()  &#47&#47 Sample new target net noise
+    <a id="change">pns = self.target_net(next_states).data</a>  &#47&#47 Probabilities p(s_t+n, ·; θtarget)
+    pns_a = pns[range(self.batch_size), argmax_indices_ns]  &#47&#47 Double-Q probabilities p(s_t+n, argmax_a[(z, p(s_t+n, a; θonline))]; θtarget)
+
+    &#47&#47 Compute Tz (Bellman operator T applied to z)
+    Tz = returns.unsqueeze(1) + nonterminals * (self.discount ** self.n) * self.support.unsqueeze(0)  &#47&#47 Tz = R^n + (γ^n)z (accounting for terminal states)
+    Tz = Tz.clamp(min=self.Vmin, max=self.Vmax)  &#47&#47 Clamp between supported values
+    &#47&#47 Compute L2 projection of Tz onto fixed support z
+    b = (Tz - self.Vmin) / self.delta_z  &#47&#47 b = (Tz - Vmin) / Δz
+    l, u = b.floor().long(), b.ceil().long()
+    &#47&#47 Fix disappearing probability mass when l = b = u (b is int)
+    l[(u &gt; 0) * (l == u)] -= 1
+    u[(l &lt; (self.atoms - 1)) * (l == u)] += 1
+
+    &#47&#47 Distribute probability of Tz
+    m = states.data.new(self.batch_size, self.atoms).zero_()
+    offset = torch.linspace(0, ((self.batch_size - 1) * self.atoms), self.batch_size).unsqueeze(1).expand(self.batch_size, self.atoms).type_as(actions)
+    m.view(-1).index_add_(0, (l + offset).view(-1), (pns_a * (u.float() - b)).view(-1))  &#47&#47 m_l = m_l + p(s_t+n, a*)(u - b)
+    <a id="change">m.view(-1).index_add_(0, (u + offset).view(-1), (pns_a * (b - l.float())).view(-1))</a>  &#47&#47 m_u = m_u + p(s_t+n, a*)(b - l)
+
+    ps_a = ps_a.clamp(min=1e-3)  &#47&#47 Clamp for numerical stability in log
+    loss = -torch.sum(Variable(m) * ps_a.log(), 1)  &#47&#47 Cross-entropy loss (minimises DKL(m||p(s_t, a_t)))</code></pre><h3>After Change</h3><pre><code class='java'>
+      dns = self.support.expand_as(pns) * pns  &#47&#47 Distribution d_t+n = (z, p(s_t+n, ·; θonline))
+      argmax_indices_ns = dns.sum(2).max(1)[1]  &#47&#47 Perform argmax action selection using online network: argmax_a[(z, p(s_t+n, a; θonline))]
+      self.target_net.reset_noise()  &#47&#47 Sample new target net noise
+      <a id="change">pns = self.target_net(next_states)</a>  &#47&#47 Probabilities p(s_t+n, ·; θtarget)
+      pns_a = pns[range(self.batch_size), argmax_indices_ns]  &#47&#47 Double-Q probabilities p(s_t+n, argmax_a[(z, p(s_t+n, a; θonline))]; θtarget)
+
+      &#47&#47 Compute Tz (Bellman operator T applied to z)
+      Tz = returns.unsqueeze(1) + nonterminals * (self.discount ** self.n) * self.support.unsqueeze(0)  &#47&#47 Tz = R^n + (γ^n)z (accounting for terminal states)
+      Tz = Tz.clamp(min=self.Vmin, max=self.Vmax)  &#47&#47 Clamp between supported values
+      &#47&#47 Compute L2 projection of Tz onto fixed support z
+      b = (Tz - self.Vmin) / self.delta_z  &#47&#47 b = (Tz - Vmin) / Δz
+      l, u = b.floor().long(), b.ceil().long()
+      &#47&#47 Fix disappearing probability mass when l = b = u (b is int)
+      l[(u &gt; 0) * (l == u)] -= 1
+      u[(l &lt; (self.atoms - 1)) * (l == u)] += 1
+
+      &#47&#47 Distribute probability of Tz
+      m = states.new_zeros(self.batch_size, self.atoms)
+      offset = torch.linspace(0, ((self.batch_size - 1) * self.atoms), self.batch_size).unsqueeze(1).expand(self.batch_size, self.atoms).to(actions)
+      m.view(-1).index_add_(0, (l + offset).view(-1), (pns_a * (u.float() - b)).view(-1))  &#47&#47 m_l = m_l + p(s_t+n, a*)(u - b)
+      <a id="change">m.view(-1).index_add_(0, (u + offset).view(-1), (pns_a * (b - l.float())).view(-1))</a>  &#47&#47 m_u = m_u + p(s_t+n, a*)(b - l)
+
+    ps_a = ps_a.clamp(min=1e-3)  &#47&#47 Clamp for numerical stability in log
+    loss = -torch.sum(m * ps_a.log(), 1)  &#47&#47 Cross-entropy loss (minimises DKL(m||p(s_t, a_t)))</code></pre>

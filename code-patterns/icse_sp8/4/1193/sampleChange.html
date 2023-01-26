@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    device_grads = gradient_state
+    &#47&#47 Note that each grad_and_vars looks like the following:
+    &#47&#47   ((grad0_gpu0, var0_gpu0), ... , (grad0_gpuN, var0_gpuN))
+    <a id="change">return [grad_and_vars[device_num] for grad_and_vars in zip(*device_grads)]</a>
+
+  def get_devices(self):
+    return self.benchmark_cnn.raw_devices
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      &#47&#47 Since we don&quott aggregate variables in --independent mode, we cannot tell
+      &#47&#47 if there are NaNs on all GPUs. So we arbitrarily choose to only check
+      &#47&#47 NaNs on the first GPU.
+      <a id="change">has_inf_nan_list = []</a>
+      for grad, _ in tower_grad:
+        has_inf_nan_list.append(tf.reduce_all(tf.is_finite(grad)))
+      <a id="change">self.grad_has_inf_nan = tf.logical_not(tf.reduce_all(has_inf_nan_list))</a>
+
+    return tower_grad
+
+  def get_devices(self):</code></pre>

@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.clip_grad:
+            logger.debug(f&quotClipping gradient: {self.clip_grad_val}&quot)
+            torch.nn.utils.clip_grad_norm_(self.parameters(), self.clip_grad_val)
+        if <a id="change">global_net is None:
+</a>            <a id="change">self.optim.step()</a>
+        else:  &#47&#47 distributed training with global net
+            net_util.push_global_grad(self, global_net)
+            self.optim.step()
+            net_util.pull_global_param(self, global_net)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def training_step(self, x=None, y=None, loss=None, retain_graph=False, lr_t=None):
+        &quot&quot&quotTakes a single training step: one forward and one backwards pass&quot&quot&quot
+        <a id="change">if hasattr(self, &quotmodel_tails&quot) and x is not None:
+            raise ValueError(&quotLoss computation from x,y not supported for multitails&quot)
+       </a> <a id="change">self.lr_scheduler.step(epoch=lr_t)</a>
+        self.train()
+        self.optim.zero_grad()
+        if loss is None:
+            out = self(x)
+            loss = self.loss_fn(out, y)
+        assert not torch.isnan(loss).any(), loss
+        if net_util.to_assert_trained():
+            assert_trained = net_util.gen_assert_trained(self.rnn_model)
+        loss.backward(retain_graph=retain_graph)
+        if <a id="change">self.clip_grad_val is not No</a>ne:
+            nn.utils.clip_grad_norm_(self.parameters(), self.clip_grad_val)
+        self.optim.step()
+        if net_util.to_assert_trained():</code></pre>

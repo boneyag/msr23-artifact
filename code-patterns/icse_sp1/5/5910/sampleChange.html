@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.sample_entropy += torch.sum(entropy)
+
+            self.inputs = torch.matmul(skip.float(), torch.cat(anchors, 0)) / (1. + torch.sum(skip))
+            <a id="change">self._selected_inputs.append(skip)</a>
+            return skip.bool()
+        else:
+            assert mutable.n_selected == 1, "Input choice must select exactly one or any in ENAS."
+            raise NotImplementedError</code></pre><h3>After Change</h3><pre><code class='java'>
+        else:
+            assert mutable.n_selected == 1, "Input choice must select exactly one or any in ENAS."
+            logit = query.view(1, -1)
+            <a id="change">index = torch.multinomial(F.softmax(logit, dim=-1), 1).view(-1)</a>
+            <a id="change">skip = F.one_hot(index).view(-1)</a>
+            log_prob = self.cross_entropy_loss(logit, index)
+            self._inputs = anchors[index.item()]
+
+        self.sample_log_prob += torch.sum(log_prob)</code></pre>

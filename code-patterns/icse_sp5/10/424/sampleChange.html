@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        dilations = node.attr.get(&quotdilations&quot, [1, 1, 1, 1])
+        &#47&#47 TF uses SpaceToBatch to implement dilated convolutions
+        <a id="change">if any([df != 1 for df in dilations]):
+            raise NotImplementedError(
+                &quot[SSAConverter] Dilated Convolution not implemented&quot)
+
+       </a> assert len(weight.shape) == 4, &quotConv2d: weight parameter not rank 4&quot
+
+        data_format = node.attr.get(&quotdata_format&quot, &quotNHWC&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        pad_h = node.attr.get(&quotpad_h&quot, [0, 0])
+        pad_w = node.attr.get(&quotpad_w&quot, [0, 0])
+
+        <a id="change">paddings_before = node.attr.get(&quot_paddings_before&quot, None)</a>
+        <a id="change">if paddings_before:
+            layer = builder.add_padding(
+                name=node.name + &quot_paddings_before&quot,
+                left=paddings_before[0],
+                right=paddings_before[1],
+                top=paddings_before[2],
+                bottom=paddings_before[3],
+                value=0,
+                input_name=conv_input_name,
+                output_name=node.name + &quot_paddings_before&quot
+            )
+            shapes.propagate_single_layer(layer, self.tensor_shapes)
+
+       </a> builder.add_convolution(
+            name=conv_output_name,
+            kernel_channels=kernel_channels,
+            output_channels=output_channels,
+            height=kernel_height,
+            width=kernel_width,
+            stride_height=stride_height,
+            stride_width=stride_width,
+            border_mode=border_mode,
+            groups=groups,
+            W=weight,
+            b=bias,
+            has_bias=(bias is not None),
+            is_deconv=False,
+            output_shape=None,
+            input_name=<a id="change">conv_input_name</a> if not paddings_before else node.name + &quot_paddings_before&quot,
+            output_name=conv_output_name,
+            dilation_factors=dilations_factors,
+            padding_bottom=pad_h[0],</code></pre>

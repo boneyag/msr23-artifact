@@ -1,0 +1,71 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        SET_TRAIN_FLAG(True)
+        reporting_fns = kwargs.get(&quotreporting_fns&quot, [])
+        pg = create_progress_bar(steps)
+        <a id="change">epoch_loss = tf.keras.metrics.Sum()</a>
+        epoch_div = <a id="change">tf.keras.metrics.Sum()</a>
+        <a id="change">nstep_loss = tf.keras.metrics.Sum()</a>
+        nstep_div = <a id="change">tf.keras.metrics.Sum()</a>
+        self.nstep_start = time.time()
+
+        @tf.function
+        def _train_step(inputs):
+            features, y = inputs
+            loss = self.optimizer.update(self.model.impl, features, y)
+            batchsz = tf.cast(get_shape_as_list(y)[0], tf.float32)
+            report_loss = loss * batchsz
+            epoch_loss.update_state(report_loss)
+            nstep_loss.update_state(report_loss)
+            epoch_div.update_state(batchsz)
+            nstep_div.update_state(batchsz)
+
+        with autograph_options({"function_optimization": False, "layout_optimizer": False}):
+            for inputs in pg(loader):
+                _train_step(inputs)
+                step = self.optimizer.global_step.numpy() + 1
+                if step % self.nsteps == 0:
+                    metrics = self.calc_metrics(<a id="change">nstep_loss</a>.result().numpy(), <a id="change">nstep_div</a>.result().numpy())
+                    self.report(
+                        step, metrics, self.nstep_start,
+                        &quotTrain&quot, &quotSTEP&quot, reporting_fns, self.nsteps
+                    )
+                    nstep_loss.reset_states()
+                    nstep_div.reset_states()
+                    self.nstep_start = time.time()
+
+        epoch_loss = <a id="change">epoch_loss</a>.result().numpy()
+        epoch_div = <a id="change">epoch_div</a>.result().numpy()
+        metrics = self.calc_metrics(epoch_loss, epoch_div)
+        return metrics
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        SET_TRAIN_FLAG(True)
+        reporting_fns = kwargs.get(&quotreporting_fns&quot, [])
+        pg = create_progress_bar(steps)
+        <a id="change">epoch_loss = tf.Variable(0.0)</a>
+        epoch_div = <a id="change">tf.Variable(0, dtype=tf.int32)</a>
+        <a id="change">nstep_loss = tf.Variable(0.0)</a>
+        nstep_div = <a id="change">tf.Variable(0, dtype=tf.int32)</a>
+        self.nstep_start = time.time()
+
+        @tf.function
+        def _train_step(inputs):
+            features, y = inputs
+            loss = self.optimizer.update(self.model.impl, features, y)
+            batchsz = get_shape_as_list(y)[0]
+            report_loss = loss * batchsz
+            return report_loss, batchsz
+
+        with autograph_options({"function_optimization": False, "layout_optimizer": False}):
+            for inputs in pg(loader):
+                <a id="change">step_report_loss</a>, <a id="change">step_batchsz</a> = _train_step(inputs)
+                <a id="change">epoch_loss.assign_add(step_report_loss)</a>
+                <a id="change">nstep_loss.assign_add(step_report_loss)</a>
+                <a id="change">epoch_div.assign_add(step_batchsz)</a>
+                <a id="change">nstep_div.assign_add(step_batchsz)</a>
+
+                step = self.optimizer.global_step.numpy() + 1
+                if step % self.nsteps == 0:
+                    metrics = self.calc_metrics(nstep_loss.numpy(), nstep_div.numpy())</code></pre>

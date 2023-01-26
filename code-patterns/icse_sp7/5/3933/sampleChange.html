@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 B x num_heads x num_actions
+        q_values_tp1 = q_atoms_tp1.mean(dim=-1)
+        &#47&#47 B x num_heads x 1
+        <a id="change">actions_tp1 = torch.argmax(q_values_tp1, dim=-1, keepdim=True)</a>
+        &#47&#47 B x num_heads x 1 x num_atoms
+        indices_tp1 = actions_tp1.unsqueeze(-1).repeat(1, 1, 1, self.num_atoms)
+        &#47&#47 B x num_heads x num_atoms
+        atoms_tp1 = q_atoms_tp1.gather(-2, indices_tp1).squeeze(-2)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 [bs; num_heads; num_atoms] -&gt; many-heads view transform
+        &#47&#47 [{bs * num_heads}; num_atoms]
+        atoms_target_t = <a id="change">(
+            rewards_t + (1 - done_t) * gammas * atoms_tp1
+        ).view(-1, self.num_atoms).detach()</a>
+
+        value_loss = utils.quantile_loss(
+            &#47&#47 [{bs * num_heads}; num_atoms]
+            atoms_t,</code></pre>

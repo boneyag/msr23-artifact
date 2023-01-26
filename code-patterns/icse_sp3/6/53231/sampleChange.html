@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if isinstance(distribution, Categorical):
+                split_list[i] = tf.cast(
+                    tf.squeeze(split_list[i], axis=-1), tf.int32)
+        <a id="change">log_list = [
+            distribution.logp(split_x) for distribution, split_x in zip(
+                self.child_distributions, split_list)
+        ]</a>
+        return functools.reduce(lambda a, b: a + b, log_list)
+
+    @override(ActionDistribution)
+    def kl(self, other):</code></pre><h3>After Change</h3><pre><code class='java'>
+            split_x = tf.split(x, split_indices, axis=1)
+        &#47&#47 Structured or flattened (by single action component) input.
+        else:
+            split_x = <a id="change">tree.flatten(x)</a>
+
+        def map_(val, dist):
+            &#47&#47 Remove extra categorical dimension.
+            if isinstance(dist, Categorical):
+                val = tf.cast(tf.squeeze(val, axis=-1), tf.int32)
+            return dist.logp(val)
+
+        &#47&#47 Remove extra categorical dimension and take the logp of each
+        &#47&#47 component.
+        <a id="change">flat_logps = tree.map_structure(map_, split_x,
+                                        self.flat_child_distributions)</a>
+
+        return functools.reduce(lambda a, b: a + b, flat_logps)
+
+    @override(ActionDistribution)</code></pre>

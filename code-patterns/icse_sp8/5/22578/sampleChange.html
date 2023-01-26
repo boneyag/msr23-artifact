@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self._env.action_type == EnvType.CONTINUOUS_ACTION:
+            raise NotImplementedError()
+        &#47&#47 test only float features
+        predictions = <a id="change">predictor.predict(self.logged_states).astype(np.float32)</a>
+        estimated_reward_values = predictor.estimate_reward(self.logged_states)
+        if isinstance(predictor.trainer, ParametricDQNTrainer):
+            predictions = predictions.reshape([-1, self._env.action_dim])
+            estimated_reward_values = estimated_reward_values.reshape(</code></pre><h3>After Change</h3><pre><code class='java'>
+            )
+            estimated_reward_values = predictor.estimate_reward(self.logged_states)
+        else:
+            <a id="change">num_states = self.logged_states.size()[0]</a>
+            action_tiled = torch.repeat_interleave(
+                <a id="change">torch.eye(self._env.action_dim)</a>, repeats=num_states, axis=0
+            )
+
+            predictions = predictor.predict(  &#47&#47 type: ignore
+                self.logged_states, action_tiled
+            )
+            <a id="change">estimated_reward_values = predictor.estimate_reward(
+                self.logged_states, action_tiled
+            )</a>
+            predictions = predictions.reshape([-1, self._env.action_dim])
+            estimated_reward_values = estimated_reward_values.reshape(
+                [-1, self._env.action_dim]
+            )</code></pre>

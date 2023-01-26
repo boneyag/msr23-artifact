@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def handle_shell_command(self, cmd):
+        &#47&#47 interpolate command
+        <a id="change">try:
+            new_cmd = interpolate(cmd, sigil=&quot${ }&quot, local_dict=env.sos_dict._dict)
+            if new_cmd != cmd:
+                cmd = new_cmd
+                if not cmd.startswith(&quotcd &quot) and not cmd.startswith(&quotcd\t&quot):
+                    self.send_response(self.iopub_socket, &quotstream&quot,
+                        {&quotname&quot: &quotstdout&quot, &quottext&quot:
+                        new_cmd.strip() + &quot\n&#47&#47&#47&#47 -- End interpolated command --\n&quot})
+        except Exception as e:
+            self.send_response(self.iopub_socket, &quotstream&quot,
+                {&quotname&quot: &quotstdout&quot, &quottext&quot: &quotFailed to interpolate {}: {}\n&quot.format(short_repr(cmd), e)})
+            self.send_response(self.iopub_socket, &quotstream&quot,
+                {&quotname&quot: &quotstdout&quot, &quottext&quot: str(e)})
+            return
+       </a> with self.redirect_sos_io():
+            try:
+                p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                out, err = p.communicate()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def handle_shell_command(self, cmd):
+        &#47&#47 interpolate command
+        <a id="change">cmd = self._interpolate_option(cmd, quiet=False)</a>
+        <a id="change">if cmd is None:
+            return
+       </a> with self.redirect_sos_io():
+            try:
+                p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                out, err = p.communicate()</code></pre>

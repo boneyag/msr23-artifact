@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    :param str socket_path_override: The overridden target path of the watchman socket, if any.
+    :param str metadata_base_dir: The overriden metadata base dir for `ProcessMetadataManager`.
+    
+    <a id="change">super(Watchman, self).__init__(name=&quotwatchman&quot,
+                                   process_name=&quotwatchman&quot,
+                                   socket_type=str,
+                                   metadata_base_dir=metadata_base_dir)</a>
+    self._watchman_path = self._normalize_watchman_path(watchman_path)
+    self._watchman_work_dir = os.path.join(work_dir, <a id="change">self.name</a>)
+    self._log_level = log_level
+    self._startup_timeout = startup_timeout
+    <a id="change">self._timeout = timeout</a>
+
+    <a id="change">self._state_file</a> = os.path.join(self._watchman_work_dir, &quot{}.state&quot.format(<a id="change">self.name</a>))
+    self._log_file = os.path.join(self._watchman_work_dir, &quot{}.log&quot.format(self.name))
+    <a id="change">self._sock_file</a> = socket_path_override or os.path.join(self._watchman_work_dir,
+                                                           &quot{}.sock&quot.format(self.name))
+
+    self._logger = logging.getLogger(__name__)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  def _normalize_watchman_path(self, watchman_path):
+    if not self._is_valid_executable(watchman_path):
+      raise self.ExecutionError(&quotinvalid wat<a id="change">chman binary at {}</a>!&quot.format(watchman_path))
+    return os.path.abspath(watchman_path)
+
+  def _maybe_ini<a id="change">t_metadata(self):
+    safe_mkdir(self._watchman_work_dir)
+    &#47&#47 Initialize watchman with an empty, but valid statefile so it doesn&quott complain </a>o<a id="change">n startup.
+    safe_file_</a>dump(self._state_file, &quot{}&quot)
+
+  def _construct_cmd(self, cmd_parts, state_file, sock_fi<a id="change">le, log_file, l</a>og_level):
+    return [part for part in<a id="change"> cmd_parts] + [&quot--no-save-state&quot,
+                     </a>                      &quot--statefile={}&quot.format(state_file),
+                                           &quot--sockname={}&quot.format(sock_file),
+                                           &quot--logfile={}&quot.format(log_file),
+                                           &quot--log-level&quot, log_level]</code></pre>

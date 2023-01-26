@@ -1,0 +1,94 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        | :code:`conn` (:code:`bindsnet.network.topology.AbstractConnection`):
+        An instance of class :code:`AbstractConnection`.
+    
+    if <a id="change">not &quotkernel_size&quot in conn.__dict__</a>:
+        x_source, x_target = conn.source.x.unsqueeze(-1), conn.target.x.unsqueeze(0)
+        s_source, s_target = conn.source.s.float().unsqueeze(-1), conn.target.s.float().unsqueeze(0)
+        
+        &#47&#47 Post-synaptic.
+        <a id="change">conn.w</a> += conn.nu_post * x_source * s_target
+        &#47&#47 Pre-synaptic.
+        conn.w -= conn.nu_pre * s_source * x_target
+
+        &#47&#47 Bound weights.
+        conn.w = torch.clamp(conn.w, conn.wmin, conn.wmax)
+    else:
+        out_channels, _, kernel_height, kernel_width = conn.w.size()
+        padding, stride = conn.padding, conn.stride
+        
+        x_source = im2col_indices(conn.source.x,
+                                  kernel_height,
+                                  kernel_width,
+                                  padding=padding,
+                                  stride=stride)
+
+        x_target = conn.target.x.permute(1, 2, 3, 0).reshape(out_channels,
+                                                             -1)
+        s_source = im2col_indices(conn.source.s,
+                                  kernel_height,
+                                  kernel_width,
+                                  padding=padding,
+                                  stride=stride).float()
+
+        s_target = conn.target.s.permute(1, 2, 3, 0).reshape(out_channels,
+                                                             -1).float()
+        
+        &#47&#47 Post-synaptic.
+        post = s_target @ x_source.t()
+        conn.w += conn.nu_post * post.view(conn.w.size())
+        
+        &#47&#47 Pre-synaptic.
+        pre = x_target @ s_source.t()
+        conn.w -= conn.nu_pre * pre.view(conn.w.size())
+
+        &#47&#47 Bound weights.
+        <a id="change">conn.w</a> = torch.clamp(conn.w, conn.wmin, conn.wmax)
+
+def hebbian(conn, **kwargs):
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        | :param conn: An ``AbstractConnection`` object whose weights are to be modified by the post-pre STDP rule.
+    
+    if <a id="change">isinstance(conn, Connection)</a>:
+        &#47&#47 Unpack / reshape quantities of interest (spikes and spike_traces).
+        s_source = conn.source.s.float().unsqueeze(-1)
+        s_target = conn.target.s.float().unsqueeze(0)
+        x_source = conn.source.x.unsqueeze(-1)
+        x_target = conn.target.x.unsqueeze(0)
+
+        <a id="change">conn.w</a> += conn.nu_post * x_source * s_target  &#47&#47 Post-synaptic.
+        conn.w -= conn.nu_pre * s_source * x_target  &#47&#47 Pre-synaptic.
+        conn.w = torch.clamp(conn.w, conn.wmin, conn.wmax)  &#47&#47 Bound weights.
+
+    elif <a id="change">isinstance(conn, Conv2dConnection)</a>:
+        &#47&#47 Get convolutional layer parameters.
+        out_channels, _, kernel_height, kernel_width = conn.w.size()
+        padding, stride = conn.padding, conn.stride
+
+        &#47&#47 Unpack / reshape quantities of interest (spikes and spike_traces).
+        s_source = im2col_indices(conn.source.s, kernel_height, kernel_width, padding=padding, stride=stride).float()
+        s_target = conn.target.s.permute(1, 2, 3, 0).reshape(out_channels, -1).float()
+        x_source = im2col_indices(conn.source.x, kernel_height, kernel_width, padding=padding, stride=stride)
+        x_target = conn.target.x.permute(1, 2, 3, 0).reshape(out_channels, -1)
+
+        &#47&#47 Post-synaptic.
+        post = s_target @ x_source.t()
+        conn.w += conn.nu_post * post.view(conn.w.size())
+        
+        &#47&#47 Pre-synaptic.
+        pre = x_target @ s_source.t()
+        conn.w -= conn.nu_pre * pre.view(conn.w.size())
+
+        &#47&#47 Bound weights.
+        <a id="change">conn.w</a> = torch.clamp(conn.w, conn.wmin, conn.wmax)
+
+    else:
+        <a id="change">raise NotImplementedError(&quotThis learning rule is not supported for this Connection type.&quot)</a>
+
+
+def hebbian(conn: AbstractConnection, **kwargs):
+    &#47&#47 language=rst</code></pre>

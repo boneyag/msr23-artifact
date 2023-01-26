@@ -1,0 +1,48 @@
+<html><h3>2b51587c8f372a8eb80a6b41e6a7acf309a56660,luminoth/models/fasterrcnn/rpn_target.py,RPNTarget,_build,#RPNTarget#Any#Any#Any#,75
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        fg_inds_size = tf.size(fg_inds)
+        &#47&#47 Condition for check if we have too many positive labels.
+        subsample_positive_cond = (
+            <a id="change">tf.to_int32(fg_inds_size)</a> &gt; tf.to_int32(num_fg))
+        &#47&#47 Check the condition and subsample positive labels.
+        labels = tf.cond(
+            subsample_positive_cond,</code></pre><h3>After Change</h3><pre><code class='java'>
+                x=tf.to_float(tf.fill(tf.shape(labels), -1)), y=labels
+            )
+
+        num_bg = <a id="change">tf.to_int32(self._minibatch_size - fg_inds_size)</a>
+        &#47&#47 Get background indices, get True in the indices where we have a cero.
+        bg_inds = tf.equal(labels, 0)
+        &#47&#47 We get only the indices where we have True.
+        bg_inds = tf.squeeze(tf.where(bg_inds), axis=1)
+        bg_inds_size = tf.size(bg_inds)
+        &#47&#47 Condition for check if we have too many positive labels.
+        subsample_negative_cond = bg_inds_size &gt; num_bg
+        &#47&#47 Check the condition and subsample positive labels.
+        labels = tf.cond(
+            subsample_negative_cond,
+            true_fn=subsample_negative, false_fn=lambda: labels
+        )
+
+        &#47&#47 Returns bbox targets with shape (anchors.shape[0], 4)
+
+        &#47&#47 Find the closest gt box for each anchor.
+        argmax_overlaps = tf.argmax(overlaps, axis=1)
+        &#47&#47 Eliminate duplicates.
+        argmax_overlaps_unique, _ = tf.unique(argmax_overlaps)
+        &#47&#47 Filter the gt_boxes.
+        &#47&#47 We get only the indices where we have "inside anchors".
+        anchor_filter_inds = tf.where(anchor_filter)
+        gt_boxes = tf.gather(gt_boxes, argmax_overlaps)
+
+        bbox_targets = encode_tf(anchors, gt_boxes)
+
+        &#47&#47 For the anchors that arent foreground, we ignore the bbox_targets
+        <a id="change">anchor_foreground_filter = tf.equal(labels, 1)</a>
+        bbox_targets = tf.where(
+            condition=anchor_foreground_filter,
+            x=bbox_targets, y=tf.zeros_like(bbox_targets)
+        )</code></pre><img src="45948111.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tryolabs/luminoth/commit/2b51587c8f372a8eb80a6b41e6a7acf309a56660#diff-15ef189323701662038e3282afe023e172c8e2e546c880a5e15dce6e2f25a510L231' target='_blank'>Link</a></div><div id='project'> Project Name: tryolabs/luminoth</div><div id='commit'> Commit Name: 2b51587c8f372a8eb80a6b41e6a7acf309a56660</div><div id='time'> Time: 2017-08-31</div><div id='author'> Author: gaston@tryolabs.com</div><div id='file'> File Name: luminoth/models/fasterrcnn/rpn_target.py</div><div id='class'> Class Name: RPNTarget</div><div id='method'> Method Name: _build</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/a4d9c3a0656639f00ea0050e6535f7bf547d8719#diff-8dcb3c0e37f97ebff67ebd3115a2f44c0ce9b2bb92becacff4a131e0f078dfb5L878' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: a4d9c3a0656639f00ea0050e6535f7bf547d8719</div><div id='time'> Time: 2018-04-13</div><div id='author'> Author: lzc@google.com</div><div id='file'> File Name: research/object_detection/meta_architectures/faster_rcnn_meta_arch.py</div><div id='class'> Class Name: FasterRCNNMetaArch</div><div id='method'> Method Name: _gather_instance_masks</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/2c631052b5c6109ee789be05dea30396e3c17dec#diff-f2cd03e4b794468b3bcd7292d0034abfc4fc0c225985858819cb6eb880f894a2L110' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 2c631052b5c6109ee789be05dea30396e3c17dec</div><div id='time'> Time: 2019-07-18</div><div id='author'> Author: laigd@google.com</div><div id='file'> File Name: models/official/mask_rcnn/mask_rcnn_model.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: build_model_graph</div><BR>

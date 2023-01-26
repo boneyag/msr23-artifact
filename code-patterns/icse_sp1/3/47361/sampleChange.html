@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 Generate data
+def generate_normal_mixture_data(w, mu, sd, size=1000):
+    component = np.random.choice(w.size, size=size, p=w)
+    x = np.random.normal(<a id="change">mu[component]</a>, sd[component], size=size)
+
+    return x
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def generate_normal_mixture_data(w, mu, sd, size=1000):
+    component = np.random.choice(w.size, size=size, p=w)
+    mu, sd = np.broadcast_arrays(mu, sd)
+    out_size = <a id="change">to_tuple(size)</a> + mu.shape[:-1]
+    mu_ = np.array([mu[..., comp] for comp in component.ravel()])
+    sd_ = np.array([sd[..., comp] for comp in component.ravel()])
+    mu_ = np.reshape(mu_, out_size)
+    <a id="change">sd_ = np.reshape(sd_, out_size)</a>
+    x = np.random.normal(mu_, sd_, size=out_size)
+
+    return x
+</code></pre>

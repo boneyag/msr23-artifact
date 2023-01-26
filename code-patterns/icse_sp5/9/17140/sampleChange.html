@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  if isinstance(x, tf.SparseTensor):
+    &#47&#47 This means reduce_instance_dims=False.
+    &#47&#47 TODO(b/112656428): Support SparseTensors with rank other than 2.
+    <a id="change">if x.get_shape().ndims != 2:
+      raise NotImplementedError(
+          &quotMean and var only support SparseTensors with rank 2&quot)
+
+   </a> col_count, col_indices = x.dense_shape[1], x.indices[:, 1]
+    x_sum = tf.math.unsorted_segment_sum(x.values, col_indices, col_count)
+    x_mean = tf.where(tf.math.greater(x_count, 0),
+                      x_sum / x_count,
+                      tf.zeros_like(x_count, dtype=x.dtype))
+
+    <a id="change">mean_values = tf.gather(x_mean, col_indices)</a>
+    x_minus_mean = x.values - mean_values
+
+    col_sum_of_squares = tf.math.unsorted_segment_sum(
+        tf.square(x_minus_mean), col_indices, col_count)</code></pre><h3>After Change</h3><pre><code class='java'>
+    x_mean = tf.where(tf.math.greater(x_count, 0),
+                      x_sum / x_count,
+                      tf.zeros_like(x_count, dtype=x.dtype))
+    <a id="change">x_minus_mean = tf.sparse.add(x, -tf.broadcast_to(x_mean, tf.shape(x)))</a>
+    <a id="change">x_minus_mean_sparse = tf.SparseTensor(x.indices,
+                                          tf.gather_nd(x_minus_mean, x.indices),
+                                          x.dense_shape)</a>
+    sum_of_squares = tf.math.reduce_sum(
+        tf.square(tf.sparse.to_dense(x_minus_mean_sparse)), axis=0)
+
+    x_variance = tf.where(</code></pre>

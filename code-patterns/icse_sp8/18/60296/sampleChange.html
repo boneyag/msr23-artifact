@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 Set some global variables up top
+np.random.seed(123)
+reload = True
+<a id="change">verbosity = "high"</a>
+
+base_dir = "/tmp/muv_keras"
+model_dir = os.path.join(base_dir, "model")
+if os.path.exists(base_dir):
+  shutil.rmtree(base_dir)
+os.makedirs(base_dir)
+
+&#47&#47 Load MUV data
+muv_tasks, muv_datasets, transformers = load_muv(
+    base_dir, reload=reload)
+train_dataset, valid_dataset = muv_datasets 
+n_features = 1024 
+
+
+&#47&#47 Build model
+classification_metric = Metric(metrics.roc_auc_score, np.mean,
+                               verbosity=verbosity,
+                               mode="classification")
+
+keras_model = MultiTaskDNN(len(muv_tasks), n_features, "classification",
+                           dropout=.25, learning_rate=.001, decay=1e-4)
+<a id="change">model</a> = KerasModel(keras_model, self.model_dir, verbosity=verbosity)
+
+&#47&#47 Fit trained model
+model.fit(train_dataset)
+model.save()
+
+<a id="change">train_evaluator = Evaluator(model, train_dataset, transformers, verbosity=verbosity)</a>
+train_scores = <a id="change">train_evaluator.compute_model_performance([classification_metric])</a>
+
+print("Train scores")
+print(train_scores)
+
+<a id="change">valid_evaluator = Evaluator(model, valid_dataset, transformers, verbosity=verbosity)</a>
+<a id="change">valid_scores = valid_evaluator.compute_model_performance([classification_metric])</a>
+
+print("Validation scores")
+print(valid_scores)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+keras_model = dc.models.MultiTaskDNN(
+    len(muv_tasks), n_features, "classification",
+    dropout=.25, learning_rate=.001, decay=1e-4)
+<a id="change">model</a> = dc.models.KerasModel(keras_model, verbosity="high")
+
+&#47&#47 Fit trained model
+model.fit(train_dataset)
+model.save()
+
+train_scores = <a id="change">model.evaluate(train_dataset, [metric], transformers)</a>
+<a id="change">valid_scores = model.evaluate(valid_dataset, [metric], transformers)</a>
+
+print("Train scores")
+print(train_scores)
+</code></pre>

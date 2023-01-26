@@ -1,0 +1,119 @@
+<html><h3>70e4855f5608c4481dfffd5f762e310d631d06c3,test_model_CAM.py,,,#,68
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+modelID = 1
+
+&#47&#47 load category
+<a id="change">with open(&quotcategory_momentsv1.txt&quot) as f:
+    categories = [line.rstrip() for line in f.readlines()]
+
+
+
+&#47&#47 load the labels
+</a>model = load_model(modelID, categories)
+
+&#47&#47 load the model
+features_blobs = []
+
+&#47&#47 load the transformer
+tf = returnTF() &#47&#47 image transformer
+
+&#47&#47 get the softmax weight
+params = list(model.parameters())
+weight_softmax = params[-2].data.numpy()
+weight_softmax[weight_softmax&lt;0] = 0
+
+&#47&#47 load the test image
+if os.path.exists(&quottest.jpg&quot):
+    os.remove(&quottest.jpg&quot)
+img_url = &quothttp://places2.csail.mit.edu/imgs/demo/IMG_5970.JPG&quot
+os.system(&quotwget %s -q -O test.jpg&quot % img_url)
+img = Image.open(&quottest.jpg&quot)
+input_img = V(tf(img).unsqueeze(0), volatile=True)
+
+&#47&#47 forward pass
+logit = model.forward(input_img)
+h_x = F.softmax(logit, 1).data.squeeze()
+probs, idx = h_x.sort(0, True)
+
+print(&quotRESULT ON &quot + img_url)
+
+
+&#47&#47 output the prediction of action category
+print(&quot--Top Actions:&quot)
+for i in range(0, 5):
+    print(&quot{:.3f} -&gt; {}&quot.format(probs[i], categories[idx[i]]))
+
+&#47&#47 generate class activation mapping
+print(&quotClass activation map is saved as cam.jpg&quot)
+CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
+
+&#47&#47 render the CAM and output
+img = cv2.imread(&quottest.jpg&quot)
+height, width, _ = img.shape
+<a id="change">heatmap</a> = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
+result = heatmap * 0.4 + img * 0.5
+cv2.imwrite(&quotcam.jpg&quot, result)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        return [line.rstrip() for line in f.readlines()]
+
+
+<a id="change">if __name__ == &quot__main__&quot:
+    parser = argparse.ArgumentParser(description="test on a single image")
+    parser.add_argument(&quot--multi&quot, dest=&quotmulti&quot, action=&quotstore_true&quot)
+    args = parser.parse_args()
+
+    &#47&#47 load categories and model
+    if args.multi:
+      categories = load_categories(&quotcategory_multi_momentsv2.txt&quot)
+      model = load_model(categories, &quotmulti_moments_v2_RGB_resnet50_imagenetpretrained.pth.tar&quot)
+    else:
+      categories = load_categories(&quotcategory_momentsv2.txt&quot)
+      model = load_model(categories, &quotmoments_v2_RGB_resnet50_imagenetpretrained.pth.tar&quot)
+
+    &#47&#47 load the model
+    features_blobs = []
+
+    &#47&#47 load the transformer
+    tf = returnTF() &#47&#47 image transformer
+
+    &#47&#47 get the softmax weight
+    params = list(model.parameters())
+    weight_softmax = params[-2].data
+    weight_softmax[weight_softmax&lt;0] = 0
+
+    &#47&#47 load the test image
+    if os.path.exists(&quottest.jpg&quot):
+        os.remove(&quottest.jpg&quot)
+    img_url = &quothttp://places2.csail.mit.edu/imgs/demo/IMG_5970.JPG&quot
+    os.system(&quotwget %s -q -O test.jpg&quot % img_url)
+    img = Image.open(&quottest.jpg&quot)
+    input_img = tf(img).unsqueeze(0)
+
+    &#47&#47 forward pass
+    logit = model.forward(input_img)
+    h_x = F.softmax(logit, 1).data.squeeze()
+    probs, idx = h_x.sort(0, True)
+
+    print(&quotRESULT ON &quot + img_url)
+
+
+    &#47&#47 output the prediction of action category
+    print(&quot--Top Actions:&quot)
+    for i in range(0, 5):
+        print(&quot{:.3f} -&gt; {}&quot.format(probs[i], categories[idx[i]]))
+
+    &#47&#47 generate class activation mapping
+    print(&quotClass activation map is saved as cam.jpg&quot)
+    CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
+
+    &#47&#47 render the CAM and output
+    img = cv2.imread(&quottest.jpg&quot)
+    height, width, _ = img.shape
+    heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
+    result = heatmap * 0.4 + img * 0.5
+    cv2.imwrite(&quotcam.jpg&quot, result)
+</a>
+</code></pre><img src="264030396.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 17</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/metalbubble/moments_models/commit/70e4855f5608c4481dfffd5f762e310d631d06c3#diff-bd9b181d6310ff228e8f3ec2c7f421de91f51bba5dd0a5c1e63ed2292078101cL68' target='_blank'>Link</a></div><div id='project'> Project Name: metalbubble/moments_models</div><div id='commit'> Commit Name: 70e4855f5608c4481dfffd5f762e310d631d06c3</div><div id='time'> Time: 2020-10-09</div><div id='author'> Author: mmonfort@mit.edu</div><div id='file'> File Name: test_model_CAM.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/ufal/npfl114/commit/c343409098b4f4b8396119d9f26e040e479a0e2b#diff-94d40439703e58f8185b11815ecf2316af953fb40679a728e28f388b7e618db8L18' target='_blank'>Link</a></div><div id='project'> Project Name: ufal/npfl114</div><div id='commit'> Commit Name: c343409098b4f4b8396119d9f26e040e479a0e2b</div><div id='time'> Time: 2020-04-20</div><div id='author'> Author: milan@strakovi.com</div><div id='file'> File Name: labs/08/speech_recognition_eval.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/metalbubble/moments_models/commit/5212f598c3d65670a0399afe0a7434e91a5556aa#diff-fa16e16954ea3c9cac606d42eb4ee7b49f5ff1431e2e851a95b9c8f11087d2eaL47' target='_blank'>Link</a></div><div id='project'> Project Name: metalbubble/moments_models</div><div id='commit'> Commit Name: 5212f598c3d65670a0399afe0a7434e91a5556aa</div><div id='time'> Time: 2018-01-15</div><div id='author'> Author: alexandonian@gmail.com</div><div id='file'> File Name: test_model.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

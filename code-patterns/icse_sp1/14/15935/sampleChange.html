@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    Returns:
+
+    
+    <a id="change">assert len(operator.inputs) == 1</a>
+    assert operator.specific_config["stateful"] is False
+    assert operator.specific_config["go_backwards"] is False
+    x = operator.inputs[0]
+    w_input = converter.create_constant_variable(operator, "kernel:0", OrderCN)</code></pre><h3>After Change</h3><pre><code class='java'>
+    assert k_op.stateful is False, "[KerasConverter] Currently, LSTM.stateful is not supported"
+    assert k_op.go_backwards is False, "[KerasConverter] Currently, LSTM.go_backwards is not supported"
+
+    <a id="change">x = converter.get_variable(converter.get_input_tensor(k_op)[0])</a>
+    w_input = converter.convert_to_constant_variable(k_op.kernel, OrderCN)
+    w_hidden = converter.convert_to_constant_variable(<a id="change">k_op.recurrent_kernel</a>, OrderCN)
+
+    if <a id="change">k_op.use_bias</a>:
+        b = converter.convert_to_constant_variable(k_op.bias, OrderC)
+
+    else:
+        b = None
+
+    y, = LSTM(None, k_op.use_bias, k_op.return_sequences,
+              use_initial_c=False, use_initial_h=False,
+              activation=k_op.activation,
+              recurrent_activation=k_op.recurrent_activation)(x, w_input, w_hidden, b)
+    <a id="change">converter.set_variable(converter.get_output_tensor(k_op)[0], y)</a>
+</code></pre>

@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for name in avg_values:
+      avg_values[name] += reader.get_tensor(name) / num_checkpoints
+
+  latest_step = int(<a id="change">checkpoints_path</a>[-1].split(<a id="change">"-"</a>)[-1])
+  return _create_checkpoint_from_variables(
+      avg_values,
+      output_dir,</code></pre><h3>After Change</h3><pre><code class='java'>
+  tf.logging.info("Listing variables...")
+
+  new_variables = {}
+  for i, checkpoint_path in <a id="change">enumerate(checkpoints_path)</a>:
+    tf.logging.info("Loading checkpoint %s" % checkpoint_path)
+    variables = get_checkpoint_variables(checkpoint_path)
+    for name, value in six.iteritems(variables):
+      if _variable_is_trainable(name, value):
+        scaled_value = value / num_checkpoints
+        if name in new_variables:
+          new_variables[name] += scaled_value
+        else:
+          new_variables[name] = scaled_value
+      elif <a id="change">i + 1 == num_chec</a>kpoints:  &#47&#47 Take non trainable variables from the last checkpoint.
+        <a id="change">new_variables[name] = value</a>
+
+  return _create_checkpoint_from_variables(
+      new_variables,
+      output_dir,</code></pre>

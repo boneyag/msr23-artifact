@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def test_wait(ray_start_regular_shared):
+    <a id="change">server = ray_client_server.serve("localhost:50051", test_mode=True)</a>
+    <a id="change">ray.connect("localhost:50051")</a>
+
+    objectref = ray.put("hello world")
+    ready, remaining = ray.wait([objectref])
+    assert remaining == []
+    retval = ray.get(ready[0])
+    assert retval == "hello world"
+
+    objectref2 = ray.put(5)
+    ready, remaining = ray.wait([objectref, objectref2])
+    assert (ready, remaining) == ([objectref], [objectref2]) or \
+        (ready, remaining) == ([objectref2], [objectref])
+    ready_retval = ray.get(ready[0])
+    remaining_retval = ray.get(remaining[0])
+    assert (ready_retval, remaining_retval) == ("hello world", 5) \
+        or (ready_retval, remaining_retval) == (5, "hello world")
+
+    with pytest.raises(Exception):
+        &#47&#47 Reference not in the object store.
+        ray.wait([ClientObjectRef("blabla")])
+    with pytest.raises(AssertionError):
+        ray.wait("blabla")
+    with pytest.raises(AssertionError):
+        ray.wait(ClientObjectRef("blabla"))
+    with pytest.raises(AssertionError):
+        ray.wait(["blabla"])
+
+    <a id="change">ray.disconnect()</a>
+    <a id="change">server.stop(0)</a>
+
+
+def test_remote_functions(ray_start_regular_shared):
+    server = ray_client_server.serve("localhost:50051", test_mode=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_wait(ray_start_regular_shared):
+    <a id="change">with ray_start_client_server() as ray:
+        objectref = ray.put("hello world")
+        ready, remaining = ray.wait([objectref])
+        assert remaining == []
+        retval = ray.get(ready[0])
+        assert retval == "hello world"
+
+        objectref2 = ray.put(5)
+        ready, remaining = ray.wait([objectref, objectref2])
+        assert (ready, remaining) == ([objectref], [objectref2]) or \
+            (ready, remaining) == ([objectref2], [objectref])
+        ready_retval = ray.get(ready[0])
+        remaining_retval = ray.get(remaining[0])
+        assert (ready_retval, remaining_retval) == ("hello world", 5) \
+            or (ready_retval, remaining_retval) == (5, "hello world")
+
+        with pytest.raises(Exception):
+            &#47&#47 Reference not in the object store.
+            ray.wait([ClientObjectRef("blabla")])
+        with pytest.raises(AssertionError):
+            ray.wait("blabla")
+        with pytest.raises(AssertionError):
+            ray.wait(ClientObjectRef("blabla"))
+        with pytest.raises(AssertionError):
+            ray.wait(["blabla"])
+
+
+</a>def test_remote_functions(ray_start_regular_shared):
+    with ray_start_client_server() as ray:
+
+        @ray.remote</code></pre>

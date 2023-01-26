@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        lower_left = fant_train_covar.matmul(L_inverse)
+        schur_root = torch.cholesky(fant_fant_covar - lower_left.matmul(lower_left.transpose(-2, -1)))
+        <a id="change">upper_right = torch.zeros(m, schur_root.size(-1), device=L.device, dtype=L.dtype)</a>
+
+        &#47&#47 Form new root Z = [L 0; lower_left schur_root]
+        num_fant = schur_root.size(-2)
+        m, n = L.shape[-2:]</code></pre><h3>After Change</h3><pre><code class='java'>
+            Q, R = torch.qr(new_root)
+            Rdiag = torch.diagonal(R, dim1=-2, dim2=-1)
+            &#47&#47 if R is almost singular, add jitter (Rdiag is a view, so this works)
+            zeroish = <a id="change">Rdiag.abs() &lt; 1e-6
+  </a>          <a id="change">if torch.any(zeroish):
+                Rdiag[zeroish] = 1e-6
+           </a> new_covar_cache = torch.triangular_solve(Q.transpose(-2, -1), R)[0]
+        except RuntimeError as e:
+            &#47&#47 TODO: Deprecate once batch QR supported in latest torch stable
+            if "invalid argument 1: A should be 2 dimensional" not in e.args[0]:</code></pre>

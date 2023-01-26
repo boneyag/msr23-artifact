@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      args.extend(test_args)
+      args.extend(sources)
+
+      <a id="change">try:
+        &#47&#47 The pytest runner we use accepts a --pdb argument that will launch an interactive pdb
+        &#47&#47 session on any test failure.  In order to support use of this pass-through flag we must
+        &#47&#47 turn off stdin buffering that otherwise occurs.  Setting the PYTHONUNBUFFERED env var to
+        &#47&#47 any value achieves this in python2.7.  We&quotll need a different solution when we support
+        &#47&#47 running pants under CPython 3 which does not unbuffer stdin using this trick.
+        env = {
+          &quotPYTHONUNBUFFERED&quot: &quot1&quot,
+        }
+        &#47&#47 If profiling a test run, this will enable profiling on the test code itself.
+        &#47&#47 Note that tests may run in a different cwd, so it&quots best to set PANTS_PROFILE
+        &#47&#47 to an absolute path to make it easy to find the subprocess profiles later.
+        if &quotPANTS_PROFILE&quot in os.environ:
+          env[&quotPEX_PROFILE&quot] = &quot{0}.subprocess.{1:.6f}&quot.format(os.environ[&quotPANTS_PROFILE&quot],
+                                                               time.time())
+        with environment_as(**env):
+          rc = self._pex_run(pex, workunit, args=args, setsid=True)
+          return PythonTestResult.rc(rc)
+      except Exception:
+        self.context.log.error(&quotFailed to run test!&quot)
+        self.context.log.info(traceback.format_exc())
+        return PythonTestResult.exception()
+
+ </a> def _pex_run(self, pex, workunit, args, setsid=False):
+    return pex.run(args=args, setsid=setsid,
+                   stdout=workunit.output(&quotstdout&quot), stderr=workunit.output(&quotstderr&quot))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      &#47&#47 The user might have already specified the resultlog option. In such case, reuse it.
+      resultlogs = [arg.split(&quot=&quot, 1)[-1] for arg in args if arg.startswith(&quot--resultlog=&quot)]
+
+      <a id="change">if resultlogs:
+        return run_and_analyze(resultlogs[-1])
+      else:
+        with temporary_file_path() as resultlog_path:
+          args.append(&quot--resultlog={0}&quot.format(resultlog_path))
+          return run_and_analyze(resultlog_path)
+
+ </a> def _pex_run(self, pex, workunit, args, setsid=False):
+    return pex.run(args=args, setsid=setsid,
+                   stdout=workunit.output(&quotstdout&quot), stderr=workunit.output(&quotstderr&quot))
+</code></pre>

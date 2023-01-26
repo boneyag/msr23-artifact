@@ -1,0 +1,104 @@
+<html><h3>2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e,spynnaker/pyNN/models/common/eieio_spike_recorder.py,EIEIOSpikeRecorder,get_spikes,#EIEIOSpikeRecorder#Any#Any#Any#Any#Any#Any#Any#Any#,39
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                   placements, graph_mapper, application_vertex,
+                   base_key_function, machine_time_step):
+        results = list()
+        <a id="change">missing_str = ""</a>
+        ms_per_tick = machine_time_step / 1000.0
+        vertices = graph_mapper.get_machine_vertices(application_vertex)
+        progress = ProgressBar(vertices,
+                               "Getting spikes for {}".format(label))
+        for vertex in progress.over(vertices):
+            placement = placements.get_placement_of_vertex(vertex)
+            vertex_slice = graph_mapper.get_slice(vertex)
+
+            <a id="change">x = placement.x</a>
+            <a id="change">y = placement.y</a>
+            <a id="change">p = placement.p</a>
+
+            &#47&#47 Read the spikes
+            raw_spike_data, data_missing = \
+                buffer_manager.get_data_for_vertex(placement, region)
+            if data_missing:
+                <a id="change">missing_str += "({}, {}, {}); ".format(x, y, p)</a>
+            spike_data = str(raw_spike_data.read_all())
+            number_of_bytes_written = len(spike_data)
+
+            offset = 0
+            while offset &lt; number_of_bytes_written:
+                length = _ONE_WORD.unpack_from(spike_data, offset)[0]
+                time = _ONE_WORD.unpack_from(spike_data, offset + 4)[0]
+                time *= ms_per_tick
+                data_offset = offset + 8
+                eieio_header = EIEIODataHeader.from_bytestring(
+                    spike_data, data_offset)
+                if eieio_header.eieio_type.payload_bytes &gt; 0:
+                    raise Exception("Can only read spikes as keys")
+                data_offset += eieio_header.size
+                timestamps = numpy.repeat([time], eieio_header.count)
+                key_bytes = eieio_header.eieio_type.key_bytes
+                keys = numpy.frombuffer(
+                    spike_data, dtype="&lt;u{}".format(key_bytes),
+                    count=eieio_header.count, offset=data_offset)
+
+                neuron_ids = ((keys - base_key_function(vertex)) +
+                              vertex_slice.lo_atom)
+                offset += length + 8
+                results.append(numpy.dstack((neuron_ids, timestamps))[0])
+
+        if <a id="change">missing_str != "":
+  </a>          logger.warn(
+                "Population %s is missing spike data in region %s from the"
+                " following cores: %s", label, region, missing_str)
+        if not results:</code></pre><h3>After Change</h3><pre><code class='java'>
+                   base_key_function, machine_time_step):
+        &#47&#47 pylint: disable=too-many-arguments
+        results = list()
+        <a id="change">missing = []</a>
+        ms_per_tick = machine_time_step / 1000.0
+        vertices = graph_mapper.get_machine_vertices(application_vertex)
+        progress = ProgressBar(vertices,
+                               "Getting spikes for {}".format(label))
+        for vertex in progress.over(vertices):
+            placement = placements.get_placement_of_vertex(vertex)
+            vertex_slice = graph_mapper.get_slice(vertex)
+
+            &#47&#47 Read the spikes
+            raw_spike_data, data_missing = \
+                buffer_manager.get_data_for_vertex(placement, region)
+            if data_missing:
+                <a id="change">missing.append(placement)</a>
+            spike_data = str(raw_spike_data.read_all())
+            number_of_bytes_written = len(spike_data)
+
+            offset = 0
+            while offset &lt; number_of_bytes_written:
+                length = _ONE_WORD.unpack_from(spike_data, offset)[0]
+                time = _ONE_WORD.unpack_from(spike_data, offset + 4)[0]
+                time *= ms_per_tick
+                data_offset = offset + 8
+                eieio_header = EIEIODataHeader.from_bytestring(
+                    spike_data, data_offset)
+                if eieio_header.eieio_type.payload_bytes &gt; 0:
+                    raise Exception("Can only read spikes as keys")
+                data_offset += eieio_header.size
+                timestamps = numpy.repeat([time], eieio_header.count)
+                key_bytes = eieio_header.eieio_type.key_bytes
+                keys = numpy.frombuffer(
+                    spike_data, dtype="&lt;u{}".format(key_bytes),
+                    count=eieio_header.count, offset=data_offset)
+
+                neuron_ids = ((keys - base_key_function(vertex)) +
+                              vertex_slice.lo_atom)
+                offset += length + 8
+                results.append(numpy.dstack((neuron_ids, timestamps))[0])
+
+        if <a id="change">missing</a>:
+            <a id="change">missing_str = recording_utils.make_missing_string(missing)</a>
+            logger.warn(
+                "Population %s is missing spike data in region %s from the"
+                " following cores: %s", label, region, missing_str)
+        if not results:</code></pre><img src="46065502.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 15</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/SpiNNakerManchester/sPyNNaker/commit/2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e#diff-bf2cb2881f8f12422244934a70080d751c098406d9bd5beff1e13bee7fd34868L43' target='_blank'>Link</a></div><div id='project'> Project Name: SpiNNakerManchester/sPyNNaker</div><div id='commit'> Commit Name: 2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e</div><div id='time'> Time: 2017-12-18</div><div id='author'> Author: donal.k.fellows@manchester.ac.uk</div><div id='file'> File Name: spynnaker/pyNN/models/common/eieio_spike_recorder.py</div><div id='class'> Class Name: EIEIOSpikeRecorder</div><div id='method'> Method Name: get_spikes</div><BR><BR><div id='link'><a href='https://github.com/SpiNNakerManchester/sPyNNaker/commit/2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e#diff-bf2cb2881f8f12422244934a70080d751c098406d9bd5beff1e13bee7fd34868L43' target='_blank'>Link</a></div><div id='project'> Project Name: SpiNNakerManchester/sPyNNaker</div><div id='commit'> Commit Name: 2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e</div><div id='time'> Time: 2017-12-18</div><div id='author'> Author: donal.k.fellows@manchester.ac.uk</div><div id='file'> File Name: spynnaker/pyNN/models/common/eieio_spike_recorder.py</div><div id='class'> Class Name: EIEIOSpikeRecorder</div><div id='method'> Method Name: get_spikes</div><BR><BR><div id='link'><a href='https://github.com/SpiNNakerManchester/sPyNNaker/commit/2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e#diff-e7f1aed7119b4b9fe023487d0c479d9cbe3818f5a01eea34e0222badffba868dL52' target='_blank'>Link</a></div><div id='project'> Project Name: SpiNNakerManchester/sPyNNaker</div><div id='commit'> Commit Name: 2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e</div><div id='time'> Time: 2017-12-18</div><div id='author'> Author: donal.k.fellows@manchester.ac.uk</div><div id='file'> File Name: spynnaker/pyNN/models/common/spike_recorder.py</div><div id='class'> Class Name: SpikeRecorder</div><div id='method'> Method Name: get_spikes</div><BR><BR><div id='link'><a href='https://github.com/SpiNNakerManchester/sPyNNaker/commit/2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e#diff-fc58b5e8c62cdd9647ad89264ad3c0a71903bac679acc805c0dd32aed0326676L53' target='_blank'>Link</a></div><div id='project'> Project Name: SpiNNakerManchester/sPyNNaker</div><div id='commit'> Commit Name: 2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e</div><div id='time'> Time: 2017-12-18</div><div id='author'> Author: donal.k.fellows@manchester.ac.uk</div><div id='file'> File Name: spynnaker/pyNN/models/common/multi_spike_recorder.py</div><div id='class'> Class Name: MultiSpikeRecorder</div><div id='method'> Method Name: get_spikes</div><BR><BR><div id='link'><a href='https://github.com/SpiNNakerManchester/sPyNNaker/commit/2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e#diff-66a9ac7750ea29a6142631c0753f2ea3c75ad1ddee456fd70ed48ab60ddc7a94L43' target='_blank'>Link</a></div><div id='project'> Project Name: SpiNNakerManchester/sPyNNaker</div><div id='commit'> Commit Name: 2f2cfbf4cccfa0f9b1aaf114baa3c1be3c777f5e</div><div id='time'> Time: 2017-12-18</div><div id='author'> Author: donal.k.fellows@manchester.ac.uk</div><div id='file'> File Name: spynnaker/pyNN/models/common/abstract_uint32_recorder.py</div><div id='class'> Class Name: AbstractUInt32Recorder</div><div id='method'> Method Name: get_data</div><BR>

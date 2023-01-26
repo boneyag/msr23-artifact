@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    d = x - mu
+    alpha = tf.matrix_triangular_solve(L, d, lower=True)
+    num_col = <a id="change">1 if tf.rank(x) == 1 else tf.shape(x)[1]</a>
+    num_col = tf.cast(num_col, settings.float_type)
+    num_dims = tf.cast(tf.shape(x)[0], settings.float_type)
+    ret = - 0.5 * num_dims * num_col * np.log(2 * np.pi)
+    ret += - num_col * tf.reduce_sum(tf.log(tf.matrix_diag_part(L)))</code></pre><h3>After Change</h3><pre><code class='java'>
+    x[n] ~ N(mu, LL^T) or x ~ N(mu[n], LL^T) or x[n] ~ N(mu[n], LL^T)
+    
+    x  = tf.cond(tf.rank(x)  &lt; 2, lambda: x[:, None],  lambda: x)
+    mu = tf.cond(<a id="change">tf.rank(mu) &lt; 2, lambda: mu[:</a>, None], lambda: mu)
+    d = x - mu
+    alpha = tf.matrix_triangular_solve(L, d, lower=True)
+    num_dims = tf.cast(tf.shape(d)[0], L.dtype)</code></pre>

@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  &#47&#47 The SavedModel should hold the eval graph.
+  sess, in_image, _, _, _, _ = build_eval_session(module_spec, class_count)
+  graph = sess.graph
+  <a id="change">with graph.as_default():
+    inputs = {&quotimage&quot: tf.saved_model.utils.build_tensor_info(in_image)}
+
+    out_classes = sess.graph.get_tensor_by_name(&quotfinal_result:0&quot)
+    outputs = {
+        &quotprediction&quot: tf.saved_model.utils.build_tensor_info(out_classes)
+    }
+
+    signature = tf.saved_model.signature_def_utils.build_signature_def(
+        inputs=inputs,
+        outputs=outputs,
+        method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME)
+
+    legacy_init_op = tf.group(tf.tables_initializer(), name=&quotlegacy_init_op&quot)
+
+    &#47&#47 Save out the SavedModel.
+    builder = tf.saved_model.builder.SavedModelBuilder(saved_model_dir)
+    builder.add_meta_graph_and_variables(
+        sess, [tf.saved_model.tag_constants.SERVING],
+        signature_def_map={
+            tf.saved_model.signature_constants.
+            DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+                signature
+        },
+        legacy_init_op=legacy_init_op)
+    builder.save()
+
+
+</a>def main(_):
+  &#47&#47 Needed to make sure the logging output is visible.
+  &#47&#47 See https://github.com/tensorflow/tensorflow/issues/3047
+  tf.logging.set_verbosity(tf.logging.INFO)</code></pre><h3>After Change</h3><pre><code class='java'>
+  
+  &#47&#47 The SavedModel should hold the eval graph.
+  sess, in_image, _, _, _, _ = build_eval_session(module_spec, class_count)
+  <a id="change">with sess.graph.as_default() as graph:
+    tf.saved_model.simple_save(
+        sess,
+        saved_model_dir,
+        inputs={&quotimage&quot: in_image},
+        outputs={&quotprediction&quot: graph.get_tensor_by_name(&quotfinal_result:0&quot)},
+        legacy_init_op=tf.group(tf.tables_initializer(), name=&quotlegacy_init_op&quot)
+    )
+
+
+</a>def main(_):
+  &#47&#47 Needed to make sure the logging output is visible.
+  &#47&#47 See https://github.com/tensorflow/tensorflow/issues/3047
+  tf.logging.set_verbosity(tf.logging.INFO)</code></pre>

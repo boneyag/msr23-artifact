@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    last_improved = 0
+
+    for epoch in range(epochs):
+        <a id="change">start_time = time.time()</a>
+        <a id="change">train_metrics = trainer.train(ts)</a>
+        <a id="change">train_duration = time.time() - start_time</a>        
+        <a id="change">print(&quotTraining time (%.3f sec)&quot % train_duration)</a>
+
+        <a id="change">start_time = time.time()</a>
+        test_metrics = trainer.test(vs)
+        <a id="change">test_duration = time.time() - start_time</a>
+        <a id="change">print(&quotValidation time (%.3f sec)&quot % test_duration)</a>
+
+        <a id="change">for reporting in reporting_fns:
+            reporting(train_metrics, epoch, &quotTrain&quot)
+            reporting(test_metrics, epoch, &quotValid&quot)
+        
+       </a> if do_early_stopping is False:
+            model.save(model_file)
+
+        elif test_metrics[early_stopping_metric] &gt; max_metric:
+            last_improved = epoch
+            max_metric = test_metrics[early_stopping_metric]
+            print(&quotNew max %.3f&quot % max_metric)
+            model.save(model_file)
+
+        elif (epoch - last_improved) &gt; patience:
+            print(&quotStopping due to persistent failures to improve&quot)
+            break
+        
+    if do_early_stopping is True:
+        print(&quotBest performance on max_metric %.3f at epoch %d&quot % (max_metric, last_improved))
+
+    if es is not None:
+        print(&quotReloading best checkpoint&quot)
+        model = torch.load(model_file)
+        trainer = ClassifyTrainerPyTorch(model, **kwargs)
+        <a id="change">test_metrics = trainer.test(es)</a>
+        <a id="change">for reporting in reporting_fns:
+            reporting(test_metrics, 0, &quotTest&quot)
+</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    last_improved = 0
+
+    for epoch in range(epochs):
+        <a id="change">trainer.train(ts, reporting_fns)</a>
+        test_metrics = trainer.test(vs, reporting_fns)
+        
+        if do_early_stopping is False:
+            model.save(model_file)
+
+        elif test_metrics[early_stopping_metric] &gt; max_metric:
+            last_improved = epoch
+            max_metric = test_metrics[early_stopping_metric]
+            print(&quotNew max %.3f&quot % max_metric)
+            model.save(model_file)
+
+        elif (epoch - last_improved) &gt; patience:
+            print(&quotStopping due to persistent failures to improve&quot)
+            break
+        
+    if do_early_stopping is True:
+        print(&quotBest performance on max_metric %.3f at epoch %d&quot % (max_metric, last_improved))
+
+    if es is not None:
+        print(&quotReloading best checkpoint&quot)
+        model = torch.load(model_file)
+        trainer = ClassifyTrainerPyTorch(model, **kwargs)
+        <a id="change">trainer.test(es, reporting_fns, phase=&quotTest&quot)</a>
+</code></pre>

@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    hooks=hooks,
+  ) as sess:
+    if train_model.on_horovod:
+      <a id="change">sess.run(train_model.get_data_layer().iterator.initializer)</a>
+    else:
+      for i in range(train_model.num_gpus):
+        sess.run(train_model.get_data_layer(i).iterator.initializer)
+    step = 0</code></pre><h3>After Change</h3><pre><code class='java'>
+  if train_model.on_horovod:
+    init_data_layer = train_model.get_data_layer().iterator.initializer
+  else:
+    <a id="change">init_data_layer = tf.group(
+      [train_model.get_data_layer(i).iterator.initializer
+       for i in range(train_model.num_gpus)]
+    )</a>
+
+  scaffold = tf.train.Scaffold(
+    local_init_op=tf.group(tf.local_variables_initializer(), init_data_layer)
+  )</code></pre>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    num_datashards = len(device_list)
+    sharded_features = {}
+
+    <a id="change">for k, v in six.iteritems(features):
+        v = tf.convert_to_tensor(v)
+        if not v.shape.as_list():
+            v = tf.expand_dims(v, axis=-1)
+            v = tf.tile(v, [num_datashards])
+        with tf.device(v.device):
+            sharded_features[k] = tf.split(v, num_datashards, 0)
+
+   </a> datashard_to_features = []
+
+    for d in range(num_datashards):
+        feat = {</code></pre><h3>After Change</h3><pre><code class='java'>
+            batch_size = tf.shape(v)[0]
+            size_splits = []
+
+            <a id="change">for i in range(num_datashards):
+                size_splits.append(
+                    tf.cond(tf.greater(tf.mod(batch_size, num_datashards), i),
+                            lambda: batch_size // num_datashards + 1,
+                            lambda: batch_size // num_datashards)
+                )
+
+           </a> sharded_features[k] = tf.split(v, size_splits, 0)
+
+    datashard_to_features = []
+</code></pre>

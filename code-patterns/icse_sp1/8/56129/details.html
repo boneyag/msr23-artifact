@@ -1,0 +1,43 @@
+<html><h3>66584dea87782aed5509e4269a9f015002e1f5c1,pytext/torchscript/module.py,PyTextEmbeddingModuleWithDense,forward,#PyTextEmbeddingModuleWithDense#Any#Any#,1232
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            languages=squeeze_1d(None),
+        )
+        &#47&#47 call model
+        <a id="change">dense_feat = self.normalizer.normalize(dense_feat)</a>
+        dense_tensor = torch.tensor(dense_feat, dtype=torch.float)
+        if self.tensorizer.device != "":
+            dense_tensor = dense_tensor.to(self.tensorizer.device)
+
+        sentence_embedding = self._forward(inputs, dense_tensor)
+        if self.concat_dense:
+            <a id="change">return torch.cat([sentence_embedding, dense_tensor], 1)</a>
+        else:
+            return sentence_embedding
+
+    @torch.jit.script_method</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if input_len &gt; max_batch:
+            texts = texts[max_batch:]
+            <a id="change">dense_feat = dense_feat[max_batch:]</a>
+
+            while len(texts) &gt; 0:
+                <a id="change">result_extension = self.forward_impl(
+                    texts[:max_batch], dense_feat[:max_batch]
+                )</a>
+                &#47&#47 the result of forward is either a torch.Tensor or a List[Any]
+                if isinstance(result, torch.Tensor):
+                    <a id="change">result = torch.cat([result, result_extension], dim=0)</a>
+                else:
+                    result.extend(result_extension)
+
+                texts = texts[max_batch:]
+                dense_feat = dense_feat[max_batch:]
+
+        <a id="change">return result</a>
+
+    @torch.jit.script_method
+    def make_prediction(
+        self,</code></pre><img src="258238820.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/facebookresearch/pytext/commit/66584dea87782aed5509e4269a9f015002e1f5c1#diff-6fe03fade3ffeb2f7c18ea27c310bc31b8781d5afb82ea7e2d510cc5274a9e5bL1233' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/pytext</div><div id='commit'> Commit Name: 66584dea87782aed5509e4269a9f015002e1f5c1</div><div id='time'> Time: 2021-02-23</div><div id='author'> Author: mikekg@fb.com</div><div id='file'> File Name: pytext/torchscript/module.py</div><div id='class'> Class Name: PyTextEmbeddingModuleWithDense</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/Cadene/pretrained-models.pytorch/commit/b2074ddf9d8bc2069d66976fea58a52f40238496#diff-ea77a709d6d1510e2257b53e634dbb9568a24c1a0cb2b12442c849c45094f008L120' target='_blank'>Link</a></div><div id='project'> Project Name: Cadene/pretrained-models.pytorch</div><div id='commit'> Commit Name: b2074ddf9d8bc2069d66976fea58a52f40238496</div><div id='time'> Time: 2017-11-16</div><div id='author'> Author: remi.cadene@icloud.com</div><div id='file'> File Name: pretrainedmodels/nasnet.py</div><div id='class'> Class Name: CellStem1</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/91b0d220c8e816766fd4565e1d2f5115d3afbefe#diff-f795d8b188327b24c1a880b9d52b31f5c9acd88cf21cc4210703515131dda7d4L13' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 91b0d220c8e816766fd4565e1d2f5115d3afbefe</div><div id='time'> Time: 2018-10-12</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/utils/cholesky.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: batch_potrf</div><BR>

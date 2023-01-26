@@ -1,0 +1,19 @@
+<html><h3>d3fba39499378674d9240a35b3410457d6aed4c6,model/crf.py,CRFLoss_vb,forward,#CRFLoss_vb#Any#Any#Any#,271
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            cur_values = cur_values + partition.contiguous().view(bat_size, self.tagset_size, 1).expand(bat_size, self.tagset_size, self.tagset_size)
+            cur_partition = utils.log_sum_exp(cur_values, self.tagset_size)
+                  &#47&#47 (bat_size * from_target * to_target) -&gt; (bat_size * to_target)
+            partition = <a id="change">utils</a>.switch(partition, cur_partition,
+                                     mask[idx].view(bat_size, 1).expand(bat_size, self.tagset_size)).view(bat_size, -1)
+            &#47&#47 the following two may achieve higher speed, but raise run-time error
+            &#47&#47 new_partition = partition.clone()</code></pre><h3>After Change</h3><pre><code class='java'>
+            cur_partition = utils.log_sum_exp(cur_values, self.tagset_size)
+                  &#47&#47 (bat_size * from_target * to_target) -&gt; (bat_size * to_target)
+            &#47&#47 partition = utils.switch(partition, cur_partition, mask[idx].view(bat_size, 1).expand(bat_size, self.tagset_size)).view(bat_size, -1)
+            mask_idx = mask[<a id="change">idx, :</a>].view(bat_size, 1).expand(bat_size, self.tagset_size)
+            partition.masked_scatter_(mask_idx, cur_partition.masked_select(mask_idx))  &#47&#470 for partition, 1 for cur_partition
+            
+        &#47&#47only need end at end_tag</code></pre><img src="11551632.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/LiyuanLucasLiu/LM-LSTM-CRF/commit/d3fba39499378674d9240a35b3410457d6aed4c6#diff-2cac9e80df2987a781124a611af34838f476c5018f9a3a3cb10b0a65a0996f0cL283' target='_blank'>Link</a></div><div id='project'> Project Name: LiyuanLucasLiu/LM-LSTM-CRF</div><div id='commit'> Commit Name: d3fba39499378674d9240a35b3410457d6aed4c6</div><div id='time'> Time: 2017-11-27</div><div id='author'> Author: llychinalz@gmail.com</div><div id='file'> File Name: model/crf.py</div><div id='class'> Class Name: CRFLoss_vb</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/rodluger/starry/commit/141903a21846d54aaf09aa95a3bcdd8b673ee116#diff-43667097bd4afee3df93765dd46f43541798fc821d0f8f329a6ba0137215585aL36' target='_blank'>Link</a></div><div id='project'> Project Name: rodluger/starry</div><div id='commit'> Commit Name: 141903a21846d54aaf09aa95a3bcdd8b673ee116</div><div id='time'> Time: 2019-02-05</div><div id='author'> Author: rodluger@gmail.com</div><div id='file'> File Name: starry/ops/theano_op.py</div><div id='class'> Class Name: StarryOp</div><div id='method'> Method Name: perform</div><BR><BR><div id='link'><a href='https://github.com/rodluger/starry/commit/141903a21846d54aaf09aa95a3bcdd8b673ee116#diff-43667097bd4afee3df93765dd46f43541798fc821d0f8f329a6ba0137215585aL68' target='_blank'>Link</a></div><div id='project'> Project Name: rodluger/starry</div><div id='commit'> Commit Name: 141903a21846d54aaf09aa95a3bcdd8b673ee116</div><div id='time'> Time: 2019-02-05</div><div id='author'> Author: rodluger@gmail.com</div><div id='file'> File Name: starry/ops/theano_op.py</div><div id='class'> Class Name: StarryGradOp</div><div id='method'> Method Name: perform</div><BR>

@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    while True:
+        &#47&#47 Use a blocking get() to ensure there&quots at least one chunk of data
+        chunk = buff.get()
+        <a id="change">if not chunk:
+            &#47&#47 A falsey value indicates the stream is closed.
+            break
+       </a> data = [chunk]
+
+        &#47&#47 Now consume whatever other data&quots still buffered.
+        while True:</code></pre><h3>After Change</h3><pre><code class='java'>
+        The function will block until at least one data chunk is available.
+    
+    stop = False
+    while <a id="change">not stop</a>:
+        &#47&#47 Use a blocking get() to ensure there&quots at least one chunk of data.
+        chunk = buff.get()
+        data = [chunk]
+
+        &#47&#47 Now consume whatever other data&quots still buffered.
+        while True:
+            try:
+                data.append(buff.get(block=False))
+            except queue.Empty:
+                break
+
+        &#47&#47 If `_fill_buffer` adds `None` to the buffer, the audio stream is
+        &#47&#47 closed. Yield the final bit of the buffer and exit the loop.
+        <a id="change">if None in data:
+            stop = True
+            data.remove(None)
+       </a> yield b&quot&quot.join(data)
+
+
+def _fill_buffer(audio_stream, buff, chunk, stoprequest):</code></pre>

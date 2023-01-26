@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    safe_mkdir(self.workdir)
+
+    with self.context.new_workunit(name=&quotjar-create&quot, labels=[WorkUnit.MULTITOOL]):
+      <a id="change">for target in self.context.targets(is_jvm_library):
+        jar_name = jarname(target)
+        jar_path = os.path.join(self.workdir, jar_name)
+        with self.create_jar(target, jar_path) as jarfile:
+          with self.create_jar_builder(jarfile) as jar_builder:
+            if target in jar_builder.add_target(target):
+              self.context.products.get(&quotjars&quot).add(target, self.workdir).append(jar_name)
+
+ </a> @contextmanager
+  def create_jar(self, target, path):
+    existing = self._jars.setdefault(path, target)
+    if target != existing:</code></pre><h3>After Change</h3><pre><code class='java'>
+    return True
+
+  def execute(self):
+    <a id="change">with self.invalidated(self.context.targets(is_jvm_library)) as invalidation_check:
+      with self.context.new_workunit(name=&quotjar-create&quot, labels=[WorkUnit.MULTITOOL]):
+        jar_mapping = self.context.products.get(&quotjars&quot)
+
+        for vt in invalidation_check.all_vts:
+          jar_name = vt.target.name + &quot.jar&quot
+          jar_path = os.path.join(vt.results_dir, jar_name)
+
+          def add_jar_to_products():
+            jar_mapping.add(vt.target, vt.results_dir).append(jar_name)
+
+          if vt.valid:
+            if os.path.exists(jar_path):
+              add_jar_to_products()
+          else:
+            with self.create_jar(vt.target, jar_path) as jarfile:
+              with self.create_jar_builder(jarfile) as jar_builder:
+                if vt.target in jar_builder.add_target(vt.target):
+                  add_jar_to_products()
+
+ </a> @contextmanager
+  def create_jar(self, target, path):
+    existing = self._jars.setdefault(path, target)
+    if target != existing:</code></pre>

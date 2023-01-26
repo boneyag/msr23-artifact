@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    batch, channels, height, width = nn.input
+    transforms = generate_input_transforms(batch, height, width, channels, 0, valid_norm=False)
+
+    o = <a id="change">nn.nn(im)</a>
+    o = segmentation.denoising_hysteresis_thresh(o, 0.4, 0.5, 0)
+    baselines = segmentation.vectorize_lines(o)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    transforms = dataset.generate_input_transforms(batch, height, width, channels, 0, valid_norm=False)
+
+    with torch.no_grad():
+        o = <a id="change">model.nn(transforms(im).unsqueeze(0))</a>
+    <a id="change">o = F.interpolate(o, size=im.size[::-1])</a>
+    o = segmentation.denoising_hysteresis_thresh(o.detach().squeeze().cpu().numpy(), 0.4, 0.5, 0)
+    baselines = segmentation.vectorize_lines(o)
+    polygons = segmentation.calculate_polygonal_environment(im, baselines)
+    return polygons</code></pre>

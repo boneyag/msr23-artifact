@@ -1,0 +1,43 @@
+<html><h3>bb099e4c5b48329b842dbf9884f086f7b514bc0a,gpflow/models/model.py,GPModel,predict_f_samples,#GPModel#Any#Any#Any#Any#,112
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        mu, var = self.predict_f(Xnew, full_cov=full_cov)  &#47&#47 [N, P], [P, N, N]
+        num_latent_gps = var.shape[0]
+        num_elems = <a id="change">tf.shape(var)[1]</a>
+        var_jitter = ops.add_to_diagonal(var, default_jitter())
+        L = tf.linalg.cholesky(var_jitter)  &#47&#47 [P, N, N]
+        V = <a id="change">tf</a>.random.normal([num_latent_gps, num_elems, num_samples], dtype=mu.dtype)  &#47&#47 [P, N, S]
+        LV = L @ V  &#47&#47 [P, N, S]
+        mu_t = tf.linalg.adjoint(mu)  &#47&#47 [P, N]
+        return tf.transpose(mu_t[..., np.newaxis] + LV)  &#47&#47 [S, N, P]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        Currently, the method does not support `full_output_cov=True` and `full_cov=True`.
+        
+        <a id="change">if full_cov and full_output_cov:
+            raise NotImplementedError(
+                "The combination of both `full_cov` and `full_output_cov` is not supported."
+            )
+
+        &#47&#47 check below for shape info
+       </a> mean, cov = self.predict_f(Xnew, full_cov=full_cov, full_output_cov=full_output_cov)
+        if full_cov:
+            &#47&#47 mean: [..., N, P]
+            &#47&#47 cov: [..., P, N, N]
+            mean_for_sample = tf.linalg.adjoint(mean)  &#47&#47 [..., P, N]
+            <a id="change">samples = sample_mvn(
+                mean_for_sample, cov, "full", num_samples=num_samples
+            )</a>  &#47&#47 [..., (S), P, N]
+            samples = tf.linalg.adjoint(samples)  &#47&#47 [..., (S), N, P]
+        else:
+            &#47&#47 mean: [..., N, P]
+            &#47&#47 cov: [..., N, P] or [..., N, P, P]
+            cov_structure = "full" if full_output_cov else "diag"
+            <a id="change">samples = sample_mvn(
+                mean, cov, cov_structure, num_samples=num_samples
+            )</a>  &#47&#47 [..., (S), N, P]
+        return samples  &#47&#47 [..., (S), N, P]
+
+    def predict_y(</code></pre><img src="28097932.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/bb099e4c5b48329b842dbf9884f086f7b514bc0a#diff-7460b2b9b0f96f35d0814cca388a2a99ebcf0d032efcf674cd1b3cdba8448bc2L122' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: bb099e4c5b48329b842dbf9884f086f7b514bc0a</div><div id='time'> Time: 2020-03-16</div><div id='author'> Author: dutordoirv@gmail.com</div><div id='file'> File Name: gpflow/models/model.py</div><div id='class'> Class Name: GPModel</div><div id='method'> Method Name: predict_f_samples</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/9d9b14ab3f677e906a6829d3389c55857373ea8c#diff-023d37a8c76fa73084ec27927d67d215e2eba9f0bc6e99a32ee9d11a4d647fb2L119' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 9d9b14ab3f677e906a6829d3389c55857373ea8c</div><div id='time'> Time: 2018-08-08</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/loss_segmentation.py</div><div id='class'> Class Name: LossFunction</div><div id='method'> Method Name: layer_op</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/9d9b14ab3f677e906a6829d3389c55857373ea8c#diff-292a34d666d5ca1c30ac10bacb54606e671bf38c2833028933e7bf97a781e6feL49' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 9d9b14ab3f677e906a6829d3389c55857373ea8c</div><div id='time'> Time: 2018-08-08</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/loss_regression.py</div><div id='class'> Class Name: LossFunction</div><div id='method'> Method Name: layer_op</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/bb099e4c5b48329b842dbf9884f086f7b514bc0a#diff-7460b2b9b0f96f35d0814cca388a2a99ebcf0d032efcf674cd1b3cdba8448bc2L122' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: bb099e4c5b48329b842dbf9884f086f7b514bc0a</div><div id='time'> Time: 2020-03-16</div><div id='author'> Author: dutordoirv@gmail.com</div><div id='file'> File Name: gpflow/models/model.py</div><div id='class'> Class Name: GPModel</div><div id='method'> Method Name: predict_f_samples</div><BR>

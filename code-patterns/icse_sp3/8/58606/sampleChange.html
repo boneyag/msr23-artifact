@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47 fill output window array
+                image_array = output_dict[
+                    self.window.image_data_placeholder(name)]
+                <a id="change">for (i, location) in enumerate(location_array[:, 1:]):
+                    x_, y_, z_, _x, _y, _z = location
+                    try:
+                        image_array[i, ...] = \
+                            data[name][x_:_x, y_:_y, z_:_z, ...]
+                    except ValueError:
+                        tf.logging.fatal(
+                            "dimensionality miss match in input volumes, "
+                            "please specify spatial_window_size with a "
+                            "3D tuple and make sure each element is "
+                            "smaller than the image length in each dim.")
+                        raise
+           </a> yield output_dict
+
+
+def rand_spatial_coordinates(subject_id, img_sizes, win_sizes, n_samples):</code></pre><h3>After Change</h3><pre><code class='java'>
+            static_window_shapes = self.window.match_image_shapes(image_shapes)
+            coordinates = grid_spatial_coordinates(
+                image_id, image_shapes, static_window_shapes, self.border_size)
+            n_locations = <a id="change">coordinates</a>.values()[0].shape[0]
+            <a id="change">for i in range(n_locations):
+                &#47&#47  initialise output dict
+                output_dict = {}
+                for name in list(data):
+                    assert coordinates[name].shape[0] == n_locations, \
+                        "different number of grid samples from the input" \
+                        "images, don&quott know how to combine them in the queue"
+                    x_, y_, z_, _x, _y, _z = coordinates[name][i, 1:]
+                    try:
+                        image_window = data[name][x_:_x, y_:_y, z_:_z, ...]
+                    except ValueError:
+                        tf.logging.fatal(
+                            "dimensionality miss match in input volumes, "
+                            "please specify spatial_window_size with a "
+                            "3D tuple and make sure each element is "
+                            "smaller than the image length in each dim.")
+                        raise
+                    &#47&#47 fill output dict with data
+                    coordinates_key = self.window.coordinates_placeholder(name)
+                    image_data_key = self.window.image_data_placeholder(name)
+                    output_dict[coordinates_key] = coordinates[name][[i], ...]
+                    output_dict[image_data_key] = image_window[np.newaxis, ...]
+                yield output_dict
+
+
+</a>def grid_spatial_coordinates(subject_id, img_sizes, win_sizes, border_size):
+    
+    This function generates all coordinates of feasible windows, with
+    step sizes specified in grid_size parameter</code></pre>

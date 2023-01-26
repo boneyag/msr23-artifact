@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        (batch_size, seq_len, dim) = sequence_embeddings.size()
+
+        &#47&#47 Move embedding dimensions to channels and add a fourth dim.
+        sequence_embeddings = <a id="change">(sequence_embeddings
+                               .permute(0, 2, 1)
+                               .contiguous()
+                               .view(batch_size, dim, seq_len, 1))</a>
+
+        x = sequence_embeddings
+        for cnn_layer in self.cnn_layers:
+            x = cnn_layer(x)
+
+        user_representations = x.view(batch_size, dim, -1)
+        pooled_representations = (user_representations
+                                  .max(-1)[0]
+                                  .view(batch_size, dim))
+
+        <a id="change">return pooled_representations</a>
+
+    def forward(self, user_representations, targets):
+
+        target_embedding = self.item_embeddings(targets)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def user_representation(self, item_sequences):
+
+        &#47&#47 Make the embedding dimension the channel dimension
+        sequence_embeddings = <a id="change">(self.item_embeddings(item_sequences)
+                               .permute(0, 2, 1))</a>
+        &#47&#47 Add a trailing dimension of 1
+        <a id="change">sequence_embeddings = (sequence_embeddings
+                               .unsqueeze(3))</a>
+
+        x = sequence_embeddings
+        for i, cnn_layer in enumerate(self.cnn_layers):
+            &#47&#47 Pad so that the CNN doesn&quott have the future
+            &#47&#47 of the sequence in its receptive field.
+            <a id="change">x = F.pad(x, (0, 0, self.kernel_width - min(i, 1), 0))</a>
+            x = F.relu(cnn_layer(x))
+
+        <a id="change">x = x.squeeze(3)</a>
+
+        return x[:, :, :-1], x[:, :, -1]
+
+    def forward(self, user_representations, targets):</code></pre>

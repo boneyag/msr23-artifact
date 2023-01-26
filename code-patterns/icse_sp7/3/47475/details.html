@@ -1,0 +1,49 @@
+<html><h3>27e4a648a96c76de6b7ed24ea95ea76ee17f623d,pynets/registration/register.py,FmriReg,atlas2t1wmni_align,#FmriReg#Any#Any#Any#,773
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        atlas_img = nib.load(aligned_atlas_t1mni)
+        atlas_data = np.around(np.asarray(atlas_img.dataobj)).astype(&quotint16&quot)
+        img = nib.Nifti1Image(atlas_data.astype(&quotint16&quot), affine=atlas_img.affine,header=atlas_img.header)
+        if <a id="change">len(img.header.extensions)</a> != 0:
+            img.header.extensions.clear()
+        nib.save(img, aligned_atlas_t1mni)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        from nilearn.image import resample_img
+        aligned_atlas_t1mni = "%s%s%s%s" % (self.anat_path, &quot/&quot, atlas, "_t1w_mni.nii.gz")
+        gm_mask_mni = "%s%s%s%s" % (self.anat_path, &quot/&quot, self.t1w_name, "_gm_mask_t1w_mni.nii.gz")
+        <a id="change">gm_mask_mni_atlas_res = "%s%s%s%s%s" % (self.anat_path, &quot/&quot, atlas, self.t1w_name, "_gm_mask_t1w_mni.nii.gz")</a>
+        aligned_atlas_t1mni_gm = "%s%s%s%s" % (self.anat_path, &quot/&quot, atlas, "_t1w_mni_gm.nii.gz")
+
+        uatlas_filled = "%s%s%s%s" % (self.anat_path, &quot/&quot, atlas, "_filled.nii.gz")
+        os.system("fslmaths {} -add {} -mas {} {}".format(self.input_mni_brain, uatlas, self.input_mni_mask,
+                                                          uatlas_filled))
+
+        regutils.align(uatlas_filled, self.t1_aligned_mni, init=None, xfm=self.atlas2t1wmni_xfm_init,
+                       out=None, dof=12, searchrad=True, interp="nearestneighbour", cost=&quotmutualinfo&quot)
+
+        if uatlas_parcels is not None:
+            regutils.applyxfm(self.t1_aligned_mni, uatlas_parcels, self.atlas2t1wmni_xfm_init, aligned_atlas_t1mni,
+                              interp="nearestneighbour")
+        else:
+            regutils.applyxfm(self.t1_aligned_mni, uatlas, self.atlas2t1wmni_xfm_init, aligned_atlas_t1mni,
+                              interp="nearestneighbour")
+
+        try:
+            regutils.apply_warp(self.t1_aligned_mni, self.gm_mask_thr, gm_mask_mni, warp=self.warp_t1w2mni,
+                                xfm=self.t12mni_xfm_init, interp=&quotnn&quot, sup=True)
+        except:
+            regutils.applyxfm(self.t1_aligned_mni, self.gm_mask_thr, self.t12mni_xfm_init, gm_mask_mni,
+                              interp="nearestneighbour")
+
+        &#47&#47 Set intensities to int
+        atlas_img = nib.load(aligned_atlas_t1mni)
+        gm_mask_img_res = resample_img(nib.load(gm_mask_mni), target_affine=atlas_img.affine,
+                                       target_shape=atlas_img.shape)
+        nib.save(gm_mask_img_res, gm_mask_mni_atlas_res)
+        <a id="change">os.system("fslmaths {} -bin {}".format(gm_mask_mni_atlas_res, gm_mask_mni_atlas_res))</a>
+        os.system("fslmaths {} -mas {} {}".format(aligned_atlas_t1mni, gm_mask_mni_atlas_res, aligned_atlas_t1mni_gm))
+
+        gm_mask_img_res.uncache()
+        atlas_img.uncache()</code></pre><img src="220508081.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dPys/PyNets/commit/27e4a648a96c76de6b7ed24ea95ea76ee17f623d#diff-a59c42d9fc4597558e945becaeb389bbeb0c6141a5b0d97cd819d6125b9c4e17L772' target='_blank'>Link</a></div><div id='project'> Project Name: dPys/PyNets</div><div id='commit'> Commit Name: 27e4a648a96c76de6b7ed24ea95ea76ee17f623d</div><div id='time'> Time: 2020-01-02</div><div id='author'> Author: dpisner@utexas.edu</div><div id='file'> File Name: pynets/registration/register.py</div><div id='class'> Class Name: FmriReg</div><div id='method'> Method Name: atlas2t1wmni_align</div><BR><BR><div id='link'><a href='https://github.com/stratosphereips/StratosphereLinuxIPS/commit/a1d23bccc38b8f5361be29d7e6341efb7b48fa28#diff-39d539831ff83bb1fa489b6964828d74c394e94c0e23fa7b79c689f87043bdefL80' target='_blank'>Link</a></div><div id='project'> Project Name: stratosphereips/StratosphereLinuxIPS</div><div id='commit'> Commit Name: a1d23bccc38b8f5361be29d7e6341efb7b48fa28</div><div id='time'> Time: 2020-08-24</div><div id='author'> Author: kamifai14@gmail.com</div><div id='file'> File Name: modules/blocking/blocking.py</div><div id='class'> Class Name: Module</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/Microsoft/MMdnn/commit/fdeeaff5e452e257bf3a3dd76e25c81304cc4c98#diff-b203a197f54e74a5c8a6b70db59c0bcd56bd0a6685fc3a39bb329773cd971574L33' target='_blank'>Link</a></div><div id='project'> Project Name: Microsoft/MMdnn</div><div id='commit'> Commit Name: fdeeaff5e452e257bf3a3dd76e25c81304cc4c98</div><div id='time'> Time: 2020-03-15</div><div id='author'> Author: linmajia@users.noreply.github.com</div><div id='file'> File Name: mmdnn/conversion/examples/tensorflow/vis_meta.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _main</div><BR>

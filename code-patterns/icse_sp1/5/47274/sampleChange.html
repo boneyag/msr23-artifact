@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                + f" multiple of specified embedding_dim {self.embedding_dim}"
+            )
+        num_tokens = embedding.shape[1] // self.embedding_dim
+        <a id="change">unflattened_embedding = embedding.view(-1, num_tokens, self.embedding_dim)</a>
+        return unflattened_embedding
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Unflatten embedding Tensor from (batch_size, seq_len * embedding_size)
+        &#47&#47 to (batch_size, seq_len, embedding_size).
+        num_tokens = embedding_shape[1] // self.embedding_dim
+        <a id="change">new_embedding_shape = torch.cat(
+            (
+                torch.LongTensor([-1]),
+                num_tokens.view(1),
+                torch.LongTensor([self.embedding_dim]),
+            )
+        )</a>
+        return torch.onnx.operators.reshape_from_tensor_shape(
+            embedding, new_embedding_shape
+        )
+</code></pre>

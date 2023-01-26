@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+env = make_env(args.env_name, args.seed, 0, None, args.add_timestep)
+<a id="change">env = DummyVecEnv([env])</a>
+
+actor_critic, ob_rms = \
+            torch.load(os.path.join(args.load_dir, args.env_name + ".pt"))
+
+
+if len(env.observation_space.shape) == 1:
+    env = VecNormalize(env, ret=False)
+    env.ob_rms = ob_rms
+
+    &#47&#47 An ugly hack to remove updates
+    def _obfilt(self, obs):
+        if self.ob_rms:
+            obs = np.clip((obs - self.ob_rms.mean) / np.sqrt(self.ob_rms.var + self.epsilon), -self.clipob, self.clipob)
+            return obs
+        else:
+            return obs
+    env._obfilt = types.MethodType(_obfilt, env)
+    render_func = env.venv.envs[0].render
+else:
+    render_func = env.envs[0].render
+
+<a id="change">env</a> = VecPyTorch(env)
+
+obs_shape = env.observation_space.shape
+obs_shape = (obs_shape[0] * args.num_stack, *obs_shape[1:])</code></pre><h3>After Change</h3><pre><code class='java'>
+        break
+    elif hasattr(tmp_env, &quotvenv&quot):
+        tmp_env = tmp_env.venv
+    elif <a id="change">hasattr(tmp_env, &quotenv&quot)</a>:
+        <a id="change">tmp_env = tmp_env.env</a>
+    else:
+        break
+
+&#47&#47 We need to use the same statistics for normalization as used in training</code></pre>

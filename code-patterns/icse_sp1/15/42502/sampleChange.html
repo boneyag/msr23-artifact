@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    batch_data = Variable(batch_data_t, volatile=True)
+    batch_targets = Variable(batch_targets_t, volatile=True)
+    correct = 0
+    for i in range(0, <a id="change">test_data.size(0)</a>, TEST_BATCH_SIZE):
+        print(&quotTesting model: {}/{}&quot.format(i, test_data.size(0)), end=&quot\r&quot)
+        batch_data.data[:] = test_data[i:i+TEST_BATCH_SIZE]
+        batch_targets.data[:] = test_labels[i:i+TEST_BATCH_SIZE]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def test(epoch):
+    &#47&#47 create buffers for mini-batch
+    <a id="change">batch_data</a> = torch.FloatTensor(<a id="change">opt.testBatchSize</a>, 1, 28, 28)
+    <a id="change">batch_targets</a> = torch.LongTensor(<a id="change">opt.testBatchSize</a>)
+    if cuda:
+        <a id="change">batch_data, batch_targets = batch_data.cuda(), batch_targets.cuda()</a>
+
+    &#47&#47 create autograd Variables over these buffers
+    batch_data = Variable(batch_data, volatile=True)
+    batch_targets = Variable(batch_targets, volatile=True)
+
+    test_loss = 0
+    correct = 0
+
+    for i in range(0, test_data.size(0), <a id="change">opt.testBatchSize</a>):
+        batch_data.data[:] = test_data[i:i+opt.testBatchSize]
+        batch_targets.data[:] = test_labels[i:i+opt.testBatchSize]
+        output = model(batch_data)
+        test_loss += criterion(output, batch_targets)
+        pred = output.data.max(1)[1] &#47&#47 get the index of the max log-probability
+        correct += pred.long().eq(batch_targets.data.long()).cpu().sum()
+
+    test_loss = test_loss.data[0]
+    test_loss /= (test_data.size(0) / <a id="change">opt.testBatchSize</a>) &#47&#47 criterion averages over batch size
+    print(&quot\nTest Set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n&quot.format(
+        test_loss, correct, test_data.size(0),
+        float(correct)/test_data.size(0)*100))</code></pre>

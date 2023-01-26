@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 embed fc and att feats
+        fc_feats = [m.fc_embed(fc_feats) for m in self.models]
+        _att_feats = [<a id="change">m.att_embed(att_feats.view(-1, m.att_feat_size))</a> for m in self.models]
+        <a id="change">att_feats = [_att_feats[i].view(*(att_feats.size()[:-1] + (m.rnn_size,))) for i,m in enumerate(self.models)]</a>
+
+        &#47&#47 Project the attention feats first to reduce memory and computation comsumptions.
+        <a id="change">p_att_feats = [m.ctx2att(att_feats[i].view(-1, m.rnn_size)) for i, m in enumerate(self.models)]</a>
+        p_att_feats = [<a id="change">p_att_feats[i].view(*(att_feats[i].size()[:-1] + (m.att_hid_size,)))</a> for i,m in enumerate(self.models)]
+
+        &#47&#47 seq = []
+        &#47&#47 seqLogprobs = []</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 embed fc and att feats
+        fc_feats = [m.fc_embed(fc_feats) for m in self.models]
+        att_feats = [<a id="change">pack_wrapper(m.att_embed, att_feats[...,:m.att_feat_size], att_masks)</a> for <a id="change">m</a> in self.models]
+
+        &#47&#47 Project the attention feats first to reduce memory and computation comsumptions.
+        p_att_feats = [<a id="change">m.ctx2att(att_feats[i])</a> for i,m in enumerate(self.models)]
+
+        &#47&#47 seq = []
+        &#47&#47 seqLogprobs = []</code></pre>

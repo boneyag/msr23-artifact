@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def choose_action(self, s):  &#47&#47 run by a local
+        s = s[np.newaxis, :]
+        return sess.run(self.A, <a id="change">{self.s: s}</a>)[0]
+
+    def save_ckpt(self):
+        tl.files.exists_or_mkdir(self.scope)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        with tf.name_scope(&quotwrap_a_out&quot):
+            self.mu, self.sigma = self.mu * A_BOUND[1], self.sigma + 1e-5
+        normal_dist = <a id="change">tfd.Normal(self.mu, self.sigma)</a>   &#47&#47 for continuous action space
+        <a id="change">self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=0), *A_BOUND)</a>
+        return self.A.numpy()[0]
+
+    def save_ckpt(self): &#47&#47 save trained weights
+        tl.files.save_npz(self.actor.trainable_weights, name=&quotmodel_actor.npz&quot)</code></pre>

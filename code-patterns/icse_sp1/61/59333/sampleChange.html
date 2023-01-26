@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            bug_features.cleanup_synonyms,
+        ]
+
+        <a id="change">self.data_vectorizer = DictVectorizer()</a>
+        <a id="change">self.title_vectorizer = self.text_vectorizer(stop_words=&quotenglish&quot)</a>
+        self.first_comment_vectorizer = self.text_vectorizer(stop_words=&quotenglish&quot)
+        <a id="change">self.comments_vectorizer = self.text_vectorizer(stop_words=&quotenglish&quot)</a>
+
+        <a id="change">self.extraction_pipeline</a> = Pipeline([
+            (&quotbug_extractor&quot, bug_features.BugExtractor(feature_extractors, cleanup_functions)),
+            (&quotunion&quot, <a id="change">FeatureUnion(
+                transformer_list=[
+                    (&quotdata&quot, Pipeline([
+                        (&quotselector&quot, DictSelector(key=&quotdata&quot)),
+                        (&quotvect&quot, self.data_vectorizer),
+                    ])),
+
+                    (&quottitle&quot, Pipeline([
+                        (&quotselector&quot, DictSelector(key=&quottitle&quot)),
+                        (&quottfidf&quot, self.title_vectorizer),
+                    ])),
+
+                    (&quotfirst_comment&quot, Pipeline([
+                        (&quotselector&quot, DictSelector(key=&quotfirst_comment&quot)),
+                        (&quottfidf&quot, self.first_comment_vectorizer),
+                    ])),
+
+                    (&quotcomments&quot, Pipeline([
+                        (&quotselector&quot, DictSelector(key=&quotcomments&quot)),
+                        (&quottfidf&quot, self.comments_vectorizer),
+                    ])),
+                ],
+            )</a>),
+        ])
+
+        self.clf = xgboost.XGBClassifier(n_jobs=16)</code></pre><h3>After Change</h3><pre><code class='java'>
+            bug_features.cleanup_synonyms,
+        ]
+
+        <a id="change">self.extraction_pipeline</a> = Pipeline([
+            (&quotbug_extractor&quot, bug_features.BugExtractor(feature_extractors, cleanup_functions)),
+            (&quotunion&quot, <a id="change">ColumnTransformer([
+                (&quotdata&quot, DictVectorizer(), &quotdata&quot),
+
+                (&quottitle&quot, self.text_vectorizer(stop_words=&quotenglish&quot), &quottitle&quot),
+
+                (&quotfirst_comment&quot, self.text_vectorizer(stop_words=&quotenglish&quot), &quotfirst_comment&quot),
+
+                (&quotcomments&quot, self.text_vectorizer(stop_words=&quotenglish&quot), &quotcomments&quot),
+            ])</a>),
+        ])
+
+        self.clf = xgboost.XGBClassifier(n_jobs=16)</code></pre>

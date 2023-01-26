@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            xdata = np.asarray(xdata)
+
+    weights = 1.0 / <a id="change">asarray(sigma)</a> if sigma is not None else None
+    func = _wrap_func(f, xdata, ydata, weights)
+    if callable(jac):
+        jac = _wrap_jac(jac, xdata, weights)</code></pre><h3>After Change</h3><pre><code class='java'>
+            xdata = np.asarray(xdata)
+
+    &#47&#47 Determine type of sigma
+    <a id="change">if sigma is not None:
+        sigma = np.asarray(sigma)
+
+        &#47&#47 if 1-d, sigma are errors, define transform = 1/sigma
+        if sigma.shape == (ydata.size, ):
+            transform = 1.0 / sigma
+        &#47&#47 if 2-d, sigma is the covariance matrix,
+        &#47&#47 define transform = L such that L L^T = C
+        elif sigma.shape == (ydata.size, ydata.size):
+            try:
+                &#47&#47 scipy.linalg.cholesky requires lower=True to return L L^T = A
+                transform = cholesky(sigma, lower=True)
+            except LinAlgError:
+                raise ValueError("`sigma` must be positive definite.")
+        else:
+            raise ValueError("`sigma` has incorrect shape.")
+    else:
+        transform = None
+
+   </a> func = _wrap_func(f, xdata, ydata, transform)
+    if callable(jac):
+        jac = _wrap_jac(jac, xdata, transform)
+    elif jac is None and method != &quotlm&quot:</code></pre>

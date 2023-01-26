@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 the BUILD file author, so we can&quott naively inspect it.  Instead we special-case its
+    &#47&#47 true BUILD-file-facing arguments here.
+    for arg in cls.basic_target_args:
+      <a id="change">yield arg</a>
+
+    &#47&#47 Non-BUILD-file-facing Target.__init__ args that some Target subclasses capture in their
+    &#47&#47 own __init__ for various reasons.
+    ignore_args = {&quotaddress&quot, &quotpayload&quot}</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  @classmethod
+  def _get_args_for_target_type(cls, target_type):
+    <a id="change">args = {}</a> &#47&#47 name: info.
+
+    &#47&#47 Target.__init__ has several args that are passed to it by TargetAddressable and not by
+    &#47&#47 the BUILD file author, so we can&quott naively inspect it.  Instead we special-case its
+    &#47&#47 true BUILD-file-facing arguments here.
+    for arg in cls.basic_target_args:
+      args[arg.name] = arg &#47&#47 Don&quott yield yet; subclass might supply a better description.
+
+    &#47&#47 Non-BUILD-file-facing Target.__init__ args that some Target subclasses capture in their
+    &#47&#47 own __init__ for various reasons.
+    ignore_args = {&quotaddress&quot, &quotpayload&quot}
+
+    &#47&#47 Now look at the MRO, in reverse (so we see the more &quotcommon&quot args first).
+    &#47&#47 If we see info for an arg, it&quots more specific than whatever description we have so far,
+    &#47&#47 so clobber its entry in the args dict.
+    methods_seen = set()  &#47&#47 Ensure we only look at each __init__ method once.
+    for _type in reversed([t for t in target_type.mro() if issubclass(t, Target)]):
+      if (inspect.ismethod(_type.__init__) and
+          _type.__init__ not in methods_seen and
+          _type.__init__ != Target.__init__):
+        for arg in cls._get_function_args(_type.__init__):
+          args[arg.name] = arg
+        methods_seen.add(_type.__init__)
+
+    for arg_name in <a id="change">sorted(args.keys())</a>:
+      if not arg_name in ignore_args:
+        yield args[arg_name]
+</code></pre>

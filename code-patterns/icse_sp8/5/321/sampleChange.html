@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                summaries=((
+                    "loss", "gradients", "gradient_norm", "global_gradient_norm"
+                ) if self._tf_summaries else ()))
+            <a id="change">for</a> i, (Q, Q_loss) in enumerate(zip(self._Qs, Q_losses)))
+
+        self._training_ops.update({&quotQ&quot: tf.group(Q_training_ops)})
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            tf.train.AdamOptimizer(
+                learning_rate=self._Q_lr,
+                name=&quot{}_{}_optimizer&quot.format(Q._name, i)
+            ) <a id="change">for</a> i, Q in enumerate(self._Qs))
+        Q_training_ops = tuple(
+            tf.contrib.layers.optimize_loss(
+                Q_loss,
+                self.global_step,
+                learning_rate=self._Q_lr,
+                optimizer=Q_optimizer,
+                variables=Q.trainable_variables,
+                increment_global_step=False,
+                summaries=((
+                    "loss", "gradients", "gradient_norm", "global_gradient_norm"
+                ) if self._tf_summaries else ()))
+            for i, (Q, Q_loss, Q_optimizer)
+            in enumerate(zip(self._Qs, Q_losses, self._Q_optimizers)))
+
+        &#47&#47 TODO(hartikainen): Need to assign these in order to register
+        &#47&#47 the variables into checkpointable. Should figure out a better way for
+        &#47&#47 saving these.
+        self._Q_optimizer_1 = self._Q_optimizers[0]
+        self._Q_optimizer_2 = <a id="change">self._Q_optimizers[1]</a>
+
+        self._training_ops.update({&quotQ&quot: tf.group(Q_training_ops)})
+
+    def _init_actor_update(self):</code></pre>

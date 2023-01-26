@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tensor[2, 2:, :] = 0
+        tensor[3, 6:, :] = 0
+        input_tensor = Variable(tensor)
+        <a id="change">sequence_lengths = Variable(torch.LongTensor([3, 4, 2, 6, 7]))</a>
+        sorted_inputs, sorted_sequence_lengths, restoration_indices = sort_batch_by_length(input_tensor,
+                                                                                           sequence_lengths)
+        packed_sequence = pack_padded_sequence(sorted_inputs,
+                                               sorted_sequence_lengths.data.tolist(),</code></pre><h3>After Change</h3><pre><code class='java'>
+        tensor[1, 4:, :] = 0
+        tensor[2, 2:, :] = 0
+        tensor[3, 6:, :] = 0
+        <a id="change">mask = torch.ones(5, 7)</a>
+        <a id="change">mask[0, 3:] = 0</a>
+        <a id="change">mask[1, 4:] = 0</a>
+        <a id="change">mask[2, 2:] = 0</a>
+        <a id="change">mask[3, 6:] = 0</a>
+
+        input_tensor = Variable(tensor)
+        <a id="change">mask = Variable(mask)</a>
+        <a id="change">sequence_lengths = get_lengths_from_binary_sequence_mask(mask)</a>
+        sorted_inputs, sorted_sequence_lengths, restoration_indices = sort_batch_by_length(input_tensor,
+                                                                                           sequence_lengths)
+        packed_sequence = pack_padded_sequence(sorted_inputs,
+                                               sorted_sequence_lengths.data.tolist(),</code></pre>

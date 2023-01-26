@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          continue
+
+        nit_slice = python_file.line_range(nit._line_number)
+        <a id="change">for line_number in range(nit_slice.start, nit_slice.stop):
+          if noqa_line_filter(python_file, line_number):
+            break
+          else:
+            yield nit
+
+ </a> def check_file(self, filename):
+    Process python file looking for indications of problems.
+
+    :param filename: (str) Python source filename</code></pre><h3>After Change</h3><pre><code class='java'>
+    :param filename: str pointing to a file within the buildroot.
+    
+    try:
+      <a id="change">python_file = PythonFile.parse(filename, root=get_buildroot())</a>
+    except CheckSyntaxError as e:
+      yield e.as_nit()
+      return
+
+    if noqa_file_filter(python_file):
+      return
+
+    if self.options.suppress:
+      &#47&#47 Filter out any suppressed plugins
+      check_plugins = [plugin for plugin in self._plugins
+                       if self.excluder.should_include(filename, plugin.name)]
+    else:
+      check_plugins = self._plugins
+
+    for plugin in check_plugins:
+
+      for i, nit in enumerate(plugin.checker(python_file)):
+        <a id="change">if i == 0:
+          &#47&#47 NB: Add debug log header for nits from each plugin, but only if there are nits from it.
+          self.context.log.debug(&quotNits from plugin {} for {}&quot.format(plugin.name, filename))
+
+       </a> if not nit.has_lines_to_display:
+          yield nit
+          continue
+</code></pre>

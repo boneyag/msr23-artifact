@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if training_params.training_margin &gt; 0:
+            margin = training_params.training_margin
+            loss = tf.reduce_mean(per_pixel_loss[<a id="change">:, margin:-margin, margin</a>:-margin], name=&quotloss&quot)
+        else:
+            loss = tf.reduce_mean(per_pixel_loss, name=&quotloss&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        margin = training_params.training_margin
+        input_shapes = features[&quotshapes&quot]
+        <a id="change">with tf.name_scope(&quotLoss&quot):
+            def _fn(_in):
+                output, shape = _in
+                return tf.reduce_mean(output[margin:shape[0]-margin, margin:shape[1]-margin])
+            per_img_loss = tf.map_fn(_fn, (per_pixel_loss, input_shapes), dtype=tf.float32)
+            loss = tf.reduce_mean(per_img_loss, name=&quotloss&quot)
+
+       </a> loss += regularized_loss
+    else:
+        loss = None
+</code></pre>

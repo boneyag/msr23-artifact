@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        model.set_dim("nI", get_width(X))
+    if Y is not None:
+        model.set_dim("nO", get_width(Y))
+    nO = <a id="change">model.get_dim("nO")</a>
+    nI = model.get_dim("nI")
+    depth = model.get_dim("depth")
+    dirs = model.get_dim("dirs")
+    &#47&#47 It&quots easiest to use the initializer if we alloc the weights separately
+    &#47&#47 and then stick them all together afterwards. The order matters here:
+    &#47&#47 we need to keep the same format that CuDNN expects.
+    params = []
+    &#47&#47 Convenience
+    init_W = partial(init_W, model.ops)
+    init_b = partial(init_b, model.ops)
+    layer_nI = nI
+    for i in range(depth):
+        for j in range(dirs):
+            &#47&#47 Input-to-gates weights and biases.
+            params.append(init_W((nO, layer_nI)))
+            params.append(init_W((nO, layer_nI)))
+            params.append(init_W((nO, layer_nI)))
+            params.append(init_W((nO, layer_nI)))
+            params.append(init_b((nO,)))
+            params.append(init_b((nO,)))
+            params.append(init_b((nO,)))
+            params.append(init_b((nO,)))
+            &#47&#47 Hidden-to-gates weights and biases
+            params.append(init_W((nO, nO)))
+            params.append(init_W((nO, nO)))
+            params.append(init_W(<a id="change">(nO, nO)</a>))
+            params.append(init_W((nO, nO)))
+            params.append(init_b((nO,)))
+            params.append(init_b((nO,)))</code></pre><h3>After Change</h3><pre><code class='java'>
+        model.set_dim("nI", get_width(X))
+    if Y is not None:
+        model.set_dim("nO", get_width(Y))
+    nH = int(<a id="change">model.get_dim("nO")</a> / model.get_dim("dirs"))
+    nI = model.get_dim("nI")
+    depth = model.get_dim("depth")
+    dirs = model.get_dim("dirs")</code></pre>

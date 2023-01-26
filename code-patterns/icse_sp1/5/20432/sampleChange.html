@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 build evaluate_net
+        self.s = tf.placeholder(tf.float32, [None, self.n_features], name=&quots&quot)
+        self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name=&quotQ_target&quot)
+        <a id="change">with tf.variable_scope(&quoteval_net&quot):
+            self.q_eval = self._build_layers(self.s, self.n_actions, trainable=True)
+            with tf.name_scope(&quotloss&quot):
+                self.loss = tf.reduce_sum(tf.square(self.q_target - self.q_eval))
+            with tf.name_scope(&quottrain&quot):
+                self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
+
+        &#47&#47 build target_net
+       </a> self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name=&quots_&quot)
+        with tf.variable_scope(&quottarget_net&quot):
+            self.q_next = self._build_layers(self.s_, self.n_actions, trainable=False)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.fake_targets = tf.placeholder(tf.float32, [None, 1], name=&quotfake_targets&quot)  &#47&#47 fake targets
+        self.advantages = tf.placeholder(tf.float32, [None, 1], name="advantages")  &#47&#47 advantages
+
+        <a id="change">l1 = self._add_layer(&quothidden0&quot, self.x_inputs, self.n_features, 10, tf.nn.relu)</a>     &#47&#47 hidden layer 1
+        self.prediction = self._add_layer(&quotoutput&quot, l1, 10, 1, tf.nn.sigmoid)  &#47&#47 predicting for action 0
+        with tf.name_scope(&quotloss&quot):
+            loglik = self.fake_targets*tf.log(self.prediction) + (1 - self.fake_targets)*<a id="change">tf.log(1-self.prediction)</a>  &#47&#47
+            self.loss = -tf.reduce_mean(loglik * self.advantages)
+        with tf.name_scope(&quottrain&quot):
+            self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)</code></pre>

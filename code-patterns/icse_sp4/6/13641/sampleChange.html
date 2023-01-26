@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    arguments = parser.parse_args()
+
+    func_list_llvm = []
+    <a id="change">func_list_cuda = []</a>
+
+    &#47&#47 TODO: attach instruction features to the library, e.g., avx-512, etc.
+    for operator_def in __OP_DEF__:
+        for sch, args, name in operator_def.invoke_all():</code></pre><h3>After Change</h3><pre><code class='java'>
+    arguments = parser.parse_args()
+
+    mod_llvm = tvm.IRModule({})
+    <a id="change">mod_cuda = tvm.IRModule({})</a>
+    has_cuda = False
+
+    &#47&#47 TODO: attach instruction features to the library, e.g., avx-512, etc.
+    for operator_def in __OP_DEF__:
+        for sch, args, name in operator_def.invoke_all():
+            name = operator_def.get_op_name(name, args)
+            if tvm.runtime.module.enabled(get_target(operator_def.target)):
+                func_lower = tvm.lower(sch, args,
+                                       name=name,
+                                       binds=operator_def.get_binds(args))
+                if operator_def.target == "cpu":
+                    mod = mod_llvm.update(func_lower)
+                else:
+                    has_cuda = True
+                    <a id="change">mod_cuda.update(func_lower)</a>
+
+    lowered_funcs = {get_target("cpu"): mod_llvm}
+    if has_cuda &gt; 0:
+        lowered_funcs[get_target("cuda")] = mod_cuda</code></pre>

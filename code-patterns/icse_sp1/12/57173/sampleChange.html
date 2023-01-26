@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        info = test_pairs[&quotinfo&quot]
+        logits = net(test_pairs[&quotimages&quot], is_training=False)
+        if param.output_prob:
+            <a id="change">logits = tf.nn.softmax(logits)</a>
+        else:
+            logits = tf.argmax(logits, -1)
+        variable_averages = tf.train.ExponentialMovingAverage(0.9)
+        variables_to_restore = variable_averages.variables_to_restore()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 converting logits into final output for
+        &#47&#47 classification probabilities or argmax classification labels
+        <a id="change">if param.output_prob and param.num_classes &gt; 1:
+            post_process_layer = PostProcessingLayer(
+                &quotSOFTMAX&quot, num_classes=param.num_classes)
+        elif not param.output_prob and param.num_classes &gt; 1:
+            post_process_layer = PostProcessingLayer(
+                &quotARGMAX&quot, num_classes=param.num_classes)
+        else:
+            post_process_layer = PostProcessingLayer(
+                &quotIDENTITY&quot, num_classes=param.num_classes)
+       </a> net_out = post_process_layer(logits)
+        variable_averages = tf.train.ExponentialMovingAverage(0.9)
+        variables_to_restore = variable_averages.variables_to_restore()
+        saver = tf.train.Saver(var_list=variables_to_restore)</code></pre>

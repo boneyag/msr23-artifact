@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def forward(self, x, lens, hidden=None):
+        emb_x = self.emb(x)
+        <a id="change">if self.dropout:
+            emb_x = self.dp(emb_x)
+        &#47&#47 Not using pack
+       </a> if not self.training:
+            self.rnn.flatten_parameters()
+        &#47&#47packed = nn.utils.rnn.pack_padded_sequence(emb_x, lens,batch_first=True)
+        outputs, hidden = self.rnn(emb_x, hidden) &#47&#47 output: (seq_len, batch, hidden)</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.rnn.flatten_parameters()
+        packed = nn.utils.rnn.pack_padded_sequence(emb_x, lens, batch_first=True, enforce_sorted=False)
+        outputs, hidden = self.rnn(packed, hidden) &#47&#47 output: (seq_len, batch, hidden)
+        <a id="change">outputs, _ = nn.utils.rnn.pad_packed_sequence(outputs, batch_first=True)</a>
+        if self.emb_tying:
+            outputs = F.linear(self.dp2(outputs),self.emb.weight)
+        else:
+            outputs = self.trans(self.dp2(outputs))</code></pre>

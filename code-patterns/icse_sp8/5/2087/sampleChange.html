@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      num_gpus=FLAGS.num_gpus,
+      all_reduce_alg=FLAGS.all_reduce_alg,
+      tpu_address=FLAGS.tpu)
+  if FLAGS.mode in <a id="change">(&quottrain&quot, &quottrain_and_predict&quot)</a>:
+    train_squad(strategy, input_meta_data, run_eagerly=FLAGS.run_eagerly)
+  if FLAGS.mode in (&quotpredict&quot, &quottrain_and_predict&quot):
+    predict_squad(strategy, input_meta_data)</code></pre><h3>After Change</h3><pre><code class='java'>
+  if &quotpredict&quot in FLAGS.mode:
+    predict_squad(strategy, input_meta_data)
+  if &quoteval&quot in FLAGS.mode:
+    <a id="change">eval_metrics = eval_squad(strategy, input_meta_data)</a>
+    f1_score = eval_metrics[&quotfinal_f1&quot]
+    logging.info(&quotSQuAD eval F1-score: %f&quot, f1_score)
+    summary_dir = os.path.join(FLAGS.model_dir, &quotsummaries&quot, &quoteval&quot)
+    summary_writer = tf.summary.create_file_writer(summary_dir)
+    with summary_writer.as_default():
+      &#47&#47 TODO(lehou): write to the correct step number.
+      <a id="change">tf.summary.scalar(&quotF1-score&quot, f1_score, step=0)</a>
+      summary_writer.flush()
+    &#47&#47 Also write eval_metrics to json file.
+    squad_lib_sp.write_to_json_files(
+        eval_metrics, os.path.join(summary_dir, &quoteval_metrics.json&quot))</code></pre>

@@ -1,0 +1,29 @@
+<html><h3>a7a12d157766b69cf4b1ddbb5fcdacfe485dc6fa,gpytorch/kernels/grid_interpolation_kernel.py,GridInterpolationKernel,_compute_grid,#GridInterpolationKernel#Any#Any#,116
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def _compute_grid(self, inputs, batch_dims):
+        batch_size, n_data, n_dimensions = inputs.size()
+        if batch_dims == (0, 2):
+            <a id="change">inputs = inputs.view(inputs.size(0), inputs.size(1), -1, 1)</a>
+            inputs = <a id="change">inputs.transpose(1, 2).contiguous()</a>
+            <a id="change">batch_size = batch_size * inputs.size(1)</a>
+            n_dimensions = n_dimensions // inputs.size(1)
+
+        inputs = inputs.view(batch_size * n_data, n_dimensions)
+        interp_indices, interp_values = Interpolation().interpolate(self.grid, inputs)
+        interp_indices = interp_indices.view(batch_size, n_data, -1)
+        <a id="change">interp_values = interp_values.view(batch_size, n_data, -1)</a>
+        return interp_indices, interp_values
+
+    def _inducing_forward(self, batch_dims, **params):
+        return super(GridInterpolationKernel, self).forward(self.grid, self.grid, batch_dims=batch_dims, **params)</code></pre><h3>After Change</h3><pre><code class='java'>
+            n_dimensions = 1
+        batch_shape = inputs.shape[:-2]
+
+        <a id="change">inputs = inputs.contiguous().view(-1, n_dimensions)</a>
+        interp_indices, interp_values = Interpolation().interpolate(self.grid, inputs)
+        interp_indices = interp_indices.view(*batch_shape, n_data, -1)
+        interp_values = interp_values.view(*batch_shape, n_data, -1)
+        return interp_indices, interp_values</code></pre><img src="13519406.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/a7a12d157766b69cf4b1ddbb5fcdacfe485dc6fa#diff-5e62cba3ebde26a49ff47196d945cc061e3dfe53e7331b39abddbcab1346f64fL117' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: a7a12d157766b69cf4b1ddbb5fcdacfe485dc6fa</div><div id='time'> Time: 2019-04-03</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/kernels/grid_interpolation_kernel.py</div><div id='class'> Class Name: GridInterpolationKernel</div><div id='method'> Method Name: _compute_grid</div><BR><BR><div id='link'><a href='https://github.com/mariogeiger/se3cnn/commit/6c06a88957549b1405f43361e4aa911abc56ef66#diff-e8c0fb45bd5e2d36e656a94f81905190b828f0c62cc805c05b36008bf564746dL296' target='_blank'>Link</a></div><div id='project'> Project Name: mariogeiger/se3cnn</div><div id='commit'> Commit Name: 6c06a88957549b1405f43361e4aa911abc56ef66</div><div id='time'> Time: 2018-10-04</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: se3cnn/kernel.py</div><div id='class'> Class Name: SE3Kernel</div><div id='method'> Method Name: combination</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/f7afc7ae76ed2c328ed02f05e91ccceec8942e0b#diff-e9ca49dfce62c7314c62739aed9d61b482bb144c9cd1f234d2314560130b8264L121' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: f7afc7ae76ed2c328ed02f05e91ccceec8942e0b</div><div id='time'> Time: 2018-09-26</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: python/baseline/pytorch/seq2seq/model.py</div><div id='class'> Class Name: Seq2SeqModel</div><div id='method'> Method Name: make_input</div><BR>

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def main(batch_size, root):
+    train_loader, test_loader = get_dataloader(batch_size, root)
+    _se_resnet = se_resnet50(num_classes=1000)
+    se_resnet = nn.DataParallel(_se_resnet, device_ids=<a id="change">[0, 1]</a>)
+    optimizer = optim.SGD(params=se_resnet.parameters(), lr=0.6, momentum=0.9, weight_decay=1e-4)
+    scheduler = StepLR(optimizer, 30, gamma=0.1)
+    trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def main(batch_size, root):
+    train_loader, test_loader = get_dataloader(batch_size, root)
+    <a id="change">se_resnet = nn.DataParallel(se_resnet50(num_classes=1000),
+                                device_ids=list(range(torch.cuda.device_count())))</a>
+    optimizer = optim.SGD(params=se_resnet.parameters(), lr=0.6, momentum=0.9, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.1)
+    trainer = Trainer(se_resnet, optimizer, F.cross_entropy, save_dir=".")
+    trainer.loop(100, train_loader, test_loader, scheduler)</code></pre>

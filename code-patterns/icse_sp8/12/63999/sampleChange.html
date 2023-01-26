@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+sampler = NeighborSampler(data, size=10)
+<a id="change">train_data</a>, val_data, test_data = data.train_val_test_split(
+    val_ratio=0.15, test_ratio=0.15)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+memory_dim = time_dim = embedding_dim = 100
+
+<a id="change">memory = TGNMemory(
+    data.num_nodes,
+    data.msg.size(-1),
+    memory_dim,
+    time_dim,
+    message_module=IdentityMessage(data.msg.size(-1), memory_dim, time_dim),
+    aggregator_module=LastAggregator(),
+).to(device)</a>
+
+<a id="change">gnn</a> = GraphAttentionEmbedding(
+    in_channels=memory_dim,
+    out_channels=embedding_dim,
+    msg_dim=data.msg.size(-1),
+    time_enc=memory.time_enc,
+).to(device)
+
+link_pred = LinkPredictor(in_channels=embedding_dim).to(device)
+
+<a id="change">optimizer = torch.optim.Adam(
+    set(memory.parameters()) | set(gnn.parameters())
+    | set(link_pred.parameters()), lr=0.0001)</a>
+criterion = <a id="change">torch</a>.nn.BCEWithLogitsLoss()
+
+&#47&#47 Helper vector to map global node indices to local ones.
+assoc = torch.empty(data.num_nodes, dtype=<a id="change">torch.long</a>, device=device)
+
+
+def train():</code></pre>

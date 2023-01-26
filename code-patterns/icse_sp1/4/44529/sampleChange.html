@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    images_shape[0] = batch_size
+    images = tf.reshape(
+        images, images_shape, name=&quotInputPipeline/images/reshape&quot)
+  <a id="change">labels_shape = labels.get_shape().as_list()</a>
+  if <a id="change">labels_shape[0]</a> is None:
+    labels_shape[0] = batch_size
+    labels = tf.reshape(
+        labels, labels_shape, name=&quotInputPipeline/labels/reshape&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+  dataset = dataset.batch(batch_size)
+  images, labels = dataset.make_one_shot_iterator().get_next()
+  &#47&#47 TODO(xiejw,saeta): Consider removing the sharding dimension below.
+  <a id="change">images.set_shape(images.get_shape().merge_with(
+      tf.TensorShape([batch_size, None, None, None])))</a>
+  labels.set_shape(
+      labels.get_shape().merge_with(tf.TensorShape([batch_size, None])))
+  images = pipeline_outputs_transform(images)
+  return images, labels</code></pre>

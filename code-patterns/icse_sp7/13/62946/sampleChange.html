@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 produces a matrix of shape (N, D, order + 1)
+    calc = calc[..., np.newaxis] ** np.arange(order + 1)
+
+    <a id="change">M = []</a>
+    <a id="change">for point in calc:
+        to_add = np.array(1)
+        for axis in point:
+            to_add = to_add[..., np.newaxis] * axis
+        M.append(to_add)
+
+   </a> calc = np.sum(M, axis=0)
+
+    return calc
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 produces a matrix of shape (N, D, order + 1)
+    coords = coords[..., np.newaxis] ** np.arange(order + 1)
+
+    <a id="change">calc = 1</a>
+
+    <a id="change">for axis in range(ndim):
+        &#47&#47 isolate each point&quots axis
+        isolated_axis = coords[:, axis::ndim].squeeze()
+
+        &#47&#47 adjust shape for proper broadcasting later on
+        for _ in itertools.repeat(None, axis):
+            isolated_axis = np.expand_dims(isolated_axis, axis=1)
+        for _ in itertools.repeat(None, ndim - (axis + 1)):
+            isolated_axis = np.expand_dims(isolated_axis, axis=-1)
+
+        &#47&#47 calculate the moments for each point, one axis at a time
+        calc = calc * isolated_axis
+
+    &#47&#47 sum all individual point moments to get our final answer
+   </a> calc = calc.sum(axis=0)
+
+    return calc
+</code></pre>

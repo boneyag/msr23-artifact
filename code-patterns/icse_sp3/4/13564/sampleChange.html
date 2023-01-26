@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                raise ValueError("Some of the given input files were directories"
+                                 " or did not exist:\n%s" % err_msg)
+
+            <a id="change">if all_exist:
+                &#47&#47 we need to check for h5 first, because of mdtraj custom HDF5 traj format (which is deprecated).
+                if suffix in [&quot.h5&quot, &quot.hdf5&quot]:
+                    &#47&#47 TODO: inspect if it is a mdtraj h5 file, eg. has the given attributes
+                    try:
+                        from mdtraj.formats import HDF5TrajectoryFile
+                        HDF5TrajectoryFile(input_list[0])
+                        reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
+                                               chunksize=chunksize)
+                    except:
+                        from pyemma.coordinates.data.h5_reader import H5Reader
+                        reader = H5Reader(filenames=input_files, chunk_size=chunksize, **kw)
+                &#47&#47 CASE 1.1: file types are MD files
+                elif FeatureReader.supports_format(suffix):
+                    &#47&#47 check: do we either have a featurizer or a topology file name? If not: raise ValueError.
+                    &#47&#47 create a MD reader with file names and topology
+                    if not featurizer and not topology:
+                        raise ValueError("The input files were MD files which makes it mandatory to have either a "
+                                         "featurizer or a topology file.")
+
+                    reader = FeatureReader(input_list, featurizer=featurizer, topologyfile=topology,
+                                           chunksize=chunksize)
+                else:
+                    if suffix in [&quot.npy&quot, &quot.npz&quot]:
+                        reader = NumPyFileReader(input_list, chunksize=chunksize)
+                    &#47&#47 otherwise we assume that given files are ascii tabulated data
+                    else:
+                        reader = PyCSVReader(input_list, chunksize=chunksize, **kw)
+       </a> else:
+            raise ValueError("Not all elements in the input list were of the type %s!" % suffix)
+    else:
+        raise ValueError("Input \"%s\" was no string or list of strings." % input)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 do all the files exist? If not: Raise value error
+            all_exist = True
+            from six import StringIO
+            err_msg = <a id="change">StringIO()</a>
+            for item in input_list:
+                if not os.path.isfile(item):
+                    err_msg.write(&quot\n&quot if err_msg.tell() &gt; 0 else "")
+                    err_msg.write(&quotFile %s did not exist or was no file&quot % item)</code></pre>

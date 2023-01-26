@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        distribution: distributions.BaseDistribution,
+    ) -&gt; None:
+
+        <a id="change">session = self.scoped_session()</a>
+
+        &#47&#47 Acquire lock.
+        &#47&#47
+        &#47&#47 Assume that study exists.
+        models.StudyModel.find_by_id(study_id, session, for_update=True)
+
+        models.TrialModel.find_or_raise_by_id(trial_id, session)
+
+        previous_record = (
+            session.query(models.TrialParamModel)
+            .join(models.TrialModel)
+            .filter(models.TrialModel.study_id == study_id)
+            .filter(models.TrialParamModel.param_name == param_name)
+            .first()
+        )
+        if previous_record is not None:
+            distributions.check_distribution_compatibility(
+                distributions.json_to_distribution(previous_record.distribution_json),
+                distribution,
+            )
+
+        session.add(
+            models.TrialParamModel(
+                trial_id=trial_id,
+                param_name=param_name,
+                param_value=param_value_internal,
+                distribution_json=distributions.distribution_to_json(distribution),
+            )
+        )
+
+        &#47&#47 Release lock.
+        <a id="change">session.commit()</a>
+
+    def get_trial_param(self, trial_id: int, param_name: str) -&gt; float:
+
+        session = self.scoped_session()</code></pre><h3>After Change</h3><pre><code class='java'>
+        distribution: distributions.BaseDistribution,
+    ) -&gt; None:
+
+        <a id="change">with self._session_scope() as session:
+            &#47&#47 Acquire lock.
+            &#47&#47
+            &#47&#47 Assume that study exists.
+            models.StudyModel.find_by_id(study_id, session, for_update=True)
+
+            models.TrialModel.find_or_raise_by_id(trial_id, session)
+
+            previous_record = (
+                session.query(models.TrialParamModel)
+                .join(models.TrialModel)
+                .filter(models.TrialModel.study_id == study_id)
+                .filter(models.TrialParamModel.param_name == param_name)
+                .first()
+            )
+            if previous_record is not None:
+                distributions.check_distribution_compatibility(
+                    distributions.json_to_distribution(previous_record.distribution_json),
+                    distribution,
+                )
+
+            session.add(
+                models.TrialParamModel(
+                    trial_id=trial_id,
+                    param_name=param_name,
+                    param_value=param_value_internal,
+                    distribution_json=distributions.distribution_to_json(distribution),
+                )
+            )
+
+   </a> def get_trial_param(self, trial_id: int, param_name: str) -&gt; float:
+
+        with self._session_scope() as session:
+            trial = models.TrialModel.find_or_raise_by_id(trial_id, session)</code></pre>

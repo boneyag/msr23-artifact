@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    x_shape = get_shape(x)
+    x_shape_rem = [x_shape[i] for i in range(1, x_ndim)]
+    src_beam_dim = x_shape[0] // batch_dim
+    <a id="change">with reuse_name_scope_of_tensor(x, add_tensor_name=True, postfix="_reshape_split_beam"):
+      x = tf.reshape(x, [batch_dim, src_beam_dim] + x_shape_rem)  &#47&#47 (batch, src-beam, ...)
+   </a> with reuse_name_scope_of_tensor(src_beams, add_tensor_name=True, postfix="_nd_indices"):
+      indices = nd_indices(src_beams)  &#47&#47 (batch, beam, 2)
+    x = tf.gather_nd(x, indices=indices)  &#47&#47 K=2, (batch, beam, ...)
+    x = tf.reshape(x, [batch_dim * beam_dim] + x_shape_rem)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _empty():
+      return tf.zeros([batch_dim * beam_dim] + x_shape_rem, dtype=x.dtype, name="empty_beams")
+
+    x = <a id="change">tf.cond(tf.greater(tf.size(x), 0), _select_src_beams_non_empty, _empty)</a>
+    x.set_shape(tf.TensorShape([None] + x_tshape.as_list()[1:]))
+    return x
+
+</code></pre>

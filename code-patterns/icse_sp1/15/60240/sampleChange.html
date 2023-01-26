@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &quot_deepout_&quot + &quot_&quot.join([layer[0] for layer in params[&quotDEEP_OUTPUT_LAYERS&quot]]) + \
+        &quot_trg_emb_&quot + str(params[&quotTARGET_TEXT_EMBEDDING_SIZE&quot]) + \
+        &quot_&quot + params[&quotOPTIMIZER&quot] + &quot_&quot + str(params[&quotLR&quot])
+    <a id="change">params[&quotSTORE_PATH&quot] = os.path.join(K.backend() + &quot_test_train_models&quot, params[&quotMODEL_NAME&quot])</a>
+
+    &#47&#47 Test several NMT-Keras utilities: train, sample, sample_ensemble, score_corpus...
+    print("Training model")
+    train_model(params)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_ConditionalLSTM_add():
+    <a id="change">params</a> = load_tests_params()
+
+    &#47&#47 Current test params: Single layered LSTM - ConditionalGRU
+    params[&quotBIDIRECTIONAL_ENCODER&quot] = True
+    params[&quotN_LAYERS_ENCODER&quot] = 1
+    params[&quotBIDIRECTIONAL_DEEP_ENCODER&quot] = True
+    params[&quotENCODER_RNN_TYPE&quot] = &quotLSTM&quot
+    params[&quotDECODER_RNN_TYPE&quot] = &quotConditionalLSTM&quot
+    params[&quotN_LAYERS_DECODER&quot] = 1
+    params[&quotATTENTION_MODE&quot] = &quotadd&quot
+
+    params[&quotREBUILD_DATASET&quot] = True
+    dataset = build_dataset(params)
+    params[&quotINPUT_VOCABULARY_SIZE&quot] = dataset.vocabulary_len[params[&quotINPUTS_IDS_DATASET&quot][0]]
+    params[&quotOUTPUT_VOCABULARY_SIZE&quot] = dataset.vocabulary_len[params[&quotOUTPUTS_IDS_DATASET&quot][0]]
+    params[&quotMODEL_NAME&quot] = \
+        params[&quotTASK_NAME&quot] + &quot_&quot + params[&quotSRC_LAN&quot] + params[&quotTRG_LAN&quot] + &quot_&quot + params[&quotMODEL_TYPE&quot] + \
+        &quot_src_emb_&quot + str(params[&quotSOURCE_TEXT_EMBEDDING_SIZE&quot]) + \
+        &quot_bidir_&quot + str(params[&quotBIDIRECTIONAL_ENCODER&quot]) + \
+        &quot_enc_&quot + params[&quotENCODER_RNN_TYPE&quot] + &quot_*&quot + str(params[&quotN_LAYERS_ENCODER&quot]) + &quot_&quot + str(
+            params[&quotENCODER_HIDDEN_SIZE&quot]) + \
+        &quot_dec_&quot + params[&quotDECODER_RNN_TYPE&quot] + &quot_*&quot + str(params[&quotN_LAYERS_DECODER&quot]) + &quot_&quot + str(
+            params[&quotDECODER_HIDDEN_SIZE&quot]) + params[&quotATTENTION_MODE&quot] + \
+        &quot_deepout_&quot + &quot_&quot.join([layer[0] for layer in params[&quotDEEP_OUTPUT_LAYERS&quot]]) + \
+        &quot_trg_emb_&quot + str(params[&quotTARGET_TEXT_EMBEDDING_SIZE&quot]) + \
+        &quot_&quot + params[&quotOPTIMIZER&quot] + &quot_&quot + str(params[&quotLR&quot])
+
+    &#47&#47 Test several NMT-Keras utilities: train, sample, sample_ensemble, score_corpus...
+    print("Training model")
+    train_model(params)
+    params[&quotRELOAD&quot] = 1
+    print("Done")
+
+    parser = argparse.ArgumentParser(&quotParser for unit testing&quot)
+    parser.dataset = os.path.join(
+        params[&quotDATASET_STORE_PATH&quot],
+        &quotDataset_&quot + params[&quotDATASET_NAME&quot] + &quot_&quot + params[&quotSRC_LAN&quot] + params[&quotTRG_LAN&quot] + &quot.pkl&quot)
+
+    parser.text = os.path.join(params[&quotDATA_ROOT_PATH&quot], params[&quotTEXT_FILES&quot][&quotval&quot] + params[&quotSRC_LAN&quot])
+    parser.splits = [&quotval&quot]
+    parser.config = params[&quotSTORE_PATH&quot] + &quot/config.pkl&quot
+    parser.models = [params[&quotSTORE_PATH&quot] + &quot/epoch_&quot + str(1)]
+    parser.verbose = 0
+    parser.dest = None
+    parser.source = os.path.join(params[&quotDATA_ROOT_PATH&quot], params[&quotTEXT_FILES&quot][&quotval&quot] + params[&quotSRC_LAN&quot])
+    parser.target = os.path.join(params[&quotDATA_ROOT_PATH&quot], params[&quotTEXT_FILES&quot][&quotval&quot] + params[&quotTRG_LAN&quot])
+    parser.weights = []
+    parser.glossary = None
+
+    for n_best in [True, False]:
+        parser.n_best = n_best
+        print("Sampling with n_best = %s " % str(n_best))
+        sample_ensemble(parser, params)
+        print("Done")
+
+    print("Scoring corpus")
+    score_corpus(parser, params)
+    print("Done")
+    <a id="change">clean_dirs(params)</a>
+
+
+def test_ConditionalLSTM_dot():
+    params = load_tests_params()</code></pre>

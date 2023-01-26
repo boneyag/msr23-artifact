@@ -1,0 +1,118 @@
+<html><h3>32479c73b83a9a875a28d1adce327573b39af37e,src/python/pants/commands/goal.py,Goal,setup_parser,#Goal#Any#Any#,233
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if not args:
+      args.append(&quotgoals&quot)
+
+    <a id="change">if len(args) == 1 and args[0] in set([&quot-h&quot, &quot--help&quot, &quothelp&quot]):
+      def format_usage(usages):
+        left_colwidth = 0
+        for left, right in usages:
+          left_colwidth = max(left_colwidth, len(left))
+        lines = []
+        for left, right in usages:
+          lines.append(&quot  %s%s%s&quot % (left, &quot &quot * (left_colwidth - len(left) + 1), right))
+        return &quot\n&quot.join(lines)
+
+      usages = [
+        ("%prog goal goals ([spec]...)", Phase(&quotgoals&quot).description),
+        ("%prog goal help [goal] ([spec]...)", Phase(&quothelp&quot).description),
+        ("%prog goal [goal] [spec]...", "Attempt goal against one or more targets."),
+        ("%prog goal [goal] ([goal]...) -- [spec]...", "Attempts all the specified goals."),
+      ]
+      parser.set_usage("\n%s" % format_usage(usages))
+      parser.epilog = ("Either lists all installed goals, provides extra help for a goal or else "
+                       "attempts to achieve the specified goal for the listed targets.")
+
+      parser.print_help()
+
+      &#47&#47 Add some text that we can&quott put in the epilog, because that formats away newlines.
+      print(textwrap.dedent(
+        Note that target specs accept two special forms:
+          [dir]:  to include all targets in the specified directory
+          [dir]:: to include all targets found recursively under the directory))
+      sys.exit(0)
+    else:
+      goals, specs = Goal.parse_args(args)
+      self.requested_goals = goals
+
+      with self.run_tracker.new_workunit(name=&quotsetup&quot, labels=[WorkUnit.SETUP]):
+        &#47&#47 Bootstrap goals by loading any configured bootstrap BUILD files
+        with self.check_errors(&quotThe following bootstrap_buildfiles cannot be loaded:&quot) as error:
+          with self.run_tracker.new_workunit(name=&quotbootstrap&quot, labels=[WorkUnit.SETUP]):
+            for path in self.config.getlist(&quotgoals&quot, &quotbootstrap_buildfiles&quot, default = []):
+              try:
+                buildfile = BuildFile(get_buildroot(), os.path.relpath(path, get_buildroot()))
+                ParseContext(buildfile).parse()
+              except (TypeError, ImportError, TaskError, GoalError):
+                error(path, include_traceback=True)
+              except (IOError, SyntaxError):
+                error(path)
+        &#47&#47 Now that we&quotve parsed the bootstrap BUILD files, and know about the SCM system.
+        self.run_tracker.run_info.add_scm_info()
+
+        &#47&#47 Bootstrap user goals by loading any BUILD files implied by targets.
+        spec_parser = SpecParser(self.root_dir)
+        with self.check_errors(&quotThe following targets could not be loaded:&quot) as error:
+          with self.run_tracker.new_workunit(name=&quotparse&quot, labels=[WorkUnit.SETUP]):
+            for spec in specs:
+              try:
+                for target, address in spec_parser.parse(spec):
+                  if target:
+                    self.targets.append(target)
+                    &#47&#47 Force early BUILD file loading if this target is an alias that expands
+                    &#47&#47 to others.
+                    unused = list(target.resolve())
+                  else:
+                    siblings = Target.get_all_addresses(address.buildfile)
+                    prompt = &quotdid you mean&quot if len(siblings) == 1 else &quotmaybe you meant one of these&quot
+                    error(&quot%s =&gt; %s?:\n    %s&quot % (address, prompt,
+                                                  &quot\n    &quot.join(str(a) for a in siblings)))
+              except (TypeError, ImportError, TaskError, GoalError):
+                error(spec, include_traceback=True)
+              except (IOError, SyntaxError, TargetDefinitionException):
+                error(spec)
+
+      self.phases = [Phase(goal) for goal in goals]
+
+      rcfiles = self.config.getdefault(&quotrcfiles&quot, type=list,
+                                       default=[&quot/etc/pantsrc&quot, &quot~/.pants.rc&quot])
+      if rcfiles:
+        rcfile = RcFile(rcfiles, default_prepend=False, process_default=True)
+
+        &#47&#47 Break down the goals specified on the command line to the full set that will be run so we
+        &#47&#47 can apply default flags to inner goal nodes.  Also break down goals by Task subclass and
+        &#47&#47 register the task class hierarchy fully qualified names so we can apply defaults to
+        &#47&#47 baseclasses.
+
+        sections = OrderedSet()
+        for phase in Engine.execution_order(self.phases):
+          for goal in phase.goals():
+            sections.add(goal.name)
+            for clazz in goal.task_type.mro():
+              if clazz == Task:
+                break
+              sections.add(&quot%s.%s&quot % (clazz.__module__, clazz.__name__))
+
+        augmented_args = rcfile.apply_defaults(sections, args)
+        if augmented_args != args:
+          del args[:]
+          args.extend(augmented_args)
+          sys.stderr.write("(using pantsrc expansion: pants goal %s)\n" % &quot &quot.join(augmented_args))
+
+      Phase.setup_parser(parser, args, self.phases)
+
+ </a> def run(self, lock):
+    &#47&#47 TODO(John Sirois): Consider moving to straight python logging.  The divide between the
+    &#47&#47 context/work-unit logging and standard python logging doesn&quott buy us anything.
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      args.append(&quothelp&quot)
+
+    help_flags = set([&quot-h&quot, &quot--help&quot, &quothelp&quot])
+    <a id="change">show_help = len(help_flags.intersection(args)) &gt; 0</a>
+    args = filter(lambda f: f not in help_flags, args)
+
+    goals, specs = Goal.parse_args(args)
+    if show_help:</code></pre><img src="211002435.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/32479c73b83a9a875a28d1adce327573b39af37e#diff-bdc89605aadf2854551d357b606ed9316de6af3adf62a94d700223d76a173fdbL193' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 32479c73b83a9a875a28d1adce327573b39af37e</div><div id='time'> Time: 2014-04-30</div><div id='author'> Author: benjy@foursquare.com</div><div id='file'> File Name: src/python/pants/commands/goal.py</div><div id='class'> Class Name: Goal</div><div id='method'> Method Name: setup_parser</div><BR><BR><div id='link'><a href='https://github.com/IDSIA/sacred/commit/047eb9dd373ca0d59251a1b6cdb80f8817786eb8#diff-4ca3be3aa8777e2e93919cb910ebc78598f2748dd08ad6be23457ce9d1f17830L80' target='_blank'>Link</a></div><div id='project'> Project Name: IDSIA/sacred</div><div id='commit'> Commit Name: 047eb9dd373ca0d59251a1b6cdb80f8817786eb8</div><div id='time'> Time: 2014-07-14</div><div id='author'> Author: klaus@idsia.ch</div><div id='file'> File Name: sacred/custom_containers.py</div><div id='class'> Class Name: DogmaticDict</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/52c7c260e7c0a85e6b051af48b46e8fe9493b117#diff-5dfdb5aa2cfd76fda7f4d1e99f73457b5177ff03cdb804f1f41d4621d098509bL132' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 52c7c260e7c0a85e6b051af48b46e8fe9493b117</div><div id='time'> Time: 2020-08-04</div><div id='author'> Author: benjyw@gmail.com</div><div id='file'> File Name: src/python/pants/core/util_rules/determine_source_files.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: determine_specified_source_files</div><BR>

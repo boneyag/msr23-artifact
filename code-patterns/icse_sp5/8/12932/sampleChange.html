@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if not os.path.exists(target_classpath_file_tmp):
+          raise TaskError(&quotIvy failed to create classpath file at %s&quot % target_classpath_file_tmp)
+        shutil.move(target_classpath_file_tmp, target_classpath_file)
+        if <a id="change">self.get_artifact_cache() and self.context.options.write_to_artifact_cache</a>:
+          self.update_artifact_cache([(global_vts, [target_classpath_file])])
+
+    with IvyUtils.cachepath(target_classpath_file) as classpath:</code></pre><h3>After Change</h3><pre><code class='java'>
+      items_to_report_element([t.address.reference() for t in targets], &quottarget&quot),
+      suffix)
+
+  def ivy_resolve(<a id="change">self</a>, targets, java_runner=None, ivy_args=None, symlink_ivyxml=False, silent=False,
+                  workunit_name=None, workunit_labels=None):
+    java_runner = java_runner or runjava_indivisible
+
+    ivy_args = ivy_args or []
+
+    targets = set(targets)
+
+    if not targets:
+      return []
+    
+    work_dir = self.context.config.get(&quotivy-resolve&quot, &quotworkdir&quot)
+    confs = self.context.config.getlist(&quotivy-resolve&quot, &quotconfs&quot)
+
+    with self.invalidated(targets,
+                          only_buildfiles=True,
+                          invalidate_dependents=True,
+                          silent=silent) as invalidation_check:
+      global_vts = VersionedTargetSet.from_versioned_targets(invalidation_check.all_vts)
+      target_workdir = os.path.join(work_dir, global_vts.cache_key.hash)
+      target_classpath_file = os.path.join(target_workdir, &quotclasspath&quot)
+      target_classpath_file_tmp = target_classpath_file + &quot.tmp&quot
+      &#47&#47 Note that it&quots possible for all targets to be valid but for no classpath file to exist at
+      &#47&#47 target_classpath_file, e.g., if we previously built a superset of targets.
+      if invalidation_check.invalid_vts or not os.path.exists(target_classpath_file):
+        ivy_utils = IvyUtils(config=self.context.config,
+                             options=self.context.options,
+                             log=self.context.log)
+        args = ([&quot-cachepath&quot, target_classpath_file_tmp] +
+                [&quot-confs&quot] + confs +
+                ivy_args)
+
+        def exec_ivy():
+          ivy_utils.exec_ivy(
+            target_workdir=target_workdir,
+            targets=targets,
+            args=args,
+            runjava=java_runner,
+            workunit_name=&quotivy&quot,
+            workunit_factory=self.context.new_workunit,
+            symlink_ivyxml=symlink_ivyxml,
+          )
+
+        if workunit_name:
+          with self.context.new_workunit(name=workunit_name, labels=workunit_labels or []):
+            exec_ivy()
+        else:
+          exec_ivy()
+
+        if not os.path.exists(target_classpath_file_tmp):
+          raise TaskError(&quotIvy failed to create classpath file at %s&quot % target_classpath_file_tmp)
+        shutil.move(target_classpath_file_tmp, target_classpath_file)
+        if <a id="change">self.artifact_cache_writes_enabled()</a>:
+          self.update_artifact_cache([(global_vts, [target_classpath_file])])
+
+    with IvyUtils.cachepath(target_classpath_file) as classpath:</code></pre>

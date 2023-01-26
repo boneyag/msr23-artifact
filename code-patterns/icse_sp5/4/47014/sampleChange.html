@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        result = self._read_with_shuffle_row_drop(piece, pq_file, column_names, shuffle_row_drop_range)
+
+        if self._transform_spec:
+            result = pa.Table.from_pandas(<a id="change">self._transform_spec.func(result.to_pandas())</a>, preserve_index=False)
+
+        return result
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        result = self._read_with_shuffle_row_drop(piece, pq_file, column_names, shuffle_row_drop_range)
+
+        if self._transform_spec:
+            <a id="change">result_as_pandas = result.to_pandas()</a>
+            &#47&#47 A user may omit `func` value if they intend just to delete some fields using the TransformSpec
+            if self._transform_spec.func:
+                transformed_result = <a id="change">self._transform_spec.func(result_as_pandas)</a>
+            else:
+                transformed_result = result_as_pandas
+
+            &#47&#47 If transform function left a field that is listed in transform_spec&quots remove_fields, we remove it
+            &#47&#47 ourselves. Allows for the following transform-spec objects to be created:
+            &#47&#47 TransformSpec(removed_fields=[&quotsome field&quot])
+            for field_to_remove in set(transformed_result.columns) & set(self._transform_spec.removed_fields):
+                del transformed_result[field_to_remove]
+
+            <a id="change">result = pa.Table.from_pandas(transformed_result, preserve_index=False)</a>
+
+        return result
+
+    def _load_rows_with_predicate(self, pq_file, piece, worker_predicate, shuffle_row_drop_partition):</code></pre>

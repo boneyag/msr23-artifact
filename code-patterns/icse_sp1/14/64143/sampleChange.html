@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if param.grad is not None:
+                param.grad.div_(self.loss_scale)
+        if self.grad_clip is not None:
+            <a id="change">self.clip_grads(fp32_weights)</a>
+        &#47&#47 update fp32 params
+        runner.optimizer.step()
+        &#47&#47 copy fp32 params to the fp16 model
+        self.copy_params_to_fp16(runner.model, fp32_weights)</code></pre><h3>After Change</h3><pre><code class='java'>
+            if param.grad is not None:
+                param.grad.div_(self.loss_scale)
+        if self.grad_clip is not None:
+            <a id="change">grad_norm = self.clip_grads(fp32_weights)</a>
+            <a id="change">if grad_norm is not None:
+                &#47&#47 Add grad norm to the logger
+                runner.log_buffer.update({&quotgrad_norm&quot: float(grad_norm)},
+                                         runner.outputs[&quotnum_samples&quot])
+        &#47&#47 update fp32 params
+       </a> runner.optimizer.step()
+        &#47&#47 copy fp32 params to the fp16 model
+        self.copy_params_to_fp16(runner.model, fp32_weights)
+</code></pre>

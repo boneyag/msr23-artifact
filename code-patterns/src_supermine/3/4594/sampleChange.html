@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def _restore_embed(embed_var, var_to_shape_map, reader):
+  has_embed = len([var for var in var_to_shape_map if &quotEmbeddingMatrix&quot in var]) &gt; 0
+  <a id="change">if has_embed:
+    return None, False &#47&#47 assume same name
+ </a> for var in var_to_shape_map:
+    if var.endswith(&quotdense/kernel&quot) and var_to_shape_map[var] == tf.transpose(embed_var).shape:
+      print(&quotAssigning&quot, var, &quotto&quot, embed_var.name)
+      return embed_var.assign(reader.get_tensor(var).T), True</code></pre><h3>After Change</h3><pre><code class='java'>
+      print(&quotAssigning&quot, var, &quotto&quot, embed_var.name)
+      tensor = reader.get_tensor(var).T
+      if tensor.dtype != var.dtype.as_numpy_dtype():
+        return embed_var.assign(<a id="change">tf.cast(tensor, embed_var.dtype)</a>), True
+      return embed_var, False
+  return None, None
+</code></pre>

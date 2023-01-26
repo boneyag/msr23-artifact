@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return step_size
+
+    def _sample_r(self, name):
+        <a id="change">r = {}</a>
+        r_flat_dict = {}
+        for site_names in self.inverse_mass_matrix:
+            r_flat = pyro.sample(
+                "{}_{}".format(name, site_names), self._adapter.r_dist[site_names])
+            pos = 0
+            <a id="change">for name in site_names:
+                param = self.initial_params[name]
+                next_pos = pos + param.numel()
+                r[name] = r_flat[pos:next_pos].reshape(param.shape)
+                pos = next_pos
+           </a> assert pos == r_flat.size(0)
+            r_flat_dict[site_names] = r_flat
+        return r, r_flat_dict
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        for site_names, size in self.mass_matrix_adapter.mass_matrix_size.items():
+            &#47&#47 we want to sample from Normal distribution using `sample` method rather than
+            &#47&#47 `rsample` method because the former is a bit faster
+            <a id="change">r_unscaled[site_names] = pyro.sample(
+                "{}_{}".format(name, site_names),
+                NonreparameterizedNormal(torch.zeros(size, **options), torch.ones(size, **options)))</a>
+
+        r = self.mass_matrix_adapter.scale(r_unscaled, r_prototype=self.initial_params)
+        return r, r_unscaled
+</code></pre>

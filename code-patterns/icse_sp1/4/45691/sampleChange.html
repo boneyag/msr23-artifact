@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 go from affine
+        if self.is_affine:
+            trf = <a id="change">tf.map_fn(lambda x: self._single_aff_to_shift(x, vol.shape[1:-1]), trf, dtype=tf.float32)</a>
+
+        &#47&#47 prepare location shift
+        if self.indexing == &quotxy&quot:  &#47&#47 shift the first two dimensions
+            trf_split = tf.split(trf, trf.shape[-1], axis=-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+                nrows += 1
+            if len(trf.shape[1:]) == 1:
+                trf = tf.reshape(trf, shape=(-1, nrows, ncols))
+            <a id="change">trf += tf.eye(nrows, ncols, batch_shape=(tf.shape(trf)[0],))</a>
+            fun = lambda x: affine_to_shift(x, vol.shape[1:-1], shift_center=True)
+            <a id="change">trf = tf.map_fn(fun, trf, dtype=tf.float32)</a>
+
+        &#47&#47 prepare location shift
+        if self.indexing == &quotxy&quot:  &#47&#47 shift the first two dimensions
+            trf_split = tf.split(trf, trf.shape[-1], axis=-1)</code></pre>

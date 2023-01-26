@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    sink = self._gen_sink_subclass()
+    with self.captured_logging(level=logging.ERROR) as captured:
+      with temporary_dir() as tmpdir:
+        <a id="change">exc_log_path = os.path.join(tmpdir, &quotlogs&quot, &quotexceptions.log&quot)</a>
+        <a id="change">touch(exc_log_path)</a>
+        &#47&#47 Make the exception log file unreadable.
+        os.chmod(exc_log_path, 0)
+        sink.set_destination(tmpdir)
+        sink.log_exception(&quotXXX&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+    with self.captured_logging(level=logging.ERROR) as captured:
+      with temporary_dir() as tmpdir:
+        sink.reset_log_location(tmpdir)
+        <a id="change">with mock.patch.object(sink, &quot_try_write_with_flush&quot, autospec=sink) as mock_write:
+          mock_write.side_effect = ExceptionSink.ExceptionSinkError(&quotfake write failure&quot)
+          sink.log_exception(&quotXXX&quot)
+   </a> errors = list(captured.errors())
+    self.assertEqual(2, len(errors))
+
+    def format_log_rx(log_file_type):</code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 get original shape (&#47&#47attacks, batch size)
+            batch_shape = batched_predictions_args[0].shape
+            &#47&#47 merge individual batches into one super-batch
+            <a id="change">batched_predictions_args[0] = batched_predictions_args[0].reshape(
+                -1, *batch_shape[2:])</a>
+
+            batched_predictions = model.forward(*batched_predictions_args)
+            &#47&#47 split super-batch back into individual batches
+            batched_predictions = batched_predictions.reshape(</code></pre><h3>After Change</h3><pre><code class='java'>
+            logging.debug(&quotcalling native forward with {}&quot.format(len(attacks_requesting_batched_predictions)))  &#47&#47 noqa: E501
+
+            &#47&#47 we are only interested in the first argument
+            inputs = [x[0] <a id="change">for</a> x in batched_predictions_args]
+
+            &#47&#47 merge individual batches into one larger super-batch
+            batch_lengths = <a id="change">[len(x) for x in inputs]</a>
+            <a id="change">batch_splits = np.cumsum(batch_lengths)</a>
+            inputs = np.concatenate([x for x in inputs])
+
+            &#47&#47 split super-batch back into individual batches
+            batched_predictions = model.forward(inputs)
+            <a id="change">batched_predictions = np.split(batched_predictions, batch_splits,
+                                           axis=0)</a>
+
+        else:
+            batched_predictions = []
+</code></pre>

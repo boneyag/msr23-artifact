@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for batch_idx, (imgs, pids, _) in enumerate(trainloader):
+        if use_gpu:
+            imgs, pids = imgs.cuda(), pids.cuda()
+        <a id="change">imgs, pids = Variable(imgs), Variable(pids)</a>
+        outputs, features = model(imgs)
+        xentloss = criterion_xent(outputs, pids)
+        centloss = criterion_cent(features, pids) * args.weight_cent
+        loss = xentloss + centloss</code></pre><h3>After Change</h3><pre><code class='java'>
+        for param in criterion_cent.parameters():
+            param.grad.data *= (1. / args.weight_cent)
+        optimizer_cent.step()
+        losses.update(<a id="change">loss.item()</a>, pids.size(0))
+
+        if (batch_idx+1) % args.print_freq == 0:
+            print("Batch {}/{}\t Loss {:.6f} ({:.6f})".format(batch_idx+1, len(trainloader), losses.val, losses.avg))</code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        sequence_embedding_sum = (sequence_embeddings
+                                  .sum(1)
+                                  .view(<a id="change">item_sequences.size()[0]</a>, -1))
+        non_padding_entries = ((item_sequences != PADDING_IDX)
+                               .float()
+                               .sum(1)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def user_representation(self, item_sequences):
+
+        &#47&#47 Make the embedding dimension the channel dimension
+        sequence_embeddings = <a id="change">(self.item_embeddings(item_sequences)
+                               .permute(0, 2, 1))</a>
+
+        &#47&#47 Add a trailing dimension of 1
+        <a id="change">sequence_embeddings = (sequence_embeddings
+                               .unsqueeze(3))</a>
+
+        &#47&#47 Pad it with zeros from left
+        <a id="change">sequence_embeddings = F.pad(sequence_embeddings,
+                                    (0, 0, 1, 0))</a>
+
+        &#47&#47 Average representations, ignoring padding.
+        <a id="change">sequence_embedding_sum = torch.cumsum(sequence_embeddings, 2)</a>
+        non_padding_entries = (
+            torch.cumsum((sequence_embeddings != 0.0).float(), 2)
+            .expand_as(sequence_embedding_sum)
+        )</code></pre>

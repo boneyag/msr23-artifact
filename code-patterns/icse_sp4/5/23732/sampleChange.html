@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            scaled_loss.backward()
+
+            master_params = list(optimizer.param_groups[0]["params"])
+            <a id="change">model_params = list(
+                filter(lambda p: p.requires_grad, model.parameters())
+            )</a>
+            copy_grads(source=model_params, target=master_params)
+            for param in master_params:
+                param.grad.data.mul_(1. / self.fp16_grad_scale)
+            self.grad_step(</code></pre><h3>After Change</h3><pre><code class='java'>
+    def on_batch_end(self, state):
+        loss = state.get_key(key="loss", inner_key=self.loss_key)
+        if isinstance(loss, dict):
+            <a id="change">loss = list(loss.values())</a>
+        if isinstance(loss, list):
+            loss = torch.mean(torch.stack(loss))
+
+        if self.prefix is not None:</code></pre>

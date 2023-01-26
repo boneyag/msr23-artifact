@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+			a_value          = vsp.GetParmVal(wing_id, &quotA&quot, &quotXSecCurve_&quot + str(jj))
+			ideal_CL         = int(np.around(vsp.GetParmVal(wing_id, &quotIdealCl&quot, &quotXSecCurve_&quot + str(jj))*10))
+			series_vsp       = int(vsp.GetParmVal(wing_id, &quotSeries&quot, &quotXSecCurve_&quot + str(jj)))
+			series_dict      = <a id="change">Data({0:&quot63&quot,1:&quot64&quot,2:&quot65&quot,3:&quot66&quot,4:&quot67&quot,5:&quot63A&quot,6:&quot64A&quot,7:&quot65A&quot})</a> &#47&#47 VSP series values.
+			series           = series_dict[series_vsp]
+			airfoil.tag      = &quotNACA &quot + series + str(ideal_CL) + str(thick_cord_round) + &quot a=&quot + str(np.around(a_value,1))
+	</code></pre><h3>After Change</h3><pre><code class='java'>
+	proj_span_sum    = 0.				&#47&#47 Projected.
+	segment_spans    = [None] * (segment_num) 	&#47&#47 Non-projected.
+	segment_dihedral = [None] * (segment_num)
+	segment_sweeps_quarter_chord = <a id="change">[None]</a> * (segment_num)
+	
+	&#47&#47 Check for wing segment *inside* fuselage, then skip XSec_0 to start at first exposed segment.
+	if vsp.GetParmVal(wing_id, &quotRoot_Chord&quot, &quotXSec_0&quot) == 1.:
+		start = 1
+	else:
+		start = 0
+	
+	&#47&#47 -------------
+	&#47&#47 Wing segments
+	&#47&#47 -------------		
+	
+	&#47&#47 Convert VSP XSecs to SUAVE segments. (Wing segments are defined by outboard sections in VSP, but inboard sections in SUAVE.) 
+	for i in xrange(start, segment_num+1):		
+		segment = SUAVE.Components.Wings.Segment()
+		segment.tag                   = &quotSection_&quot + str(i)
+		thick_cord                    = vsp.GetParmVal(wing_id, &quotThickChord&quot, &quotXSecCurve_&quot + str(i-1))
+		segment.thickness_to_chord    = thick_cord	&#47&#47 Thick_cord stored for use in airfoil, below.		
+		segment_root_chord            = vsp.GetParmVal(wing_id, &quotRoot_Chord&quot, &quotXSec_&quot + str(i)) * units
+		segment.root_chord_percent    = segment_root_chord / total_chord		
+		segment.percent_span_location = proj_span_sum / (total_proj_span/2)
+		segment.twist                 = vsp.GetParmVal(wing_id, &quotTwist&quot, &quotXSec_&quot + str(i-1)) * Units.deg
+	
+		if i &lt; segment_num:      &#47&#47 This excludes the tip xsec, but we need a segment in SUAVE to store airfoil.
+			segment_sweeps_quarter_chord[i]   = vsp.GetParmVal(wing_id, &quotSec_Sweep&quot, &quotXSec_&quot + str(i)) * Units.deg
+			<a id="change">segment.sweeps.quarter_chord      = segment_sweeps_quarter_chord[i]</a>  &#47&#47 Used again, below
+	
+			segment_dihedral[i]	      = vsp.GetParmVal(wing_id, &quotDihedral&quot, &quotXSec_&quot + str(i)) * Units.deg &#47&#47 Used for dihedral computation, below.
+			segment.dihedral_outboard     = segment_dihedral[i]</code></pre>

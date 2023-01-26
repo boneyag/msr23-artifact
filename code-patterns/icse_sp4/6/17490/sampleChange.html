@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            import os
+            import psutil
+            &#47&#47 TODO: aint it better to use a distinct variable for this use case eg. PYEMMA_NJOBS in order to avoid multiplying OMP threads with njobs?
+            <a id="change">omp_threads_from_env = os.getenv(&quotOMP_NUM_THREADS&quot, None)</a>
+            <a id="change">if omp_threads_from_env:
+                try:
+                    val = int(omp_threads_from_env)
+                    if hasattr(self, &quotlogger&quot):
+                        self.logger.info("number of threads obtained from env variable"
+                                         " &quotOMP_NUM_THREADS&quot=%s" % omp_threads_from_env)
+                except ValueError as ve:
+                    if hasattr(self, &quotlogger&quot):
+                        self.logger.warning("could not parse env variable &quotOMP_NUM_THREADS&quot."
+                                            " Value=&quot{}&quot. Error={}. Will use {} jobs."
+                                            .format(omp_threads_from_env, ve, val))
+                    val = psutil.cpu_count()
+            else:
+                val = psutil.cpu_count()
+
+       </a> self._n_jobs = int(val)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                                                .format(err=ve, val=val, var=var))
+                return None
+
+            <a id="change">slurm_njobs = _from_env(&quotSLURM_CPUS_ON_NODE&quot)</a>  &#47&#47 Number of CPUS on the allocated SLURM node.
+            pyemma_njobs = _from_env(&quotPYEMMA_NJOBS&quot)
+
+            <a id="change">if slurm_njobs and pyemma_njobs:
+                import warning
+                warning.warn(&quottwo settings for n_jobs from environment: PYEMMA_NJOBS and SLURM_CPUS_ON_NODE. &quot
+                             &quotRespecting the SLURM setting to avoid overprovisioning&quot)
+
+            &#47&#47 slurm njobs will be used preferably.
+           </a> val = slurm_njobs or pyemma_njobs
+            if not val:
+                val = _from_hardware()
+</code></pre>

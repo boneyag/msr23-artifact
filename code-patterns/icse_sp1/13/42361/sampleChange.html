@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.w_K = Dense(d_model, d_model)
+        self.w_V = Dense(d_model, d_model)
+        self.w_O = Dense(d_model, d_model)
+        <a id="change">self.attn_fn</a> = <a id="change">self._scaled_dot_product_attention</a> if scale else <a id="change">self._dot_product_attention</a>
+        self.attn = None
+        <a id="change">self.dropout = nn.Dropout(dropout)</a>
+
+    def _scaled_dot_product_attention(self, query, key, value, mask=None, dropout=None):
+        Scaled dot product attention, as defined in https://arxiv.org/abs/1706.03762
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    And for self-attention in the decoder, K, Q and V all come from the decoder, but here it is masked to prevent using
+    future values
+    
+    def __init__(<a id="change">self</a>, num_heads, d_model, dropout=0.1, scale=False):
+        Constructor for multi-headed attention
+
+        :param h: The number of heads
+        :param d_model: The model hidden size
+        :param dropout (``float``): The amount of dropout to use
+        :param attn_fn: A function to apply attention, defaults to SDP
+        
+        super().__init__()
+        assert d_model % num_heads == 0
+        self.d_k = d_model // num_heads
+        self.h = num_heads
+        self.w_Q = Dense(d_model, d_model)
+        self.w_K = Dense(d_model, d_model)
+        self.w_V = Dense(d_model, d_model)
+        self.w_O = Dense(d_model, d_model)
+        <a id="change">if scale:
+            self.attn_fn = SeqScaledDotProductAttention(dropout)
+        else:
+            self.attn_fn = SeqDotProductAttention(dropout)
+       </a> self.attn = None
+
+
+    def forward(self, qkvm):</code></pre>

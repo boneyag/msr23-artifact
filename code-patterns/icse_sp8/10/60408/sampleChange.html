@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        encoder_outputs = self._add_speaker_embedding(encoder_outputs,
+                                                      speaker_ids)
+        gst_outputs = self.gst(mel_specs)
+        gst_outputs = gst_outputs.expand(-1, <a id="change">encoder_outputs.size(1)</a>, -1)
+        <a id="change">encoder_outputs = encoder_outputs + gst_outputs</a>
+        mel_outputs, alignments, stop_tokens = self.decoder(
+            encoder_outputs, mel_specs, mask)
+        mel_outputs = mel_outputs.view(B, -1, self.mel_dim)
+        linear_outputs = self.postnet(mel_outputs)</code></pre><h3>After Change</h3><pre><code class='java'>
+        self._init_states()
+        self.compute_speaker_embedding(speaker_ids)
+        if self.num_speakers &gt; 1:
+            <a id="change">inputs = self._concat_speaker_embedding(inputs,
+                                                self.speaker_embeddings)</a>
+        encoder_outputs = self.encoder(inputs)
+        <a id="change">if self.num_speakers &gt; 1:
+            encoder_outputs = self._concat_speaker_embedding(encoder_outputs,
+                                                        self.speaker_embeddings)
+       </a> gst_outputs = self.gst(mel_specs)
+        encoder_outputs = self._concat_speaker_embedding(
+            encoder_outputs, gst_outputs)
+        mel_outputs, alignments, stop_tokens = self.decoder(</code></pre>

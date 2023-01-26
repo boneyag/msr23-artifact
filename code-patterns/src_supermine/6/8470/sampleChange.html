@@ -1,0 +1,80 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      .map(lambda tokens: (tokens, tf.size(tokens)),
+           num_parallel_calls=self._map_parallel_calls)
+
+    _src_tgt_dataset = <a id="change">tf.data.Dataset.zip((_sources, _targets)).filter(
+      lambda t1, t2: tf.logical_and(tf.less_equal(t1[1], self.max_len),
+                                    tf.less_equal(t2[1], self.max_len))
+    )</a>
+
+    if self._num_workers &gt; 1:
+      _src_tgt_dataset = _src_tgt_dataset\
+        .shard(num_shards=self._num_workers, index=self._worker_id)
+
+
+    if self.params[&quotshuffle&quot]:
+      _src_tgt_dataset = _src_tgt_dataset\
+        .shuffle(buffer_size=self.get_size_in_samples())
+    else:
+      _src_tgt_dataset = _src_tgt_dataset
+
+    if self.params[&quotrepeat&quot]:
+      _src_tgt_dataset = _src_tgt_dataset.repeat()
+
+    <a id="change">self.batched_dataset</a> = _src_tgt_dataset.padded_batch(
+      self._batch_size,
+      padded_shapes=((tf.TensorShape([None]),
+                      tf.TensorShape([])),
+                     (tf.TensorShape([None]),
+                      tf.TensorShape([]))),
+      padding_values=(
+      (SpecialTextTokens.PAD_ID.value,
+       0),
+      (SpecialTextTokens.PAD_ID.value,
+       0))).prefetch(buffer_size=self._prefetch_buffer_size)
+
+    <a id="change">self._iterator</a> = self.batched_dataset.make_initializable_iterator()
+
+    if self.params[&quotmode&quot] == &quottrain&quot or self.params[&quotmode&quot] == &quoteval&quot:
+      t1, t2 = self.iterator.get_next()</code></pre><h3>After Change</h3><pre><code class='java'>
+      .map(lambda tokens: (tokens, tf.size(tokens)),
+           num_parallel_calls=self._map_parallel_calls)
+
+    _src_tgt_dataset = <a id="change">tf</a>.data.Dataset.zip((_sources, _targets)).filter(
+      lambda t1, t2: tf.logical_and(tf.less_equal(t1[1], self.max_len),
+                                    tf.less_equal(t2[1], self.max_len))
+    ).cache()
+
+    if self._num_workers &gt; 1:
+      _src_tgt_dataset = _src_tgt_dataset\
+        .shard(num_shards=self._num_workers, index=self._worker_id)
+
+
+    if self.params[&quotshuffle&quot]:
+      _src_tgt_dataset = _src_tgt_dataset\
+        .shuffle(buffer_size=self.get_size_in_samples())
+    else:
+      _src_tgt_dataset = _src_tgt_dataset
+
+    if self.params[&quotrepeat&quot]:
+      _src_tgt_dataset = _src_tgt_dataset.repeat()
+
+    <a id="change">self.batched_dataset</a> = _src_tgt_dataset.padded_batch(
+      self._batch_size,
+      padded_shapes=((tf.TensorShape([None]),
+                      tf.TensorShape([])),
+                     (tf.TensorShape([None]),
+                      tf.TensorShape([]))),
+      padding_values=(
+      (SpecialTextTokens.PAD_ID.value,
+       0),
+      (SpecialTextTokens.PAD_ID.value,
+       0))).prefetch(buffer_size=self._prefetch_buffer_size)
+
+    <a id="change">self._iterator</a> = self.batched_dataset.make_initializable_iterator()
+
+    if self.params[&quotmode&quot] == &quottrain&quot or self.params[&quotmode&quot] == &quoteval&quot:
+      t1, t2 = self.iterator.get_next()</code></pre>

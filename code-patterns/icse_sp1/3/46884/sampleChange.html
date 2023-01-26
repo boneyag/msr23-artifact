@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    features = Feature(shape=(None, n_features))
+    label = Label(shape=(None, n_tasks, n_classes))
+    dense = Dense(out_channels=n_tasks * n_classes, in_layers=<a id="change">[features]</a>)
+    logits = Reshape(shape=(None, n_tasks, n_classes), in_layers=dense)
+    output = <a id="change">SoftMax(in_layers=[logits])</a>
+    smce = SoftMaxCrossEntropy(in_layers=[label, logits])
+    total_loss = ReduceMean(in_layers=smce)
+
+    tg = dc.models.TensorGraph(learning_rate=0.01, batch_size=n_data_points)</code></pre><h3>After Change</h3><pre><code class='java'>
+    features = layers.Input(shape=(n_data_points // 2, n_features))
+    dense = layers.Dense(n_tasks * n_classes)(features)
+    logits = layers.Reshape((n_tasks, n_classes))(dense)
+    output = <a id="change">layers.Softmax()(logits)</a>
+    keras_model = tf.keras.Model(inputs=features, outputs=[output, logits])
+    model = dc.models.KerasModel(
+        keras_model,
+        dc.models.losses.SoftmaxCrossEntropy(),</code></pre>

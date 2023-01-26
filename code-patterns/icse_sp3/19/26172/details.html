@@ -1,0 +1,86 @@
+<html><h3>07eed27d9fa6f1feaf2d09ba25ff26a643e70b3a,fairseq/search.py,Sampling,step,#Sampling#Any#Any#Any#,233
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    @torch.jit.export
+    def step(self, step: int, lprobs, scores):
+        <a id="change">self._init_buffers(lprobs)</a>
+        bsz, beam_size, vocab_size = lprobs.size()
+
+        if step == 0:
+            &#47&#47 at the first step all hypotheses are equally likely, so use
+            &#47&#47 only the first beam
+            lprobs = lprobs[:, ::beam_size, :].contiguous()
+
+        if self.sampling_topp &gt; 0:
+            &#47&#47 only sample from the smallest set of words whose cumulative probability mass exceeds p
+            probs, top_indices = self._sample_topp(lprobs)
+        elif self.sampling_topk &gt; 0:
+            &#47&#47 only sample from top-k candidates
+            lprobs, top_indices = lprobs.topk(self.sampling_topk)
+            probs = lprobs.exp_()
+        else:
+            probs = lprobs.exp_()
+
+            &#47&#47 dummy data to be consistent with true branch for type check
+            top_indices = torch.empty(0)
+        &#47&#47 sample
+        if step == 0:
+            self.indices_buf.resize_(bsz, beam_size)
+            <a id="change">self.indices_buf</a> = torch.multinomial(
+                probs.view(bsz, -1), beam_size, replacement=True,
+            ).view(bsz, beam_size)
+        else:
+            self.indices_buf.resize_(bsz, beam_size)
+            self.indices_buf = torch.multinomial(
+                probs.view(bsz * beam_size, -1),
+                1,
+                replacement=True,
+                out=<a id="change">self.indices_buf</a>,
+            ).view(bsz, beam_size)
+
+        if step == 0:
+            &#47&#47 expand to beam size
+            probs = probs.expand(bsz, beam_size, -1)
+
+        &#47&#47 gather scores
+        <a id="change">self.scores_buf</a> = torch.gather(
+            probs, dim=2, index=<a id="change">self</a>.indices_buf.unsqueeze(-1)
+        )
+        <a id="change">self.scores_buf</a> = <a id="change">self</a>.scores_buf.log_().view(bsz, -1)
+
+        &#47&#47 remap indices if using top-k or top-P sampling
+        if self.sampling_topk &gt; 0 or self.sampling_topp &gt; 0:
+            self.indices_buf = torch.gather(
+                top_indices.expand(bsz, beam_size, -1),
+                dim=2,
+                index=<a id="change">self</a>.indices_buf.unsqueeze(-1),
+            ).squeeze(2)
+
+        if step == 0:
+            self.beams_buf = <a id="change">self</a>.indices_buf.new_zeros(bsz, beam_size)
+        else:
+            self.beams_buf.resize_(beam_size)
+            <a id="change">self.beams_buf</a> = torch.arange(0, beam_size).repeat(
+                bsz, 1
+            )
+            &#47&#47 make scores cumulative
+            <a id="change">self</a>.scores_buf.add_(
+                torch.gather(scores[:, :, step - 1], dim=1, index=self.beams_buf)
+            )
+
+        <a id="change">return self.scores_buf, self.indices_buf, self.beams_buf</a>
+
+
+class DiverseSiblingsSearch(Search):
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+                torch.gather(scores[:, :, step - 1], dim=1, index=beams_buf)
+            )
+
+        <a id="change">return scores_buf, indices_buf, beams_buf</a>
+
+
+class DiverseSiblingsSearch(Search):
+    </code></pre><img src="133937787.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 21</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/elbayadm/attn2d/commit/07eed27d9fa6f1feaf2d09ba25ff26a643e70b3a#diff-5839f0eaef65584df87188720a27a2aa88cf2a51d97459707019c7effa6cefa7L233' target='_blank'>Link</a></div><div id='project'> Project Name: elbayadm/attn2d</div><div id='commit'> Commit Name: 07eed27d9fa6f1feaf2d09ba25ff26a643e70b3a</div><div id='time'> Time: 2020-02-26</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/search.py</div><div id='class'> Class Name: Sampling</div><div id='method'> Method Name: step</div><BR><BR><div id='link'><a href='https://github.com/elbayadm/attn2d/commit/07eed27d9fa6f1feaf2d09ba25ff26a643e70b3a#diff-5839f0eaef65584df87188720a27a2aa88cf2a51d97459707019c7effa6cefa7L130' target='_blank'>Link</a></div><div id='project'> Project Name: elbayadm/attn2d</div><div id='commit'> Commit Name: 07eed27d9fa6f1feaf2d09ba25ff26a643e70b3a</div><div id='time'> Time: 2020-02-26</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/search.py</div><div id='class'> Class Name: DiverseBeamSearch</div><div id='method'> Method Name: step</div><BR><BR><div id='link'><a href='https://github.com/elbayadm/attn2d/commit/07eed27d9fa6f1feaf2d09ba25ff26a643e70b3a#diff-5839f0eaef65584df87188720a27a2aa88cf2a51d97459707019c7effa6cefa7L233' target='_blank'>Link</a></div><div id='project'> Project Name: elbayadm/attn2d</div><div id='commit'> Commit Name: 07eed27d9fa6f1feaf2d09ba25ff26a643e70b3a</div><div id='time'> Time: 2020-02-26</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/search.py</div><div id='class'> Class Name: Sampling</div><div id='method'> Method Name: step</div><BR>

@@ -1,0 +1,145 @@
+<html><h3>3ff3c1aefd784551e0b5e67f1c708401a7fc9076,QUANTAXIS/QAARP/QAAccountPro.py,QA_AccountPRO,send_order,#QA_AccountPRO#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#,1434
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if self.market_type == MARKET_TYPE.FUTURE_CN:
+                    &#47&#47 如果有负持仓-- 允许卖空的时候
+                    if towards == 3: &#47&#47 多平
+                        _hold = <a id="change">self.sell_available.get(code, 0)</a>
+                                     &#47&#47 假设有负持仓:
+                                     &#47&#47 amount为下单数量 如  账户原先-3手 现在平1手
+
+                        &#47&#47left_amount = amount+_hold if _hold &lt; 0 else amount</code></pre><h3>After Change</h3><pre><code class='java'>
+        pass
+
+    def send_order(
+            <a id="change">self</a>,
+            code=None,
+            amount=None,
+            time=None,
+            towards=None,
+            price=None,
+            money=None,
+            order_model=ORDER_MODEL.LIMIT,
+            amount_model=AMOUNT_MODEL.BY_AMOUNT,
+            order_id=None,
+            position_id=None,
+            *args,
+            **kwargs
+    ):
+
+        wrong_reason = None
+        assert code is not None and time is not None and towards is not None and order_model is not None and amount_model is not None
+        date = str(time)[0:10] if len(str(time)) == 19 else str(time)
+        time = str(time) if len(str(time)) == 19 else &quot{} 09:31:00&quot.format(
+            str(time)[0:10]
+        )
+        if self.allow_margin:
+            amount = amount if amount_model is AMOUNT_MODEL.BY_AMOUNT else int(
+                money / (
+                    self.market_preset.get_unit(code) *
+                    self.market_preset.get_frozen(code) * price *
+                    (1 + self.commission_coeff)
+                ) / 100
+            ) * 100
+        else:
+            amount = amount if amount_model is AMOUNT_MODEL.BY_AMOUNT else int(
+                money / (price * (1 + self.commission_coeff)) / 100
+            ) * 100
+
+        &#47&#47 🛠todo 移到Utils类中，  money_to_amount 金额转成交量
+        if self.allow_margin:
+            money = amount * price * self.market_preset.get_unit(code)*self.market_preset.get_frozen(code) * \
+                (1+self.commission_coeff) if amount_model is AMOUNT_MODEL.BY_AMOUNT else money
+        else:
+            money = amount * price * \
+                (1+self.commission_coeff) if amount_model is AMOUNT_MODEL.BY_AMOUNT else money
+
+        &#47&#47 flag 判断买卖 数量和价格以及买卖方向是否正确
+        flag = False
+
+        assert (int(towards) != 0)
+        if int(towards) in [1, 2, 3]:
+            &#47&#47 是买入的情况(包括买入.买开.买平)
+            if self.cash_available &gt;= money:
+                if self.market_type == MARKET_TYPE.STOCK_CN:  &#47&#47 如果是股票 买入的时候有100股的最小限制
+                    amount = int(amount / 100) * 100
+                    self.cash_available -= money
+                    flag = True
+
+                if self.running_environment == RUNNING_ENVIRONMENT.TZERO:
+
+                    if abs(self.buy_available.get(code, 0)) &gt;= amount:
+                        flag = True
+                        self.cash_available -= money
+                        self.buy_available[code] -= amount
+                    else:
+                        flag = False
+                        wrong_reason = &quotT0交易买入超出限额&quot
+
+                if self.market_type == MARKET_TYPE.FUTURE_CN:
+                    &#47&#47 如果有负持仓-- 允许卖空的时候
+                    if towards == 3:  &#47&#47 多平
+                        pos = <a id="change">self.get_position(code)</a>
+                        &#47&#47 假设有负持仓:
+                        &#47&#47 amount为下单数量 如  账户原先-3手 现在平1手
+
+                        &#47&#47left_amount = amount+_hold if _hold &lt; 0 else amount
+                        money_need = abs(
+                            float(amount * price * (1 + self.commission_coeff))
+                        )
+
+                        if self.cash_available &gt;= money_need:
+                            if pos.volume_short &gt; 0:
+                                self.cash_available -= money_need
+
+                                flag = True
+                            else:
+                                wrong_reason = &quot空单仓位不足&quot
+                        else:
+                            wrong_reason = &quot平多剩余资金不够&quot
+                    if towards == 2:
+                        self.cash_available -= money
+                        flag = True
+            else:
+                wrong_reason = &quotQAACCOUNT: 可用资金不足 cash_available {}  code {} time {} amount {} towards {}&quot.format(
+                    self.cash_available,
+                    code,
+                    time,
+                    amount,
+                    towards
+                )
+        elif int(towards) in [-1, -2, -3]:
+            &#47&#47 是卖出的情况(包括卖出，卖出开仓allow_sellopen如果允许. 卖出平仓)
+            &#47&#47 print(self.sell_available[code])
+            pos = self.get_position(code)  &#47&#47 _hold 是你的持仓
+
+            &#47&#47 如果你的hold&gt; amount&gt;0
+            &#47&#47 持仓数量&gt;卖出数量
+
+            if towards == -1:
+                if pos.volume_long_his &gt;= amount:
+                    self.sell_available[code] -= amount
+                    &#47&#47 towards = ORDER_DIRECTION.SELL
+                    flag = True
+            elif towards == -2:
+                if self.allow_sellopen:
+                    if self.cash_available &gt;= money:  &#47&#47 卖空的市值小于现金（有担保的卖空）， 不允许裸卖空
+                                                    &#47&#47 self.cash_available -= money
+                        flag = True
+                    else:
+                        print(&quotsellavailable&quot, _hold)
+                        print(&quotamount&quot, amount)
+                        print(&quotaqureMoney&quot, money)
+                        print(&quotcash&quot, self.cash_available)
+                        wrong_reason = "卖空资金不足"
+                else:
+                    wrong_reason = "不允许卖空"
+
+            else:
+                if pos.volume_long &gt;= amount:
+                    <a id="change">self.sell_available[code]</a> -= amount
+                    &#47&#47 towards = ORDER_DIRECTION.SELL
+                    flag = True
+                &#47&#47 如果持仓数量&lt;卖出数量</code></pre><img src="17907009.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/QUANTAXIS/QUANTAXIS/commit/3ff3c1aefd784551e0b5e67f1c708401a7fc9076#diff-a9016c80af484f0931b04daeba3d45e326df523bcf89c4292628fe46e567c17dL246' target='_blank'>Link</a></div><div id='project'> Project Name: QUANTAXIS/QUANTAXIS</div><div id='commit'> Commit Name: 3ff3c1aefd784551e0b5e67f1c708401a7fc9076</div><div id='time'> Time: 2019-10-16</div><div id='author'> Author: yutiansut@qq.com</div><div id='file'> File Name: QUANTAXIS/QAARP/QAAccountPro.py</div><div id='class'> Class Name: QA_AccountPRO</div><div id='method'> Method Name: send_order</div><BR><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/76a15cc5cae3cbd4ed77917d18047a727a86a8d7#diff-21f24f973a94751865e7155f3dbe422c6014231c3ad57530d04a83d569503695L515' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 76a15cc5cae3cbd4ed77917d18047a727a86a8d7</div><div id='time'> Time: 2018-02-26</div><div id='author'> Author: akreidieh@gmail.com</div><div id='file'> File Name: flow/core/vehicles.py</div><div id='class'> Class Name: Vehicles</div><div id='method'> Method Name: get_position</div><BR><BR><div id='link'><a href='https://github.com/QUANTAXIS/QUANTAXIS/commit/0b8628de208c79bf6ae2efd877ffeb80e819b63d#diff-a9016c80af484f0931b04daeba3d45e326df523bcf89c4292628fe46e567c17dL1214' target='_blank'>Link</a></div><div id='project'> Project Name: QUANTAXIS/QUANTAXIS</div><div id='commit'> Commit Name: 0b8628de208c79bf6ae2efd877ffeb80e819b63d</div><div id='time'> Time: 2019-10-21</div><div id='author'> Author: barrettyip@gmail.com</div><div id='file'> File Name: QUANTAXIS/QAARP/QAAccountPro.py</div><div id='class'> Class Name: QA_AccountPRO</div><div id='method'> Method Name: send_order</div><BR><BR><div id='link'><a href='https://github.com/QUANTAXIS/QUANTAXIS/commit/3ff3c1aefd784551e0b5e67f1c708401a7fc9076#diff-a9016c80af484f0931b04daeba3d45e326df523bcf89c4292628fe46e567c17dL1434' target='_blank'>Link</a></div><div id='project'> Project Name: QUANTAXIS/QUANTAXIS</div><div id='commit'> Commit Name: 3ff3c1aefd784551e0b5e67f1c708401a7fc9076</div><div id='time'> Time: 2019-10-16</div><div id='author'> Author: yutiansut@qq.com</div><div id='file'> File Name: QUANTAXIS/QAARP/QAAccountPro.py</div><div id='class'> Class Name: QA_AccountPRO</div><div id='method'> Method Name: send_order</div><BR>

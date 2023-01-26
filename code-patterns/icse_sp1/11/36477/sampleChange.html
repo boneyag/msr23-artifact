@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        image_shape = self.InputImage.meta.shape
+
+        key = roi.toSlice()
+        halo_key, within_halo_key = <a id="change">OpMaxProjection.compute_halo(key, image_shape, self.Axis.value)</a>
+
+        raw = self.InputImage[halo_key].wait()
+
+        processed = raw.max(axis=self.Axis.value)</code></pre><h3>After Change</h3><pre><code class='java'>
+        axis = self.Axis.value
+
+        key = roi.toSlice()
+        <a id="change">key = list(key)</a>
+        <a id="change">key = key[:axis] + [slice(None)] + key[axis:]</a>
+        key[axis] = nanshe.additional_generators.reformat_slice(key[axis], self.InputImage.meta.shape[axis])
+        <a id="change">key = tuple(key)</a>
+
+        raw = self.InputImage[key].wait()
+
+        processed = raw.max(axis=self.Axis.value)</code></pre>

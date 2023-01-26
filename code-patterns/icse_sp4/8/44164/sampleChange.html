@@ -1,0 +1,102 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        results[&quotlogits&quot] = logits
+        return results
+      loss_func = self.model.loss_function or loss_function
+      <a id="change">base_loss = loss_func(logits, labels, aux_logits=aux_logits)</a>
+      params = self.variable_mgr.trainable_variables_on_device(
+          rel_device_num, abs_device_num)
+      l2_loss = None
+      total_loss = base_loss
+      with tf.name_scope(&quotl2_loss&quot):
+        fp32_params = params
+        if data_type == tf.float16 and self.params.fp16_vars:
+          &#47&#47 fp16 reductions are very slow on GPUs, so cast to fp32 before
+          &#47&#47 calling tf.nn.l2_loss and tf.add_n.
+          &#47&#47 TODO(b/36217816): Once the bug is fixed, investigate if we should do
+          &#47&#47 this reduction in fp16.
+          fp32_params = (tf.cast(p, tf.float32) for p in params)
+        if rel_device_num == len(self.devices) - 1:
+          &#47&#47 We compute the L2 loss for only one device instead of all of them,
+          &#47&#47 because the L2 loss for each device is the same. To adjust for this,
+          &#47&#47 we multiply the L2 loss by the number of devices. We choose the
+          &#47&#47 last device because for some reason, on a Volta DGX1, the first four
+          &#47&#47 GPUs take slightly longer to complete a step than the last four.
+          &#47&#47 TODO(reedwm): Shard the L2 loss computations across GPUs.
+          if self.params.single_l2_loss_op:
+            &#47&#47 TODO(reedwm): If faster, create a fused op that does the L2 loss
+            &#47&#47 on multiple tensors, and use that instead of concatenating
+            &#47&#47 tensors.
+            reshaped_params = [tf.reshape(p, (-1,)) for p in fp32_params]
+            l2_loss = tf.nn.l2_loss(tf.concat(reshaped_params, axis=0))
+          else:
+            l2_loss = tf.add_n([tf.nn.l2_loss(v) for v in fp32_params])
+      weight_decay = self.params.weight_decay
+      if (weight_decay is not None and weight_decay != 0. and
+          l2_loss is not None):
+        total_loss += len(self.devices) * weight_decay * l2_loss
+
+      aggmeth = tf.AggregationMethod.DEFAULT
+      scaled_loss = (total_loss if self.loss_scale is None
+                     else total_loss * self.loss_scale)
+      grads = tf.gradients(scaled_loss, params, aggregation_method=aggmeth)
+      if self.loss_scale is not None:
+        &#47&#47 TODO(reedwm): If automatic loss scaling is not used, we could avoid
+        &#47&#47 these multiplications by directly modifying the learning rate instead.
+        &#47&#47 If this is done, care must be taken to ensure that this scaling method
+        &#47&#47 is correct, as some optimizers square gradients and do other
+        &#47&#47 operations which might not be compatible with modifying both the
+        &#47&#47 gradients and the learning rate.
+
+        grads = [
+            grad * tf.cast(1. / self.loss_scale, grad.dtype) for grad in grads
+        ]
+
+      if self.params.variable_update == &quothorovod&quot:
+        import horovod.tensorflow as hvd  &#47&#47 pylint: disable=g-import-not-at-top
+        if self.params.horovod_device:
+          horovod_device = &quot/%s:0&quot % self.params.horovod_device
+        else:
+          horovod_device = &quot&quot
+        &#47&#47 All-reduce gradients using Horovod.
+        grads = [hvd.allreduce(grad, average=False, device_dense=horovod_device)
+                 for grad in grads]
+
+      if self.params.staged_vars:
+        grad_dtypes = [grad.dtype for grad in grads]
+        grad_shapes = [grad.shape for grad in grads]
+        grad_stage = data_flow_ops.StagingArea(grad_dtypes, grad_shapes)
+        grad_stage_op = grad_stage.put(grads)
+        &#47&#47 In general, this decouples the computation of the gradients and
+        &#47&#47 the updates of the weights.
+        &#47&#47 During the pipeline warm up, this runs enough training to produce
+        &#47&#47 the first set of gradients.
+        gpu_grad_stage_ops.append(grad_stage_op)
+        grads = grad_stage.get()
+
+      param_refs = self.variable_mgr.trainable_variables_on_device(
+          rel_device_num, abs_device_num, writable=True)
+      <a id="change">gradvars = list(zip(grads, param_refs))</a>
+      if self.params.loss_type_to_report == &quottotal_loss&quot:
+        results[&quotloss&quot] = total_loss
+      else:
+        results[&quotloss&quot] = base_loss
+      <a id="change">results[&quotgradvars&quot] = gradvars</a>
+      return results
+
+  def get_image_preprocessor(self):
+    Returns the image preprocessor to used, based on the model.</code></pre><h3>After Change</h3><pre><code class='java'>
+
+      return results
+
+    <a id="change">with tf.device(self.devices[rel_device_num]):
+      outputs = forward_pass_and_gradients()
+      logits, loss, grads = unpack_forward_pass_and_gradients_output(outputs)
+      return make_results(logits, loss, grads)
+
+ </a> def get_image_preprocessor(self):
+    Returns the image preprocessor to used, based on the model.
+
+    Returns:</code></pre>

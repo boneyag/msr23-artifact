@@ -1,0 +1,127 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        The distances to the ``n_neighbors`` closest points in the dataset.
+    
+    if verbose:
+        print(time.ctime(<a id="change">time.time()</a>) + " Finding Nearest Neighbors")
+
+    if metric == "precomputed":
+        &#47&#47 Note that this does not support sparse distance matrices yet ...
+        &#47&#47 Compute indices of n nearest neighbors
+        knn_indices = np.argsort(X)[:, :n_neighbors]
+        &#47&#47 Compute the nearest neighbor distances
+        &#47&#47   (equivalent to np.sort(X)[:,:n_neighbors])
+        knn_dists = X[np.arange(X.shape[0])[:, None], knn_indices].copy()
+
+        rp_forest = []
+    else:
+        if callable(metric):
+            distance_func = metric
+        elif metric in dist.named_distances:
+            distance_func = dist.named_distances[metric]
+        else:
+            raise ValueError("Metric is neither callable, " + "nor a recognised string")
+
+        if metric in ("cosine", "correlation", "dice", "jaccard"):
+            angular = True
+
+        rng_state = random_state.randint(INT32_MIN, INT32_MAX, 3).astype(np.int64)
+
+        if scipy.sparse.isspmatrix_csr(X):
+            if metric in sparse.sparse_named_distances:
+                distance_func = sparse.sparse_named_distances[metric]
+                if metric in sparse.sparse_need_n_features:
+                    metric_kwds["n_features"] = X.shape[1]
+            else:
+                raise ValueError(
+                    "Metric {} not supported for sparse " + "data".format(metric)
+                )
+            metric_nn_descent = sparse.make_sparse_nn_descent(
+                distance_func, tuple(metric_kwds.values())
+            )
+
+            &#47&#47 TODO: Hacked values for now
+            n_trees = 5 + int(round((X.shape[0]) ** 0.5 / 20.0))
+            n_iters = max(5, int(round(np.log2(X.shape[0]))))
+
+            rp_forest = make_forest(X, n_neighbors, n_trees, rng_state, angular)
+            leaf_array = rptree_leaf_array(rp_forest)
+            knn_indices, knn_dists = metric_nn_descent(
+                X.indices,
+                X.indptr,
+                X.data,
+                X.shape[0],
+                n_neighbors,
+                rng_state,
+                max_candidates=60,
+                rp_tree_init=True,
+                leaf_array=leaf_array,
+                n_iters=n_iters,
+                verbose=verbose,
+            )
+        else:
+            metric_nn_descent = make_nn_descent(
+                distance_func, tuple(metric_kwds.values())
+            )
+            &#47&#47 TODO: Hacked values for now
+            n_trees = 5 + int(round((X.shape[0]) ** 0.5 / 20.0))
+            n_iters = max(5, int(round(np.log2(X.shape[0]))))
+
+            rp_forest = make_forest(X, n_neighbors, n_trees, rng_state, angular)
+            leaf_array = rptree_leaf_array(rp_forest)
+            knn_indices, knn_dists = metric_nn_descent(
+                X,
+                n_neighbors,
+                rng_state,
+                max_candidates=60,
+                rp_tree_init=True,
+                leaf_array=leaf_array,
+                n_iters=n_iters,
+                verbose=verbose,
+            )
+
+        if np.any(knn_indices &lt; 0):
+            warn(
+                "Failed to correctly find n_neighbors for some samples."
+                "Results may be less than ideal. Try re-running with"
+                "different parameters."
+            )
+    if verbose:
+        print(time.ctime(<a id="change">time.time()</a>) + " Finished Nearest Neighbor Search")
+    return knn_indices, knn_dists, rp_forest
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            rp_forest = make_forest(X, n_neighbors, n_trees, rng_state, angular)
+            leaf_array = rptree_leaf_array(rp_forest)
+
+            if <a id="change">verbose</a>:
+                print(<a id="change">ts() + "Commencing NN descent for " + str(n_iters) + " iterations"</a>)
+            knn_indices, knn_dists = metric_nn_descent(
+                X.indices,
+                X.indptr,
+                X.data,
+                X.shape[0],
+                n_neighbors,
+                rng_state,
+                max_candidates=60,
+                rp_tree_init=True,
+                leaf_array=leaf_array,
+                n_iters=n_iters,
+                verbose=verbose,
+            )
+        else:
+            metric_nn_descent = make_nn_descent(
+                distance_func, tuple(metric_kwds.values())
+            )
+            &#47&#47 TODO: Hacked values for now
+            n_trees = 5 + int(round((X.shape[0]) ** 0.5 / 20.0))
+            n_iters = max(5, int(round(np.log2(X.shape[0]))))
+
+            <a id="change">if verbose:
+                print(ts() + "Building RP forest with " + str(n_trees) + " trees")
+           </a> rp_forest = make_forest(X, n_neighbors, n_trees, rng_state, angular)
+            leaf_array = rptree_leaf_array(rp_forest)
+            if verbose:
+                print(ts() + "Commencing NN descent for " + str(n_iters) + " iterations")</code></pre>

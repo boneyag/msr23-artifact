@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.max_len &gt; tensor.size(0):
+            pad = torch.ones((self.max_len - tensor.size(0),
+                              tensor.size(1))) * self.fill_value
+            pad = <a id="change">pad.type_as(tensor)</a>
+            tensor = torch.cat((tensor, pad), dim=0)
+        elif self.max_len &lt; tensor.size(0):
+            tensor = tensor[:self.max_len, :]
+        return tensor</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            padding_size = [self.max_len - tensor.size(self.len_dim) if i == self.len_dim
+                            else tensor.size(self.ch_dim)
+                            <a id="change">for</a> i in <a id="change">range(2)</a>]
+            pad = torch.empty(padding_size, dtype=tensor.dtype).fill_(self.fill_value)
+            tensor = torch.cat((tensor, pad), dim=self.len_dim)
+        elif self.max_len &lt; tensor.size(self.len_dim):</code></pre>

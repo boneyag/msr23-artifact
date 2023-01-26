@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    :rtype: list of str
+    
+    <a id="change">return self._zinc_factory.dist</a>
+
+  @memoized_property
+  def compiler_bridge(self):
+    Return the path to the Zinc compiler-bridge jar.</code></pre><h3>After Change</h3><pre><code class='java'>
+    underlying_dist = self.underlying_dist
+    if self._execution_strategy != NailgunTaskBase.HERMETIC:
+      &#47&#47 symlink .pants.d/.jdk -&gt; /some/java/home/
+      <a id="change">jdk_home_symlink = os.path.relpath(
+        os.path.join(self._zinc_factory.get_options().pants_workdir, &quot.jdk&quot),
+        get_buildroot())</a>
+
+      &#47&#47 Since this code can be run in multi-threading mode due to multiple
+      &#47&#47 zinc workers, we need to make sure the file operations below is atomic.
+      with self._lock:
+        &#47&#47 Create the symlink if it does not exist
+        if not os.path.exists(jdk_home_symlink):
+          os.symlink(underlying_dist.home, jdk_home_symlink)
+        &#47&#47 Recreate if the symlink exists but does not match `underlying_dist.home`.
+        elif os.readlink(jdk_home_symlink) != underlying_dist.home:
+          os.remove(jdk_home_symlink)
+          os.symlink(underlying_dist.home, jdk_home_symlink)
+
+      <a id="change">return Distribution(home_path=jdk_home_symlink)</a>
+    else:
+      return underlying_dist
+
+  @property</code></pre>

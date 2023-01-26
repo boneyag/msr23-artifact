@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    name = &quot%s-scratch-%s&quot % (self.name, len(self.scratch_disks))
+    scratch_disk = gce_disk.GceDisk(disk_spec, name, self.zone, self.project)
+    <a id="change">self.scratch_disks.append(scratch_disk)</a>
+
+    if scratch_disk.disk_type == disk.LOCAL:
+      if self.local_drive_counter &gt;= self.max_local_drives:
+        raise errors.Error(&quotNot enough local drives.&quot)
+      scratch_disk.name = &quotlocal-ssd-%d&quot % self.local_drive_counter
+      self.local_drive_counter += 1
+    else:
+      <a id="change">scratch_disk.Create()</a>
+      scratch_disk.Attach(self)
+
+    self.FormatDisk(scratch_disk.GetDevicePath())
+    <a id="change">self.MountDisk(scratch_disk.GetDevicePath(), disk_spec.mount_point)</a>
+
+  def GetName(self):
+    Get a GCE VM&quots unique name.
+    return self.name</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    &#47&#47 Get the names for the disk(s) we are going to create.
+    if disk_spec.disk_type == disk.LOCAL:
+      new_count = self.local_drive_counter + <a id="change">disk_spec.num_striped_disks</a>
+      if new_count &gt; self.max_local_drives:
+        raise errors.Error(&quotNot enough local drives.&quot)
+      disk_names = [&quotlocal-ssd-%d&quot % i
+                    for i in range(self.local_drive_counter, new_count)]
+      self.local_drive_counter = new_count
+    else:
+      disk_names = [&quot%s-data-%d-%d&quot % (self.name, len(self.scratch_disks), i)
+                    for i in <a id="change">range(disk_spec.num_striped_disks)</a>]
+
+    &#47&#47 Instantiate the disk(s).
+    disks = [gce_disk.GceDisk(disk_spec, name, self.zone, self.project)
+             <a id="change">for</a> name in disk_names]
+
+    self._CreateScratchDiskFromDisks(disk_spec, disks)
+</code></pre>

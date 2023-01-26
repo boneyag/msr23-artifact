@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    interpreter = self.select_interpreter_for_targets(targets)
+    builder = PEXBuilder(interpreter=interpreter)
+    builder.info.entry_point = &quotpytest&quot
+    <a id="change">chroot = PythonChroot(
+      context=self.context,
+      python_setup=PythonSetup.global_instance(),
+      python_repos=PythonRepos.global_instance(),
+      targets=targets,
+      extra_requirements=self._TESTING_TARGETS,
+      builder=builder,
+      platforms=(&quotcurrent&quot,),
+      interpreter=interpreter)</a>
+    try:
+      builder = chroot.dump()
+      builder.freeze()
+      pex = PEX(builder.path(), interpreter=interpreter)</code></pre><h3>After Change</h3><pre><code class='java'>
+    pex_info = PexInfo.default()
+    pex_info.entry_point = &quotpytest&quot
+
+    <a id="change">with self.temporary_chroot(interpreter=interpreter,
+                               pex_info=pex_info,
+                               targets=targets,
+                               extra_requirements=self._TESTING_TARGETS,
+                               platforms=(&quotcurrent&quot,)) as chroot:
+      pex = PEX(chroot.path(), interpreter=interpreter)
+      with self._maybe_shard() as shard_args:
+        with self._maybe_emit_junit_xml(targets) as junit_args:
+          with self._maybe_emit_coverage_data(targets,
+                                              chroot.path(),
+                                              pex,
+                                              workunit) as coverage_args:
+            yield pex, shard_args + junit_args + coverage_args
+
+ </a> def _do_run_tests_with_args(self, pex, workunit, args):
+    try:
+      &#47&#47 The pytest runner we use accepts a --pdb argument that will launch an interactive pdb
+      &#47&#47 session on any test failure.  In order to support use of this pass-through flag we must</code></pre>

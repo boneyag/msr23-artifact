@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if len(circuit) == 0:
+            raise ValueError(&quotCannot serialize empty circuit.&quot)
+        all_qubits = circuit.all_qubits()
+        <a id="change">if any(not isinstance(q, line_qubit.LineQubit) for q in all_qubits):
+            raise ValueError(
+                f&quotAll qubits must be cirq.LineQubits but were {set(type(q) for q in all_qubits)}&quot
+            )
+       </a> num_qubits = cast(line_qubit.LineQubit, max(all_qubits)).x + 1
+        return {&quotqubits&quot: num_qubits, &quotcircuit&quot: self._serialize_circuit(circuit, num_qubits)}
+
+    def _serialize_circuit(self, circuit: &quotcirq.Circuit&quot, num_qubits: int) -&gt; list:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 IonQ API does not support measurements, so we pass the measurement keys through
+        &#47&#47 the metadata field.  Here we split these out of the serialized ops.
+        body = <a id="change">{
+            &quotqubits&quot: num_qubits,
+            &quotcircuit&quot: [op for op in serialized_ops if op[&quotgate&quot] != &quotmeas&quot],
+        }</a>
+        metadata = self._serialize_measurements(op for op in serialized_ops if op[&quotgate&quot] == &quotmeas&quot)
+        return SerializedProgram(body=body, metadata=metadata)
+
+    def _validate_circuit(self, circuit: &quotcirq.Circuit&quot):</code></pre>

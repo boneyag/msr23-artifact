@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.body.env.clock.frame &lt; self.training_start_step:
+            return policy_util.random(state, self, self.body).cpu().squeeze().numpy()
+        else:
+            <a id="change">action = super().act(state)</a>
+            <a id="change">return np.tanh(action)</a>  &#47&#47 continuous action bound
+
+    def calc_q(self, state, action, net=None):
+        &quot&quot&quotForward-pass to calculate the predicted state-action-value from q1_net.&quot&quot&quot</code></pre><h3>After Change</h3><pre><code class='java'>
+            action = self.action_policy(state, self, self.body)
+            if self.body.is_discrete:
+                &#47&#47 discrete output is RelaxedOneHotCategorical, need to sample to int. clamp to prevent minor precision issue with prob &lt; 0
+                <a id="change">action = torch.distributions.Categorical(probs=action.clamp(min=0)).sample()</a>
+            else:
+                action = torch.tanh(action)  &#47&#47 continuous action bound
+            <a id="change">return action.cpu().squeeze().numpy()</a>
+
+    def calc_q(self, state, action, net=None):
+        &quot&quot&quotForward-pass to calculate the predicted state-action-value from q1_net.&quot&quot&quot
+        x = torch.cat((state, action), dim=-1)</code></pre>

@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.se = nn.HybridSequential(prefix=&quot&quot)
+        self.se.add(nn.Dense(channels//16, use_bias=False))
+        self.se.add(nn.Activation(&quotrelu&quot))
+        self.se.add(<a id="change">nn.Dense(channels, use_bias=False)</a>)
+        self.se.add(nn.Activation(&quotsigmoid&quot))
+
+        if downsample:</code></pre><h3>After Change</h3><pre><code class='java'>
+                self.features.add(nn.MaxPool2D(3, 2, 1))
+
+            in_channels = channels[0]
+            for <a id="change">i, num_layer in enumerate(layers):
+                stride = 1 if i == 0 else 2
+                self.features.add(self._make_layer(block, num_layer, channels[i+1],
+                                                   stride, i+1, in_channels=in_channels,
+                                                   norm_layer=norm_layer, norm_kwargs=norm_kwargs))
+                in_channels = channels[i+1]
+            self.features.add(norm_layer(**({} if norm_kwargs is None else norm_kwargs)))
+            self.features.add(nn.Activation(&quotrelu&quot))
+            self.features.add(nn.GlobalAvgPool2D())
+            self.features.add(nn.Flatten())
+
+            self.output = nn.Dense(classes, in_units=in_channels)
+
+    def _make_layer(self, block, layers, channels, stride, stage_index, in_channels=0,
+                    norm_layer=BatchNorm, norm_kwargs=None)</a>:
+        layer = nn.HybridSequential(prefix=&quotstage%d_&quot%stage_index)
+        with layer.name_scope():
+            layer.add(block(channels, stride, channels != in_channels, in_channels=in_channels,</code></pre>

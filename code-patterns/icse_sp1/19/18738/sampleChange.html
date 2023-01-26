@@ -1,0 +1,96 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                theta_bar, momentum_bar = self.discretize_time(self.grad_log_pdf, self.model, theta_bar.copy(),
+                                                               momentum_bar.copy(), epsilon).discretize_time()
+
+            <a id="change">_, log_bar = self.grad_log_pdf(theta_bar.copy(), self.model).get_gradient_log_pdf()</a>
+            &#47&#47 log_m_1 = log(theta_m) or log(theta_m_1)
+            <a id="change">_, log_m_1 = self.grad_log_pdf(theta_m.copy(), self.model).get_gradient_log_pdf()</a>
+
+            &#47&#47 Metropolis acceptance probability
+            alpha = min(1, np.exp(log_bar - log_m_1 - 0.5 *
+                                  np.float(np.dot(momentum_bar.T, momentum_bar) - np.dot(momentum0.T, momentum0))))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        return samples
+
+    def generate_sample(<a id="change">self</a>, theta0, num_samples, Lambda, epsilon=None):
+        
+        Method returns a generator type object whose each iteration yields a sample
+        using Hamiltonian Monte Carlo
+
+        Parameters
+        ----------
+        theta0: A 1d array type object or a row matrix of shape 1 X d
+                or d X 1.(Will be converted to d X 1)
+                Vector representing values of parameter theta, the starting
+                state in markov chain.
+
+        num_samples: int
+                     Number of samples to be generated
+
+        Lambda: int or float
+                Target trajectory length, epsilon * number of steps(L),
+                where L is the number of steps taken per HMC iteration,
+                and epsilon is step size for splitting time method.
+
+        epsilon: float , defaults to None
+                 The step size for descrete time method
+                 If None, then will be choosen suitably
+
+        Returns
+        -------
+        genrator: yielding a numpy.array type object for a sample
+
+        Examples
+        --------
+        &gt;&gt;&gt; from pgmpy.inference import HamiltonianMC as HMC
+        &gt;&gt;&gt; from pgmpy.inference import JointGaussianDistribution as JGD, GradLogPDFGaussian as GLPG
+        &gt;&gt;&gt; from pgmpy.inference import ModifiedEuler
+        &gt;&gt;&gt; import numpy as np
+        &gt;&gt;&gt; mean = np.array([1, 1])
+        &gt;&gt;&gt; cov_matrix = np.array([[1, 0.7], [0.7, 1]])
+        &gt;&gt;&gt; model = JGD(mean, cov_matrix)
+        &gt;&gt;&gt; sampler = HMC(model=model, grad_log_pdf=GLPG, discretize_time=ModifiedEuler)
+        &gt;&gt;&gt; gen_samples = sampler.generate_sample(np.array([[1], [1]]), num_samples = 10000, Lambda=2, epsilon=None)
+        &gt;&gt;&gt; samples = [sample for sample in gen_samples]
+        &gt;&gt;&gt; samples_array = np.concatenate(samples, axis=1)
+        &gt;&gt;&gt; np.cov(samples_array)
+        array([[ 1.84321553,  0.33513749],
+               [ 0.33513749,  1.98544953]])
+        &gt;&gt;&gt; &#47&#47 LeapFrog performs best with HMC algorithm
+
+        
+        &#47&#47 TODO: Proper parameterization
+        if isinstance(theta0, (np.matrix, np.ndarray, list, tuple, set, frozenset)):
+            theta0 = np.array(theta0).flatten()
+            theta0 = np.reshape(theta0, (len(theta0), 1))
+        else:
+            raise TypeError("theta should be a 1d array type object")
+
+        if epsilon is None:
+            epsilon = self._find_reasonable_epsilon(theta0)
+
+        theta_m = theta0.copy()
+        for i in range(0, num_samples):
+            &#47&#47 Genrating sample
+            &#47&#47 Resampling momentum
+            momentum0 = np.reshape(np.random.normal(0, 1, len(theta0)), theta0.shape)
+            &#47&#47 theta_m here will be the previous sampled value of theta
+            theta_bar, momentum_bar = theta_m.copy(), momentum0.copy()
+            &#47&#47 Number of steps L to run discretize time algorithm
+            lsteps = int(max(1, round(Lambda / epsilon, 0)))
+
+            for _ in range(lsteps):
+                &#47&#47 Taking L steps in time
+                theta_bar, momentum_bar = self.discretize_time(self.grad_log_pdf, self.model, theta_bar.copy(),
+                                                               momentum_bar.copy(), epsilon).discretize_time()
+
+            <a id="change">acceptance_prob = self._acceptance_prob(theta_m.copy(), theta_bar.copy(), momentum0, momentum_bar)</a>
+            &#47&#47 Metropolis acceptance probability
+            <a id="change">alpha = min(1, acceptance_prob)</a>
+            &#47&#47 Accept or reject the new proposed value of theta, i.e theta_bar
+            if np.random.rand() &lt; alpha:
+                theta_m = theta_bar.copy()
+</code></pre>

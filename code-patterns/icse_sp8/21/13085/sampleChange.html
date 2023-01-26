@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        x_adv = initial_sample
+        delta = initial_delta
+        epsilon = initial_epsilon
+        <a id="change">clip_min</a>, <a id="change">clip_max</a> = self.classifier.clip_values
+
+        &#47&#47 Main loop to wander around the boundary
+        for _ in range(self.max_iter):
+            &#47&#47 Trust region method to adjust delta
+            for _ in range(self.max_iter):
+                potential_advs = []
+                for _ in range(self.sample_size):
+                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
+                    potential_adv = <a id="change">np.clip(potential_adv, clip_min, clip_max)</a>
+                    potential_advs.append(potential_adv)
+
+                preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                potential_advs = []
+                for _ in range(self.sample_size):
+                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
+                    <a id="change">if hasattr(self.classifier, &quotclip_values&quot) and self.classifier is not None:
+                        np.clip(potential_adv, self.classifier.clip_values[0], self.classifier.clip_values[1],
+                                out=potential_adv)
+                   </a> potential_advs.append(potential_adv)
+
+                preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
+
+                if self.targeted:
+                    satisfied = (preds == target)
+                else:
+                    satisfied = (preds != target)
+
+                delta_ratio = np.mean(satisfied)
+
+                if delta_ratio &lt; 0.5:
+                    delta *= self.step_adapt
+                else:
+                    delta /= self.step_adapt
+
+                if delta_ratio &gt; 0:
+                    x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    break
+
+            else:
+                logging.warning(&quotAdversarial example found but not optimal.&quot)
+                return x_adv
+
+            &#47&#47 Trust region method to adjust epsilon
+            for _ in range(self.max_iter):
+                perturb = original_sample - x_adv
+                perturb *= epsilon
+                potential_adv = x_adv + perturb
+                if hasattr(<a id="change">self.classifier</a>, &quotclip_values&quot) and self.classifier.clip_values is not None:
+                    np.clip(potential_adv, <a id="change">self</a>.classifier.clip_values[0], self.classifier.clip_values[1],
+                            out=potential_adv)
+
+                pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]</code></pre>

@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if isinstance(n_components, int) and \
+            isinstance(max_pca_components, int) and \
+            n_components &gt; max_pca_components:
+        with <a id="change">pytest.raises(ValueError, match=&quotn_components must be smaller.*&quot)</a>:
+            ICA(**kwargs)
+        return
+    ica = ICA(**kwargs)</code></pre><h3>After Change</h3><pre><code class='java'>
+        return
+    ica = ICA(**kwargs)
+    if n_components == 10 and n_pca_components == 0.9999:
+        with <a id="change">pytest.raises(RuntimeError, match=&quot.*requires.*PCA.*&quot)</a>:
+            ica.fit(raw)
+        return
+    if n_components == 10 and n_pca_components == 10:
+        ctx = <a id="change">pytest.warns(RuntimeWarning, match=&quot.*unstable.*integer &lt;= 9&quot)</a>
+        bad = True  &#47&#47 pinv will fail
+    elif n_components == 0.9999 and n_pca_components == 8:
+        ctx = pytest.raises(RuntimeError, match=&quotrequires 9 PCA values.*but&quot)
+        bad = &quotexit&quot
+    else:
+        bad = False  &#47&#47 pinv will not fail
+        ctx = nullcontext()
+    <a id="change">with ctx:
+        ica.fit(raw)
+   </a> assert ica._max_pca_components is None
+    if bad == &quotexit&quot:
+        return
+    raw_new = ica.apply(raw.copy())</code></pre>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        num_correctly_indexed_sounds = 0
+        slice_size = 1000
+        <a id="change">for i in range(0, num_sounds, slice_size):
+            console_logger.info("Adding %i sounds to solr, slice %i", slice_size, i)
+            try:
+                &#47&#47 Get all sounds moderated and processed ok that has is_index_dirty
+                where = "sound.moderation_state = &quotOK&quot AND sound.processing_state = &quotOK&quot AND is_index_dirty = true " \
+                        "AND sound.id &gt; %s"
+                order_by = "sound.id ASC"
+                sounds_qs = Sound.objects.bulk_query_solr(where, order_by, slice_size, (i, ))
+                add_sounds_to_solr(sounds_qs)
+                num_correctly_indexed_sounds += slice_size
+            except SolrException as e:
+                console_logger.error("failed to add sound batch to solr index, reason: %s", str(e))
+                raise
+
+       </a> logger.info("Finished posting dirty sounds to solr. %i sounds have been added/updated"
+                    % num_correctly_indexed_sounds)
+
+        &#47&#47 Remove all those which are not processed or moderated ok and that are still in solr (should not happen)</code></pre><h3>After Change</h3><pre><code class='java'>
+        num_correctly_indexed_sounds = add_all_sounds_to_solr(sounds_to_index)
+
+        if num_correctly_indexed_sounds == num_sounds:
+            <a id="change">sounds_to_index.update(is_index_dirty=False)</a>
+
+        logger.info("Finished posting dirty sounds to solr. %i sounds have been added/updated"
+                    % num_correctly_indexed_sounds)
+</code></pre>

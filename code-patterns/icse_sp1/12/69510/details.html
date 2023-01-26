@@ -1,0 +1,90 @@
+<html><h3>1e1190df5764ba99d6a7b1b98b586e9ea3ea39ea,src/python/pants/core/goals/test.py,,run_tests,#Any#Any#Any#Any#Any#,310
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            continue
+        has_output = result.stdout or result.stderr
+        if has_output:
+            status = console.green("✓") if <a id="change">result.status == Status</a>.SUCCESS else console.red("𐄂")
+            console.print_stderr(f"{status} {result.address}")
+        if result.stdout:
+            console.print_stderr(result.stdout)
+        if result.stderr:
+            console.print_stderr(result.stderr)
+        if has_output and result != results[-1]:
+            console.print_stderr("")
+
+    &#47&#47 Print summary
+    console.print_stderr("")
+    for result in results:
+        if result.status == <a id="change">Status.SKIPPED</a>:
+            continue
+        color = <a id="change">console.green if result.status == Status.SUCCESS else console.red</a>
+        &#47&#47 The right-align logic sees the color control codes as characters, so we have
+        &#47&#47 to account for that. In f-strings the alignment field widths must be literals,
+        &#47&#47 so we have to indirect via a call to .format().
+        right_align = 19 if console.use_colors else 10
+        format_str = f"{{addr:80}}.....{{result:&gt;{right_align}}}"
+        console.print_stderr(
+            format_str.format(addr=result.address.spec, result=color(result.status.value))
+        )
+
+    merged_xml_results = await Get(
+        Digest, MergeDigests(result.xml_results for result in results if result.xml_results),
+    )
+    workspace.write_digest(merged_xml_results)
+
+    if test_subsystem.use_coverage:
+        all_coverage_data: Iterable[CoverageData] = [
+            result.coverage_data for result in results if result.coverage_data is not None
+        ]
+
+        coverage_types_to_collection_types: Dict[
+            Type[CoverageData], Type[CoverageDataCollection]
+        ] = {
+            collection_cls.element_type: collection_cls
+            for collection_cls in union_membership.get(CoverageDataCollection)
+        }
+        coverage_collections: List[CoverageDataCollection] = []
+        for data_cls, data in itertools.groupby(all_coverage_data, lambda data: type(data)):
+            collection_cls = coverage_types_to_collection_types[data_cls]
+            coverage_collections.append(collection_cls(data))
+        &#47&#47 We can create multiple reports for each coverage data (console, xml and html)
+        coverage_reports_collections = await MultiGet(
+            Get(CoverageReports, CoverageDataCollection, coverage_collection)
+            for coverage_collection in coverage_collections
+        )
+
+        coverage_report_files: List[PurePath] = []
+        for coverage_reports in coverage_reports_collections:
+            report_files = coverage_reports.materialize(console, workspace)
+            coverage_report_files.extend(report_files)
+
+        if coverage_report_files and test_subsystem.open_coverage:
+            desktop.ui_open(console, interactive_runner, coverage_report_files)
+
+    exit_code = (
+        PANTS_FAILED_EXIT_CODE
+        if any(res.status == <a id="change">Status.FAILURE</a> for res in results)
+        else PANTS_SUCCEEDED_EXIT_CODE
+    )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    exit_code = 0
+    console.print_stderr("")
+    for result in results:
+        <a id="change">if result.skipped:
+            continue
+       </a> result_desc = <a id="change">console.green("SUCCESS") if result.exit_code == 0 else console.red("FAILURE")</a>
+        &#47&#47 The right-align logic sees the color control codes as characters, so we have
+        &#47&#47 to account for that. In f-strings the alignment field widths must be literals,
+        &#47&#47 so we have to indirect via a call to .format().
+        right_align = 19 if console.use_colors else 10
+        format_str = f"{{addr:80}}.....{{result:&gt;{right_align}}}"
+        console.print_stderr(format_str.format(addr=result.address.spec, result=result_desc))
+        if result.exit_code is not None and result.exit_code != 0:
+            <a id="change">exit_code = result.exit_code</a>
+
+    merged_xml_results = await Get(
+        Digest, MergeDigests(result.xml_results for result in results if result.xml_results),
+    )</code></pre><img src="318928209.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/1e1190df5764ba99d6a7b1b98b586e9ea3ea39ea#diff-4faa674c97f0e622c5a14f5be547f5fa502a4e74870271a09fe880def2724d83L326' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 1e1190df5764ba99d6a7b1b98b586e9ea3ea39ea</div><div id='time'> Time: 2020-08-17</div><div id='author'> Author: 14852634+Eric-Arellano@users.noreply.github.com</div><div id='file'> File Name: src/python/pants/core/goals/test.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: run_tests</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/765fe64b6e96c365aaee4867c5a8381a883c5bc6#diff-371df545dee65a2410faf0e90e2181378f2b28b26db3b69ce2a0215b2e4280eaL207' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 765fe64b6e96c365aaee4867c5a8381a883c5bc6</div><div id='time'> Time: 2020-08-16</div><div id='author'> Author: 14852634+Eric-Arellano@users.noreply.github.com</div><div id='file'> File Name: src/python/pants/core/goals/fmt.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: fmt</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/88072c9b78824a5f78cf62399246eecdc360a33c#diff-a7d576856accc2c71267ee2eb68c4815ec694df385aabdcb6594909ab0a52322L85' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 88072c9b78824a5f78cf62399246eecdc360a33c</div><div id='time'> Time: 2020-08-19</div><div id='author'> Author: 14852634+Eric-Arellano@users.noreply.github.com</div><div id='file'> File Name: src/python/pants/core/goals/typecheck.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: typecheck</div><BR>

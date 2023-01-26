@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+             / tf.cast(tf.shape(inputs)[1], tf.float32)
+    if self._hparams.use_gate:
+      proj = tf.tanh(self._gate_proj(inputs))
+      scores = <a id="change">tf.nn.softmax(tf.reduce_sum(self._gate_u * proj, [2]) / gamma)</a>
+      <a id="change">inputs</a> = tf.expand_dims(scores, 2) * inputs
+
+    inputs = tf.nn.dropout(
+      inputs, utils.switch_dropout(self._hparams.input_keep_prob))
+
+    pooled_outputs = []
+    for conv_layer in self._conv_layers:
+      <a id="change">h</a> = conv_layer(inputs)
+      h = tf.nn.leaky_relu(h, alpha=self._hparams.leaky_relu_alpha)
+      &#47&#47 pooling after conv
+      <a id="change">h</a> = tf.reduce_max(h, axis=1)
+      pooled_outputs.append(h)
+
+    outputs = tf.concat(pooled_outputs, 1)</code></pre><h3>After Change</h3><pre><code class='java'>
+        gamma = 1.
+      scores = tf.reduce_sum(self._gate_u * proj, [2]) / gamma
+      scores = scores * mask + ((1.0 - mask) * tf.float32.min)
+      scores = <a id="change">tf.nn.softmax(scores)</a>
+      <a id="change">inputs</a> = tf.expand_dims(scores, 2) * inputs
+    else:
+      inputs = tf.expands_dims(mask, 2) * inputs
+
+    inputs = tf.nn.dropout(
+      inputs, utils.switch_dropout(self._hparams.input_keep_prob))
+
+    pooled_outputs = []
+    for conv_layer in self._conv_layers:
+      <a id="change">h</a> = conv_layer(inputs)
+      h = tf.nn.leaky_relu(h, alpha=self._hparams.leaky_relu_alpha)
+      &#47&#47 pooling after conv
+      <a id="change">h</a> = tf.reduce_max(h, axis=1)
+      pooled_outputs.append(h)
+
+    outputs = tf.concat(pooled_outputs, 1)</code></pre>

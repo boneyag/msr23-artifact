@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def rsample(self, sample_shape=torch.Size()):
+        batch_shape = self.batch_shape
+        <a id="change">time_shape = self.event_shape[:1]</a>
+        init = self.initial_dist.expand(batch_shape).rsample(sample_shape)
+        trans = self.transition_dist.expand(batch_shape + time_shape).rsample(sample_shape)
+        obs = self.observation_dist.expand(batch_shape + time_shape).rsample(sample_shape)
+        <a id="change">mat = self.transition_matrix.expand(batch_shape + time_shape + (self.hidden_dim, self.hidden_dim))</a>
+        <a id="change">z = _linear_integrate(init, mat, trans)</a>
+        <a id="change">return (z.unsqueeze(-2) @ self.observation_matrix).squeeze(-2) + obs</a>
+
+    def filter(self, value):
+        
+        Compute posterior over final state given a sequence of observations.</code></pre><h3>After Change</h3><pre><code class='java'>
+        hidden_dim = self.hidden_dim
+        obs = self._obs.marginalize(right=self.obs_dim).event_pad(left=self.hidden_dim)
+        z = _sequential_gaussian_filter_sample(self._init, self._trans + obs, sample_shape)
+        <a id="change">perm = torch.cat([torch.arange(hidden_dim, hidden_dim + obs_dim, device=z.device),
+                          torch.arange(hidden_dim, device=z.device)])</a>
+        x = self._obs.event_permute(perm).condition(z).rsample()
+        <a id="change">return x</a>
+
+    def filter(self, value):
+        
+        Compute posterior over final state given a sequence of observations.</code></pre>

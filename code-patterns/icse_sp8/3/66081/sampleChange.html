@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        blitz(expr_buggy.format(lim))
+        blitz(expr_not_buggy.format(lim, &quotsh&quot))
+        if old_env is None:
+            <a id="change">os.environ.pop(&quotPYTHONCOMPILED&quot)</a>
+        else:
+            os.environ[&quotPYTHONCOMPILED&quot] = old_env
+
+        arr_np[lim:] = arr[lim:]</code></pre><h3>After Change</h3><pre><code class='java'>
+@dec.slow
+def test_blitz_bug():
+    &#47&#47 Assignment to arr[i:] used to fail inside blitz expressions.
+    <a id="change">with TempdirBlitz():
+        N = 4
+        expr_buggy = &quotarr_blitz_buggy[{0}:] = arr[{0}:]&quot
+        expr_not_buggy = &quotarr_blitz_not_buggy[{0}:{1}] = arr[{0}:]&quot
+        random.seed(7)
+        arr = random.randn(N)
+        sh = arr.shape[0]
+        for lim in [0, 1, 2]:
+            arr_blitz_buggy = zeros(N)
+            arr_blitz_not_buggy = zeros(N)
+            arr_np = zeros(N)
+            blitz(expr_buggy.format(lim))
+            blitz(expr_not_buggy.format(lim, &quotsh&quot))
+            arr_np[lim:] = arr[lim:]
+            assert_allclose(arr_blitz_buggy, arr_np)
+            assert_allclose(arr_blitz_not_buggy, arr_np)
+
+
+</a>if __name__ == "__main__":
+    run_module_suite()
+</code></pre>

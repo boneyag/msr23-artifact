@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        output_dim = 4
+        timesteps = 5
+
+        <a id="change">input_val = np.random.random((32, timesteps, input_dim))</a>
+        W_i_val = np.random.random((input_dim, output_dim))
+
+        def rnn_step_fn(k):
+            W_i = k.variable(W_i_val)
+
+            def step_function(x, states):
+                assert len(states) == 0
+                output = k.dot(x, W_i)
+                return output, []
+
+            return step_function
+
+        &#47&#47 test default setup
+        last_output_list = []
+        outputs_list = []
+
+        for k in BACKENDS:
+            rnn_fn = rnn_step_fn(k)
+            inputs = k.variable(input_val)
+            initial_states = []
+            <a id="change">last_output, outputs, new_states = k.rnn(rnn_fn, inputs,
+                                                     initial_states,
+                                                     go_backwards=False,
+                                                     mask=None)</a>
+            last_output_list.append(k.eval(last_output))
+            outputs_list.append(k.eval(outputs))
+            assert len(new_states) == 0
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        last_y1, y1, h1 = ref_rnn(x, [wi, None, None], None,
+                                  go_backwards=False, mask=None)
+        <a id="change">last_y2, y2, h2 = K.rnn(rnn_fn, x_k, [],
+                                go_backwards=False, mask=None)</a>
+
+        assert len(h2) == 0
+        last_y2 = K.eval(last_y2)
+        y2 = K.eval(y2)</code></pre>

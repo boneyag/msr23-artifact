@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        if not isinstance(path, str): 
+            raise ValueError(&quotpath has to be of type string&quot)
+        <a id="change">if not Path(path).is_dir():
+            raise NotADirectoryError("Path to load agent is not valid")
+
+       </a> agent_type, save_attributes = cls._load_pickle(
+            PurePath(path, &quotagent.config&quot)).values()
+
+        agent = agent_type.__new__(agent_type)</code></pre><h3>After Change</h3><pre><code class='java'>
+        if not path.exists():
+            raise ValueError("Path to load agent is not valid")
+
+        <a id="change">with ZipFile(path, &quotr&quot) as zip_file:
+            print(zip_file.namelist())
+            agent_type, save_attributes = cls._load_pickle(zip_file, &quotagent.config&quot).values()
+
+            agent = agent_type.__new__(agent_type)
+
+            for att, method in save_attributes.items():
+                file_name = &quot{}.{}&quot.format(att, method)
+
+                if file_name in zip_file.namelist():
+                    load_method = getattr(cls, &quot_load_{}&quot.format(method))
+                    if load_method is None:
+                        raise NotImplementedError(&quotMethod _load_{} is not&quot
+                                                  &quotimplemented&quot.format(method))
+                    att_val = load_method(zip_file, file_name)
+                    setattr(agent, att, att_val)
+                else:
+                    print(&quotatt&quot, att, &quotnamed&quot, file_name, &quotnot in zip&quot)
+                    setattr(agent, att, None)
+
+       </a> agent._post_load()
+
+        return agent
+</code></pre>

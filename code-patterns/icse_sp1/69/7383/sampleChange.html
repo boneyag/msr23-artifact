@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    self._run_task(config)
+
+  def _export_bert_tfhub(self):
+    <a id="change">bert_config = configs.BertConfig(
+        vocab_size=30522,
+        hidden_size=16,
+        intermediate_size=32,
+        max_position_embeddings=128,
+        num_attention_heads=2,
+        num_hidden_layers=1)</a>
+    <a id="change">_, encoder = export_tfhub.create_bert_model(bert_config)</a>
+    <a id="change">model_checkpoint_dir = os.path.join(self.get_temp_dir(), "checkpoint")</a>
+    <a id="change">checkpoint = tf.train.Checkpoint(model=encoder)</a>
+    <a id="change">checkpoint.save(os.path.join(model_checkpoint_dir, "test"))</a>
+    <a id="change">model_checkpoint_path = tf.train.latest_checkpoint(model_checkpoint_dir)</a>
+
+    <a id="change">vocab_file = os.path.join(self.get_temp_dir(), "uncased_vocab.txt")</a>
+    <a id="change">with tf.io.gfile.GFile(vocab_file, "w") as f:
+      f.write("dummy content")
+
+   </a> hub_destination = os.path.join(self.get_temp_dir(), "hub")
+    <a id="change">export_tfhub.export_bert_tfhub(bert_config, model_checkpoint_path,
+                                   hub_destination, vocab_file)</a>
+    return hub_destination
+
+  def test_task_with_hub(self):
+    hub_module_url = self._export_bert_tfhub()</code></pre><h3>After Change</h3><pre><code class='java'>
+    self._run_task(config)
+
+  def _export_bert_tfhub(self):
+    <a id="change">encoder = encoders.build_encoder(
+        encoders.EncoderConfig(
+            bert=encoders.BertEncoderConfig(vocab_size=30522, num_layers=1)))</a>
+    <a id="change">encoder_inputs_dict = {x.name: x for x in encoder.inputs}</a>
+    <a id="change">encoder_output_dict = encoder(encoder_inputs_dict)</a>
+    <a id="change">core_model = tf.keras.Model(
+        inputs=encoder_inputs_dict, outputs=encoder_output_dict)</a>
+    hub_destination = os.path.join(self.get_temp_dir(), "hub")
+    <a id="change">core_model.save(hub_destination, include_optimizer=False, save_format="tf")</a>
+    return hub_destination
+
+  def test_task_with_hub(self):
+    hub_module_url = self._export_bert_tfhub()</code></pre>

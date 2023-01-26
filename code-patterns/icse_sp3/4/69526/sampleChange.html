@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    out_buffers = all_gather_list._out_buffers
+
+    enc = pickle.dumps(data)
+    <a id="change">if len(enc) &gt;= max_size:
+        raise ValueError(&quotencoded data exceeds max_size: {}&quot.format(len(enc)))
+   </a> in_buffer[0] = len(enc)
+    in_buffer[1:len(enc)+1] = torch.ByteTensor(list(enc))
+
+    torch.distributed.all_gather(out_buffers, in_buffer.cuda())</code></pre><h3>After Change</h3><pre><code class='java'>
+    result = []
+    for i in range(world_size):
+        out_buffer = out_buffers[i]
+        size = (255 * utils.item(out_buffer[0])) + <a id="change">utils.item(out_buffer[1])</a>
+        result.append(
+            pickle.loads(bytes(out_buffer[2:size+2].tolist()))
+        )
+    return result</code></pre>

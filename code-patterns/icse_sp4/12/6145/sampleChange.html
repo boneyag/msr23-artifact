@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    start = kwargs.pop(&quotstart&quot)
+
+    rseed = _parallel_random_seed(random_seed, njobs)
+    <a id="change">start_vals = _make_parallel(start, njobs)</a>
+
+    chains = list(range(chain, chain + njobs))
+    pbars = [kwargs.pop(&quotprogressbar&quot)] + [False] * (njobs - 1)
+    traces = Parallel(n_jobs=njobs)(<a id="change">delayed(_sample)(chain=chains[i],
+                                                     progressbar=pbars[i],
+                                                     random_seed=rseed[i],
+                                                     start=start_vals[i],
+                                                     **kwargs)</a> <a id="change">for</a> i in range(njobs))
+    return merge_traces(traces)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    chain = kwargs.pop(&quotchain&quot)
+    rseed = kwargs.pop(&quotrandom_seed&quot)
+    start = kwargs.pop(&quotstart&quot)
+    <a id="change">chains = kwargs.pop(&quotchains&quot)</a>
+
+    chain_nums = list(range(chain, chain + chains))
+    pbars = [kwargs.pop(&quotprogressbar&quot)] + [False] * (chains - 1)
+    jobs = <a id="change">(delayed(_sample)(*args, **kwargs)
+            for args in zip(chain_nums, pbars, rseed, start))</a>
+    traces = Parallel(n_jobs=njobs)(jobs)
+    return MultiTrace(traces)
+
+</code></pre>

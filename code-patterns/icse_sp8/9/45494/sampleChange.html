@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        signal = fft.fft(self.signal.signal())
+        pos = array(self.loc, dtype=float).reshape(3, 1)
+        rm = self.env.r(self.c, pos, self.mpos.mpos)
+        <a id="change">delays = exp(-2j*pi*(rm/self.c)*\
+            fft.fftfreq(int(self.numsamples),1.0/self.sample_freq)[:,newaxis])</a>
+        <a id="change">out = fft.ifft(signal[:, newaxis]*delays, axis=0).real/rm</a>
+        i = 0
+        while i &lt; self.numsamples:
+            yield out[i:i+num]
+            i += num</code></pre><h3>After Change</h3><pre><code class='java'>
+        signal = self.signal.usignal(self.up)
+        out = empty((num, self.numchannels))
+        &#47&#47 distances
+        rm = self.env.r(self.c, array(self.loc).reshape(<a id="change">(3, 1)</a>), self.mpos.mpos)
+        &#47&#47 emission time relative to start_t (in samples) for first sample
+        ind = (-rm/self.c-self.start_t+self.start)*self.sample_freq   
+        i = 0
+        n = self.numsamples        
+        while n:
+            n -= 1
+            try:
+                <a id="change">out[i] = signal[array(0.5+ind*self.up, dtype=long)]/rm</a>
+                ind += 1.
+                i += 1
+                if i == num:
+                    yield out</code></pre>

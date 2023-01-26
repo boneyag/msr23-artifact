@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 We subtract it just for readability, makes no difference on learning.
+    normalizing = -(
+        confidence * tf.log(confidence) + tf.to_float(vocab_size - 1) *
+        low_confidence * <a id="change">tf.log(low_confidence + 1e-20)</a>)
+
+    if gaussian and confidence &gt; 0.0:
+      labels = tf.cast(labels, tf.float32)
+      normal_dist = tf.distributions.Normal(loc=labels, scale=confidence)
+      &#47&#47 Locations to evaluate the probability distributions.
+      soft_targets = normal_dist.prob(
+          tf.cast(tf.range(vocab_size), tf.float32)[:, None, None, None, None])
+      &#47&#47 Reordering soft_targets from [vocab_size, batch_size, ?, ?, ?] to match
+      &#47&#47 logits: [batch_size, ?, ?, ?, vocab_size]
+      soft_targets = tf.transpose(soft_targets, perm=[1, 2, 3, 4, 0])
+    else:
+      soft_targets = tf.one_hot(
+          tf.cast(labels, tf.int32),
+          depth=vocab_size,
+          on_value=confidence,
+          off_value=low_confidence)
+    xentropy = tf.nn.softmax_cross_entropy_with_logits(
+        logits=logits, labels=soft_targets)
+    <a id="change">return xentropy - normalizing</a>
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        cross_entropy_fn = tf.nn.softmax_cross_entropy_with_logits_v2
+    else:
+        cross_entropy_fn = tf.nn.softmax_cross_entropy_with_logits
+    <a id="change">return cross_entropy_fn(
+        logits=logits, labels=soft_targets)</a>
+</code></pre>

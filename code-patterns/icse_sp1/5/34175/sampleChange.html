@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def forward(self, x: torch.Tensor):
+        Computes the class conditional distributions P(X | C) for each class.
+        &#47&#47 Go over all regions
+        split_results = <a id="change">[]</a>
+        for spn in self.region_spns:
+            split_results.append(spn(x).squeeze(1))
+
+        <a id="change">x = torch.stack(split_results, dim=1)</a>
+
+        &#47&#47 Merge results from the different SPN into the channel dimension
+        x = x.view(x.shape[0], 1, -1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        x = self._forward_layers(x)
+
+        &#47&#47 Merge results from the different repetitions into the channel dimension
+        <a id="change">n, d, c, r = x.size()</a>
+        assert d == 1  &#47&#47 number of features should be 1 at this point
+        x = x.view(n, d, c * r, 1)
+
+        &#47&#47 Apply C sum node outputs</code></pre>

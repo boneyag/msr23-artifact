@@ -1,0 +1,140 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for value in self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_MODE).values():
+            self._current_operation = value.data
+            <a id="change">self._index_operation = SET_TEMP_TO_INDEX.get(
+                self._current_operation)</a>
+            self._operation_list = list(value.data_items)
+            _LOGGER.debug("self._operation_list=%s", self._operation_list)
+            _LOGGER.debug("self._current_operation=%s",
+                          self._current_operation)
+        &#47&#47 Current Temp
+        for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_SENSOR_MULTILEVEL)
+                      .values()):
+            if value.label == &quotTemperature&quot:
+                <a id="change">self._current_temperature</a> = int(value.data)
+                self._unit = value.units
+        &#47&#47 Fan Mode
+        for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_FAN_MODE)
+                      .values()):
+            self._current_fan_mode = value.data
+            self._fan_list = list(value.data_items)
+            _LOGGER.debug("self._fan_list=%s", self._fan_list)
+            _LOGGER.debug("self._current_fan_mode=%s",
+                          self._current_fan_mode)
+        &#47&#47 Swing mode
+        if self._zxt_120 == 1:
+            for value in (self._node.get_values(
+                    class_id=zwave.const.COMMAND_CLASS_CONFIGURATION)
+                          .values()):
+                if value.command_class == \
+                   zwave.const.COMMAND_CLASS_CONFIGURATION and \
+                   value.index == 33:
+                    self._current_swing_mode = value.data
+                    self._swing_list = list(value.data_items)
+                    _LOGGER.debug("self._swing_list=%s", self._swing_list)
+                    _LOGGER.debug("self._current_swing_mode=%s",
+                                  self._current_swing_mode)
+        &#47&#47 Set point
+        for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_SETPOINT)
+                      .values()):
+            if value.data == 0:
+                _LOGGER.debug("Setpoint is 0, setting default to "
+                              "current_temperature=%s",
+                              self._current_temperature)
+                <a id="change">self._target_temperature = int(self._current_temperature)</a>
+                break
+            if <a id="change">self.current_operation</a> is not None and \
+               <a id="change">self.current_operation</a> != &quotOff&quot:
+                if self._index_operation != value.index:
+                    continue
+                if <a id="change">self._zxt_120</a>:
+                    break
+                self._target_temperature = int(value.data)
+                break
+            _LOGGER.debug("Device can&quott set setpoint based on operation mode."
+                          " Defaulting to index=1")
+            <a id="change">self._target_temperature</a> = int(value.data)
+        &#47&#47 Operating state
+        for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_OPERATING_STATE)</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.update_ha_state()
+            _LOGGER.debug("Value changed on network %s", value)
+
+    def update_properties(<a id="change">self</a>):
+        Callback on data change for the registered node/value pair.
+        &#47&#47 Operation Mode
+        for value in self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_MODE).values():
+            self._current_operation = value.data
+            self._operation_list = list(value.data_items)
+            _LOGGER.debug("self._operation_list=%s", self._operation_list)
+            _LOGGER.debug("self._current_operation=%s",
+                          self._current_operation)
+        &#47&#47 Current Temp
+        for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_SENSOR_MULTILEVEL)
+                      .values()):
+            if value.label == &quotTemperature&quot:
+                <a id="change">self._current_temperature</a> = round((float(value.data)), 1)
+                self._unit = value.units
+        &#47&#47 Fan Mode
+        for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_FAN_MODE)
+                      .values()):
+            self._current_fan_mode = value.data
+            self._fan_list = list(value.data_items)
+            _LOGGER.debug("self._fan_list=%s", self._fan_list)
+            _LOGGER.debug("self._current_fan_mode=%s",
+                          self._current_fan_mode)
+        &#47&#47 Swing mode
+        if self._zxt_120 == 1:
+            for value in (self._node.get_values(
+                    class_id=zwave.const.COMMAND_CLASS_CONFIGURATION)
+                          .values()):
+                if value.command_class == \
+                   zwave.const.COMMAND_CLASS_CONFIGURATION and \
+                   value.index == 33:
+                    self._current_swing_mode = value.data
+                    self._swing_list = list(value.data_items)
+                    _LOGGER.debug("self._swing_list=%s", self._swing_list)
+                    _LOGGER.debug("self._current_swing_mode=%s",
+                                  self._current_swing_mode)
+        &#47&#47 Set point
+        temps = []
+        for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_SETPOINT)
+                      .values()):
+            temps.append((round(float(value.data)), 1))
+            if value.index == self._index:
+                if value.data == 0:
+                    _LOGGER.debug("Setpoint is 0, setting default to "
+                                  "current_temperature=%s",
+                                  self._current_temperature)
+                    self._target_temperature = (
+                        round((float(self._current_temperature)), 1))
+                    break
+                else:
+                    <a id="change">self._target_temperature</a> = round((float(value.data)), 1)
+        &#47&#47 Operating state
+        for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_OPERATING_STATE)
+                      .values()):
+            self._operating_state = value.data
+
+        &#47&#47 Fan operating state
+        <a id="change">for value in (self._node.get_values(
+                class_id=zwave.const.COMMAND_CLASS_THERMOSTAT_FAN_STATE)
+                      .values()):
+            self._fan_state = value.data
+
+   </a> @property
+    def should_poll(self):
+        No polling on ZWave.
+        return False</code></pre>

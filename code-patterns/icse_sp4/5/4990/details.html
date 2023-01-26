@@ -1,0 +1,29 @@
+<html><h3>ef3f8d221a5afefb01d655448ce7e3f537399810,src/python/pants/engine/exp/engine.py,LocalMultiprocessEngine,reduce,#LocalMultiprocessEngine#Any#Any#,446
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 we limit pending submissions to the number of pool workers.  This gives us a bounded number
+    &#47&#47 of items to check for submission readiness, ie: we&quotll never need to scan more than the pool
+    &#47&#47 size, commonly the number of cores, no matter the size and shape of the execution graph.
+    for promise, plan in <a id="change">execution_graph.walk()</a>:
+      pending_submission[promise] = plan
+      submit_satisfied_pending()
+      &#47&#47 Saturate the pool before we block on a result for maximum processing parallelism.</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 1. Whenever we don&quott have enough work to saturate the pool, request more.
+    &#47&#47 2. Whenever the pool is not saturated, submit currently pending work.
+    for step_batch in self._scheduler.schedule(build_request):
+      <a id="change">if not step_batch:
+        &#47&#47 A batch should only be empty if all dependency work is currently blocked/running.
+        if not in_flight and not pending_submission:
+          raise Exception(&quotScheduler provided an empty batch while no work is in progress!&quot)
+      else:
+        &#47&#47 Submit and wait for work for as long as we&quotre able to keep the pool saturated.
+        pending_submission.update(step_batch)
+        while submit_until(self._pool_size) &gt; 0:
+          await_one()
+      &#47&#47 Await at least one entry per scheduling loop.
+     </a> submit_until(0)
+      if in_flight:
+        await_one()
+</code></pre><img src="31279768.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/ef3f8d221a5afefb01d655448ce7e3f537399810#diff-91d12bd664e3e21b34c345fd387c44f253199fe8ce9f00df083c0b24b58ebf62L183' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: ef3f8d221a5afefb01d655448ce7e3f537399810</div><div id='time'> Time: 2016-01-26</div><div id='author'> Author: stuhood@gmail.com</div><div id='file'> File Name: src/python/pants/engine/exp/engine.py</div><div id='class'> Class Name: LocalMultiprocessEngine</div><div id='method'> Method Name: reduce</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/da0989f9f00cf2a9eca58410a721d23a1fdf72bb#diff-0fda102a913ab8a9695a575c65cea370f02b3d2f619d11f54a14b62c7502de25L35' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: da0989f9f00cf2a9eca58410a721d23a1fdf72bb</div><div id='time'> Time: 2019-08-19</div><div id='author'> Author: ericarellano@me.com</div><div id='file'> File Name: contrib/python/tests/python/pants_test/contrib/python/checks/tasks/checkstyle/test_checkstyle.py</div><div id='class'> Class Name: CheckstyleTest</div><div id='method'> Method Name: build_checker_wheel</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/461bb39fbdd9f49ff21a6be038ffbd2e7ae622b0#diff-083a4ca5b4370c8f5ac3f7132a13273b9100f14ab70b37f0f716382a7bb1b75eL79' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 461bb39fbdd9f49ff21a6be038ffbd2e7ae622b0</div><div id='time'> Time: 2015-07-30</div><div id='author'> Author: mateorod9@gmail.com</div><div id='file'> File Name: src/python/pants/backend/android/tasks/dx_compile.py</div><div id='class'> Class Name: DxCompile</div><div id='method'> Method Name: execute</div><BR>

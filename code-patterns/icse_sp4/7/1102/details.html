@@ -1,0 +1,40 @@
+<html><h3>e421e832883241bd7831bf77dc31d5fb31d7da58,mmdet/ops/nms/nms_wrapper.py,,nms,#Any#Any#Any#,9
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        inds = (gpu_nms(dets_np, iou_thr, device_id=device_id)
+                if device_id is not None else cpu_nms(dets_np, iou_thr))
+
+    <a id="change">if is_tensor:
+        inds = dets.new_tensor(inds, dtype=torch.long)
+    else:
+        inds = np.array(inds, dtype=np.int64)
+   </a> return dets[inds, :], inds
+
+
+def soft_nms(dets, iou_thr, method=&quotlinear&quot, sigma=0.5, min_score=1e-3):</code></pre><h3>After Change</h3><pre><code class='java'>
+    elif isinstance(dets, np.ndarray):
+        is_numpy = True
+        device = &quotcpu&quot if device_id is None else &quotcuda:{}&quot.format(device_id)
+        <a id="change">dets_th = torch.from_numpy(dets).to(device)</a>
+    else:
+        raise TypeError(
+            &quotdets must be either a Tensor or numpy array, but got {}&quot.format(
+                type(dets)))
+
+    &#47&#47 execute cpu or cuda nms
+    if dets_th.shape[0] == 0:
+        inds = dets_th.new_zeros(0, dtype=torch.long)
+    else:
+        if dets_th.is_cuda:
+            inds = nms_cuda.nms(dets_th, iou_thr)
+        else:
+            inds = nms_cpu.nms(dets_th, iou_thr)
+
+    <a id="change">if is_numpy:
+        inds = inds.cpu().numpy()
+   </a> return dets[inds, :], inds
+
+
+def soft_nms(dets, iou_thr, method=&quotlinear&quot, sigma=0.5, min_score=1e-3):</code></pre><img src="8449408.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/open-mmlab/mmdetection/commit/e421e832883241bd7831bf77dc31d5fb31d7da58#diff-637c4c71c74c7b3d1912e91e5e579cd256a64f6f8e54984524344125b5ca9cc9L12' target='_blank'>Link</a></div><div id='project'> Project Name: open-mmlab/mmdetection</div><div id='commit'> Commit Name: e421e832883241bd7831bf77dc31d5fb31d7da58</div><div id='time'> Time: 2019-04-06</div><div id='author'> Author: chenkaidev@gmail.com</div><div id='file'> File Name: mmdet/ops/nms/nms_wrapper.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: nms</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/9b9a42de05056b418f98e3635f2cffd747123548#diff-6919a2dfe30728fa2663270e78bb7c97a68c14f9308dc2b5d31cbe6eca2e5599L114' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: 9b9a42de05056b418f98e3635f2cffd747123548</div><div id='time'> Time: 2018-05-16</div><div id='author'> Author: M.N.Tran@ibm.com</div><div id='file'> File Name: art/classifiers/pytorch.py</div><div id='class'> Class Name: PyTorchClassifier</div><div id='method'> Method Name: class_gradient</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/2eb4c5f77bd8da9b1e23851b0acb84543e442953#diff-99593aae83588cf161f80c5a6534c22379a79149177a106b691eaaa7ae80bfa5L61' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: 2eb4c5f77bd8da9b1e23851b0acb84543e442953</div><div id='time'> Time: 2018-09-24</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: python/baseline/pytorch/classify/model.py</div><div id='class'> Class Name: WordClassifierModelBase</div><div id='method'> Method Name: make_input</div><BR>

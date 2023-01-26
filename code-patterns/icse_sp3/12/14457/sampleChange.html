@@ -1,0 +1,87 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    start_time = time.time()
+
+    &#47&#47 create a GeoDataFrame of the nodes, name it, convert osmid to str
+    nodes = <a id="change">{node:data for node, data in G_proj.nodes(data=True)}</a>
+    gdf_nodes = <a id="change">gpd.GeoDataFrame(nodes).T</a>
+    gdf_nodes.crs = G_proj.graph[&quotcrs&quot]
+    gdf_nodes.gdf_name = &quot{}_nodes&quot.format(G_proj.name)
+    <a id="change">gdf_nodes[&quotosmid&quot] = gdf_nodes[&quotosmid&quot].astype(np.int64).map(make_str)</a>
+
+    &#47&#47 create new lat/lon columns just to save that data for later, and create a
+    &#47&#47 geometry column from x/y
+    gdf_nodes[&quotlon&quot] = gdf_nodes[&quotx&quot]
+    gdf_nodes[&quotlat&quot] = gdf_nodes[&quoty&quot]
+    gdf_nodes[&quotgeometry&quot] = gdf_nodes.apply(lambda row: Point(row[&quotx&quot], row[&quoty&quot]), axis=1)
+    log(&quotCreated a GeoDataFrame from graph in {:,.2f} seconds&quot.format(time.time()-start_time))
+
+    &#47&#47 project the nodes GeoDataFrame to UTM
+    gdf_nodes_utm = project_gdf(gdf_nodes, to_crs=to_crs)
+
+    &#47&#47 extract data for all edges that have geometry attribute
+    edges_with_geom = []
+    for u, v, key, data in G_proj.edges(keys=True, data=True):
+        if &quotgeometry&quot in data:
+            edges_with_geom.append({&quotu&quot:u, &quotv&quot:v, &quotkey&quot:key, &quotgeometry&quot:data[&quotgeometry&quot]})
+
+    &#47&#47 create an edges GeoDataFrame and project to UTM, if there were any edges
+    &#47&#47 with a geometry attribute. geom attr only exists if graph has been
+    &#47&#47 simplified, otherwise you don&quott have to project anything for the edges
+    &#47&#47 because the nodes still contain all spatial data
+    if len(edges_with_geom) &gt; 0:
+        gdf_edges = gpd.GeoDataFrame(edges_with_geom)
+        gdf_edges.crs = G_proj.graph[&quotcrs&quot]
+        gdf_edges.gdf_name = &quot{}_edges&quot.format(G_proj.name)
+        gdf_edges_utm = project_gdf(gdf_edges, to_crs=to_crs)
+
+    &#47&#47 extract projected x and y values from the nodes&quot geometry column
+    start_time = time.time()
+    gdf_nodes_utm[&quotx&quot] = gdf_nodes_utm[&quotgeometry&quot].map(lambda point: point.x)
+    <a id="change">gdf_nodes_utm[&quoty&quot]</a> = gdf_nodes_utm[&quotgeometry&quot].map(lambda point: point.y)
+    gdf_nodes_utm = gdf_nodes_utm.drop(&quotgeometry&quot, axis=1)
+    log(&quotExtracted projected node geometries from GeoDataFrame in {:,.2f} seconds&quot.format(time.time()-start_time))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    start_time = time.time()
+
+    &#47&#47 create a GeoDataFrame of the nodes, name it, convert osmid to str
+    nodes_data = <a id="change">[data for _, data in G_proj.nodes(data=True)]</a>
+    gdf_nodes = <a id="change">gpd.GeoDataFrame(nodes_data, index=G_proj.nodes(data=False))</a>
+    gdf_nodes.crs = G_proj.graph[&quotcrs&quot]
+    gdf_nodes.gdf_name = &quot{}_nodes&quot.format(G_proj.name)
+
+    &#47&#47 create new lat/lon columns just to save that data for later, and create a
+    &#47&#47 geometry column from x/y
+    gdf_nodes[&quotlon&quot] = gdf_nodes[&quotx&quot]
+    gdf_nodes[&quotlat&quot] = gdf_nodes[&quoty&quot]
+    gdf_nodes[&quotgeometry&quot] = gdf_nodes.apply(lambda row: Point(row[&quotx&quot], row[&quoty&quot]), axis=1)
+    log(&quotCreated a GeoDataFrame from graph in {:,.2f} seconds&quot.format(time.time()-start_time))
+
+    &#47&#47 project the nodes GeoDataFrame to UTM
+    gdf_nodes_utm = project_gdf(gdf_nodes, to_crs=to_crs)
+
+    &#47&#47 extract data for all edges that have geometry attribute
+    edges_with_geom = []
+    for u, v, key, data in G_proj.edges(keys=True, data=True):
+        if &quotgeometry&quot in data:
+            edges_with_geom.append({&quotu&quot:u, &quotv&quot:v, &quotkey&quot:key, &quotgeometry&quot:data[&quotgeometry&quot]})
+
+    &#47&#47 create an edges GeoDataFrame and project to UTM, if there were any edges
+    &#47&#47 with a geometry attribute. geom attr only exists if graph has been
+    &#47&#47 simplified, otherwise you don&quott have to project anything for the edges
+    &#47&#47 because the nodes still contain all spatial data
+    if len(edges_with_geom) &gt; 0:
+        gdf_edges = gpd.GeoDataFrame(edges_with_geom)
+        gdf_edges.crs = G_proj.graph[&quotcrs&quot]
+        gdf_edges.gdf_name = &quot{}_edges&quot.format(G_proj.name)
+        gdf_edges_utm = project_gdf(gdf_edges, to_crs=to_crs)
+
+    &#47&#47 extract projected x and y values from the nodes&quot geometry column
+    start_time = time.time()
+    gdf_nodes_utm[&quotx&quot] = gdf_nodes_utm[&quotgeometry&quot].map(lambda point: point.x)
+    <a id="change">gdf_nodes_utm[&quoty&quot]</a> = gdf_nodes_utm[&quotgeometry&quot].map(lambda point: point.y)
+    gdf_nodes_utm = gdf_nodes_utm.drop(&quotgeometry&quot, axis=1)
+    log(&quotExtracted projected node geometries from GeoDataFrame in {:,.2f} seconds&quot.format(time.time()-start_time))
+</code></pre>

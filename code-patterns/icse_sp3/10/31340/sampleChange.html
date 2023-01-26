@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            checkpoint_utils.save_state(
+                filename,
+                self.cfg,
+                <a id="change">self.model.state_dict()</a>,
+                self.get_criterion(),
+                <a id="change">self.optimizer</a>,
+                <a id="change">self.lr_scheduler</a>,
+                self.get_num_updates(),
+                optim_history=<a id="change">self._optim_history</a>,
+                extra_state=extra_state,
+                task=<a id="change">self.task</a>,
+            )
+            logger.info(f"Finished saving checkpoint to {filename}")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            state_dict["last_optimizer_state"] = self.optimizer.state_dict()
+        return state_dict
+
+    def save_checkpoint(<a id="change">self</a>, filename, extra_state):
+        Save all training state in a checkpoint file.
+        logger.info(f"Saving checkpoint to {filename}")
+        &#47&#47 call state_dict on all ranks in case it needs internal communication
+        state_dict = utils.move_to_cpu(self.state_dict())
+        state_dict["extra_state"].update(extra_state)
+        <a id="change">if self.should_save_checkpoint_on_current_rank:
+            checkpoint_utils.torch_persistent_save(
+                state_dict,
+                filename,
+                async_write=self.cfg.checkpoint.write_checkpoints_asynchronously,
+            )
+       </a> logger.info(f"Finished saving checkpoint to {filename}")
+
+    def load_checkpoint(
+        self,</code></pre>

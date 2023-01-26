@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    resnet_benchmark_cmd_step = &quot{cmd} --train_steps={step}&quot.format(
+        cmd=resnet_benchmark_cmd, step=step)
+    if benchmark_spec.mode in (&quottrain&quot, &quottrain_and_eval&quot):
+      <a id="change">resnet_benchmark_train_cmd = (
+          &quot{cmd} --tpu={tpu} --mode=train --num_cores={num_cores}&quot.format(
+              cmd=resnet_benchmark_cmd_step,
+              tpu=benchmark_spec.tpu_train,
+              num_cores=benchmark_spec.num_shards_train))</a>
+      start = time.time()
+      stdout, stderr = vm.RobustRemoteCommand(resnet_benchmark_train_cmd,
+                                              should_log=True)
+      elapsed_seconds += (time.time() - start)</code></pre><h3>After Change</h3><pre><code class='java'>
+      &quot--num_eval_images={num_eval_images}&quot.format(
+          env_cmd=benchmark_spec.env_cmd,
+          script=resnet_benchmark_script,
+          use_tpu=<a id="change">bool(benchmark_spec.tpus)</a>,
+          data_dir=benchmark_spec.data_dir,
+          model_dir=benchmark_spec.model_dir,
+          depth=benchmark_spec.depth,
+          train_batch_size=benchmark_spec.train_batch_size,
+          eval_batch_size=benchmark_spec.eval_batch_size,
+          iterations=benchmark_spec.iterations,
+          data_format=benchmark_spec.data_format,
+          precision=benchmark_spec.precision,
+          skip_host_call=benchmark_spec.skip_host_call,
+          num_train_images=benchmark_spec.num_train_images,
+          num_eval_images=benchmark_spec.num_eval_images
+      ))
+  if FLAGS.tf_device == &quotgpu&quot:
+    resnet_benchmark_cmd = &quot{env} {cmd}&quot.format(
+        env=tensorflow.GetEnvironmentVars(vm), cmd=resnet_benchmark_cmd)
+  samples = []
+  metadata = _CreateMetadataDict(benchmark_spec)
+  elapsed_seconds = 0
+  steps_per_eval = benchmark_spec.steps_per_eval
+  train_steps = benchmark_spec.train_steps
+  for step in range(steps_per_eval, train_steps + steps_per_eval,
+                    steps_per_eval):
+    step = min(step, train_steps)
+    resnet_benchmark_cmd_step = &quot{cmd} --train_steps={step}&quot.format(
+        cmd=resnet_benchmark_cmd, step=step)
+    if benchmark_spec.mode in (&quottrain&quot, &quottrain_and_eval&quot):
+      <a id="change">resnet_benchmark_train_cmd = (
+          &quot{cmd} --tpu={tpu} --mode=train --num_cores={num_cores}&quot.format(
+              cmd=resnet_benchmark_cmd_step,
+              tpu=(benchmark_spec.tpu_groups[&quottrain&quot].GetName() if
+                   benchmark_spec.tpus else &quot&quot),
+              num_cores=(benchmark_spec.tpu_groups[&quottrain&quot].GetNumShards() if
+                         benchmark_spec.tpus else 0)))</a>
+      start = time.time()
+      stdout, stderr = vm.RobustRemoteCommand(resnet_benchmark_train_cmd,
+                                              should_log=True)
+      elapsed_seconds += (time.time() - start)</code></pre>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        G_from.flat[::len(G_from) + 1] += alpha
+
+    n_channels = G_from.shape[0]  &#47&#47 G_from should be square matrix
+    C = <a id="change">np</a>.r_[np.c_[G_from, np.ones((n_channels, 1))],
+              <a id="change">np.c_[np.ones((1, n_channels)), 0]</a>]
+    C_inv = linalg.pinv(C)
+
+    interpolation = np.c_[G_to_from,</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    pos_from = pos_from.copy()
+    pos_to = pos_to.copy()
+    <a id="change">n_from = pos_from.shape[0]</a>
+    n_to = pos_to.shape[0]
+
+    &#47&#47 normalize sensor positions to sphere
+    _normalize_vectors(pos_from)
+    _normalize_vectors(pos_to)
+
+    &#47&#47 cosine angles between source positions
+    cosang_from = pos_from.dot(pos_from.T)
+    cosang_to_from = pos_to.dot(pos_from.T)
+    G_from = _calc_g(cosang_from)
+    G_to_from = _calc_g(cosang_to_from)
+    assert G_from.shape == (n_from, n_from)
+    assert G_to_from.shape == (n_to, n_from)
+
+    if alpha is not None:
+        G_from.flat[::len(G_from) + 1] += alpha
+
+    <a id="change">C = np.vstack([np.hstack([G_from, np.ones((n_from, 1))]),
+                   np.hstack([np.ones((1, n_from)), [[0]]])])</a>
+    C_inv = linalg.pinv(C)
+
+    interpolation = np.hstack([G_to_from, np.ones((n_to, 1))]) @ C_inv[:, :-1]
+    assert interpolation.shape == (n_to, n_from)</code></pre>

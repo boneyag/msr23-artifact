@@ -1,0 +1,62 @@
+<html><h3>69b5f880966e0f1290e47eb29b2f43674a5b49b0,art/attacks/boundary.py,BoundaryAttack,_attack,#BoundaryAttack#Any#Any#Any#Any#Any#,151
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        x_adv = initial_sample
+        delta = initial_delta
+        epsilon = initial_epsilon
+        <a id="change">clip_min</a>, <a id="change">clip_max</a> = self.classifier.clip_values
+
+        &#47&#47 Main loop to wander around the boundary
+        for _ in range(self.max_iter):
+            &#47&#47 Trust region method to adjust delta
+            for _ in range(self.max_iter):
+                potential_advs = []
+                for _ in range(self.sample_size):
+                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
+                    potential_adv = <a id="change">np.clip(potential_adv, clip_min, clip_max)</a>
+                    potential_advs.append(potential_adv)
+
+                preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                potential_advs = []
+                for _ in range(self.sample_size):
+                    potential_adv = x_adv + self._orthogonal_perturb(delta, x_adv, original_sample)
+                    <a id="change">if hasattr(self.classifier, &quotclip_values&quot) and self.classifier is not None:
+                        np.clip(potential_adv, self.classifier.clip_values[0], self.classifier.clip_values[1],
+                                out=potential_adv)
+                   </a> potential_advs.append(potential_adv)
+
+                preds = np.argmax(self.classifier.predict(np.array(potential_advs)), axis=1)
+
+                if self.targeted:
+                    satisfied = (preds == target)
+                else:
+                    satisfied = (preds != target)
+
+                delta_ratio = np.mean(satisfied)
+
+                if delta_ratio &lt; 0.5:
+                    delta *= self.step_adapt
+                else:
+                    delta /= self.step_adapt
+
+                if delta_ratio &gt; 0:
+                    x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    break
+
+            else:
+                logging.warning(&quotAdversarial example found but not optimal.&quot)
+                return x_adv
+
+            &#47&#47 Trust region method to adjust epsilon
+            for _ in range(self.max_iter):
+                perturb = original_sample - x_adv
+                perturb *= epsilon
+                potential_adv = x_adv + perturb
+                if hasattr(<a id="change">self.classifier</a>, &quotclip_values&quot) and self.classifier.clip_values is not None:
+                    np.clip(potential_adv, <a id="change">self</a>.classifier.clip_values[0], self.classifier.clip_values[1],
+                            out=potential_adv)
+
+                pred = np.argmax(self.classifier.predict(np.array([potential_adv])), axis=1)[0]</code></pre><img src="80604173.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 14</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/69b5f880966e0f1290e47eb29b2f43674a5b49b0#diff-dd9f970bf67a9705ff1cc8fc31ab9a4264fede938c045125456cbdda931a93f5L151' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: 69b5f880966e0f1290e47eb29b2f43674a5b49b0</div><div id='time'> Time: 2019-04-30</div><div id='author'> Author: Maria-Irina.Nicolae@ibm.com</div><div id='file'> File Name: art/attacks/boundary.py</div><div id='class'> Class Name: BoundaryAttack</div><div id='method'> Method Name: _attack</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/69b5f880966e0f1290e47eb29b2f43674a5b49b0#diff-8af1ecbe48ae0247d5bd969c0c84d97c1f38b5b121709d829bed824d7df42c8eL56' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: 69b5f880966e0f1290e47eb29b2f43674a5b49b0</div><div id='time'> Time: 2019-04-30</div><div id='author'> Author: Maria-Irina.Nicolae@ibm.com</div><div id='file'> File Name: art/attacks/deepfool.py</div><div id='class'> Class Name: DeepFool</div><div id='method'> Method Name: generate</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/69b5f880966e0f1290e47eb29b2f43674a5b49b0#diff-13cd60163962c46977af5b34f31c47f1aa0e2b91becd8348fa3cc8b2e5a43989L157' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: 69b5f880966e0f1290e47eb29b2f43674a5b49b0</div><div id='time'> Time: 2019-04-30</div><div id='author'> Author: Maria-Irina.Nicolae@ibm.com</div><div id='file'> File Name: art/attacks/elastic_net.py</div><div id='class'> Class Name: ElasticNet</div><div id='method'> Method Name: generate</div><BR>

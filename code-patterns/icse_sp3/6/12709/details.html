@@ -1,0 +1,39 @@
+<html><h3>15f8d1934dc72debc6928c4461a1f8f65e551ce1,torch_geometric/nn/models/attentive_fp.py,AttentiveFP,forward,#AttentiveFP#Any#Any#Any#Any#,102
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        edge_index = torch.stack([row, batch], dim=0)
+
+        out = global_add_pool(xs[-1], batch)
+        <a id="change">for conv, gru, x in zip(self.mol_convs, self.mol_grus, xs):
+            h = F.elu_(conv((x, out), edge_index))
+            out = gru(h, out)
+
+        &#47&#47 Predictor:
+       </a> out = F.dropout(out, p=self.dropout, training=self.training)
+        return self.lin2(out)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        x = F.leaky_relu_(self.lin1(x))
+
+        h = F.elu_(self.atom_convs[0](x, edge_index, edge_attr))
+        h = <a id="change">F.dropout(h, p=self.dropout, training=self.training)</a>
+        x = self.atom_grus[0](h, x).relu_()
+
+        for conv, gru in zip(self.atom_convs[1:], self.atom_grus[1:]):
+            h = F.elu_(conv(x, edge_index))
+            h = F.dropout(h, p=self.dropout, training=self.training)
+            x = gru(h, x).relu_()
+
+        &#47&#47 Molecule Embedding:
+        row = torch.arange(batch.size(0), device=batch.device)
+        edge_index = torch.stack([row, batch], dim=0)
+
+        out = global_add_pool(x, batch).relu_()
+        for t in range(self.num_timesteps):
+            h = F.elu_(self.mol_conv((x, out), edge_index))
+            <a id="change">h = F.dropout(h, p=self.dropout, training=self.training)</a>
+            out = self.mol_gru(h, out).relu_()
+
+        &#47&#47 Predictor:
+        out = F.dropout(out, p=self.dropout, training=self.training)</code></pre><img src="77561311.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/15f8d1934dc72debc6928c4461a1f8f65e551ce1#diff-69d21e56cac416816199f5cd04462675213cf8057672b15d3fce9319940a384cL97' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: 15f8d1934dc72debc6928c4461a1f8f65e551ce1</div><div id='time'> Time: 2021-03-28</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: torch_geometric/nn/models/attentive_fp.py</div><div id='class'> Class Name: AttentiveFP</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/68fb5f7e51a8a735f372cb0893dbeed0bc0fb623#diff-9e67f9fc19f56146a9f38769fd9ee442ff1a99610a2cac6d353aa14da1c6699cL90' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: 68fb5f7e51a8a735f372cb0893dbeed0bc0fb623</div><div id='time'> Time: 2018-07-03</div><div id='author'> Author: ly979@nyu.edu</div><div id='file'> File Name: examples/pytorch/gat.py</div><div id='class'> Class Name: GAT</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/ParlAI/commit/12eb6139549f79314abe3198d42af116c5b9e0b9#diff-6254c9ee205aac9094aba396a3021415698db7731e0d9f082c39dc0bfaf0136fL289' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/ParlAI</div><div id='commit'> Commit Name: 12eb6139549f79314abe3198d42af116c5b9e0b9</div><div id='time'> Time: 2018-02-27</div><div id='author'> Author: kshuster@fb.com</div><div id='file'> File Name: parlai/agents/mlb/mlb_modules.py</div><div id='class'> Class Name: MlbAtt</div><div id='method'> Method Name: forward_glimpses</div><BR>

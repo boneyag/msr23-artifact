@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        batch_rewards = exp_batch[&quotreward&quot]
+        batch_terminal = exp_batch[&quotis_state_terminal&quot]
+
+        with <a id="change">chainer.using_config(&quottrain&quot, False)</a>, state_kept(self.q_function):
+            next_qout = self.q_function(batch_next_state)
+
+        target_next_qout = self.target_q_function(batch_next_state)</code></pre><h3>After Change</h3><pre><code class='java'>
+        batch_rewards = exp_batch[&quotreward&quot]
+        batch_terminal = exp_batch[&quotis_state_terminal&quot]
+
+        <a id="change">if self.recurrent:
+            target_next_qout, _ = self.target_model.n_step_forward(
+                batch_next_state, exp_batch[&quotnext_recurrent_state&quot],
+                output_mode=&quotconcat&quot)
+            next_qout, _ = self.model.n_step_forward(
+                batch_next_state, exp_batch[&quotnext_recurrent_state&quot],
+                output_mode=&quotconcat&quot)
+        else:
+            target_next_qout = self.target_model(batch_next_state)
+            next_qout = self.model(batch_next_state)
+
+       </a> next_q_max = target_next_qout.evaluate_actions(
+            next_qout.greedy_actions)
+
+        batch_size = batch_rewards.shape[0]</code></pre>

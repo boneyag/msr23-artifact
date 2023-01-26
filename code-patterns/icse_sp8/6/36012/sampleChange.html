@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    table_init_ops = tf.tables_initializer()
+    variable_mgr_init_ops = [local_var_init_op]
+    if table_init_ops:
+      <a id="change">variable_mgr_init_ops.extend([table_init_ops])</a>
+    with tf.control_dependencies([local_var_init_op]):
+      variable_mgr_init_ops.extend(self.variable_mgr.get_post_init_ops())
+    local_var_init_op_group = tf.group(*variable_mgr_init_ops)
+    summary_op = tf.summary.merge_all()</code></pre><h3>After Change</h3><pre><code class='java'>
+    Raises:
+      ValueError: If self.params.train_dir is unspecified.
+    
+    <a id="change">if self.params.train_dir is None:
+      raise ValueError(&quotTrained model directory not specified&quot)
+   </a> graph_info = self._build_eval_graph()
+    saver = tf.train.Saver(self.variable_mgr.savable_variables())
+    summary_writer = tf.summary.FileWriter(self.params.eval_dir,
+                                           tf.get_default_graph())
+    target = &quot&quot
+    &#47&#47 TODO(huangyp): Check if checkpoints haven&quott updated for hours and abort.
+    while True:
+      with tf.Session(
+          target=target, config=create_config_proto(self.params)) as sess:
+        image_producer = None
+        <a id="change">try:
+          global_step = load_checkpoint(saver, sess, self.params.train_dir)
+          image_producer = self._initialize_eval_graph(
+              graph_info.enqueue_ops, graph_info.input_producer_op,
+              graph_info.local_var_init_op_group, sess)
+        except CheckpointNotFoundException:
+          log_fn(&quotCheckpoint not found in %s&quot % self.params.train_dir)
+        else:  &#47&#47 Only executes if an exception was not thrown
+          self._eval_once(sess, summary_writer, graph_info.fetches,
+                          graph_info.summary_op, image_producer, global_step)
+       </a> if image_producer is not None:
+          image_producer.done()
+        if self.params.eval_interval_secs &lt;= 0:
+          break</code></pre>

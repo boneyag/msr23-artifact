@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 stdout = client.logs(container=cont_id, stdout=True)
+        &#47&#47 stderr = client.logs(container=cont_id, stderr=True)
+        &#47&#47 run the docker container
+        <a id="change">cmd = ["docker", "run",
+                "-v", "%s:/home/mltsp" % cfg.PROJECT_PATH,
+                "-v", "%s:%s" % (cfg.FEATURES_FOLDER, "/Data/features"),
+                "-v", "%s:%s" % (cfg.UPLOAD_FOLDER, "/Data/flask_uploads"),
+                "-v", "%s:%s" % (cfg.MODELS_FOLDER, "/Data/models"),
+                "--name=%s" % container_name,
+                "mltsp/build_model"]</a>
+        <a id="change">process = Popen(cmd, stdout=PIPE, stderr=PIPE)</a>
+        <a id="change">stdout, stderr = process.communicate()</a>
+        print("\n\ndocker container stdout:\n\n", str(stdout),
+              "\n\ndocker container stderr:\n\n", str(stderr), "\n\n")
+
+        &#47&#47 copy all necessary files produced in Docker container to host</code></pre><h3>After Change</h3><pre><code class='java'>
+        pickle.dump(arguments, f, protocol=2)
+    try:
+        &#47&#47 Instantiate Docker client
+        <a id="change">client = Client(base_url=&quotunix://var/run/docker.sock&quot)</a>
+        &#47&#47 Create container
+        <a id="change">cont_id = container_name = client.create_container(
+            "mltsp/build_model",
+            volumes={"/home/mltsp": "", "/Data": ""})["Id"]</a>
+        print(cont_id)
+        &#47&#47 Start container
+        <a id="change">client.start(cont_id,
+                     binds={cfg.PROJECT_PATH: {"bind": "/home/mltsp"},
+                            cfg.DATA_PATH: {"bind": "/Data"}})</a>
+        &#47&#47 Wait for process to complete
+        <a id="change">client.wait(cont_id)</a>
+        <a id="change">stdout = client.logs(container=cont_id, stdout=True)</a>
+        stderr = client.logs(container=cont_id, stderr=True)
+        print("\n\ndocker container stdout:\n\n", str(stdout),
+              "\n\ndocker container stderr:\n\n", str(stderr), "\n\n")
+        &#47&#47 copy model object produced in Docker container to host
+        <a id="change">path = "/tmp/%s_%s.pkl" % (featureset_key, model_type)</a>
+        print(cont_id)
+        <a id="change">docker_copy(client, cont_id, path, target=cfg.MODELS_FOLDER)</a>
+        print(os.path.join(cfg.MODELS_FOLDER,
+                           "%s_%s.pkl" % (featureset_key, model_type)),
+              "copied to host machine.")
+        print("Process complete.")</code></pre>

@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        unvisited_grids = self._get_unvisited_grid_ids(study)
+
+        <a id="change">if len(unvisited_grids) == 0:
+            raise ValueError(&quotAll grids have been evaluated. If you want to avoid this error, &quot
+                             &quotplease make sure that unnecessary trials do not run during &quot
+                             &quotoptimization by properly setting `n_trials` in `study.optimize`.&quot)
+
+        &#47&#47 In distributed optimization, multiple workers may simultaneously pick up the same grid.
+        &#47&#47 To make the conflict less frequent, the grid is chosen randomly.
+       </a> grid_id = random.choice(unvisited_grids)
+
+        study._storage.set_trial_system_attr(trial._trial_id, &quotsearch_space&quot, self._search_space)
+        study._storage.set_trial_system_attr(trial._trial_id, &quotgrid_id&quot, grid_id)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        target_grids = self._get_unvisited_grid_ids(study)
+
+        <a id="change">if len(target_grids) == 0:
+            _logger.warning(&quot`GridSampler` is evaluating a duplicated point because all grids &quot
+                            &quothave been evaluated. This may happen due to a timing issue during &quot
+                            &quotdistributed optimization or an unnecessary number of `n_trials`.&quot)
+
+            study.stop()
+            target_grids = list(range(len(self._all_grids)))
+
+        &#47&#47 In distributed optimization, multiple workers may simultaneously pick up the same grid.
+        &#47&#47 To make the conflict less frequent, the grid is chosen randomly.
+       </a> grid_id = random.choice(target_grids)
+
+        study._storage.set_trial_system_attr(trial._trial_id, &quotsearch_space&quot, self._search_space)
+        study._storage.set_trial_system_attr(trial._trial_id, &quotgrid_id&quot, grid_id)</code></pre>

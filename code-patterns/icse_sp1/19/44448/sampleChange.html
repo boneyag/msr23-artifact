@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self, use_gpu=False, use_all_avail_gpus=False, modular=False
+    ):
+        environment = GridworldContinuous()
+        <a id="change">samples = environment.generate_samples(100000, 1.0, DISCOUNT)</a>
+        get_trainer_func = (
+            self.get_modular_sarsa_trainer if modular else self.get_sarsa_trainer
+        )
+        trainer = get_trainer_func(
+            environment, use_gpu=use_gpu, use_all_avail_gpus=use_all_avail_gpus
+        )
+        evaluator = GridworldContinuousEvaluator(
+            environment, False, DISCOUNT, False, samples
+        )
+        <a id="change">tdps = environment.preprocess_samples(
+            samples, self.minibatch_size, use_gpu=use_gpu
+        )</a>
+
+        <a id="change">for tdp in tdps:
+            trainer.train(tdp)
+
+       </a> get_predictor_func = (
+            self.get_modular_predictor if modular else self.get_predictor
+        )
+        predictor = get_predictor_func(trainer, environment)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _test_trainer_sarsa(
+        self, use_gpu=False, use_all_avail_gpus=False, modular=False
+    ):
+        <a id="change">environment</a> = GridworldContinuous()
+        evaluator = GridworldContinuousEvaluator(
+            environment,
+            assume_optimal_policy=False,
+            gamma=DISCOUNT,
+            use_int_features=False,
+        )
+
+        if modular:
+            &#47&#47 TODO: test save/load once it&quots implemented
+            <a id="change">self.test_save_load = False</a>
+            trainer, exporter = self.get_modular_sarsa_trainer_exporter(
+                environment, None, use_gpu, use_all_avail_gpus
+            )
+        else:
+            trainer, exporter = self.get_sarsa_trainer_exporter(
+                environment, None, use_gpu, use_all_avail_gpus
+            )
+
+        <a id="change">self.evaluate_gridworld(environment, evaluator, trainer, exporter, use_gpu)</a>
+
+    def test_trainer_sarsa(self):
+        self._test_trainer_sarsa()
+</code></pre>

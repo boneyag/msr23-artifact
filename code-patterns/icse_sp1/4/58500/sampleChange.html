@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    termination_status = None
+    while nfev &lt; max_nfev:
+        if scaling == &quotjac&quot:
+            scale = <a id="change">np.maximum(scale, np.sum(J**2, axis=0)**0.5)</a>
+
+        if isinstance(J, LinearOperator):
+            g = J.rmatvec(f)
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    if scaling == &quotjac&quot:
+        if issparse(J):
+            <a id="change">scale = np.asarray(J.power(2).sum(axis=0)).ravel()**0.5</a>
+        else:
+            scale = np.sum(J**2, axis=0)**0.5
+        scale[scale == 0] = 1
+    else:
+        scale = scaling
+
+    Delta = norm(x0 * scale, ord=np.inf)
+    if Delta == 0:
+        Delta = 1.0
+
+    on_bound = np.zeros_like(x0, dtype=int)
+    on_bound[np.equal(x0, lb)] = -1
+    on_bound[np.equal(x0, ub)] = 1
+
+    x = x0.copy()
+    step = np.empty_like(x0)
+    obj_value = np.dot(f, f)
+
+    if max_nfev is None:
+        max_nfev = x0.size * 100
+
+    termination_status = None
+    while nfev &lt; max_nfev:
+        if scaling == &quotjac&quot:
+            if issparse(J):
+                new_scale = np.asarray(J.power(2).sum(axis=0)).ravel()**0.5
+            else:
+                new_scale = np.sum(J**2, axis=0)**0.5
+            <a id="change">scale = np.maximum(scale, new_scale)</a>
+
+        if isinstance(J, LinearOperator):
+            g = J.rmatvec(f)
+        else:</code></pre>

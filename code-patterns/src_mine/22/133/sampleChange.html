@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        policy_loss = -torch.mean(self.critic(states_t, self.actor(states_t)))
+
+        &#47&#47 critic loss (quantile regression)
+        <a id="change">atoms_t</a> = <a id="change">self.critic(states_t, actions_t)</a>
+        &#47&#47 B x num_heads x num_atoms
+        atoms_tp1 = <a id="change">self</a>.target_critic(
+            states_tp1, self.target_actor(states_tp1)
+        ).detach()
+        &#47&#47 B x num_heads x num_atoms
+
+        done_t = done_t[:, None, :]
+        &#47&#47 B x 1 x 1
+        rewards_t = rewards_t[:, None, :]
+        &#47&#47 B x 1 x 1
+        gammas = gammas[None, :, None]
+        &#47&#47 1 x num_heads x 1
+
+        <a id="change">atoms_target_t</a> = rewards_t + (1 - done_t) * gammas * atoms_tp1
+
+        <a id="change">value_loss</a> = utils.quantile_loss(
+            atoms_t.view(-1, self.num_atoms),
+            atoms_target_t.view(-1, self.num_atoms),
+            self.tau, self.num_atoms,</code></pre><h3>After Change</h3><pre><code class='java'>
+        policy_loss = -torch.mean(self.critic(states_t, self.actor(states_t)))
+
+        &#47&#47 critic loss (quantile regression)
+        <a id="change">atoms_t</a> = <a id="change">self.critic(states_t, actions_t).squeeze_(dim=2)</a>
+        &#47&#47 B x num_heads x num_atoms
+        atoms_tp1 = <a id="change">self</a>.target_critic(
+            states_tp1, self.target_actor(states_tp1)
+        ).squeeze_(dim=<a id="change">2</a>).detach()
+        &#47&#47 B x num_heads x num_atoms
+
+        done_t = done_t[:, None, :]
+        &#47&#47 B x 1 x 1
+        rewards_t = rewards_t[:, None, :]
+        &#47&#47 B x 1 x 1
+        gammas = gammas[None, :, None]
+        &#47&#47 1 x num_heads x 1
+
+        <a id="change">atoms_target_t</a> = rewards_t + (1 - done_t) * gammas * atoms_tp1
+
+        <a id="change">value_loss</a> = utils.quantile_loss(
+            atoms_t.view(-1, self.num_atoms),
+            atoms_target_t.view(-1, self.num_atoms),
+            self.tau, self.num_atoms,</code></pre>

@@ -1,0 +1,31 @@
+<html><h3>cf8a3fb30547d6e980ecd8182f64a51df8e55c62,python/dgl/backend/pytorch/tensor.py,,pack_padded_tensor,#Any#Any#,248
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def pack_padded_tensor(input, lengths):
+    batch_size, max_len = input.shape[:2]
+    device = input.device
+    <a id="change">index = []</a>
+    for i, l in enumerate(lengths):
+        index.extend(range(i * max_len, i * max_len + l))
+    index = th.tensor(index).to(device)
+    <a id="change">return gather_row(input.view(batch_size * max_len, -1), index)</a>
+
+def boolean_mask(input, mask):
+    if &quotbool&quot not in str(mask.dtype):
+        mask = th.tensor(mask, dtype=th.bool)</code></pre><h3>After Change</h3><pre><code class='java'>
+        lengths = th.tensor(lengths, dtype=th.int64, device=device)
+    else:
+        lengths = lengths.to(device)
+    <a id="change">input = input.view(-1, *input.shape[2:])</a>
+    out_len = lengths.sum().item()
+    index = th.ones(out_len, dtype=th.int64, device=device)
+    cum_lengths = th.cumsum(lengths, 0)
+    index[<a id="change">cum_lengths[:-1]</a>] += (max_len - lengths[:-1])
+    <a id="change">index = th.cumsum(index, 0) - 1</a>
+    <a id="change">return input[index]</a>
+
+def boolean_mask(input, mask):
+    if &quotbool&quot not in str(mask.dtype):
+        mask = th.tensor(mask, dtype=th.bool)</code></pre><img src="205136216.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/cf8a3fb30547d6e980ecd8182f64a51df8e55c62#diff-2f891bb8d662a969491d25652279d2c8917e0731a79b707ff75ce560648463d6L249' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: cf8a3fb30547d6e980ecd8182f64a51df8e55c62</div><div id='time'> Time: 2021-02-10</div><div id='author'> Author: expye@outlook.com</div><div id='file'> File Name: python/dgl/backend/pytorch/tensor.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: pack_padded_tensor</div><BR><BR><div id='link'><a href='https://github.com/ContextLab/hypertools/commit/ab4c3743ec1c77d67ddede9fb400b55b3778e39b#diff-8f51bfa87f5f560a1ef0203b012e0a41e037e43a6d5288c3164771a8227f0789L19' target='_blank'>Link</a></div><div id='project'> Project Name: ContextLab/hypertools</div><div id='commit'> Commit Name: ab4c3743ec1c77d67ddede9fb400b55b3778e39b</div><div id='time'> Time: 2016-12-17</div><div id='author'> Author: andrew.heusser@gmail.com</div><div id='file'> File Name: python/hypertools/reduce.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: reducePCA</div><BR><BR><div id='link'><a href='https://github.com/ContextLab/hypertools/commit/1430ab58648b4bd189f232ae2acc8b86ce2fd9aa#diff-8f51bfa87f5f560a1ef0203b012e0a41e037e43a6d5288c3164771a8227f0789L19' target='_blank'>Link</a></div><div id='project'> Project Name: ContextLab/hypertools</div><div id='commit'> Commit Name: 1430ab58648b4bd189f232ae2acc8b86ce2fd9aa</div><div id='time'> Time: 2016-12-17</div><div id='author'> Author: andrew.heusser@gmail.com</div><div id='file'> File Name: python/hypertools/reduce.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: reducePCA</div><BR>

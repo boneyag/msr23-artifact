@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        last_y1, y1, h1 = KNP.rnn(x, [wi, None, None], None,
+                                  go_backwards=False, mask=None)
+        <a id="change">last_y2</a>, y2, h2 = K.rnn(rnn_fn, x_k, [],
+                                go_backwards=False, mask=None)
+
+        assert len(h2) == 0</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        _, x = parse_shape_or_val((num_samples, timesteps, input_dim))
+        _, wi = parse_shape_or_val((input_dim, output_dim))
+        mask = <a id="change">np.random.randint(2, size=(num_samples, timesteps))</a>
+
+        wi_k = K.variable(wi)
+
+        def get_step_function(backend, w_i):
+
+            def simple_no_states(inputs, states):
+                assert len(states) == 0
+                y = backend.dot(inputs, w_i)
+                return y, []
+
+            return simple_no_states
+
+        <a id="change">kwargs_list = [
+            {&quotgo_backwards&quot: False, &quotmask&quot: None},
+            {&quotgo_backwards&quot: True, &quotmask&quot: None},
+            {&quotgo_backwards&quot: False, &quotmask&quot: mask},
+            {&quotgo_backwards&quot: True, &quotmask&quot: mask},
+        ]</a>
+        for kwargs in kwargs_list:
+            check_rnn_operation(step_function_k=get_step_function(K, wi_k),
+                                step_function_np=get_step_function(KNP, wi),
+                                inputs_np=x,</code></pre>

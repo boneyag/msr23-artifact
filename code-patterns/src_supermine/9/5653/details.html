@@ -1,0 +1,142 @@
+<html><h3>b0bdcbfdabcae1933980925c8f2438cbb2359a49,imgaug/augmenters/geometric.py,ElasticTransformation,_augment_keypoints,#ElasticTransformation#Any#Any#Any#Any#,3311
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        nb_images = len(keypoints_on_images)
+        rss, alphas, sigmas, _orders, _cvals, _modes = self._draw_samples(
+            nb_images, random_state)
+        <a id="change">for i in sm.xrange(nb_images):
+            kpsoi = keypoints_on_images[i]
+            if not kpsoi.keypoints:
+                &#47&#47 ElasticTransformation does not change the shape, hence we can
+                &#47&#47 skip the below steps
+                continue
+            h, w = kpsoi.shape[0:2]
+            dx, dy = self.generate_shift_maps(
+                kpsoi.shape[0:2],
+                alpha=alphas[i],
+                sigma=sigmas[i],
+                random_state=rss[i]
+            )
+
+            kps_aug = []
+            for kp in kpsoi.keypoints:
+                &#47&#47 dont augment keypoints if alpha/sigma are too low or if the
+                &#47&#47 keypoint is outside of the image plane
+                params_above_thresh = (
+                        alphas[i] &gt; self.KEYPOINT_AUG_ALPHA_THRESH
+                        and sigmas[i] &gt; self.KEYPOINT_AUG_SIGMA_THRESH)
+                within_image_plane = (0 &lt;= kp.x &lt; w and 0 &lt;= kp.y &lt; h)
+                if not params_above_thresh or not within_image_plane:
+                    kps_aug.append(kp)
+                else:
+                    kp_neighborhood = kp.generate_similar_points_manhattan(
+                        self.NB_NEIGHBOURING_KEYPOINTS,
+                        self.NEIGHBOURING_KEYPOINTS_DISTANCE,
+                        return_array=True
+                    )
+
+                    &#47&#47 We can clip here, because we made sure above that the
+                    &#47&#47 keypoint is inside the image plane. Keypoints at the
+                    &#47&#47 bottom row or right columns might be rounded outside
+                    &#47&#47 the image plane, which we prevent here. We reduce
+                    &#47&#47 neighbours to only those within the image plane as only
+                    &#47&#47 for such points we know where to move them.
+                    xx = np.round(kp_neighborhood[:, 0]).astype(np.int32)
+                    yy = np.round(kp_neighborhood[:, 1]).astype(np.int32)
+                    inside_image_mask = np.logical_and(
+                        np.logical_and(0 &lt;= xx, xx &lt; w),
+                        np.logical_and(0 &lt;= yy, yy &lt; h)
+                    )
+                    xx = xx[inside_image_mask]
+                    yy = yy[inside_image_mask]
+
+                    xxyy = np.concatenate(
+                        [xx[:, np.newaxis], yy[:, np.newaxis]],
+                        axis=1)
+
+                    xxyy_aug = np.copy(xxyy).astype(np.float32)
+                    xxyy_aug[:, 0] += dx[yy, xx]
+                    xxyy_aug[:, 1] += dy[yy, xx]
+
+                    med = ia.compute_geometric_median(xxyy_aug)
+                    &#47&#47 uncomment to use average instead of median
+                    &#47&#47 med = np.average(xxyy_aug, 0)
+                    kps_aug.append(kp.deepcopy(x=med[0], y=med[1]))
+
+            result[i] = kpsoi.deepcopy(keypoints=kps_aug)
+
+       </a> return result
+
+    def _augment_polygons(self, polygons_on_images, random_state, parents,
+                          hooks):</code></pre><h3>After Change</h3><pre><code class='java'>
+        result = keypoints_on_images
+        nb_images = len(keypoints_on_images)
+        samples = self._draw_samples(nb_images, random_state)
+        gen = <a id="change">enumerate(zip(keypoints_on_images, samples.alphas, samples.sigmas,
+                            samples.orders, samples.random_states))</a>
+        <a id="change">for i, (kpsoi, alpha, sigma, order, random_state_i) in gen:
+            if not kpsoi.keypoints:
+                &#47&#47 ElasticTransformation does not change the shape, hence we can
+                &#47&#47 skip the below steps
+                continue
+            h, w = kpsoi.shape[0:2]
+            dx, dy = self._generate_shift_maps(
+                kpsoi.shape[0:2],
+                alpha=alpha,
+                sigma=sigma,
+                random_state=random_state_i
+            )
+
+            kps_aug = []
+            for kp in kpsoi.keypoints:
+                &#47&#47 dont augment keypoints if alpha/sigma are too low or if the
+                &#47&#47 keypoint is outside of the image plane
+                params_above_thresh = (
+                    alpha &gt; self.KEYPOINT_AUG_ALPHA_THRESH
+                    and sigma &gt; self.KEYPOINT_AUG_SIGMA_THRESH)
+                within_image_plane = (0 &lt;= kp.x &lt; w and 0 &lt;= kp.y &lt; h)
+                if not params_above_thresh or not within_image_plane:
+                    kps_aug.append(kp)
+                else:
+                    kp_neighborhood = kp.generate_similar_points_manhattan(
+                        self.NB_NEIGHBOURING_KEYPOINTS,
+                        self.NEIGHBOURING_KEYPOINTS_DISTANCE,
+                        return_array=True
+                    )
+
+                    &#47&#47 We can clip here, because we made sure above that the
+                    &#47&#47 keypoint is inside the image plane. Keypoints at the
+                    &#47&#47 bottom row or right columns might be rounded outside
+                    &#47&#47 the image plane, which we prevent here. We reduce
+                    &#47&#47 neighbours to only those within the image plane as only
+                    &#47&#47 for such points we know where to move them.
+                    xx = np.round(kp_neighborhood[:, 0]).astype(np.int32)
+                    yy = np.round(kp_neighborhood[:, 1]).astype(np.int32)
+                    inside_image_mask = np.logical_and(
+                        np.logical_and(0 &lt;= xx, xx &lt; w),
+                        np.logical_and(0 &lt;= yy, yy &lt; h)
+                    )
+                    xx = xx[inside_image_mask]
+                    yy = yy[inside_image_mask]
+
+                    xxyy = np.concatenate(
+                        [xx[:, np.newaxis], yy[:, np.newaxis]],
+                        axis=1)
+
+                    xxyy_aug = np.copy(xxyy).astype(np.float32)
+                    xxyy_aug[:, 0] += dx[yy, xx]
+                    xxyy_aug[:, 1] += dy[yy, xx]
+
+                    med = ia.compute_geometric_median(xxyy_aug)
+                    &#47&#47 uncomment to use average instead of median
+                    &#47&#47 med = np.average(xxyy_aug, 0)
+                    kps_aug.append(kp.deepcopy(x=med[0], y=med[1]))
+
+            result[i] = kpsoi.deepcopy(keypoints=kps_aug)
+
+       </a> return result
+
+    def _augment_polygons(self, polygons_on_images, random_state, parents,
+                          hooks):</code></pre><img src="24530870.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/aleju/imgaug/commit/b0bdcbfdabcae1933980925c8f2438cbb2359a49#diff-52655f854e5777e8c8477b4edeaf9edc204e433b24866740d25a2d5ddc4d5509L3265' target='_blank'>Link</a></div><div id='project'> Project Name: aleju/imgaug</div><div id='commit'> Commit Name: b0bdcbfdabcae1933980925c8f2438cbb2359a49</div><div id='time'> Time: 2019-09-13</div><div id='author'> Author: kontakt@ajung.name</div><div id='file'> File Name: imgaug/augmenters/geometric.py</div><div id='class'> Class Name: ElasticTransformation</div><div id='method'> Method Name: _augment_keypoints</div><BR><BR><div id='link'><a href='https://github.com/aleju/imgaug/commit/b0bdcbfdabcae1933980925c8f2438cbb2359a49#diff-52655f854e5777e8c8477b4edeaf9edc204e433b24866740d25a2d5ddc4d5509L3141' target='_blank'>Link</a></div><div id='project'> Project Name: aleju/imgaug</div><div id='commit'> Commit Name: b0bdcbfdabcae1933980925c8f2438cbb2359a49</div><div id='time'> Time: 2019-09-13</div><div id='author'> Author: kontakt@ajung.name</div><div id='file'> File Name: imgaug/augmenters/geometric.py</div><div id='class'> Class Name: ElasticTransformation</div><div id='method'> Method Name: _augment_images</div><BR><BR><div id='link'><a href='https://github.com/uber/ludwig/commit/5667af96dade79ef77194d519182d4989494b3a4#diff-93083b0167fe4d5d7228a93acefc4045ce7e5320a4203d876bb8400637a88123L205' target='_blank'>Link</a></div><div id='project'> Project Name: uber/ludwig</div><div id='commit'> Commit Name: 5667af96dade79ef77194d519182d4989494b3a4</div><div id='time'> Time: 2019-08-25</div><div id='author'> Author: smiryala@uber.com</div><div id='file'> File Name: ludwig/features/image_feature.py</div><div id='class'> Class Name: ImageBaseFeature</div><div id='method'> Method Name: add_feature_data</div><BR><BR><div id='link'><a href='https://github.com/uber/ludwig/commit/7d9db23a389499c2764fb850cd19f853cc3e8565#diff-93083b0167fe4d5d7228a93acefc4045ce7e5320a4203d876bb8400637a88123L205' target='_blank'>Link</a></div><div id='project'> Project Name: uber/ludwig</div><div id='commit'> Commit Name: 7d9db23a389499c2764fb850cd19f853cc3e8565</div><div id='time'> Time: 2019-08-08</div><div id='author'> Author: smiryala@uber.com</div><div id='file'> File Name: ludwig/features/image_feature.py</div><div id='class'> Class Name: ImageBaseFeature</div><div id='method'> Method Name: add_feature_data</div><BR>

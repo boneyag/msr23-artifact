@@ -1,0 +1,50 @@
+<html><h3>3218a3987ef9f83d1ad5efd6f96d6f6c741c3cfa,python/eight_mile/pytorch/layers.py,,viterbi,#Any#Any#Any#Any#Any#Any#,776
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    seq_len, batch_size, tag_size = unary.size()
+    min_length = torch.min(lengths)
+    batch_range = <a id="change">torch.arange(batch_size, dtype=torch.int64)</a>
+    backpointers = []
+
+    &#47&#47 Alphas: [B, 1, N]
+    alphas = torch.Tensor(batch_size, 1, tag_size).fill_(-1e4).to(unary.device)
+    alphas[:, 0, start_idx] = 0
+    alphas = F.log_softmax(alphas, dim=-1) if norm else alphas
+
+    for i, unary_t in enumerate(unary):
+        next_tag_var = alphas + trans
+        viterbi, best_tag_ids = torch.max(next_tag_var, 2)
+        backpointers.append(best_tag_ids.data)
+        new_alphas = viterbi + unary_t
+        new_alphas.unsqueeze_(1)
+        if i &gt;= min_length:
+            mask = (i &lt; lengths).view(-1, 1, 1)
+            alphas = alphas.masked_fill(mask, 0) + new_alphas.masked_fill(mask == 0, 0)
+        else:
+            alphas = new_alphas
+
+    &#47&#47 Add end tag
+    terminal_var = alphas.squeeze(1) + trans[:, end_idx]
+    _, best_tag_id = torch.max(terminal_var, 1)
+    path_score = terminal_var[batch_range, best_tag_id]  &#47&#47 Select best_tag from each batch
+
+    best_path = [best_tag_id]
+    &#47&#47 Flip lengths
+    rev_len = seq_len - lengths - 1
+    for i, backpointer_t in enumerate(reversed(backpointers)):
+        &#47&#47 Get new best tag candidate
+        new_best_tag_id = <a id="change">backpointer_t[batch_range, best_tag_id]</a>
+        &#47&#47 We are going backwards now, if you passed your flipped length then you aren&quott in your real results yet
+        mask = (i &gt; rev_len)
+        best_tag_id = best_tag_id.masked_fill(mask, 0) + new_best_tag_id.masked_fill(mask == 0, 0)
+        best_path.append(best_tag_id)</code></pre><h3>After Change</h3><pre><code class='java'>
+    best_path = [best_tag_id]
+    for i, backpointer_t in enumerate(reversed(backpointers)):
+        &#47&#47 Get new best tag candidate
+        new_best_tag_id = <a id="change">backpointer_t</a>.gather(1, best_tag_id.unsqueeze(1)).squeeze(1)
+        &#47&#47 We are going backwards now, if flipped length was passed
+        &#47&#47 these you aren&quott in your real results yet
+        mask = (i &gt; rev_len)</code></pre><img src="191455466.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/3218a3987ef9f83d1ad5efd6f96d6f6c741c3cfa#diff-c41fa94148789d4fdd61157e7ff95333b730d8f4e1f417ecfcec8007cafc71caL787' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: 3218a3987ef9f83d1ad5efd6f96d6f6c741c3cfa</div><div id='time'> Time: 2019-09-27</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: python/eight_mile/pytorch/layers.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: viterbi</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/c473c620d141968c2ed3a62f60bf466d5790393e#diff-483c86d3177f3b02a8e85bd594c456417a28c668d57dff1ded48e1a6ff2826f1L658' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: c473c620d141968c2ed3a62f60bf466d5790393e</div><div id='time'> Time: 2020-11-06</div><div id='author'> Author: czxttkl@fb.com</div><div id='file'> File Name: reagent/models/seq2slate.py</div><div id='class'> Class Name: Seq2SlateTransformerModel</div><div id='method'> Method Name: encoder_output_to_scores</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/8516950fa0683319a31f91e80148ddd62ff56a49#diff-bc28f4b407e650d6d8d386691cc310002fdd2c780be56d9cb4ccac386bf6194aL175' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: 8516950fa0683319a31f91e80148ddd62ff56a49</div><div id='time'> Time: 2019-01-10</div><div id='author'> Author: blester125@users.noreply.github.com</div><div id='file'> File Name: python/baseline/pytorch/crf.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: viterbi</div><BR>

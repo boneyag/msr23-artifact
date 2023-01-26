@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    continue
+                question = self.questions.get(question_text=key)
+                if question.answer_type == Question.ANSWER_TYPE_BOOL:
+                    <a id="change">if gt[key] not in ["1", "0"]:
+                        raise ValidationError(
+                            "Expected 1 or 0 for answer type BOOL."
+                        )
+                   </a> _answer = bool(int(gt[key]))
+                else:
+                    _answer = gt[key]
+                Answer.validate(</code></pre><h3>After Change</h3><pre><code class='java'>
+                if key == "images":
+                    continue
+                question = self.questions.get(question_text=key)
+                _answer = <a id="change">json.loads(gt[key])</a>
+                if question.answer_type == Question.ANSWER_TYPE_CHOICE:
+                    try:
+                        <a id="change">option = question.options.get(title=_answer)</a>
+                        _answer = <a id="change">option.pk</a>
+                    except CategoricalOption.DoesNotExist:
+                        raise ValidationError(
+                            f"Option &quot{_answer}&quot is not valid for question {question.question_text}"
+                        )
+                if (
+                    question.answer_type
+                    == Question.ANSWER_TYPE_MULTIPLE_CHOICE
+                ):
+                    <a id="change">_answer = list(
+                        question.options.filter(title__in=_answer).values_list(
+                            "pk", flat=True
+                        )
+                    )</a>
+                Answer.validate(
+                    creator=user,
+                    question=question,
+                    images=images,</code></pre>

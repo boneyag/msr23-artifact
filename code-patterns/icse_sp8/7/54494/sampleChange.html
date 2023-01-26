@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def test_cancel(make_job, exec_ctx):
+    minimal_job = make_job(sched_access=exec_ctx.access)
+    prepare_job(minimal_job, &quotsleep 30&quot)
+    t_job = <a id="change">datetime.now()</a>
+    minimal_job.submit()
+    minimal_job.cancel()
+
+    &#47&#47 We give some time to the local scheduler for the TERM signal to be
+    &#47&#47 delivered; if we poll immediately, the process may have not been killed
+    &#47&#47 yet, and the scheduler will assume that it&quots ignoring its signal, then
+    &#47&#47 wait for a grace period and send a KILL signal, which is not what we
+    &#47&#47 want to test here.
+    time.sleep(0.01)
+
+    minimal_job.wait()
+    t_job = <a id="change">datetime.now()</a> - t_job
+    assert minimal_job.finished()
+    assert t_job.total_seconds() &lt; 30
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_cancel(make_job, exec_ctx):
+    minimal_job = make_job(sched_access=exec_ctx.access)
+    prepare_job(minimal_job, &quotsleep 30&quot)
+    t_job = <a id="change">time.time()</a>
+    minimal_job.submit()
+    minimal_job.cancel()
+
+    &#47&#47 We give some time to the local scheduler for the TERM signal to be
+    &#47&#47 delivered; if we poll immediately, the process may have not been killed
+    &#47&#47 yet, and the scheduler will assume that it&quots ignoring its signal, then
+    &#47&#47 wait for a grace period and send a KILL signal, which is not what we
+    &#47&#47 want to test here.
+    time.sleep(0.01)
+
+    minimal_job.wait()
+    t_job = <a id="change">time.time()</a> - t_job
+    assert minimal_job.finished()
+    assert t_job &lt; 30
+</code></pre>

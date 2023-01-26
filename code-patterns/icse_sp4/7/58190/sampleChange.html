@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    inputs_per_batch, outputs_per_batch = [], []
+    total_loss = 0.0
+
+    <a id="change">for cnt, feed_dict in enumerate(
+      self._model.data_layer.iterate_one_epoch(cross_over=True)
+    ):
+      loss, inputs, outputs = run_context.session.run(
+        self._fetches, feed_dict,
+      )
+      inputs_per_batch.append(inputs)
+      outputs_per_batch.append(outputs)
+      total_loss += loss
+
+   </a> total_loss /= (cnt + 1)
+    deco_print("Validation loss: {:.4f}".format(total_loss), offset=4)
+    dict_to_log = self._model.maybe_evaluate(
+      inputs_per_batch,</code></pre><h3>After Change</h3><pre><code class='java'>
+      return
+    self._timer.update_last_triggered_step(self._iter_count - 1)
+
+    <a id="change">if not self._model.on_horovod or self._model.hvd.rank() == 0:
+      deco_print("Running evaluation on a validation set:")
+
+   </a> inputs_per_batch, outputs_per_batch, total_loss = get_batches_for_epoch(
+      self._model, run_context.session, compute_loss=True,
+    )
+</code></pre>

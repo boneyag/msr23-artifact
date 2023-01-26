@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return self.evals.mean(-1)
+
+    def odf(self, sphere):
+        odf = np.zeros(<a id="change">sphere.vertices.shape[0]</a>)
+        D = np.dot(np.dot(self.evecs,
+                            np.diag(self.evals)),
+                            self.evecs.T)</code></pre><h3>After Change</h3><pre><code class='java'>
+        return odf
+
+    def odf(self, sphere):
+        lower = 4 * np.pi * np.sqrt(np.prod(self.evals, <a id="change">-1</a>))
+        projection = np.dot(sphere.vertices, self.evecs)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            projection /=  np.sqrt(self.evals)
+            odf = vector_norm(projection) ** -3 / lower
+        &#47&#47 Zero evals are non-physical, we replace nans with zeros
+        any_zero = (self.evals == 0).any(-1)
+        odf = np.where(any_zero, 0, odf)
+        &#47&#47 Move odf to be on the last dimension
+        <a id="change">odf = np.rollaxis(odf, 0, odf.ndim)</a>
+        return odf
+
+
+def wls_fit_tensor(design_matrix, data, min_signal=1):</code></pre>

@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        - We properly load third party requirements.
+        - We propagate the error code.
+        
+        with <a id="change">temporary_dir(root_dir=get_buildroot())</a> as tmpdir:
+            <a id="change">tmpdir_relative = Path(tmpdir).relative_to(get_buildroot())</a>
+
+            src_root1 = <a id="change">Path(tmpdir, "src_root1/project")</a>
+            <a id="change">src_root1.mkdir(parents=True)</a>
+            (src_root1 / "app.py").write_text(
+                dedent(
+                    \
+                    import sys
+                    from utils.strutil import upper_case
+
+
+                    if __name__ == "__main__":
+                        print(upper_case("Hello world."))
+                        print("Hola, mundo.", file=sys.stderr)
+                        sys.exit(23)
+                    
+                )
+            )
+            <a id="change">(src_root1 / "BUILD").write_text("python_binary(sources=[&quotapp.py&quot])")</a>
+
+            src_root2 = <a id="change">Path(tmpdir, "src_root2/utils")</a>
+            src_root2.mkdir(parents=True)
+            (src_root2 / "strutil.py").write_text(
+                dedent(
+                    \</code></pre><h3>After Change</h3><pre><code class='java'>
+        - We properly load third party requirements.
+        - We propagate the error code.
+        
+        sources = <a id="change">{
+            "src_root1/project/app.py": dedent(
+                \
+                import sys
+                from utils.strutil import upper_case
+
+
+                if __name__ == "__main__":
+                    print(upper_case("Hello world."))
+                    print("Hola, mundo.", file=sys.stderr)
+                    sys.exit(23)
+                
+            ),
+            "src_root1/project/BUILD": "python_binary(sources=[&quotapp.py&quot])",
+            "src_root2/utils/strutil.py": dedent(
+                \
+                def upper_case(s):
+                    return s.upper()
+                
+            ),
+            "src_root2/utils/BUILD": "python_library()",
+        }</a>
+        with <a id="change">self.setup_tmpdir(sources)</a> as tmpdir:
+            result = self.run_pants(
+                [
+                    "--backend-packages=pants.backend.python",</code></pre>

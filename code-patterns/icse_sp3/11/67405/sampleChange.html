@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        p = (self.logits - shift).exp().clamp(min=finfo.tiny ** 0.5)
+        d = 2 / p.sum(0)
+        for _ in range(self.bp_iters):
+            <a id="change">s = 1 / (p @ d)</a>
+            d = 2 / (s @ p)
+        <a id="change">b = s[:, None] * d * p</a>
+
+        &#47&#47 Evaluate the Bethe free energy, adapting [4] Eqn 4 to one-two
+        &#47&#47 matchings.
+        b = b.clamp(min=finfo.tiny ** 0.5)</code></pre><h3>After Change</h3><pre><code class='java'>
+        logits = self.logits - shift
+        d = logits.logsumexp(0) - math.log(2)
+        for _ in range(self.bp_iters):
+            <a id="change">s = (logits - d).logsumexp(-1, True)</a>
+            d = (logits - s).logsumexp(0) - <a id="change">math.log(2)</a>
+        b = (logits - <a id="change">(d + s)</a>).exp()
+
+        def log(x):
+            return x.clamp(min=finfo.tiny).log()
+
+        &#47&#47 Evaluate the Bethe free energy, adapting [4] Eqn 4 to one-two
+        &#47&#47 matchings.
+        b_ = (1 - b).clamp(min=0)
+        internal_energy = -(b * logits.clamp(min=-1 / finfo.eps)).sum()
+        &#47&#47 Let h be the entropy of matching each destin to one source.
+        z = b / 2
+        h = -(z * log(z)).sum(0)
+        &#47&#47 Then h2 is the entropy of the distribution mapping each destin to an
+        &#47&#47 unordered pair of sources, equal to the log of the binomial
+        &#47&#47 coefficient: perplexity * (perplexity - 1) / 2.
+        h2 = h + log(h.expm1()) - math.log(2)
+        free_energy = internal_energy - h2.sum() - (b_ * log(b_)).sum()
+        <a id="change">log_Z = shift.sum() - free_energy</a>
+        assert torch.isfinite(log_Z)
+        return log_Z
+
+    def log_prob(self, value):</code></pre>

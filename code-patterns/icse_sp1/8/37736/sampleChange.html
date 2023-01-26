@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def load_audio_files(self, file_name):
+        mix = self._load_audio_file(file_name[:-4] + &quotwav&quot)
+        jam = jams.load(file_name)
+        data = <a id="change">jam.annotations[0][&quotdata&quot][&quotvalue&quot]</a>           
+        classes = self.options[&quotsource_labels&quot]
+        source_dict = {}
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def load_audio_files(self, file_name):
+        mix = self._load_audio_file(file_name.replace(&quot.jams&quot, &quot.wav&quot))
+        <a id="change">source_folder = file_name.replace(&quot.jams&quot, &quot_sources&quot)</a>
+        jam = jams.load(file_name)
+        data = jam.annotations[0][&quotdata&quot]      
+        classes = self.options[&quotsource_labels&quot]
+        source_dict = {}
+        lengths = []
+
+        for datum in data:
+            d = datum.value
+            if d[&quotrole&quot] == &quotforeground&quot:
+                source_path = os.path.join(source_folder, d[&quotaudio_path&quot] + &quot.wav&quot)
+                source_dict[d[&quotlabel&quot]] = self._load_audio_file(source_path)
+                lengths.append(source_dict[d[&quotlabel&quot]].signal_length)
+
+        min_length = min(lengths)
+        mix.audio_data = <a id="change">mix</a>.audio_data[:, :min_length]
+        for key in source_dict:
+            source_dict[key].audio_data = source_dict[key].audio_data[:, :min_length]
+</code></pre>

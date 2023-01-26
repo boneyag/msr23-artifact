@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 forward pass
+        sample = self._prepare_sample(sample)
+        _loss, sample_size, logging_output, oom_fwd = self._forward(sample, eval=True)
+        <a id="change">assert not oom_fwd, &quotRan out of memory during validation&quot</a>
+
+        &#47&#47 gather logging outputs from all GPUs
+        if self.args.distributed_world_size &gt; 1:
+            sample_sizes, logging_outputs = zip(*distributed_utils.all_gather_list(</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.model.eval()
+
+        logging_output, sample_size = {}, 0
+        <a id="change">with torch.no_grad():
+            sample = self._prepare_sample(sample)
+            if sample is None:
+                sample = self._prepare_sample(self._dummy_batch)
+            _loss, sample_size, logging_output = self.task.get_loss(
+                self.model, self.criterion, sample,
+            )
+
+        &#47&#47 gather logging outputs from all replicas
+       </a> if self.args.distributed_world_size &gt; 1:
+            logging_output, sample_size = zip(*distributed_utils.all_gather_list(
+                [logging_output, sample_size],
+            ))</code></pre>

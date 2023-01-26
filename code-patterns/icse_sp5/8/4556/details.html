@@ -1,0 +1,91 @@
+<html><h3>6ea01a9990851e607937447066320d9d1686878e,flow/envs/base_env.py,Env,_step,#Env#Any#,310
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.traci_connection.simulationStep()
+
+        &#47&#47 collect information on the vehicle in the network from sumo
+        <a id="change">vehicle_obs = self.traci_connection.vehicle.getSubscriptionResults()</a>
+
+        &#47&#47 get vehicle ids for the entering, exiting, and colliding vehicles
+        <a id="change">id_lists = self.traci_connection.simulation.getSubscriptionResults()</a>
+
+        &#47&#47 store the network observations in the vehicles class
+        <a id="change">self.vehicles.update(vehicle_obs, id_lists, self)</a>
+
+        &#47&#47 collect list of sorted vehicle ids
+        self.sorted_ids, self.sorted_extra_data = self.sort_by_position()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 store the initial vehicle ids
+        self.initial_ids = deepcopy(self.vehicles.get_ids())
+
+    def _step(<a id="change">self</a>, rl_actions):
+        
+        Run one timestep of the environment&quots dynamics. An autonomous agent
+        (i.e. autonomous vehicles) performs an action provided by the RL
+        algorithm. Other cars step forward based on their car following model.
+        When end of episode is reached, reset() should be called to reset the
+        environment&quots initial state.
+
+        Parameters
+        ----------
+        rl_actions: numpy ndarray
+            an list of actions provided by the rl algorithm
+
+        Returns
+        -------
+        observation: numpy ndarray
+            agent&quots observation of the current environment
+        reward: float
+            amount of reward associated with the previous state/action pair
+        done: boolean
+            indicates whether the episode has ended
+        info: dictionary
+            contains other diagnostic information from the previous action
+        
+        self.time_counter += 1
+
+        &#47&#47 perform acceleration actions for controlled human-driven vehicles
+        if len(self.vehicles.get_controlled_ids()) &gt; 0:
+            accel = []
+            for veh_id in self.vehicles.get_controlled_ids():
+                accel_contr = self.vehicles.get_acc_controller(veh_id)
+                action = accel_contr.get_action(self)
+                accel.append(action)
+            self.apply_acceleration(self.vehicles.get_controlled_ids(), accel)
+
+        &#47&#47 perform lane change actions for controlled human-driven vehicles
+        if len(self.vehicles.get_controlled_lc_ids()) &gt; 0:
+            new_lane = []
+            for veh_id in self.vehicles.get_controlled_lc_ids():
+                lc_contr = self.vehicles.get_lane_changing_controller(veh_id)
+                target_lane = lc_contr.get_action(self)
+                new_lane.append(target_lane)
+            self.apply_lane_change(self.vehicles.get_controlled_lc_ids(),
+                                   target_lane=new_lane)
+
+        &#47&#47 perform (optionally) routing actions for all vehicle in the network,
+        &#47&#47 including rl and sumo-controlled vehicles
+        routing_ids = []
+        routing_actions = []
+        for veh_id in self.vehicles.get_ids():
+            if self.vehicles.get_routing_controller(veh_id) is not None:
+                routing_ids.append(veh_id)
+                route_contr = self.vehicles.get_routing_controller(veh_id)
+                routing_actions.append(route_contr.choose_route(self))
+
+        self.choose_routes(veh_ids=routing_ids, route_choices=routing_actions)
+
+        self.apply_rl_actions(rl_actions)
+
+        self.additional_command()
+
+        self.traci_connection.simulationStep()
+
+        &#47&#47 update all internal classes with current state data
+        <a id="change">self._update()</a>
+
+        &#47&#47 collect list of sorted vehicle ids
+        self.sorted_ids, self.sorted_extra_data = self.sort_by_position()
+</code></pre><img src="29130684.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/6ea01a9990851e607937447066320d9d1686878e#diff-be8df3fcee67b160b359c8cfbd6923483bf2d8de1292dd97e865e3bd8811ec6eL308' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 6ea01a9990851e607937447066320d9d1686878e</div><div id='time'> Time: 2018-01-25</div><div id='author'> Author: akreidieh@gmail.com</div><div id='file'> File Name: flow/envs/base_env.py</div><div id='class'> Class Name: Env</div><div id='method'> Method Name: _step</div><BR><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/6ea01a9990851e607937447066320d9d1686878e#diff-be8df3fcee67b160b359c8cfbd6923483bf2d8de1292dd97e865e3bd8811ec6eL433' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 6ea01a9990851e607937447066320d9d1686878e</div><div id='time'> Time: 2018-01-25</div><div id='author'> Author: akreidieh@gmail.com</div><div id='file'> File Name: flow/envs/base_env.py</div><div id='class'> Class Name: Env</div><div id='method'> Method Name: _reset</div><BR><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/6ea01a9990851e607937447066320d9d1686878e#diff-be8df3fcee67b160b359c8cfbd6923483bf2d8de1292dd97e865e3bd8811ec6eL310' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 6ea01a9990851e607937447066320d9d1686878e</div><div id='time'> Time: 2018-01-25</div><div id='author'> Author: akreidieh@gmail.com</div><div id='file'> File Name: flow/envs/base_env.py</div><div id='class'> Class Name: Env</div><div id='method'> Method Name: _step</div><BR><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/6ea01a9990851e607937447066320d9d1686878e#diff-be8df3fcee67b160b359c8cfbd6923483bf2d8de1292dd97e865e3bd8811ec6eL207' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: 6ea01a9990851e607937447066320d9d1686878e</div><div id='time'> Time: 2018-01-25</div><div id='author'> Author: akreidieh@gmail.com</div><div id='file'> File Name: flow/envs/base_env.py</div><div id='class'> Class Name: Env</div><div id='method'> Method Name: setup_initial_state</div><BR>

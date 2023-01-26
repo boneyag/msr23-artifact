@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            dst_transform = src_transform
+            dst_width, dst_height = width, height
+
+        <a id="change">with rasterio.open(self._get_file_path(filename, create_dir=True), &quotw&quot, driver=&quotGTiff&quot,
+                           width=dst_width, height=dst_height,
+                           count=channel_count,
+                           dtype=image_array.dtype, nodata=self.no_data_value,
+                           transform=dst_transform, crs=dst_crs,
+                           compress=self.compress) as dst:
+
+            if dst_crs == src_crs:
+                dst.write(image_array)
+            else:
+                for idx in range(channel_count):
+                    rasterio.warp.reproject(
+                        source=image_array[idx, ...],
+                        destination=rasterio.band(dst, idx + 1),
+                        src_transform=src_transform,
+                        src_crs=src_crs,
+                        dst_transform=dst_transform,
+                        dst_crs=dst_crs,
+                        resampling=rasterio.warp.Resampling.nearest
+                    )
+
+       </a> return eopatch
+
+
+class ImportFromTiff(BaseLocalIo):</code></pre><h3>After Change</h3><pre><code class='java'>
+        path = self._get_file_path(filename, create_dir=True)
+
+        if "*" in path:
+            <a id="change">for ts_idx, ts in enumerate(eopatch.timestamp, start=1):
+                path = path.replace("*", f&quot{ts.strftime("%d%b%YT%H%M%S)")}&quot)
+                image_array = image_array[(ts_idx - 1) * channel_count:ts_idx * channel_count, ...]
+                channel_count = eopatch.shape[-1]
+                self._export_tiff(image_array, path if os.path.splitext(path)[-1] else path+&quot.tif&quot, channel_count,
+                                  dst_crs, dst_height, dst_transform, dst_width, src_crs, src_transform)
+       </a> else:
+            self._export_tiff(image_array, path, channel_count,
+                              dst_crs, dst_height, dst_transform, dst_width, src_crs, src_transform)
+</code></pre>

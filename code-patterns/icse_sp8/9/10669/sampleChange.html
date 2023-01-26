@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    logger_cls: Callable,
+) -&gt; Tuple[GraphModule, GraphModule]:
+    matched_subgraph_pairs = get_matching_subgraph_pairs(gm_a, gm_b)
+    <a id="change">nodes_and_names_to_instrument_a = []</a>
+    nodes_and_names_to_instrument_b = []
+    for match_name, (subgraph_a, subgraph_b) in matched_subgraph_pairs.items():
+        node_start_a, node_end_a = subgraph_a
+        node_start_b, node_end_b = subgraph_b
+        &#47&#47 Note: for matching activations we always use the end nodes,
+        &#47&#47 such as observing the output of relu in linear-relu
+        nodes_and_names_to_instrument_a.append((node_end_a, match_name))
+        nodes_and_names_to_instrument_b.append((node_end_b, match_name))
+
+    <a id="change">gm_a = prepare_single_model_output(
+        name_a, gm_a, nodes_and_names_to_instrument_a, logger_cls)</a>
+    gm_b = prepare_single_model_output(
+        name_b, gm_b, nodes_and_names_to_instrument_b, logger_cls)
+    <a id="change">return (gm_a, gm_b)</a>
+
+def add_activation_info_to_dict(
+    model: GraphModule,
+    results: NSResultsType,</code></pre><h3>After Change</h3><pre><code class='java'>
+) -&gt; Tuple[nn.Module, nn.Module]:
+    tracer_a, tracer_b = NSTracer(), NSTracer()
+    gm_a = GraphModule(model_a, tracer_a.trace(model_a))
+    <a id="change">gm_b = GraphModule(model_b, tracer_b.trace(model_b))</a>
+    <a id="change">return _prepare_model_outputs_impl(name_a, gm_a, name_b, gm_b, logger_cls)</a>
+
+
+def add_activation_info_to_dict(
+    model: nn.Module,</code></pre>

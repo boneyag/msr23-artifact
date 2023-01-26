@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          &quotUnable to serialize op attributes that contain a `list.func` field&quot)
+    if attr_value.HasField(&quotfunc&quot):
+      &#47&#47 TODO(b/138796127): Support tf.function fingerprint.
+      result.append(<a id="change">uuid</a>.uuid4().hex)
+      attr_value.ClearField(&quotfunc&quot)
+    result.append(attr_value.SerializeToString())
+  return result</code></pre><h3>After Change</h3><pre><code class='java'>
+def _serialize_op_attr(op_attr):
+  Deterministicly serializes tf.Operation attrs since it is a map.
+  sorted_attributes = sorted(op_attr.items(), key=lambda kv: kv[0])
+  <a id="change">if &quotf&quot in op_attr:
+    &#47&#47 This is a tf.Function node, and it includes attributes that are
+    &#47&#47 inconsistent across runs such as _gradient_op_type, config_proto, so we
+    &#47&#47 only keep input and output types since other information will arrive from
+    &#47&#47 the FuncGraph attributes.
+    sorted_attributes = [
+        kv for kv in sorted_attributes if kv[0] in (&quotTin&quot, &quotTout&quot)
+    ]
+ </a> result = []
+  for key, attr_value in sorted_attributes:
+    result.append(key)
+    attr_value = copy.deepcopy(attr_value)</code></pre>

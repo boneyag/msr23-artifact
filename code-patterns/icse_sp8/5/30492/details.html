@@ -1,0 +1,24 @@
+<html><h3>e73fddf45377e8a3c0ea2e8281fae18f7b498dd6,fairseq/criterions/label_smoothed_cross_entropy.py,LabelSmoothedCrossEntropyCriterion,forward,#LabelSmoothedCrossEntropyCriterion#Any#Any#Any#,66
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        net_output = model(**sample[&quotnet_input&quot])
+        lprobs = model.get_normalized_probs(net_output, log_probs=True)
+        <a id="change">lprobs = lprobs.view(-1, lprobs.size(-1))</a>
+        target = sample[&quottarget&quot].view(-1)
+        loss = LabelSmoothedNLLLoss.apply(lprobs, target, self.eps, self.padding_idx, None, reduce)
+        nll_loss = F.nll_loss(lprobs, target, size_average=False, ignore_index=self.padding_idx, reduce=reduce)
+        sample_size = sample[&quottarget&quot].size(0) if self.args.sentence_avg else sample[&quotntokens&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+        lprobs = model.get_normalized_probs(net_output, log_probs=True)
+        target = sample[&quottarget&quot].unsqueeze(-1)
+        non_pad_mask = target.ne(self.padding_idx)
+        nll_loss = -<a id="change">lprobs</a>.gather(dim=-1, index=target)[non_pad_mask]
+        smooth_loss = -lprobs.sum(dim=-1, keepdim=True)[non_pad_mask]
+        if reduce:
+            <a id="change">nll_loss = nll_loss.sum()</a>
+            smooth_loss = smooth_loss.sum()
+        eps_i = self.eps / lprobs.size(-1)
+        loss = (1. - self.eps) * nll_loss + eps_i * smooth_loss
+</code></pre><img src="151432743.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/elbayadm/attn2d/commit/e73fddf45377e8a3c0ea2e8281fae18f7b498dd6#diff-445d8a12d2bf868341e7cc8b158ccabf84cf1ec16dfb503eb1e7d6982d5be669L30' target='_blank'>Link</a></div><div id='project'> Project Name: elbayadm/attn2d</div><div id='commit'> Commit Name: e73fddf45377e8a3c0ea2e8281fae18f7b498dd6</div><div id='time'> Time: 2018-03-05</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/criterions/label_smoothed_cross_entropy.py</div><div id='class'> Class Name: LabelSmoothedCrossEntropyCriterion</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/pcyin/tranX/commit/65c51a90b9034c934e4f91d6fe35d6a28c3b2f7e#diff-2ed11acfcd80751b9381db53df456b871cd047cb497c1755f542a9157ebdb939L150' target='_blank'>Link</a></div><div id='project'> Project Name: pcyin/tranX</div><div id='commit'> Commit Name: 65c51a90b9034c934e4f91d6fe35d6a28c3b2f7e</div><div id='time'> Time: 2018-10-28</div><div id='author'> Author: pcyin@cs.cmu.edu</div><div id='file'> File Name: model/seq2seq.py</div><div id='class'> Class Name: Seq2SeqModel</div><div id='method'> Method Name: score_decoding_results</div><BR>

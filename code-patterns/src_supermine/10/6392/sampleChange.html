@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        _script_thread_id = threading.current_thread().ident
+        assert _script_thread_id != self._main_thread_id
+
+        <a id="change">if not self.is_fully_stopped():
+            &#47&#47 This should never happen!
+            raise RuntimeError(&quotScript is already running&quot)
+
+        &#47&#47 Reset delta generator so it starts from index 0.
+       </a> import streamlit as st
+        st._reset()
+
+        self._state_change_requested.clear()</code></pre><h3>After Change</h3><pre><code class='java'>
+        assert _script_thread_id != self._main_thread_id
+
+        cur_state = self._state
+        <a id="change">if cur_state != State.STARTING_THREAD:
+            &#47&#47 TODO: Fix self._state-related race conditions
+            raise RuntimeError(&quotBad state (expected=%s, saw=%s)&quot % (State.STARTING_THREAD, cur_state))
+
+        &#47&#47 Reset delta generator so it starts from index 0.
+       </a> import streamlit as st
+        st._reset()
+
+        <a id="change">self._state_change_requested = False</a>
+        self._set_state(State.RUNNING)
+
+        &#47&#47 Compile the script. Any errors thrown here will be surfaced
+        &#47&#47 to the user via a modal dialog, and won&quott result in their</code></pre>

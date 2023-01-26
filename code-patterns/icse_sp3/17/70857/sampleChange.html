@@ -1,0 +1,77 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+modelID = 1
+
+&#47&#47 load category
+<a id="change">with open(&quotcategory_momentsv1.txt&quot) as f:
+    categories = [line.rstrip() for line in f.readlines()]
+
+
+
+&#47&#47 load the labels
+</a>model = load_model(modelID, categories)
+
+&#47&#47 load the model
+features_blobs = []</code></pre><h3>After Change</h3><pre><code class='java'>
+        return [line.rstrip() for line in f.readlines()]
+
+
+<a id="change">if __name__ == &quot__main__&quot:
+    parser = argparse.ArgumentParser(description="test on a single image")
+    parser.add_argument(&quot--multi&quot, dest=&quotmulti&quot, action=&quotstore_true&quot)
+    args = parser.parse_args()
+
+    &#47&#47 load categories and model
+    if args.multi:
+      categories = load_categories(&quotcategory_multi_momentsv2.txt&quot)
+      model = load_model(categories, &quotmulti_moments_v2_RGB_resnet50_imagenetpretrained.pth.tar&quot)
+    else:
+      categories = load_categories(&quotcategory_momentsv2.txt&quot)
+      model = load_model(categories, &quotmoments_v2_RGB_resnet50_imagenetpretrained.pth.tar&quot)
+
+    &#47&#47 load the model
+    features_blobs = []
+
+    &#47&#47 load the transformer
+    tf = returnTF() &#47&#47 image transformer
+
+    &#47&#47 get the softmax weight
+    params = list(model.parameters())
+    weight_softmax = params[-2].data
+    weight_softmax[weight_softmax&lt;0] = 0
+
+    &#47&#47 load the test image
+    if os.path.exists(&quottest.jpg&quot):
+        os.remove(&quottest.jpg&quot)
+    img_url = &quothttp://places2.csail.mit.edu/imgs/demo/IMG_5970.JPG&quot
+    os.system(&quotwget %s -q -O test.jpg&quot % img_url)
+    img = Image.open(&quottest.jpg&quot)
+    input_img = tf(img).unsqueeze(0)
+
+    &#47&#47 forward pass
+    logit = model.forward(input_img)
+    h_x = F.softmax(logit, 1).data.squeeze()
+    probs, idx = h_x.sort(0, True)
+
+    print(&quotRESULT ON &quot + img_url)
+
+
+    &#47&#47 output the prediction of action category
+    print(&quot--Top Actions:&quot)
+    for i in range(0, 5):
+        print(&quot{:.3f} -&gt; {}&quot.format(probs[i], categories[idx[i]]))
+
+    &#47&#47 generate class activation mapping
+    print(&quotClass activation map is saved as cam.jpg&quot)
+    CAMs = returnCAM(features_blobs[0], weight_softmax, [idx[0]])
+
+    &#47&#47 render the CAM and output
+    img = cv2.imread(&quottest.jpg&quot)
+    height, width, _ = img.shape
+    heatmap = cv2.applyColorMap(cv2.resize(CAMs[0],(width, height)), cv2.COLORMAP_JET)
+    result = heatmap * 0.4 + img * 0.5
+    cv2.imwrite(&quotcam.jpg&quot, result)
+</a>
+</code></pre>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    else:
+      biases_initializer = self.biases_initializer()
+    if not self.time_series:
+      <a id="change">out_tensor = tf.contrib.layers.fully_connected(
+          parent,
+          num_outputs=self.out_channels,
+          activation_fn=self.activation_fn,
+          biases_initializer=biases_initializer,
+          weights_initializer=self.weights_initializer(),
+          scope=self._get_scope_name(),
+          reuse=self._reuse,
+          trainable=True)</a>
+    else:
+      dense_fn = lambda x: tf.contrib.layers.fully_connected(x,
+                                                             num_outputs=self.out_channels,
+                                                             activation_fn=self.activation_fn,
+                                                             biases_initializer=biases_initializer,
+                                                             weights_initializer=self.weights_initializer(),
+                                                             scope=self._get_scope_name(),
+                                                             reuse=self._reuse,
+                                                             trainable=True)
+      out_tensor = tf.map_fn(dense_fn, parent)
+    if set_tensors:
+      self.variables = tf.get_collection(
+          <a id="change">tf.GraphKeys.GLOBAL_VARIABLES</a>, scope=self._get_scope_name())
+      self.out_tensor = out_tensor
+    return out_tensor
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      biases_initializer = None
+    else:
+      biases_initializer = self.biases_initializer()
+    for reuse in <a id="change">(self._reuse, False)</a>:
+      dense_fn = lambda x: tf.contrib.layers.fully_connected(x,
+                                                             num_outputs=self.out_channels,
+                                                             activation_fn=self.activation_fn,</code></pre>

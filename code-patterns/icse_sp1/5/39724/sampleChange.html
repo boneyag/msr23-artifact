@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    mask = np.zeros((10, 10, 10))
+    mask[3:7, 3:7, 3:7] = 1
+    mask_img = Nifti1Image(mask, np.eye(4))
+    n_mask_vox = len(<a id="change">np</a>.where(<a id="change">mask == True)[</a>0])
+
+    &#47&#47 Dummy data
+    data = np.zeros((10, 10, 10, 3))</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Dummy mask
+    mask = np.zeros((10, 10, 10))
+    mask[3:7, 3:7, 3:7] = 1
+    mask_bool = <a id="change">mask.astype(bool)</a>
+    mask_img = Nifti1Image(mask, np.eye(4))
+    n_mask_vox = mask_bool.sum()
+
+    &#47&#47 Dummy data
+    data = np.zeros((10, 10, 10, 3))
+    data[..., 0] = 1
+    data[..., 1] = 2
+    data[..., 2] = 3
+    data_img_4d = Nifti1Image(data, np.eye(4))
+    data_imgs = [Nifti1Image(data[..., 0], np.eye(4)),
+        Nifti1Image(data[..., 1], np.eye(4)),
+        Nifti1Image(data[..., 2], np.eye(4))]
+
+    &#47&#47 check whether transform is indeed selecting niimgs subset
+    sample_mask = (True, False, True)
+    masker = NiftiMasker(mask_img=mask_img, sample_mask=sample_mask)
+    masker.fit()
+    data_trans = masker.transform(data_imgs)
+    data_trans_direct = data_img_4d.get_data()[mask_bool, :][..., sample_mask]
+    <a id="change">data_trans_direct = np.swapaxes(data_trans_direct, 0, 1)</a>
+    assert_array_equal(data_trans, data_trans_direct)
+
+    masker = NiftiMasker(mask_img=mask_img, sample_mask=sample_mask)
+    masker.fit()</code></pre>

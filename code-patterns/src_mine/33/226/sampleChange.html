@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def test_fast(L, B, N, train=False):
+    reset_seed()
+    <a id="change">a</a> = Variable(<a id="change">torch.randn(L, B, N).float().cuda()</a>)
+    c = Variable(torch.zeros(B, N).float().cuda())
+    cell = SRUCell(N, N, dropout=0, use_tanh=False).cuda()
+    if train: cell.train()
+    torch.cuda.synchronize()
+    start = time.time()
+    for i in range(T):
+        <a id="change">out</a> = cell(a, c)
+        <a id="change">out[0].sum().backward()</a>
+    torch.cuda.synchronize()
+    print ("test_fast: {:.6f}".format(
+        (time.time()-start)/T
+    ))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def test_fast(L, B, N, train=False):
+    reset_seed()
+    <a id="change">a</a> = Variable(<a id="change">torch.randn(L, B, N).float().cuda()*0.1</a>)
+    c = Variable(torch.zeros(B, N).float().cuda())
+    cell = SRUCell(N, N, dropout=0, use_tanh=False).cuda()
+    if train: cell.train()
+    torch.cuda.synchronize()
+    start = time.time()
+    tot = 0
+    for i in range(T):
+        <a id="change">out</a> = cell(a, c)
+        tot += <a id="change">out[0].data[-1,-1,-1]</a>
+        <a id="change">if train:
+            cell.zero_grad()
+            out[0].mean().backward()
+   </a> torch.cuda.synchronize()
+    print ("test_fast: {:.6f}".format(
+        (time.time()-start)/T
+    ))</code></pre>

@@ -1,0 +1,51 @@
+<html><h3>86ce5d52134a56806112ff8664e4034338e0e05a,yarll/agents/ppo/ppo.py,PPO,learn,#PPO#,208
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    }
+                    results = self.session.run(fetches, feed_dict)
+                    if (n_updates % 1000) == 0:
+                        <a id="change">self.writer.add_summary(results[-1], n_updates)</a>
+                    n_updates += 1
+                self.writer.flush()
+
+            if self.config["save_model"]:</code></pre><h3>After Change</h3><pre><code class='java'>
+        Run learning algorithm
+        config = self.config
+        n_updates = 0
+        <a id="change">with self.writer.as_default():
+            for _ in range(int(config["n_iter"])):
+                &#47&#47 Collect trajectories until we get timesteps_per_batch total timesteps
+                states, actions, advs, rs, _ = self.get_processed_trajectories()
+                advs = np.array(advs)
+                advs = (advs - advs.mean()) / advs.std()
+                self.set_old_to_new()
+
+                indices = np.arange(len(states))
+                for _ in range(int(self.config["n_epochs"])):
+                    np.random.shuffle(indices)
+                    batch_size = int(self.config["batch_size"])
+                    for j in range(0, len(states), batch_size):
+                        batch_indices = indices[j:(j + batch_size)]
+                        batch_states = np.array(states)[batch_indices]
+                        batch_actions = np.array(actions)[batch_indices]
+                        batch_advs = np.array(advs)[batch_indices]
+                        batch_rs = np.array(rs)[batch_indices]
+                        train_actor_loss, train_critic_loss, train_loss = self.train(batch_states,
+                                                                                     batch_actions,
+                                                                                     batch_advs,
+                                                                                     batch_rs)
+                        tf.summary.scalar("model/loss", train_loss, step=n_updates)
+                        tf.summary.scalar("model/actor_loss", train_actor_loss, step=n_updates)
+                        tf.summary.scalar("model/critic_loss", train_critic_loss, step=n_updates)
+                        n_updates += 1
+
+            if self.config["save_model"]:
+                tf.saved_model.save(self.ac_net, os.path.join(self.monitor_path, "model"))
+
+
+</a>class PPODiscrete(PPO):
+    def build_networks(self) -&gt; ActorCriticNetwork:
+        return ActorCriticNetworkDiscrete(
+            self.env.action_space.n,</code></pre><img src="218428476.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/arnomoonens/yarll/commit/86ce5d52134a56806112ff8664e4034338e0e05a#diff-b6ad861197e3ed50385bc08dbb9454faf358b1c1140c6a806c07997faf1551e6L189' target='_blank'>Link</a></div><div id='project'> Project Name: arnomoonens/yarll</div><div id='commit'> Commit Name: 86ce5d52134a56806112ff8664e4034338e0e05a</div><div id='time'> Time: 2019-03-21</div><div id='author'> Author: arno.moonens@gmail.com</div><div id='file'> File Name: yarll/agents/ppo/ppo.py</div><div id='class'> Class Name: PPO</div><div id='method'> Method Name: learn</div><BR><BR><div id='link'><a href='https://github.com/Kamnitsask/deepmedic/commit/a564a1390f609f0a5083b0865245a6a8238ecf74#diff-2fa2ce52c21f084c2efdbca95a8cc5f59214a2c9cad15325b53a36fba58f848eL12' target='_blank'>Link</a></div><div id='project'> Project Name: Kamnitsask/deepmedic</div><div id='commit'> Commit Name: a564a1390f609f0a5083b0865245a6a8238ecf74</div><div id='time'> Time: 2020-01-04</div><div id='author'> Author: konstantinos.kamnitsas12@imperial.ac.uk</div><div id='file'> File Name: deepmedic/logging/tensorboard_logger.py</div><div id='class'> Class Name: TensorboardLogger</div><div id='method'> Method Name: add_summary</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/6f2393729908116a3528bdbc70f49aa9781b3bf9#diff-6959c92eed13049850ed08d423ac054a0f3781b89ba52eceaf68523bbc0cde89L249' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 6f2393729908116a3528bdbc70f49aa9781b3bf9</div><div id='time'> Time: 2020-01-27</div><div id='author'> Author: peastman@stanford.edu</div><div id='file'> File Name: deepchem/models/keras_model.py</div><div id='class'> Class Name: KerasModel</div><div id='method'> Method Name: fit_generator</div><BR>

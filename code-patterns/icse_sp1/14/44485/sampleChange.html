@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+		&quot&quot&quot
+		定义LSTM/CNN模型，尚未完成
+		&quot&quot&quot
+		_model = <a id="change">Sequential()</a>
+		<a id="change">_model.add(LSTM(self.MS_EMBED_SIZE, return_sequences=True, input_shape = (200,400)))</a> &#47&#47 input_shape需要修改
+		_model.add(Dropout(0.3))
+		_model.add(Conv1D(self.QA_EMBED_SIZE // 2, 5, border_mode="valid"))
+		_model.add(MaxPooling1D(pool_length=2, border_mode="valid"))
+		<a id="change">_model.add(Dropout(0.3))</a>
+		<a id="change">_model.add(Flatten())</a>
+		
+		
+		
+		&#47&#47_model = Sequential()
+		&#47&#47_model.add(Merge([m_lstm, aenc], mode="concat", concat_axis=-1))
+		<a id="change">_model.add(Dense(1279, activation="softmax"))</a>
+		_model.compile(optimizer="adam", loss=&quotcategorical_crossentropy&quot,metrics=["accuracy"])
+		return _model
+
+	def TrainModel(self,datapath,epoch = 2,save_step=1000,filename=&quotmodel_speech/LSTM_CNN_model&quot):</code></pre><h3>After Change</h3><pre><code class='java'>
+		输出层：全连接层，神经元数量为1279，使用softmax作为激活函数，使用CTC的loss作为损失函数
+		&quot&quot&quot
+		&#47&#47 每一帧使用13维mfcc特征及其13维一阶差分和13维二阶差分表示，最大信号序列长度为1500
+		layer_input = <a id="change">Input((1500,39))</a>
+		
+		<a id="change">layer_h1 = Conv1D(256, 5, use_bias=True, padding="valid")(layer_input)</a> &#47&#47 卷积层
+		layer_h2 = MaxPooling1D(pool_size=2, strides=None, padding="valid")(layer_h1) &#47&#47 池化层
+		<a id="change">layer_h3 = Dropout(0.2)(layer_h2)</a> &#47&#47 随机中断部分神经网络连接，防止过拟合
+		layer_h4 = LSTM(256, activation=&quotrelu&quot, use_bias=True)(layer_h3) &#47&#47 LSTM层
+		<a id="change">layer_h5 = Dropout(0.2)(layer_h4)</a> &#47&#47 随机中断部分神经网络连接，防止过拟合
+		layer_h6 = Dense(1279, activation="softmax")(layer_h5) &#47&#47 全连接层
+		
+		&#47&#47labels = Input(name=&quotthe_labels&quot, shape=[60], dtype=&quotfloat32&quot)</code></pre>

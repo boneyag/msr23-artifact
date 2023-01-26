@@ -1,0 +1,49 @@
+<html><h3>31bf9a3cbbf0739beb745389ee64f6b9200f6d53,pytext/trainers/trainer.py,Trainer,run_step,#Trainer#Any#Any#Any#Any#,415
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        model = state.model
+        self.zero_grads(state)
+        for i, (batch_id, (inputs, targets, context)) in enumerate(samples):
+            <a id="change">if cuda.DISTRIBUTED_WORLD_SIZE &gt; 1:
+                &#47&#47 Whenever *samples* contains more than one mini-batch, we
+                &#47&#47 want to accumulate gradients locally and only call
+                &#47&#47 all-reduce in the last backwards pass.
+                if i &lt; sample_size - 1:
+                    &#47&#47 sync gradients in the last sample backward
+                    model.accumulate_gradients(True)
+                else:
+                    model.accumulate_gradients(False)
+
+            &#47&#47 pass context to model to use in forward call if needed
+           </a> model.contextualize(context)
+            with timing.time("model.forward"):
+                logits = model(*inputs)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        model = state.model
+        self.zero_grads(state)
+        for idx, (batch_id, (inputs, targets, context)) in enumerate(samples):
+            <a id="change">with maybe_no_sync(model, idx, sample_size):
+                &#47&#47 pass context to model to use in forward call if needed
+                model.contextualize(context)
+                with timing.time("model.forward"):
+                    logits = model(*inputs)
+
+                with timing.time("compute loss"):
+                    loss = precision.maybe_float(
+                        model.get_loss(logits, targets, context)
+                    )
+                    if BatchContext.IGNORE_LOSS in context:
+                        loss *= 0
+                    elif sample_size &gt; 1:
+                        &#47&#47 gradients averaged per batch and accumulated across samples.
+                        &#47&#47 divide sample_size to let gradients averaged per example
+                        loss = loss / sample_size
+
+                self.backprop(state, loss)
+
+           </a> if report_metric:
+                with timing.time("get pred"):
+                    preds, scores = model.get_pred(
+                        logits, targets, context, state.stage, *inputs</code></pre><img src="290193263.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/facebookresearch/pytext/commit/31bf9a3cbbf0739beb745389ee64f6b9200f6d53#diff-e1b6463ac55b2eec29aefd68216eaf3f0e30393d70233acb44da0389d4b1e0c9L422' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/pytext</div><div id='commit'> Commit Name: 31bf9a3cbbf0739beb745389ee64f6b9200f6d53</div><div id='time'> Time: 2019-07-10</div><div id='author'> Author: chenyangyu@instagram.com</div><div id='file'> File Name: pytext/trainers/trainer.py</div><div id='class'> Class Name: Trainer</div><div id='method'> Method Name: run_step</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/b625d53d029afbd52a508bfcf8f7cd6d45aa0f79#diff-1d9c528283eebce84124f45bd2f04e9c1b50dc4d3f63e867776eb89dc55dd95fL246' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: b625d53d029afbd52a508bfcf8f7cd6d45aa0f79</div><div id='time'> Time: 2019-06-20</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/trainer.py</div><div id='class'> Class Name: Trainer</div><div id='method'> Method Name: train_step</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/pytext/commit/31bf9a3cbbf0739beb745389ee64f6b9200f6d53#diff-e1b6463ac55b2eec29aefd68216eaf3f0e30393d70233acb44da0389d4b1e0c9L488' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/pytext</div><div id='commit'> Commit Name: 31bf9a3cbbf0739beb745389ee64f6b9200f6d53</div><div id='time'> Time: 2019-07-10</div><div id='author'> Author: chenyangyu@instagram.com</div><div id='file'> File Name: pytext/trainers/trainer.py</div><div id='class'> Class Name: TaskTrainer</div><div id='method'> Method Name: run_step</div><BR>

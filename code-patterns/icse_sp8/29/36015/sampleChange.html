@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if batch_norm:
+            kwargs[&quotbatch_norm&quot] = batch_norm
+
+        <a id="change">net = self.body(dim, inputs[&quotimages&quot], arch, **kwargs)</a>
+        net = <a id="change">self.head(dim, net, style=&quotdense&quot, layout=&quotfff&quot, num_classes=num_classes, units=[100, 100], **kwargs)</a>
+
+        logits = tf.identity(net, name=&quotpredictions&quot)
+        pred_proba = <a id="change">tf.nn.softmax(logits, name=&quotpredicted_proba&quot)</a>
+        pred_labels = tf.argmax(pred_proba, axis=-1, name=&quotpredicted_labels&quot)
+        true_labels = tf.argmax(inputs[&quotlabels&quot], axis=-1, name=&quottrue_labels&quot)
+        equality = tf.equal(pred_labels, true_labels)
+        equality = tf.cast(equality, dtype=tf.float32)</code></pre><h3>After Change</h3><pre><code class='java'>
+        - number of filters in each layer
+    
+
+    def _build(<a id="change">self</a>):
+        names = [&quotimages&quot, &quotlabels&quot]
+        _, inputs = self._make_inputs(names)
+
+        num_classes = self.num_classes(&quotlabels&quot)
+        data_format = self.data_format(&quotimages&quot)
+        <a id="change">dim</a> = self.spatial_dim(&quotimages&quot)
+        batch_norm = self.get_from_config(&quotbatch_norm&quot, {&quotmomentum&quot: 0.1})
+        arch = self.get_from_config(&quotarch&quot, &quotVGG16&quot)
+
+        input_block_config = self.get_from_config(&quotinput_block&quot, <a id="change">{}</a>)
+        <a id="change">body_config = self.get_from_config(&quotbody&quot, {})</a>
+        head_config = <a id="change">self.get_from_config(&quothead&quot, {&quotunits&quot: [100, 100]})</a>
+        <a id="change">head_config[&quotnum_classes&quot] = num_classes</a>
+
+        kwargs = {&quottraining&quot: self.is_training}
+        if batch_norm:
+            kwargs[&quotbatch_norm&quot] = batch_norm
+
+        with tf.variable_scope(&quotVGG&quot):
+            <a id="change">x = self.input_block(dim, inputs[&quotimages&quot], **{**kwargs, **input_block_config})</a>
+            <a id="change">x = self.body(dim, x, arch, **{**kwargs, **body_config})</a>
+            <a id="change">output = self.head(dim, x, **{**kwargs, **head_config})</a>
+
+        logits = tf.identity(output, name=&quotpredictions&quot)
+        <a id="change">tf.nn.softmax(logits, name=&quotpredicted_proba&quot)</a>
+
+    @classmethod
+    def body(cls, dim, inputs, arch, **kwargs):
+         Create base VGG layers</code></pre>

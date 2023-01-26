@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        sum_weights = torch.sum(weights)
+        return torch.sum(tensor * weights) / sum_weights
+    if isinstance(dim, int):
+        <a id="change">dim = (dim,)</a>
+    numerator = tensor * weights
+    denominator = weights
+    for dimension in dim:
+        numerator = torch.sum(numerator, dimension, keepdim=True)
+        denominator = torch.sum(denominator, dimension, keepdim=True)
+    <a id="change">return numerator / denominator</a>
+
+def detach_distribution(pi):
+    if isinstance(pi, Categorical):
+        distribution = Categorical(logits=pi.logits.detach())</code></pre><h3>After Change</h3><pre><code class='java'>
+    if weights is None:
+        out = torch.mean(tensor)
+    if dim is None:
+        <a id="change">out = torch.sum(tensor * weights)</a>
+        <a id="change">out.div_(torch.sum(weights))</a>
+    else:
+        mean_dim = torch.sum(tensor * weights, dim=dim)
+        mean_dim.div_(torch.sum(weights, dim=dim))
+        out = torch.mean(mean_dim)</code></pre>

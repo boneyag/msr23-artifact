@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        x = self.observation_net(x)
+
+        x = x.view(batch_size, history_len, -1)
+        <a id="change">observation_ = self.memory_net(x)</a>
+
+        &#47&#47 @TODO: add option to collapse observations based on action
+        x = action.view(action.shape[0], -1)
+        action_ = <a id="change">self.action_net(x)</a>
+
+        x = torch.cat(<a id="change">(observation_, action_)</a>, dim=1)
+        x = self.head_net(x)
+        return x
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        if len(obs_.shape) &lt; 3:
+            obs_ = obs_.unsqueeze(1)
+
+        <a id="change">if self.observation_net is not None:
+            batch_size, history_len, feature_size = obs_.shape
+            obs_ = obs_.view(-1, feature_size)
+            obs_ = self.observation_net(obs_)
+            obs_ = obs_.view(batch_size, history_len, -1)
+            obs_ = self.aggregation_net(obs_)
+
+        &#47&#47 @TODO: add option to collapse observations based on action
+       </a> act_ = action.view(action.shape[0], -1)
+        if self.action_net is not None:
+            act_ = <a id="change">self.action_net(act_)</a>
+
+        x = torch.cat(<a id="change">(obs_, act_)</a>, dim=1)
+        x = self.main_net(x)
+        x = self.head_net(x)
+        return x</code></pre>

@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        assign_tensor_masks = []
+        batch_size = len(g.batch_num_nodes())
+        for g_n_nodes in g.batch_num_nodes():
+            <a id="change">mask = torch.ones((g_n_nodes,
+                               int(assign_tensor.size()[1] / batch_size)))</a>
+            assign_tensor_masks.append(mask)
+        
+        The first pooling layer is computed on batched graph.
+        We first take the adjacency matrix of the batched graph, which is block-wise diagonal.</code></pre><h3>After Change</h3><pre><code class='java'>
+        device = feat.device
+        assign_tensor = self.pool_gc(g, h)  &#47&#47 size = (sum_N, N_a), N_a is num of nodes in pooled graph.
+        assign_tensor = F.softmax(assign_tensor, dim=1)
+        assign_tensor = <a id="change">torch.split(assign_tensor, g.batch_num_nodes().tolist())</a>
+        assign_tensor = torch.block_diag(*assign_tensor)  &#47&#47 size = (sum_N, batch_size * N_a)
+
+        h = torch.matmul(torch.t(assign_tensor), feat)
+        adj = g.adjacency_matrix(transpose=False, ctx=device)</code></pre>

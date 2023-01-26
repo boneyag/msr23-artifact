@@ -1,0 +1,56 @@
+<html><h3>3611452afac53b53f3e41ee83d7fc7bd811ffb81,thinc/neural/_classes/batchnorm.py,BatchNorm,begin_update,#BatchNorm#Any#Any#,43
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        N, mu, var = _get_moments(self.ops, X)
+
+        self.nr_upd += 1
+        alpha = self.ops.xp.asarray(<a id="change">[0.01]</a>, dtype=&quotfloat32&quot)
+
+        &#47&#47 I&quotm not sure this is the best thing to do --
+        &#47&#47 Here we make a running estimate of the mean and variance,
+        &#47&#47 Should we consider a sample be the instance, or the batch?
+        diff = X - self.m
+        incr = (1-alpha) * diff
+        self.m += incr.mean(axis=0)
+        <a id="change">self.v += (diff * incr).mean(axis=0)</a>
+        <a id="change">self.v</a> *= alpha
+
+        Xhat = _forward(self.ops, X, mu, var)
+
+        &#47&#47 Batch "renormalization"
+        if self.nr_upd &gt;= 7500:
+            Xhat *= var / (self.v+1e-08)
+            <a id="change">Xhat += (mu - self.m) / (self.v+1e-08)</a>
+
+        y, backprop_rescale = self._begin_update_scale_shift(Xhat)
+
+        def finish_update(dy, sgd=None):</code></pre><h3>After Change</h3><pre><code class='java'>
+        assert X.dtype == &quotfloat32&quot
+        X, backprop_child = self.child.begin_update(X, drop=0.)
+        N, mu, var = _get_moments(self.ops, X)
+        <a id="change">var += self.eps</a>
+        self.r = <a id="change">min(self.rmax, max(1. / self.rmax, var / self.v))</a>
+        <a id="change">self.d = min(self.dmax, max(-self.dmax, (mu-self.m) / self.v))</a>
+        self.nr_upd += 1
+
+        &#47&#47 I&quotm not sure this is the best thing to do --
+        &#47&#47 Should we consider a sample be the instance, or the batch?
+        &#47&#47 If we want the variance of the inputs it should be like:
+        &quot&quot&quot
+        diff = X - self.m
+        incr = (1-alpha) * diff
+        self.m += incr.mean(axis=0)
+        self.v += (diff * incr).mean(axis=0)
+        self.v *= alpha
+        &quot&quot&quot
+        self.m += self.alpha * (mu - self.m)
+        self.v += self.alpha * (var - self.v)
+        Xhat = _forward(self.ops, X, mu, var)
+        Xhat *= self.r
+        <a id="change">Xhat += self.d</a>
+
+        y, backprop_rescale = self._begin_update_scale_shift(Xhat)
+
+        def finish_update(dy, sgd=None):</code></pre><img src="20582458.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/explosion/thinc/commit/3611452afac53b53f3e41ee83d7fc7bd811ffb81#diff-109786c0d7b3ddfaa47501c055f28058edf07707406dd5b965311a49967021baL43' target='_blank'>Link</a></div><div id='project'> Project Name: explosion/thinc</div><div id='commit'> Commit Name: 3611452afac53b53f3e41ee83d7fc7bd811ffb81</div><div id='time'> Time: 2018-03-14</div><div id='author'> Author: honnibal+gh@gmail.com</div><div id='file'> File Name: thinc/neural/_classes/batchnorm.py</div><div id='class'> Class Name: BatchNorm</div><div id='method'> Method Name: begin_update</div><BR><BR><div id='link'><a href='https://github.com/scikit-image/scikit-image/commit/de42b4cf11b2a5b5a9e77c54f90bff539947ef0d#diff-69622ec01138e86c5d42c00db7182f8c10f34284c79555fb237419bb3a13026cL170' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-image/scikit-image</div><div id='commit'> Commit Name: de42b4cf11b2a5b5a9e77c54f90bff539947ef0d</div><div id='time'> Time: 2019-09-17</div><div id='author'> Author: rfezzani@gmail.com</div><div id='file'> File Name: skimage/transform/tests/test_radon_transform.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/explosion/thinc/commit/ff0d04f231cc8cd912a99982269dca0c41a68316#diff-109786c0d7b3ddfaa47501c055f28058edf07707406dd5b965311a49967021baL43' target='_blank'>Link</a></div><div id='project'> Project Name: explosion/thinc</div><div id='commit'> Commit Name: ff0d04f231cc8cd912a99982269dca0c41a68316</div><div id='time'> Time: 2018-03-14</div><div id='author'> Author: honnibal+gh@gmail.com</div><div id='file'> File Name: thinc/neural/_classes/batchnorm.py</div><div id='class'> Class Name: BatchNorm</div><div id='method'> Method Name: begin_update</div><BR>

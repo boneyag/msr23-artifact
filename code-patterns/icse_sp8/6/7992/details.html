@@ -1,0 +1,50 @@
+<html><h3>5750090fcd4a6718608c7357e3890f5b2a545ae0,layers/tacotron.py,Decoder,forward,#Decoder#Any#Any#,235
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    memory_input = torch.div(outputs[-1] + memory[t-1], 2.0)
+                    &#47&#47 add a random noise
+                    noise = torch.autograd.Variable(
+                        memory_input.data.new(<a id="change">memory_input.size()</a>).normal_(0.0, 0.5))
+                    <a id="change">memory_input = memory_input + noise</a>
+
+            &#47&#47 Prenet
+            processed_memory = self.prenet(memory_input)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            stop_token_input = decoder_input
+            
+            &#47&#47 stop token prediction
+            <a id="change">stop_token_input = torch.cat((output, current_context_vec), -1)</a>
+            stop_output = self.stop_token(stop_token_input)
+
+            &#47&#47 predict mel vectors from decoder vectors
+            output = self.proj_to_mel(output)
+
+            outputs += [output]
+            alignments += [alignment]
+            stop_outputs += <a id="change">[stop_output]</a>
+
+            t += 1
+
+            if (not greedy and self.training) or (greedy and memory is not None):
+                if t &gt;= T_decoder:
+                    break
+            else:
+                if t &gt; 1 and is_end_of_frames(output, self.eps):
+                    break
+                elif t &gt; self.max_decoder_steps:
+                    print(" !! Decoder stopped with &quotmax_decoder_steps&quot. \
+                          Something is probably wrong.")
+                    break
+                           
+        assert greedy or len(outputs) == T_decoder
+
+        &#47&#47 Back to batch first
+        alignments = torch.stack(alignments).transpose(0, 1)
+        outputs = torch.stack(outputs).transpose(0, 1).contiguous()
+        <a id="change">stop_outputs = torch.stack(stop_outputs).transpose(0, 1).contiguous()</a>
+
+        return outputs, alignments, stop_outputs
+
+</code></pre><img src="51757911.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mozilla/TTS/commit/5750090fcd4a6718608c7357e3890f5b2a545ae0#diff-63415e5bdfe9c172be8a9cadb35d1f47d718fea5f15c6879f5715ebb9e331155L239' target='_blank'>Link</a></div><div id='project'> Project Name: mozilla/TTS</div><div id='commit'> Commit Name: 5750090fcd4a6718608c7357e3890f5b2a545ae0</div><div id='time'> Time: 2018-03-22</div><div id='author'> Author: egolge@mozilla.com</div><div id='file'> File Name: layers/tacotron.py</div><div id='class'> Class Name: Decoder</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/31e7f40c3381aac21e8665d0b5706bceddd9de94#diff-fa3c76576694291de650c11f3e3a4d00a68e887bfedddaf1079b5a7ac6903d6cL352' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 31e7f40c3381aac21e8665d0b5706bceddd9de94</div><div id='time'> Time: 2017-06-25</div><div id='author'> Author: srush@sum1gpu01.rc.fas.harvard.edu</div><div id='file'> File Name: onmt/Models.py</div><div id='class'> Class Name: Decoder</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/5ffa38fca42bb3fbee030f4b80264e0f4910a49c#diff-0edb9b762f2d9290182d76e504c1dd30215436169c0696bc3e618455849c2668L17' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: 5ffa38fca42bb3fbee030f4b80264e0f4910a49c</div><div id='time'> Time: 2018-01-16</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: torch_geometric/datasets/utils/tu_format.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: read_adj</div><BR><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/fb691c1c8f00b7611f72709c76c62def5994bb75#diff-e92ec62829d0c7e641c182c005cbe92b21fff6e7becebf7e85aa4cabab11c9d9L39' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: fb691c1c8f00b7611f72709c76c62def5994bb75</div><div id='time'> Time: 2019-04-02</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: examples/pointnet++.py</div><div id='class'> Class Name: Net</div><div id='method'> Method Name: forward</div><BR>

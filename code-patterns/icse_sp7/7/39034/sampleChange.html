@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            result = func()
+            buffer[0] = result
+            dist.broadcast(buffer, src=0)
+            <a id="change">return buffer.cpu().numpy().tolist()[0]</a>
+        else:
+            dist.broadcast(buffer, 0)
+            return buffer.cpu().numpy().tolist()[0]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        if dist.get_rank() == 0:
+            result = func()
+            buffer[0] = result
+        <a id="change">if dist.get_backend() == "nccl":
+            buffer = buffer.cuda()
+       </a> dist.broadcast(buffer, src=0)
+        return buffer.cpu().numpy().tolist()[0]
+
+    def _call_and_communicate_obj(self, func: Callable) -&gt; Any:</code></pre>

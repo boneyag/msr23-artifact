@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_iqae_circuits(self, efficient_circuit):
+         Test the circuits constructed for IQAE 
+        prob = 0.5
+        <a id="change">basis_gates = [&quotu1&quot, &quotu2&quot, &quotu3&quot, &quotcx&quot]</a>
+
+        for k in range(2, 7):
+            qae = IterativeAmplitudeEstimation(0.01, 0.05, a_factory=BernoulliAFactory(prob))
+            angle = 2 * np.arcsin(np.sqrt(prob))
+
+            &#47&#47 manually set up the inefficient AE circuit
+            q_objective = QuantumRegister(1, &quotq&quot)
+            circuit = QuantumCircuit(q_objective)
+
+            &#47&#47 A operator
+            circuit.ry(angle, q_objective)
+
+            if efficient_circuit:
+                qae.q_factory = BernoulliQFactory(qae.a_factory)
+                &#47&#47 for power in range(k):
+                &#47&#47    circuit.ry(2 ** power * angle, q_objective[0])
+                circuit.ry(2 * 2**k * angle, q_objective[0])
+
+            else:
+                q_factory = QFactory(qae.a_factory, i_objective=0)
+                for _ in range(2**k):
+                    q_factory.build(circuit, q_objective)
+
+            <a id="change">expected_transpiled = transpile(circuit, basis_gates=basis_gates)</a>
+
+            actual_circuit = qae.construct_circuit(k, measurement=False)
+            <a id="change">actual_transpiled = transpile(actual_circuit, basis_gates=basis_gates)</a>
+
+            print(actual_transpiled)
+            print(expected_transpiled)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            actual_unitary = self._unitary.execute(actual_circuit).get_unitary()
+
+            diff = np.sum(np.abs(actual_unitary - expected_unitary))
+            <a id="change">self.assertAlmostEqual(diff, 0)</a>
+
+    @parameterized.expand([
+        [True], [False]
+    ])</code></pre>

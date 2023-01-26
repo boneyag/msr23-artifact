@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    logits, _ = inference(x, seq_length, training=training)
+    predict = tf.nn.ctc_greedy_decoder(tf.transpose(logits, perm=[1, 0, 2]), seq_length, merge_repeated=True)
+    input_dict = {&quotx&quot: x, &quotseq_length&quot: seq_length, &quottraining&quot: training}
+    output_dict = {&quotdecoded_indices&quot: <a id="change">predict</a>[0][<a id="change">0</a>].indices, &quotdecoded_values&quot: predict[0][0].values,
+                   &quotneg_sum_logits&quot: predict[1]}
+    return input_dict, output_dict
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                              full_sequence_len = FLAGS.segment_len,
+                              configure = model_configure)
+    ratio = tf.constant(ratio,dtype = tf.float32,shape = [])
+    <a id="change">seq_length_r = tf.cast(tf.round(seq_length/ratio),tf.int32)</a>
+    prob_logits = path_prob(logits)
+    predict = tf.nn.ctc_beam_search_decoder(tf.transpose(logits, perm=[1, 0, 2]), 
+                                            seq_length_r, 
+                                            merge_repeated=True,
+                                            beam_width = FLAGS.beam_width)
+    input_dict = {&quotx&quot: x, &quotseq_length&quot: seq_length, &quottraining&quot: training}
+    <a id="change">output_dict = {&quotpredict_sequences&quot:predict,&quotlogits&quot:logits, &quotprob_logits&quot:prob_logits}</a>
+    return input_dict, output_dict
+
+
+def build_and_run_exports(job_dir, serving_input_fn):</code></pre>

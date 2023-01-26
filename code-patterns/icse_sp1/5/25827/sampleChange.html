@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        gammas = gammas[None, :, None]
+        &#47&#47 1 x num_heads x 1
+
+        q_values_t = <a id="change">self.critic(states_t).squeeze(-1).gather(-1, actions_t)</a>
+        &#47&#47 B x num_heads x 1
+
+        q_values_tp1 = \
+            self.target_critic(states_tp1).squeeze(-1).max(-1, keepdim=True)[0]</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 B x num_heads x num_actions
+        q_values_t = self.critic(states_t).squeeze(-1)
+        &#47&#47 B x num_heads x 1
+        <a id="change">action_q_values_t = q_values_t.gather(-1, actions_t)</a>
+        &#47&#47 B x num_heads x 1
+        q_values_tp1 = \
+            self.target_critic(states_tp1).squeeze(-1).max(-1, keepdim=True)[0]
+
+        q_target_t = rewards_t + (1 - done_t) * gammas * q_values_tp1.detach()
+        value_loss = \
+            self.critic_criterion(action_q_values_t, q_target_t).mean()
+
+        <a id="change">if self.entropy_regularization is not None:
+            value_loss -= \
+                self.entropy_regularization * self._compute_entropy(q_values_t)
+
+       </a> return value_loss
+
+    def _categorical_loss(
+        self, states_t, actions_t, rewards_t, states_tp1, done_t</code></pre>

@@ -1,0 +1,132 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def test_black_box_with_model(tabular_dl_estimator, get_iris_dataset):
+    <a id="change">classifier_list = tabular_dl_estimator(AttributeInferenceBlackBox)</a>
+    <a id="change">if not classifier_list:
+        logging.warning("Couldn&quott perform  this test because no classifier is defined")
+        return
+
+   </a> <a id="change">attack_feature = 2</a>  &#47&#47 petal length
+
+    &#47&#47 need to transform attacked feature into categorical
+    def transform_feature(x):
+        x[x &gt; 0.5] = 2.0
+        x[(x &gt; 0.2) & (x &lt;= 0.5)] = 1.0
+        x[x &lt;= 0.2] = 0.0
+
+    <a id="change">values = [0.0, 1.0, 2.0]</a>
+
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+    &#47&#47 training data without attacked feature
+    <a id="change">x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)</a>
+    &#47&#47 only attacked feature
+    <a id="change">x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)</a>
+    transform_feature(x_train_feature)
+    &#47&#47 training data with attacked feature (after transformation)
+    x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+    x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+    &#47&#47 test data without attacked feature
+    x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+    &#47&#47 only attacked feature
+    <a id="change">x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)</a>
+    transform_feature(x_test_feature)
+
+    <a id="change">model = nn.Linear(4, 3)</a>
+
+    &#47&#47 Define a loss function and optimizer
+    <a id="change">loss_fn = nn.CrossEntropyLoss()</a>
+    <a id="change">optimizer = optim.Adam(model.parameters(), lr=0.01)</a>
+    attack_model = PyTorchClassifier(
+        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3
+    )
+
+    <a id="change">for classifier in classifier_list:
+        if type(classifier).__name__ == "ScikitlearnDecisionTreeClassifier":
+            attack = AttributeInferenceBlackBox(classifier, attack_model=attack_model, attack_feature=attack_feature)
+            &#47&#47 get original model&quots predictions
+            x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+            x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+            &#47&#47 train attack model
+            attack.fit(x_train)
+            &#47&#47 infer attacked feature
+            inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
+            inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
+            &#47&#47 check accuracy
+            train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+            test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+            &#47&#47 assert train_acc == pytest.approx(0.5523, abs=0.03)
+            &#47&#47 assert test_acc == pytest.approx(0.5777, abs=0.03)
+
+
+</a>def test_white_box(tabular_dl_estimator, get_iris_dataset):
+    classifier_list = tabular_dl_estimator(AttributeInferenceWhiteBoxDecisionTree)
+    if not classifier_list:
+        logging.warning("Couldn&quott perform  this test because no classifier is defined")</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_black_box_with_model(decision_tree_estimator, get_iris_dataset):
+    <a id="change">try:
+        attack_feature = 2  &#47&#47 petal length
+
+        &#47&#47 need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x &gt; 0.5] = 2.0
+            x[(x &gt; 0.2) & (x &lt;= 0.5)] = 1.0
+            x[x &lt;= 0.2] = 0.0
+
+        values = [0.0, 1.0, 2.0]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        &#47&#47 training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        &#47&#47 only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        &#47&#47 training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        &#47&#47 test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        &#47&#47 only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+        model = nn.Linear(4, 3)
+
+        &#47&#47 Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        attack_model = PyTorchClassifier(
+            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3
+        )
+
+        classifier = decision_tree_estimator()
+
+        attack = AttributeInferenceBlackBox(classifier, attack_model=attack_model, attack_feature=attack_feature)
+        &#47&#47 get original model&quots predictions
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+        &#47&#47 train attack model
+        attack.fit(x_train)
+        &#47&#47 infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
+        &#47&#47 check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        &#47&#47 assert train_acc == pytest.approx(0.5523, abs=0.03)
+        &#47&#47 assert test_acc == pytest.approx(0.5777, abs=0.03)
+    except ARTTestException as e:
+        add_warning(e)
+
+
+</a>def test_white_box(decision_tree_estimator, get_iris_dataset):
+    try:
+        attack_feature = 2  &#47&#47 petal length
+        values = [0.14, 0.42, 0.71]  &#47&#47 rounded down</code></pre>

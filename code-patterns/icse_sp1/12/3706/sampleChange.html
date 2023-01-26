@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    :param x: [l * m, batch, complex] (b_in**2, nbatch, 2)
+    :return: [batch, beta, alpha, complex] (nbatch, 2 b_out, 2 * b_out, 2)
+    &quot&quot&quot
+    <a id="change">device = x.get_device()</a>
+    nbatch = x.size(1)
+
+    plan = _setup_fft_plan(b_out, nbatch)
+    wigner = _setup_wigner(b_out, nl=b_in, weighted=for_grad, device=device) &#47&#47 [beta, l * m] (2 * b_out - 1, nspec)</code></pre><h3>After Change</h3><pre><code class='java'>
+    cuda_kernel = _setup_s2ifft_cuda_kernel(b=b_out, nl=b_in, nbatch=nbatch)
+
+    stream = cuda_utils.Stream(ptr=torch.cuda.current_stream().cuda_stream)
+    output = <a id="change">x.new_empty((nbatch, 2 * b_out, 2 * b_out, 2))</a>
+    cuda_kernel(block=(1024, 1, 1),
+                grid=(cuda_utils.get_blocks(nbatch * (2 * b_out)**2, 1024), 1, 1),
+                args=[x.data_ptr(), wigner.data_ptr(), output.data_ptr()],
+                stream=stream)
+    &#47&#47 [batch, beta, m, complex] (nbatch, 2 * b_out, 2 * b_out, 2)
+
+    <a id="change">output = torch.ifft(output, 1) * output.size(-2)</a>  &#47&#47 [batch, beta, alpha, complex]
+
+    return output
+</code></pre>

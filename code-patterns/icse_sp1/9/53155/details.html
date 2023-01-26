@@ -1,0 +1,44 @@
+<html><h3>054095d922edda5134e520522bc82a1b95cc5bd4,onnx_tf/backend_rep.py,TensorflowRep,run,#TensorflowRep#Any#,52
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    super(TensorflowRep, self).run(inputs, **kwargs)
+
+    &#47&#47 TODO: handle name scope if necessary
+    <a id="change">with self.graph.as_default():
+      with tf.compat.v1.Session() as sess:
+        if isinstance(inputs, dict):
+          feed_dict = inputs
+        elif isinstance(inputs, list) or isinstance(inputs, tuple):
+          if len(self.inputs) != len(inputs):
+            raise RuntimeError(&quotExpected {} values for uninitialized &quot
+                               &quotgraph inputs ({}), but got {}.&quot.format(
+                                   len(self.inputs), &quot, &quot.join(self.inputs),
+                                   len(inputs)))
+          feed_dict = dict(zip(self.inputs, inputs))
+        else:
+          &#47&#47 single input
+          feed_dict = dict([(self.inputs[0], inputs)])
+
+        feed_dict = {
+            self.tensor_dict[key]: feed_dict[key] for key in self.inputs
+        }
+
+        sess.run(tf.compat.v1.global_variables_initializer())
+        outputs = [self.tensor_dict[output] for output in self.outputs]
+
+        output_values = sess.run(outputs, feed_dict=feed_dict)
+        return namedtupledict(&quotOutputs&quot, self.outputs)(*output_values)
+
+ </a> def export_graph(self, path):
+    Export backend representation to a Tensorflow proto file.
+
+    This function obtains the graph proto corresponding to the ONNX</code></pre><h3>After Change</h3><pre><code class='java'>
+        [(x[0], tf.constant(x[1])) for x in feed_dict.items()])
+
+    output_values = self.tf_module(**input_dict)
+    output_values = [<a id="change">val.numpy()</a> if isinstance(val, tf.Tensor) else val <a id="change">for</a> val in output_values]
+
+    return namedtupledict(&quotOutputs&quot, self.outputs)(*output_values)
+</code></pre><img src="245519010.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/onnx/onnx-tensorflow/commit/054095d922edda5134e520522bc82a1b95cc5bd4#diff-1e6ff1fe703eb6e9c19bdae957bbc2ab76bd9bcb39f79b5c311a248f7f5dc53eL52' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnx-tensorflow</div><div id='commit'> Commit Name: 054095d922edda5134e520522bc82a1b95cc5bd4</div><div id='time'> Time: 2020-09-09</div><div id='author'> Author: smonov@gmail.com</div><div id='file'> File Name: onnx_tf/backend_rep.py</div><div id='class'> Class Name: TensorflowRep</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/onnx/onnx-tensorflow/commit/054095d922edda5134e520522bc82a1b95cc5bd4#diff-8593fbd757d6aab96c4eb5a5780a3c8cabaa2afc05ea0aceeff1c6c3997495f2L167' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnx-tensorflow</div><div id='commit'> Commit Name: 054095d922edda5134e520522bc82a1b95cc5bd4</div><div id='time'> Time: 2020-09-09</div><div id='author'> Author: smonov@gmail.com</div><div id='file'> File Name: onnx_tf/backend.py</div><div id='class'> Class Name: TensorflowBackend</div><div id='method'> Method Name: run_node</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/b68db1aaf6abe4d2cea8321cc6f1564228dd60f5#diff-6cf2ff1fbc6e47b7291cc3f953a4aac31e0c7eea6f5ef342433cfecbf5e28562L254' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: b68db1aaf6abe4d2cea8321cc6f1564228dd60f5</div><div id='time'> Time: 2019-05-31</div><div id='author'> Author: peastman@stanford.edu</div><div id='file'> File Name: deepchem/models/tensorgraph/models/seqtoseq.py</div><div id='class'> Class Name: SeqToSeq</div><div id='method'> Method Name: predict_from_embeddings</div><BR>

@@ -1,0 +1,152 @@
+<html><h3>88d079cf2cbee4aa793c9ccf09ae0e6db2c393f7,examples/bss_example.py,,,#,57
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        SIR.append(sir)
+
+    &#47&#47&#47&#47 STFT ANALYSIS
+    X = pra.transform.analysis(mics_signals.T, L, L, zp_front=L//2, zp_back=<a id="change">L//2</a>)
+
+    t_begin = time.perf_counter()
+
+    &#47&#47&#47&#47 START BSS
+    bss_type = args.algo
+    if bss_type == &quotauxiva&quot:
+        &#47&#47 Run AuxIVA
+        Y = pra.bss.auxiva(X, n_iter=30, proj_back=True,
+                           callback=convergence_callback)
+    elif bss_type == &quotilrma&quot:
+        &#47&#47 Run ILRMA
+        Y = pra.bss.ilrma(X, n_iter=30, n_components=2, proj_back=True,
+                          callback=convergence_callback)
+    elif bss_type == &quotfastmnmf&quot:
+        &#47&#47 Run FastMNMF
+        Y = pra.bss.fastmnmf(X, n_iter=100, n_components=8, n_src=2,
+                          callback=convergence_callback)
+    elif bss_type == &quotsparseauxiva&quot:
+        &#47&#47 Estimate set of active frequency bins
+        ratio = 0.35
+        average = np.abs(np.mean(np.mean(X, axis=2), axis=0))
+        k = np.int_(average.shape[0] * ratio)
+        S = np.sort(np.argpartition(average, -k)[-k:])
+        &#47&#47 Run SparseAuxIva
+        Y = pra.bss.sparseauxiva(X, S, n_iter=30, proj_back=True,
+                                 callback=convergence_callback)
+
+    t_end = time.perf_counter()
+    print("Time for BSS: {:.2f} s".format(t_end - t_begin))
+    
+    &#47&#47&#47&#47 STFT Synthesis
+    y = <a id="change">pra</a>.transform.synthesis(Y, L, L, zp_front=L//2, zp_back=L//2).T
+
+    &#47&#47&#47&#47 Compare SDR and SIR
+    sdr, sir, sar, perm = bss_eval_sources(ref[:,:y.shape[1]-L//2,0], y[:,L//2:ref.shape[1]+L//2])</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47&#47&#47 Prepare one-shot STFT
+    L = args.block
+    <a id="change">hop = L // 2</a>
+    win_a = pra.hann(L)
+    win_s = pra.transform.compute_synthesis_window(win_a, hop)
+
+    &#47&#47&#47&#47 Create a room with sources and mics
+    &#47&#47 Room dimensions in meters
+    room_dim = [8, 9]
+
+    &#47&#47 source location
+    source = np.array([1, 4.5])
+    room = pra.ShoeBox(
+        room_dim,
+        fs=16000,
+        max_order=15,
+        absorption=0.35,
+        sigma2_awgn=1e-8)
+
+    &#47&#47 get signals
+    signals = [ np.concatenate([wavfile.read(f)[1].astype(np.float32)
+        for f in source_files])
+        for source_files in wav_files ]
+    delays = [1., 0.]
+    locations = [[2.5,3], [2.5, 6]]
+
+    &#47&#47 add mic and good source to room
+    &#47&#47 add silent signals to all sources
+    for sig, d, loc in zip(signals, delays, locations):
+        room.add_source(loc, signal=np.zeros_like(sig), delay=d)
+
+    &#47&#47 add microphone array
+    room.add_microphone_array(
+            pra.MicrophoneArray(np.c_[[6.5, 4.49], [6.5, 4.51]], fs=room.fs)
+            )
+
+    &#47&#47 compute RIRs
+    room.compute_rir()
+
+    &#47&#47 Record each source separately
+    separate_recordings = []
+    for source, signal in zip(room.sources, signals):
+
+        source.signal[:] = signal
+
+        room.simulate()
+        separate_recordings.append(room.mic_array.signals)
+
+        source.signal[:] = 0.
+    separate_recordings = np.array(separate_recordings)
+
+    &#47&#47 Mix down the recorded signals
+    mics_signals = np.sum(separate_recordings, axis=0)
+
+
+    &#47&#47&#47&#47 Monitor Convergence
+    ref = np.moveaxis(separate_recordings, 1, 2)
+    SDR, SIR = [], []
+    def convergence_callback(Y):
+        global SDR, SIR
+        from mir_eval.separation import bss_eval_sources
+        ref = np.moveaxis(separate_recordings, 1, 2)
+        y = pra.transform.synthesis(Y, L, hop, win=win_s)
+        y = y[L-hop: , :].T
+        m = np.minimum(y.shape[1], ref.shape[1])
+        sdr, sir, sar, perm = bss_eval_sources(ref[:, :m, 0], y[:, :m])
+        SDR.append(sdr)
+        SIR.append(sir)
+
+    &#47&#47&#47&#47 STFT ANALYSIS
+    X = pra.transform.analysis(mics_signals.T, L, hop, win=win_a)
+
+    t_begin = time.perf_counter()
+
+    &#47&#47&#47&#47 START BSS
+    bss_type = args.algo
+    if bss_type == &quotauxiva&quot:
+        &#47&#47 Run AuxIVA
+        Y = pra.bss.auxiva(X, n_iter=30, proj_back=True,
+                           callback=convergence_callback)
+    elif bss_type == &quotilrma&quot:
+        &#47&#47 Run ILRMA
+        Y = pra.bss.ilrma(X, n_iter=30, n_components=2, proj_back=True,
+                          callback=convergence_callback)
+    elif bss_type == &quotfastmnmf&quot:
+        &#47&#47 Run FastMNMF
+        Y = pra.bss.fastmnmf(X, n_iter=100, n_components=8, n_src=2,
+                          callback=convergence_callback)
+    elif bss_type == &quotsparseauxiva&quot:
+        &#47&#47 Estimate set of active frequency bins
+        ratio = 0.35
+        average = np.abs(np.mean(np.mean(X, axis=2), axis=0))
+        k = np.int_(average.shape[0] * ratio)
+        S = np.sort(np.argpartition(average, -k)[-k:])
+        &#47&#47 Run SparseAuxIva
+        Y = pra.bss.sparseauxiva(X, S, n_iter=30, proj_back=True,
+                                 callback=convergence_callback)
+
+    t_end = time.perf_counter()
+    print("Time for BSS: {:.2f} s".format(t_end - t_begin))
+    
+    &#47&#47&#47&#47 STFT Synthesis
+    y = <a id="change">pra.transform.synthesis(Y, L, hop, win=win_s)</a>
+
+    &#47&#47&#47&#47 Compare SDR and SIR
+    y = y[L-hop:, :].T
+    m = np.minimum(y.shape[1], ref.shape[1])</code></pre><img src="165814190.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/LCAV/pyroomacoustics/commit/88d079cf2cbee4aa793c9ccf09ae0e6db2c393f7#diff-5dd9d48a2f5bed5ef6a32b7451695bd35a02ce6147c65e0d8aa6c549776cc391L91' target='_blank'>Link</a></div><div id='project'> Project Name: LCAV/pyroomacoustics</div><div id='commit'> Commit Name: 88d079cf2cbee4aa793c9ccf09ae0e6db2c393f7</div><div id='time'> Time: 2019-11-05</div><div id='author'> Author: fakufaku@gmail.com</div><div id='file'> File Name: examples/bss_example.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/epfl-lts2/pygsp/commit/f259f05cd05fb34d0c2575bc3b2305faecd1dfcd#diff-2a5a9e1d42ab544ddccbcde43b3628f0dbc5720a2bea34ffd4d6b0a50c086c87L27' target='_blank'>Link</a></div><div id='project'> Project Name: epfl-lts2/pygsp</div><div id='commit'> Commit Name: f259f05cd05fb34d0c2575bc3b2305faecd1dfcd</div><div id='time'> Time: 2017-08-19</div><div id='author'> Author: michael.defferrard@epfl.ch</div><div id='file'> File Name: pygsp/tests/test_filters.py</div><div id='class'> Class Name: TestCase</div><div id='method'> Method Name: _test_synthesis</div><BR><BR><div id='link'><a href='https://github.com/LCAV/pyroomacoustics/commit/0bdc1ceeea077750a8b28eb8aacd5ed07deead3c#diff-5dd9d48a2f5bed5ef6a32b7451695bd35a02ce6147c65e0d8aa6c549776cc391L91' target='_blank'>Link</a></div><div id='project'> Project Name: LCAV/pyroomacoustics</div><div id='commit'> Commit Name: 0bdc1ceeea077750a8b28eb8aacd5ed07deead3c</div><div id='time'> Time: 2019-09-27</div><div id='author'> Author: fakufaku@gmail.com</div><div id='file'> File Name: examples/bss_example.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

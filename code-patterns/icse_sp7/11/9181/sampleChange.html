@@ -1,0 +1,65 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      return
+
+    components = shard_spec.split(&quot/&quot, 1)
+    <a id="change">if len(components) != 2:
+      raise self.InvalidShardSpecification("Invalid shard specification &quot{}&quot, should be of form: "
+                                           "[shard index]/[total shards]".format(shard_spec))
+
+   </a> def ensure_int(item):
+      try:
+        return int(item)
+      except ValueError:
+        raise self.InvalidShardSpecification("Invalid shard specification &quot{}&quot, item {} is not an "
+                                             "int".format(shard_spec, item))
+
+    shard = ensure_int(components[0])
+    total = ensure_int(components[1])
+    <a id="change">if not (0 &lt;= shard and shard &lt; total):
+      raise self.InvalidShardSpecification("Invalid shard specification &quot{}&quot, shard must "
+                                           "be &gt;= 0 and &lt; {}".format(shard_spec, total))
+   </a> if total &lt; 2:
+      yield []
+      return
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      yield []
+      return
+
+    <a id="change">try:
+      sharder = Sharder(shard_spec)
+
+      if sharder.nshards &lt; 2:
+        yield []
+        return
+
+      with temporary_dir() as tmp:
+        path = os.path.join(tmp, &quotconftest.py&quot)
+        with open(path, &quotw&quot) as fp:
+          fp.write(dedent(
+            def pytest_report_header(config):
+              return &quotshard: {shard} of {nshards} (0-based shard numbering)&quot
+
+
+            def pytest_collection_modifyitems(session, config, items):
+              total_count = len(items)
+              removed = 0
+              for i, item in enumerate(list(items)):
+                if i % {nshards} != {shard}:
+                  del items[i - removed]
+                  removed += 1
+              reporter = config.pluginmanager.getplugin(&quotterminalreporter&quot)
+              reporter.write_line(&quotOnly executing {{}} of {{}} total tests in shard {shard} of &quot
+                                  &quot{nshards}&quot.format(total_count - removed, total_count),
+                                  bold=True, invert=True, yellow=True)
+          .format(shard=sharder.shard, nshards=sharder.nshards)))
+        yield [path]
+    except Sharder.InvalidShardSpec as e:
+      raise self.InvalidShardSpecification(e)
+
+ </a> @contextmanager
+  def _maybe_emit_junit_xml(self, targets):
+    args = []
+    xml_base = self.get_options().junit_xml_dir</code></pre>

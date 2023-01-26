@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 TODO(nina): Raise error when vector is not tangent
+        n_base_points, extrinsic_dim = base_point.shape
+        n_tangent_vecs, _ = tangent_vec.shape
+        <a id="change">n_exps = gs.cast(gs.maximum(n_base_points, n_tangent_vecs), gs.int32)</a>
+
+        hypersphere = Hypersphere(dimension=extrinsic_dim-1)
+        proj_tangent_vec = hypersphere.projection_to_tangent_space(
+            tangent_vec, base_point)
+        norm_tangent_vec = self.embedding_metric.norm(proj_tangent_vec)
+
+        n_tiles_vec = gs.cast(gs.divide(n_exps, n_tangent_vecs), gs.int32)
+        norm_tangent_vec = gs.tile(norm_tangent_vec, [n_tiles_vec, 1])
+        n_tiles_base_point = gs.cast(
+            gs.divide(n_exps, n_base_points), gs.int32)
+        base_point = <a id="change">gs.tile(base_point, [n_tiles_base_point, 1])</a>
+
+        mask_0 = gs.isclose(norm_tangent_vec, 0.)
+        mask_non0 = ~mask_0
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        mask_0 = gs.isclose(norm_tangent_vec, 0.)
+        mask_non0 = ~mask_0
+
+        <a id="change">coef_1 = gs.zeros((n_tangent_vecs, 1))</a>
+        coef_2 = gs.zeros((n_tangent_vecs, 1))
+        norm2 = norm_tangent_vec[mask_0]**2
+        norm4 = norm2**2
+        norm6 = norm2**3
+        coef_1[mask_0] = 1. - norm2/2. + norm4/24. - norm6/720.
+        coef_2[mask_0] = 1. - norm2/6. + norm4/120. - norm6/5040.
+
+        coef_1[mask_non0] = gs.cos(norm_tangent_vec[mask_non0])
+        coef_2[mask_non0] = gs.sin(norm_tangent_vec[mask_non0]) / \
+            norm_tangent_vec[mask_non0]
+
+        n_coef_1 = n_tangent_vecs
+        if n_coef_1 != n_base_points:
+            if n_coef_1 == 1:
+                coef_1 = <a id="change">gs.squeeze(coef_1, axis=0)</a>
+                einsum_str = &quoti,nj-&gt;nj&quot
+            elif n_base_points == 1:
+                base_point = gs.squeeze(base_point, axis=0)
+                einsum_str = &quotni,j-&gt;nj&quot</code></pre>

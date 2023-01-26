@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    enc_size = len(enc)
+    if enc_size + 2 &gt; max_size:
+        raise ValueError(&quotencoded data exceeds max_size: {}&quot.format(enc_size + 2))
+    <a id="change">assert max_size &lt; 255*256</a>
+
+    cpu_buffer[0] = enc_size // 255  &#47&#47 this encoding works for max_size &lt; 65k
+    cpu_buffer[1] = enc_size % 255
+    cpu_buffer[2 : enc_size + 2] = torch.ByteTensor(list(enc))</code></pre><h3>After Change</h3><pre><code class='java'>
+        result = []
+        for i in range(world_size):
+            out_buffer = buffer[i * max_size:(i + 1) * max_size]
+            <a id="change">enc_size, = struct.unpack("&gt;I", bytes(out_buffer[:header_size].tolist()))</a>
+            if enc_size &gt; 0:
+                result.append(pickle.loads(bytes(out_buffer[header_size:header_size + enc_size].tolist())))
+        return result
+    except pickle.UnpicklingError:</code></pre>

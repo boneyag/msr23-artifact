@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if self.has_flat_params:
+                offset = 0
+                for p in self.fp16_params:
+                    <a id="change">if not p.requires_grad:
+                        continue
+                   </a> grad_data = p.grad.data if p.grad is not None else p.data.new_zeros(p.data.shape)
+                    numel = grad_data.numel()
+                    self.fp32_params.grad.data[offset:offset+numel].copy_(grad_data.view(-1))
+                    offset += numel</code></pre><h3>After Change</h3><pre><code class='java'>
+        if self._needs_sync:
+            &#47&#47 copy FP16 grads to FP32
+            if self.has_flat_params:
+                <a id="change">devices = list(self.fp32_params.keys())</a>
+                device_params_dict = defaultdict(list)
+                for p in self.fp16_params:
+                    if p.requires_grad:
+                        device_params_dict[p.device.index].append(p)
+                <a id="change">for device in devices:
+                    device_params = device_params_dict[device]
+                    offset = 0
+                    for p in device_params:
+                        grad_data = p.grad.data if p.grad is not None else p.data.new_zeros(p.data.shape)
+                        numel = grad_data.numel()
+                        self.fp32_params[device].grad.data[offset:offset+numel].copy_(grad_data.view(-1))
+                        offset += numel
+           </a> else:
+                for p, p32 in zip(self.fp16_params, self.fp32_params):
+                    if not p.requires_grad:
+                        continue</code></pre>

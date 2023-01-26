@@ -1,0 +1,123 @@
+<html><h3>fdb8ed82b7323e0e6b8492f84c2aff78bc72c2e5,brian2/tests/__init__.py,,run,#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#,116
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    dirnames = [dirname] + extra_test_dirs
+
+    pref_filed, pref_filename = tempfile.mkstemp(&quotbrian_prefs&quot, text=True)
+    <a id="change">pref_file = os.fdopen(pref_filed, &quotw&quot)</a>
+
+    print(&quotRunning tests in %s &quot % (&quot, &quot.join(dirnames)), end=&quot&quot)
+    if codegen_targets:
+        print(&quotfor targets %s&quot % (&quot, &quot.join(codegen_targets)), end=&quot&quot)
+    ex_in = &quotincluding&quot if long_tests else &quotexcluding&quot
+    print(&quot (%s long tests)&quot % ex_in)
+
+    print("Running Brian version {} "
+          "from &quot{}&quot".format(brian2.__version__,
+                               os.path.dirname(brian2.__file__)))
+
+    all_targets = set(codegen_targets)
+
+    if test_standalone:
+        if not isinstance(test_standalone, basestring):
+            raise ValueError(&quottest_standalone argument has to be the name of a &quot
+                             &quotstandalone device (e.g. "cpp_standalone")&quot)
+        if test_standalone not in all_devices:
+            raise ValueError(&quottest_standalone argument "%s" is not a known &quot
+                             &quotdevice. Known devices are: &quot
+                             &quot%s&quot % (test_standalone,
+                                     &quot, &quot.join(repr(d) for d in all_devices)))
+        print(&quotTesting standalone&quot)
+        all_targets.add(test_standalone)
+    if test_codegen_independent:
+        print(&quotTesting codegen-independent code&quot)
+        all_targets.add(&quotcodegen_independent&quot)
+
+    parallel_tests = all_targets.intersection(set(test_in_parallel))
+    if parallel_tests:
+        try:
+            import xdist
+            print(&quotTesting with multiple processes for %s&quot % &quot, &quot.join(
+                parallel_tests))
+        except ImportError:
+            test_in_parallel = []
+
+    if reset_preferences:
+        print(&quotResetting to default preferences&quot)
+
+    if reset_preferences:
+        stored_prefs = prefs.as_file
+        prefs.read_preference_file(StringIO(prefs.defaults_as_file))
+
+
+    &#47&#47 Avoid failures in the tests for user-registered units
+    import copy
+    import brian2.units.fundamentalunits as fundamentalunits
+    old_unit_registry = copy.copy(fundamentalunits.user_unit_register)
+    fundamentalunits.user_unit_register = fundamentalunits.UnitRegistry()
+
+    if float_dtype is not None:
+        print(&quotSetting dtype for floating point variables to: &quot
+                         &quot{}&quot.format(float_dtype.__name__))
+
+        prefs[&quotcore.default_float_dtype&quot] = float_dtype
+
+    print()
+
+    &#47&#47 Suppress INFO log messages during testing
+    from brian2.utils.logger import BrianLogger, LOG_LEVELS
+    log_level = BrianLogger.console_handler.level
+    BrianLogger.console_handler.setLevel(LOG_LEVELS[&quotWARNING&quot])
+
+    &#47&#47 Switch off code optimization to get faster compilation times
+    prefs[&quotcodegen.cpp.extra_compile_args_gcc&quot].extend([&quot-w&quot, &quot-O0&quot])
+    prefs[&quotcodegen.cpp.extra_compile_args_msvc&quot].extend([&quot-w&quot, &quot-O0&quot])
+
+    &#47&#47 if fail_for_not_implemented:
+    &#47&#47     not_implemented_plugin = NotImplementedPlugin
+    &#47&#47 else:
+    &#47&#47     not_implemented_plugin = NotImplementedNoFailurePlugin
+    &#47&#47 &#47&#47 This hack is needed to get the NotImplementedPlugin working for multiprocessing
+    &#47&#47 import nose.plugins.multiprocess as multiprocess
+    &#47&#47 multiprocess._instantiate_plugins = [not_implemented_plugin]
+    &#47&#47
+    &#47&#47 plugins = [not_implemented_plugin()]
+
+    from brian2.devices import set_device
+    set_device(&quotruntime&quot)
+    pref_plugin = PreferencePlugin(prefs)
+    try:
+        success = []
+        if test_codegen_independent:
+            print(&quotRunning tests that do not use code generation&quot)
+            &#47&#47 Some doctests do actually use code generation, use numpy for that
+            prefs[&quotcodegen.target&quot] = &quotnumpy&quot
+            &#47&#47 Print output changed in numpy 1.14, stick with the old format to
+            &#47&#47 avoid doctest failures
+            import numpy as np
+            try:
+                np.set_printoptions(legacy=&quot1.13&quot)
+            except TypeError:
+                pass  &#47&#47 using a numpy version &lt; 1.14
+            argv = make_argv(dirnames, "codegen_independent")
+            if &quotcodegen_independent&quot in test_in_parallel:
+                argv.extend(multiprocess_arguments)
+            &#47&#47     multiprocess._instantiate_plugins.append(OurDoctestPlugin)
+            print(&quotexecuting with&quot, argv)
+            pref_file.truncate(0)
+            <a id="change">pref_file.write(prefs.as_file)</a>
+            pref_file.flush()
+            success.append(pytest.main(argv, plugins=[pref_plugin]) == 0)
+            &#47&#47 if &quotcodegen_independent&quot in test_in_parallel:
+            &#47&#47     multiprocess._instantiate_plugins.remove(OurDoctestPlugin)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Some doctests do actually use code generation, use numpy for that
+            prefs[&quotcodegen.target&quot] = &quotnumpy&quot
+            argv = make_argv(dirnames, doctests=True)
+            <a id="change">if &quotcodegen_independent&quot in test_in_parallel:
+                argv.extend(multiprocess_arguments)
+           </a> success.append(pytest.main(argv, plugins=[pref_plugin]) == 0)
+
+            print(&quotRunning tests that do not use code generation&quot)
+            argv = make_argv(dirnames, "codegen_independent")</code></pre><img src="34025191.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/brian-team/brian2/commit/fdb8ed82b7323e0e6b8492f84c2aff78bc72c2e5#diff-22b3006becfe109c2f7e198dddcaf1c0bbd90c7f44e4309997f94c639dcd7235L211' target='_blank'>Link</a></div><div id='project'> Project Name: brian-team/brian2</div><div id='commit'> Commit Name: fdb8ed82b7323e0e6b8492f84c2aff78bc72c2e5</div><div id='time'> Time: 2019-11-04</div><div id='author'> Author: marcel.stimberg@inserm.fr</div><div id='file'> File Name: brian2/tests/__init__.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/commonsense/conceptnet5/commit/db4b9f4d50af9e83733fc301c32e85cbe6d9c812#diff-6c5c7ba1fc91400975365febc9652a18a176960f426b167d9fbd3a23e2600c1aL13' target='_blank'>Link</a></div><div id='project'> Project Name: commonsense/conceptnet5</div><div id='commit'> Commit Name: db4b9f4d50af9e83733fc301c32e85cbe6d9c812</div><div id='time'> Time: 2014-02-25</div><div id='author'> Author: rob@luminoso.com</div><div id='file'> File Name: conceptnet5/builders/json_to_solr.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: convert_to_solr</div><BR><BR><div id='link'><a href='https://github.com/regel/loudml/commit/6c60876cddfbb07a704bb2bd9d86bf04c7019662#diff-cd1811e22813ca53dd88f38ca674c2fb6d4e3cc91623e7d6a7396e7b4c12832dL92' target='_blank'>Link</a></div><div id='project'> Project Name: regel/loudml</div><div id='commit'> Commit Name: 6c60876cddfbb07a704bb2bd9d86bf04c7019662</div><div id='time'> Time: 2019-09-19</div><div id='author'> Author: sebastien.regel@gmail.com</div><div id='file'> File Name: loudml/tests/test_app.py</div><div id='class'> Class Name: AppTests</div><div id='method'> Method Name: setUp</div><BR>

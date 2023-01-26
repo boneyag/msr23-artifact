@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        :return: A 3-d vector where the last dimension is the concatenated dimensions of all embeddings
+        
+        all_embeddings_out = []
+        <a id="change">for k, embedding in self.embeddings.items():
+            x = inputs[k]
+            embeddings_out = embedding(x)
+            all_embeddings_out.append(embeddings_out)
+       </a> word_embeddings = tf.concat(values=all_embeddings_out, axis=-1)
+        return self.dropout(word_embeddings, TRAIN_FLAG())
+
+    @property</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        parallels = []
+        expanded = tf.expand_dims(inputs, ParallelConv.DUMMY_AXIS)
+        <a id="change">for W, b in zip(self.Ws, self.bs):
+            conv = tf.nn.conv2d(
+                expanded, W,
+                strides=[1, 1, 1, 1],
+                padding="SAME", name="CONV"
+            )
+            activation = self.activation(tf.nn.bias_add(conv, b), &quotactivation&quot)
+            parallels.append(activation)
+       </a> combine = tf.reshape(tf.concat(values=parallels, axis=ParallelConv.FEATURE_AXIS), [-1, self.output_dim])
+        return combine
+
+    def compute_output_shape(self, input_shape):</code></pre>

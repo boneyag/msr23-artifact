@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        raise ValueError("`Gu` must be undirected")
+
+    &#47&#47 extract the edges&quot endpoint nodes&quot coordinates
+    coords = <a id="change">(
+        (Gu.nodes[u]["y"], Gu.nodes[u]["x"], Gu.nodes[v]["y"], Gu.nodes[v]["x"])
+        for u, v, k in Gu.edges
+    )</a>
+    df_coords = <a id="change">pd.DataFrame(coords, columns=["u_y", "u_x", "v_y", "v_x"])</a>
+    y1 = df_coords["u_y"]
+    x1 = df_coords["u_x"]
+    y2 = df_coords["v_y"]
+    x2 = df_coords["v_x"]</code></pre><h3>After Change</h3><pre><code class='java'>
+        raise ValueError("`Gu` must be undirected")
+
+    &#47&#47 extract the edges&quot endpoint nodes&quot coordinates
+    coords = <a id="change">np.array(
+        [
+            (Gu.nodes[u]["y"], Gu.nodes[u]["x"], Gu.nodes[v]["y"], Gu.nodes[v]["x"])
+            for u, v, _ in Gu.edges
+        ]
+    )</a>
+    y1 = <a id="change">coords[:, 0]</a>
+    x1 = coords[:, 1]
+    y2 = coords[:, 2]
+    x2 = coords[:, 3]
+
+    &#47&#47 calculate straight-line distances as euclidean distances if projected or
+    &#47&#47 great-circle distances if unprojected
+    if projection.is_projected(Gu.graph["crs"]):
+        sl_dists = distance.euclidean_dist_vec(y1=y1, x1=x1, y2=y2, x2=x2)
+    else:
+        sl_dists = distance.great_circle_vec(lat1=y1, lng1=x1, lat2=y2, lng2=x2)
+
+    &#47&#47 return the ratio, handling possible division by zero
+    <a id="change">sl_dists_total = sl_dists[~np.isnan(sl_dists)].sum()</a>
+    try:
+        return edge_length_total(Gu) / sl_dists_total
+    except ZeroDivisionError:
+        return None</code></pre>

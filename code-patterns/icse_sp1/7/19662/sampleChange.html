@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                                           roi_mask,
+                                                           weightmaps_to_sample_per_cat,
+                                                           augm_img_prms)
+    time_augm_1 = <a id="change">time.time()</a>
+    log.print3(<a id="change">id_str+" Time spent augmenting at image level: " + str(time_augm_1-time_augm_0)</a> )
+    
+    &#47&#47 Sampling of segments (sub-volumes) from an image.
+    dims_of_scan = channels[0].shape</code></pre><h3>After Change</h3><pre><code class='java'>
+                                                           roi_mask,
+                                                           weightmaps_to_sample_per_cat,
+                                                           augm_img_prms)
+    time_augm_img = <a id="change">time.time()-time_augm_0</a>
+    
+    &#47&#47 Sampling of segments (sub-volumes) from an image.
+    dims_of_scan = channels[0].shape
+    sampling_maps_per_cat = sampling_type.logicDecidingSamplingMapsPerCategory(
+                                                weightmaps_to_sample_per_cat,
+                                                gt_lbl_img,
+                                                roi_mask,
+                                                dims_of_scan)
+    str_samples_per_cat = " Got samples per category: "
+    for cat_i in range( sampling_type.getNumberOfCategoriesToSample() ) :
+        cat_string = sampling_type.getStringsPerCategoryToSample()[cat_i]
+        n_samples_for_cat = n_samples_per_cat_per_subj[cat_i][job_i]
+        sampling_map = sampling_maps_per_cat[cat_i]
+        
+        &#47&#47 Check if the weight map is fully-zeros. In this case, don&quott call the sampling function, just continue.
+        &#47&#47 Note that this way, the data loaded on GPU will not be as much as I initially wanted. Thus calculate number-of-batches from this actual number of extracted segments.
+        if np.sum(sampling_map&gt;0) == 0 :
+            log.print3(id_str+" WARN: Sampling mask/map was found just zeros! No [" + cat_string + "] samples for this subject!")
+            continue
+        
+        coords_of_samples = sample_coords_of_segments(log,
+                                            job_i,
+                                            n_samples_for_cat,
+                                            dims_highres_segment,
+                                            dims_of_scan,
+                                            sampling_map)
+        str_samples_per_cat += "[" + cat_string + ": " + str(len(coords_of_samples[0][0])) + "/" + str(n_samples_for_cat) + "] "
+        
+        &#47&#47 Use the just sampled coordinates of slices to actually extract the segments (data) from the subject&quots images. 
+        for image_part_i in range(len(coords_of_samples[0][0])) :
+            coord_center = coords_of_samples[0][:,image_part_i]
+            
+            (channs_of_sample_per_path,
+            lbls_predicted_part_of_sample &#47&#47 used to be gtLabelsForThisImagePart, before extracting only for the central voxels.
+            ) = extractSegmentGivenSliceCoords(train_or_val,
+                                               cnn3d,
+                                               coord_center,
+                                               channels,
+                                               gt_lbl_img)
+            
+            &#47&#47 Augmentation of segments
+            (channs_of_sample_per_path,
+            lbls_predicted_part_of_sample) = augment_patch(channs_of_sample_per_path,
+                                                           lbls_predicted_part_of_sample,
+                                                           augm_patch_prms)
+            
+            for pathway_i in range(cnn3d.getNumPathwaysThatRequireInput()) :
+                channs_of_samples_per_path[pathway_i].append( channs_of_sample_per_path[pathway_i] )
+            lbls_predicted_part_of_samples.append( lbls_predicted_part_of_sample )
+        
+    log.print3(<a id="change">id_str + str_samples_per_cat + ". Seconds augmenting [Image: {0:.1f}".format(time_augm_img)+"]"</a>)
+    return (channs_of_samples_per_path, lbls_predicted_part_of_samples)
+
+</code></pre>

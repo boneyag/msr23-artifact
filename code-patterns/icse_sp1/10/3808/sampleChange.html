@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def Calc(args):
+
+    tree = {}
+    <a id="change">with open(args.bed_fn) as f:
+        for row in f:
+            row = row.split()
+            name = row[0]
+            if name not in tree:
+                tree[name] = intervaltree.IntervalTree()
+            begin = int(row[1])
+            end = int(row[2])
+            tree[name].addi(begin, end)
+
+
+   </a> with open(args.input_fn) as f:
+        for row in f:
+            ctgName, pos = [(row.split()[i]) for i in [0,1]]
+            pos = int(pos)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    tree = {}
+    f = subprocess.Popen(shlex.split("gzip -fdc %s" % (args.bed_fn) ), stdout=subprocess.PIPE, bufsize=8388608)
+    <a id="change">for row in f.stdout:
+        row = row.split()
+        name = row[0]
+        if name not in tree:
+            tree[name] = intervaltree.IntervalTree()
+        begin = int(row[1])
+        end = int(row[2])
+        tree[name].addi(begin, end)
+   </a> f.stdout.close()
+    f.wait()
+
+
+    f = subprocess.Popen(shlex.split("gzip -fdc %s" % (args.input_fn) ), stdout=subprocess.PIPE, bufsize=8388608)
+    for row in f.stdout:
+        ctgName, pos = [(row.split()[i]) for i in [0,1]]
+        pos = int(pos)
+        if ctgName not in tree:
+            continue
+        if len(tree[ctgName].search(pos)) == 0:
+            continue
+        sys.stdout.write(row)
+    sys.stdout.flush()
+    <a id="change">f.stdout.close()</a>
+    f.wait()
+
+
+if __name__ == "__main__":</code></pre>

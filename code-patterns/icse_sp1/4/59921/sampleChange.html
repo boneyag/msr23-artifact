@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+	def _ccorr(self, a, b):
+		a = tf.cast(a, tf.complex64)
+		b = tf.cast(b, tf.complex64)
+		<a id="change">return tf.real(tf.ifft(tf.conj(tf.fft(a)) * tf.fft(b)))</a>
+
+
+	def _calc(self, h, t, r):
+		return torch.sum(h * t * r, -1)</code></pre><h3>After Change</h3><pre><code class='java'>
+		b = torch.rfft(b, signal_ndim = 1, onesided = False)
+		res = self._mul(self._real(a), self._imag(a), self._real(b), self._imag(b))
+		res = torch.ifft(res, signal_ndim = 1)
+		<a id="change">return self._real(res).flatten(start_dim = -2)</a>
+
+	def _calc(self, h, t, r, mode):
+		if mode != &quotnormal&quot:
+			h = h.view(-1, r.shape[0], h.shape[-1])</code></pre>

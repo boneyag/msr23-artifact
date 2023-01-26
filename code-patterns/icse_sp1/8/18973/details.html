@@ -1,0 +1,44 @@
+<html><h3>66584dea87782aed5509e4269a9f015002e1f5c1,pytext/torchscript/module.py,PyTextEmbeddingModuleWithDense,forward,#PyTextEmbeddingModuleWithDense#Any#Any#,1232
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            languages=squeeze_1d(None),
+        )
+        &#47&#47 call model
+        <a id="change">dense_feat = self.normalizer.normalize(dense_feat)</a>
+        dense_tensor = torch.tensor(dense_feat, dtype=torch.float)
+        if self.tensorizer.device != "":
+            <a id="change">dense_tensor = dense_tensor.to(self.tensorizer.device)</a>
+
+        sentence_embedding = self._forward(inputs, dense_tensor)
+        if self.concat_dense:
+            <a id="change">return torch.cat([sentence_embedding, dense_tensor], 1)</a>
+        else:
+            return sentence_embedding
+
+    @torch.jit.script_method</code></pre><h3>After Change</h3><pre><code class='java'>
+        result = self.forward_impl(texts[:max_batch], dense_feat[:max_batch])
+
+        if input_len &gt; max_batch:
+            <a id="change">texts = texts[max_batch:]</a>
+            dense_feat = dense_feat[max_batch:]
+
+            while len(texts) &gt; 0:
+                result_extension = self.forward_impl(
+                    texts[:max_batch], dense_feat[:max_batch]
+                )
+                &#47&#47 the result of forward is either a torch.Tensor or a List[Any]
+                if isinstance(result, torch.Tensor):
+                    result = torch.cat([result, result_extension], dim=0)
+                else:
+                    result.extend(result_extension)
+
+                texts = texts[max_batch:]
+                dense_feat = dense_feat[max_batch:]
+
+        <a id="change">return result</a>
+
+    @torch.jit.script_method
+    def make_prediction(
+        self,</code></pre><img src="105783239.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/facebookresearch/pytext/commit/66584dea87782aed5509e4269a9f015002e1f5c1#diff-6fe03fade3ffeb2f7c18ea27c310bc31b8781d5afb82ea7e2d510cc5274a9e5bL1233' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/pytext</div><div id='commit'> Commit Name: 66584dea87782aed5509e4269a9f015002e1f5c1</div><div id='time'> Time: 2021-02-23</div><div id='author'> Author: mikekg@fb.com</div><div id='file'> File Name: pytext/torchscript/module.py</div><div id='class'> Class Name: PyTextEmbeddingModuleWithDense</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/pytext/commit/22cb76a3479ceba89addb1f467c2dd573cb29026#diff-6fe03fade3ffeb2f7c18ea27c310bc31b8781d5afb82ea7e2d510cc5274a9e5bL101' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/pytext</div><div id='commit'> Commit Name: 22cb76a3479ceba89addb1f467c2dd573cb29026</div><div id='time'> Time: 2021-02-16</div><div id='author'> Author: mikekg@fb.com</div><div id='file'> File Name: pytext/torchscript/module.py</div><div id='class'> Class Name: ScriptPyTextModuleWithDense</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/cb05dac110cff7b58fa2f9b6a8562c571fb59c00#diff-0b69feec391151c9563e11c7695d92a69566cbdba26fbabac9dc36ff3baf9ec7L125' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: cb05dac110cff7b58fa2f9b6a8562c571fb59c00</div><div id='time'> Time: 2020-04-17</div><div id='author'> Author: M.N.Tran@ibm.com</div><div id='file'> File Name: art/attacks/evasion/projected_gradient_descent/projected_gradient_descent_tensorflow_v2.py</div><div id='class'> Class Name: ProjectedGradientDescentTensorflowV2</div><div id='method'> Method Name: generate</div><BR>

@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Tile both cells and coords to form arrays of size (n_cells*N, ndim)
+    tiled_cells = tf.tile(cells, (N, 1))
+    &#47&#47 N tensors of shape (n_cells, 1)
+    <a id="change">tiled_cells = tf.split(tiled_cells, N)</a>
+
+    &#47&#47 Shape (N*n_cells, 1) after tile
+    tiled_coords = tf.reshape(
+        tf.tile(coords, (1, n_cells)), (n_cells * N, ndim))
+    &#47&#47 List of N tensors of shape (n_cells, 1)
+    tiled_coords = tf.split(tiled_coords, N)
+
+    &#47&#47 Lists of length N 
+    <a id="change">coords_rel = [
+        tf.to_float(coords) - tf.to_float(cells)
+        for (coords, cells) in zip(tiled_coords, tiled_cells)
+    ]</a>
+    coords_norm = <a id="change">[tf.reduce_sum(rel**2, axis=1) for rel in coords_rel]</a>
+
+    &#47&#47 Lists of length n_cells
+    &#47&#47 Get indices of k atoms closest to each cell point
+    closest_inds = [tf.nn.top_k(-norm, k=1)[1] <a id="change">for</a> norm in coords_norm]
+
+    &#47&#47 TODO(rbharath): tf.stack for tf 1.0
+    return tf.stack(closest_inds)</code></pre><h3>After Change</h3><pre><code class='java'>
+    tiled_coords = tf.reshape(
+        tf.tile(coords, (1, n_cells)), (n_cells * N_atoms, ndim))
+    coords_vec = tf.reduce_sum((tiled_coords-tiled_cells)**2, axis=1)
+    <a id="change">coords_norm = tf.reshape(coords_vec, (N_atoms, n_cells))</a>
+
+    closest_inds = tf.nn.top_k(-coords_norm,k=1)[1]
+    return closest_inds
+</code></pre>

@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        del dcm_array
+
+        <a id="change">img = SimpleITK.Image(shape, sitk_dtype, 1)</a>
+        SimpleITK._SimpleITK._SetImageFromArray(temp.read(), img)
+
+    return img
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if samples_per_pixel &gt; 1:
+        pixel_dims += (samples_per_pixel,)
+    dcm_array = None
+    <a id="change">use_pixel_array = False</a>
+
+    for index, partial in enumerate(dicom_ds.headers):
+        ds = pydicom.dcmread(str(partial["file"]))
+
+        if apply_scaling:
+            pixel_array = float(
+                getattr(ds, "RescaleSlope", 1)
+            ) * ds.pixel_array + float(getattr(ds, "RescaleIntercept", 0))
+        else:
+            pixel_array = ds.pixel_array
+
+        if (
+            len(pixel_array.shape) == dimensions
+            or pixel_array.shape == pixel_dims
+        ):
+            use_pixel_array = True
+            del ds
+            break
+        if dcm_array is None:
+            dcm_array = np.zeros(pixel_dims, dtype=np_dtype)
+
+        z_index = index if z_i &gt;= 0 else len(dicom_ds.headers) - index - 1
+
+        if dimensions == 4:
+            dcm_array[
+                index // dicom_ds.n_slices, z_index % dicom_ds.n_slices, :, :
+            ] = pixel_array
+            if index % dicom_ds.n_slices == 0:
+                content_times.append(str(ds.ContentTime))
+                exposures.append(str(ds.Exposure))
+        else:
+            dcm_array[z_index % dicom_ds.n_slices, :, :] = pixel_array
+
+        del ds
+    <a id="change">if use_pixel_array:
+        img = SimpleITK.GetImageFromArray(pixel_array, isVector=is_rgb)
+    else:
+        img = SimpleITK.GetImageFromArray(dcm_array, isVector=is_rgb)
+   </a> return img
+
+
+def image_builder_dicom(</code></pre>

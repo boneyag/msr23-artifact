@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for page in paging(service,
+                       service.jobs().getQueryResults,
+                       num_retries=num_retries,
+                       **<a id="change">response[&quotjobReference&quot]</a>):
+        print(json.dumps(page[&quotrows&quot]))
+&#47&#47 [END run]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    credentials = GoogleCredentials.get_application_default()
+
+    &#47&#47 Construct the service object for interacting with the BigQuery API.
+    <a id="change">bigquery = discovery.build(&quotbigquery&quot, &quotv2&quot, credentials=credentials)</a>
+    &#47&#47 [END build_service]
+
+    query_job = sync_query(
+        bigquery,
+        project_id,
+        query,
+        timeout,
+        num_retries)
+
+    &#47&#47 Page through the result set and print all results.
+    <a id="change">page_token = None</a>
+    while True:
+        page = <a id="change">bigquery.jobs().getQueryResults(
+            pageToken=page_token,
+            **query_job[&quotjobReference&quot]).execute(num_retries=2)</a>
+
+        print(json.dumps(page[&quotrows&quot]))
+
+        <a id="change">page_token = page.get(&quotpageToken&quot)</a>
+        if not page_token:
+            break
+&#47&#47 [END run]
+</code></pre>

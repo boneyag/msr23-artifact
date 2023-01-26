@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _size(self):
+        base_size = self.base_lazy_tensor.size()
+        <a id="change">if self.num_blocks is None:
+            return torch.Size((base_size[0] * base_size[1], base_size[0] * base_size[2]))
+        else:
+            true_batch_size = self.base_lazy_tensor.size(0) // self.num_blocks
+            return torch.Size((true_batch_size, self.num_blocks * base_size[1], self.num_blocks * base_size[2]))
+
+   </a> def _get_indices(self, left_indices, right_indices, *batch_indices):
+        if self.num_blocks is None:
+            if settings.debug.on():
+                assert len(batch_indices) == 0</code></pre><h3>After Change</h3><pre><code class='java'>
+        shape[-2] *= shape[self.block_dim]
+        shape[-1] *= shape[self.block_dim]
+        del shape[self.block_dim]
+        <a id="change">return torch.Size(shape)</a>
+
+    def diag(self):
+        res = self.base_lazy_tensor.diag().contiguous()
+        return res.view(*self.batch_shape, self.size(-1))</code></pre>

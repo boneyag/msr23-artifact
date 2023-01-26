@@ -1,0 +1,93 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        validation_log, global_step=step)
+
+                    &#47&#47 train accuracy
+                    <a id="change">train_accuracy, summary_line = sess.run(
+                        [accuracy, accuracy_summary],
+                        feed_dict={keep_prob_: FIXED_KEEP_PROB})</a>
+                    train_log.add_summary(summary_line, global_step=step)
+                    print(&quot%s: train accuracy = %.3f&quot %
+                          (datetime.now(), train_accuracy))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        top_k_op = tf.nn.in_top_k(logits, labels, 1)
+        train_accuracy = tf.reduce_mean(tf.cast(top_k_op, tf.float32))
+        &#47&#47 General validation summary
+        <a id="change">accuracy_value_ = tf.placeholder(tf.float32, shape=())</a>
+        accuracy_summary = tf.scalar_summary(&quotaccuracy&quot, accuracy_value_)
+
+        train_summaries = tf.merge_summary(
+            tf.get_collection_ref(&quottrain_summaries&quot))
+
+        &#47&#47 Build an initialization operation to run below.
+        init = tf.initialize_all_variables()
+
+        &#47&#47 Start running operations on the Graph.
+        with tf.Session(config=tf.ConfigProto(
+                allow_soft_placement=True)) as sess:
+            sess.run(init)
+
+            &#47&#47 Start the queue runners.
+            tf.train.start_queue_runners(sess=sess)
+            train_log = tf.train.SummaryWriter(LOG_DIR + "/train", sess.graph)
+            validation_log = tf.train.SummaryWriter(LOG_DIR + "/validation",
+                                                    sess.graph)
+
+            &#47&#47 Extract previous global step value
+            old_gs = sess.run(global_step)
+
+            &#47&#47 Restart from where we were
+            for step in range(old_gs, MAX_STEPS):
+                start_time = time.time()
+                _, loss_value, summary_lines = sess.run(
+                    [train_op, loss, train_summaries],
+                    feed_dict={keep_prob_: FIXED_KEEP_PROB})
+                duration = time.time() - start_time
+
+                assert not np.isnan(
+                    loss_value), &quotModel diverged with loss = NaN&quot
+
+                &#47&#47 update logs every 10 iterations
+                if step % 10 == 0:
+                    num_examples_per_step = BATCH_SIZE
+                    examples_per_sec = num_examples_per_step / duration
+                    sec_per_batch = float(duration)
+
+                    format_str = (&quot{}: step {}, loss = {:.2f} &quot
+                                  &quot({:.1f} examples/sec; {:.3f} sec/batch)&quot)
+                    print(
+                        format_str.format(datetime.now(), step, loss_value,
+                                          examples_per_sec, sec_per_batch))
+                    &#47&#47 log train values
+                    train_log.add_summary(summary_lines, global_step=step)
+
+                &#47&#47 Save the model checkpoint at the end of every epoch
+                &#47&#47 evaluate train and validation performance
+                if (step &gt; 0 and
+                        step % STEP_PER_EPOCH == 0) or (step + 1) == MAX_STEPS:
+                    checkpoint_path = os.path.join(LOG_DIR, &quotmodel.ckpt&quot)
+                    saver.save(sess, checkpoint_path, global_step=step)
+
+                    &#47&#47 validation accuracy
+                    validation_accuracy_value = evaluate.get_validation_accuracy(
+                        LOG_DIR)
+                    <a id="change">summary_line = sess.run(accuracy_summary,
+                                            feed_dict={
+                                                accuracy_value_:
+                                                validation_accuracy_value
+                                            })</a>
+                    validation_log.add_summary(summary_line, global_step=step)
+                    validation_log.flush()
+
+                    &#47&#47 train accuracy
+                    <a id="change">train_accuracy_value = sess.run(
+                        train_accuracy, feed_dict={keep_prob_: 1.0})</a>
+                    <a id="change">summary_line = sess.run(
+                        accuracy_summary,
+                        feed_dict={accuracy_value_: train_accuracy_value})</a>
+                    train_log.add_summary(summary_line, global_step=step)
+                    train_log.flush()
+                    print(
+                        &quot{}: train accuracy = {:.3f} validation accuracy = {:.3f}&quot.</code></pre>

@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+
+        &#47&#47 If this is a root node
+        <a id="change">if indices is None:
+            return torch.zeros(n, 1)
+
+        &#47&#47 Repeat the parent indices, e.g. [0, 2, 3] -&gt; [0, 0, 2, 2, 3, 3] depending on the cardinality
+       </a> sample_indices = torch.repeat_interleave(indices, repeats=self.cardinality, dim=1)
+
+        &#47&#47 Remove padding
+        if self._pad:</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+
+        &#47&#47 If this is a root node
+        <a id="change">if context is None:
+            if self.num_repetitions == 1:
+                &#47&#47 If there is only a single repetition, create new sampling context
+                return SamplingContext(
+                    n=n,
+                    parent_indices=torch.zeros(n, 1, dtype=int, device=self.__device),
+                    repetition_indices=torch.zeros(n, dtype=int, device=self.__device),
+                )
+            else:
+                raise Exception(
+                    "Cannot start sampling from Product layer with num_repetitions &gt; 1 and no context given."
+                )
+        else:
+            &#47&#47 Repeat the parent indices, e.g. [0, 2, 3] -&gt; [0, 0, 2, 2, 3, 3] depending on the cardinality
+            indices = torch.repeat_interleave(context.parent_indices, repeats=self.cardinality, dim=1)
+
+            &#47&#47 Remove padding
+            if self._pad:
+                indices = indices[:, : -self._pad]
+
+            context.parent_indices = indices
+            return context
+
+   </a> def __repr__(self):
+        return "Product(in_features={}, cardinality={}, out_shape={})".format(
+            self.in_features, self.cardinality, self.out_shape
+        )</code></pre>

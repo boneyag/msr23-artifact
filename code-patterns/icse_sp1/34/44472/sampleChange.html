@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def __call__(self, x: Variable):
+        self.append_input("x", x)
+        <a id="change">return self.exec()</a>
+
+    def exec(self):
+        x = self.inputs["x"]
+        assert x.order.check_same_axes(OrderNHWC), "Input variable of Depth2Space must have N, C, H, and W axes.: " \</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.parameters["r"] = int(r)
+        self.attributes.add(Tensorwise(Axis.N))
+
+    def __call__(<a id="change">self</a>, x: Variable):
+        assert x.order.check_same_axes(OrderNHWC), "Input variable of Depth2Space must have N, C, H, and W axes.: " \
+                                                   f"x.order.axes={x.order.axes}"
+        assert x.shape_dict[Axis.H] % self.parameters["r"] == 0, \
+            "Input variable H axis must be divisible by : " \
+            f&quotr={self.parameters["r"]} &quot \
+            f"x.shape_dict[Axis.H]={x.shape_dict[Axis.H]}"
+
+        assert x.shape_dict[Axis.W] % self.parameters["r"] == 0, \
+            "Input variable W axis must be divisible by : " \
+            f&quotr={self.parameters["r"]} &quot \
+            f"x.shape_dict[Axis.W]={x.shape_dict[Axis.H]}"
+
+        <a id="change">N = x.shape_dict[Axis.N]</a>
+        C = <a id="change">x.shape_dict[Axis.C]</a> * <a id="change">self.parameters["r"]</a> * self.parameters["r"]
+        <a id="change">H = x.shape_dict[Axis.H] // self.parameters["r"]</a>
+        W = <a id="change">x</a>.shape_dict[Axis.W] // <a id="change">self.parameters["r"]</a>
+        <a id="change">y = Variable([N, H, W, C], OrderNHWC)</a>
+        <a id="change">y.change_order(x.order)</a>  &#47&#47 output same order as input to preserve following reshape semantics
+
+        self.append_input("x", x)
+        <a id="change">self.append_output("y", y)</a>
+        <a id="change">return y,</a>
+</code></pre>

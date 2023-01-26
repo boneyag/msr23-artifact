@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.save_dtype is not None:
+            self.values = [a.astype(self.save_dtype) for a in self.values]
+
+        <a id="change">included</a>, excluded = self.find_trainable_variables()
+        vars_reduced, vals_reduced = self.remove_unchanged(included, self.values, self.fallback)
+        var_names = [var.name for var in vars_reduced]
+        var_dict = dict(zip(var_names, vals_reduced))</code></pre><h3>After Change</h3><pre><code class='java'>
+        return self.fallback_
+
+    def save(self, finetune_obj, path, mkdir=True):
+        ckpt_reader = <a id="change">tf.train.load_checkpoint(finetune_obj.estimator_dir)</a>
+        variable_map = ckpt_reader.get_variable_to_shape_map()
+        names = [name for name in variable_map.keys() if self.exclude_matches is None or self.exclude_matches not in name]
+        <a id="change">names = [name if name.endswith(":0") else name for name in names]</a>  &#47&#47 strip the :0 off the end
+        values = [ckpt_reader.get_tensor(name) for name in names]
+        names = [name + ":0" for name in names]
+</code></pre>

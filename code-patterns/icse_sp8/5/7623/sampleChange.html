@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  print(moments_df)
+
+  &#47&#47 dump csv
+  dump_dir = <a id="change">os.path.join(DATA_DIR, &quotmoments_time_series&quot)</a>
+  if not os.path.exists(dump_dir):
+    os.makedirs(dump_dir)
+  moments_df.to_csv(os.path.join(dump_dir, &quotmoments_time_series.csv&quot))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def main():
+
+  if <a id="change">COMPUTE_MOMENTS</a>:
+    &#47&#47 1) load data
+    df = make_overall_eurostoxx_df()
+
+
+    X, Y, features = target_feature_split(df, &quotlog_ret_1&quot, filter_nan=True, return_features=True)
+    X, Y = np.array(X), np.array(Y)
+    ndim_x, ndim_y = X.shape[1], 1
+
+    &#47&#47 2) Fite density model
+    mdn = MixtureDensityNetwork(&quotmdn_empirical_no_pca&quot, ndim_x, ndim_y, n_centers=20, n_training_epochs=10,
+                                random_seed=22, x_noise_std=0.2, y_noise_std=0.1)
+    mdn.fit(X,Y)
+
+    &#47&#47 3) estimate moments
+    n_samples = 10**7
+    print(&quotcompute mean&quot)
+    mean = np.squeeze(mdn.mean_(x_cond=X, n_samples=n_samples))
+    print(&quotcompute cov&quot)
+    cov = np.squeeze(mdn.covariance(x_cond=X, n_samples=n_samples))
+    print(&quotcompute skewness&quot)
+    skew = mdn._skewness_mc(x_cond=X, n_samples=n_samples)
+    print(&quotcompute kurtosis&quot)
+    kurt = mdn._kurtosis_mc(x_cond=X, n_samples=n_samples)
+
+    &#47&#47 4) save data
+    data = np.stack([mean, cov, skew, kurt], axis=-1)
+    moments_df = pd.DataFrame(data=data, index=df.dropna().index, columns=[&quotmean&quot, &quotvariance&quot, &quotskewness&quot, &quotkurtosis&quot])
+    print(moments_df)
+
+    &#47&#47 dump csv
+    if not os.path.exists(dump_dir):
+      os.makedirs(dump_dir)
+    moments_df.to_csv(dump_file_path)
+
+  else:
+    <a id="change">moments_df = pd.read_csv(dump_file_path, index_col=0)</a>
+
+  &#47&#475) plot moment timeseries
+  fig, axes = plt.subplots(nrows=4, ncols=1, figsize=(15, 20))
+</code></pre>

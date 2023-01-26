@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    encoder = MultiLayerRNNEncoder(args.word_dim, args.hid_dim,
+                                   args.n_layers, nn.LSTMCell)
+    if args.cuda:
+        <a id="change">token_embedder = token_embedder.cuda()</a>
+        encoder = encoder.cuda()
+    model = MultiTaskModel(encoder, token_embedder, tasks)
+    log.info(&quotFinished building model&quot)
+    model.train_model(args.n_epochs, args.optimizer, args.lr)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 TODO(Alex): hid_dim depends on if pair input or not
+    log.info("Loading tasks...")
+    <a id="change">start_time = time.time()</a>
+    tasks, tok2idx = process_tasks(args.tasks.split(&quot,&quot), args.hid_dim * 4,
+                                   args.max_vocab_size, args.max_seq_len,
+                                   args.batch_size, args.cuda)
+    log.info(&quot\tFinished loading tasks in {0}s&quot.format(
+        time.time() - start_time))
+
+    log.info("Building model...")
+    <a id="change">start_time = time.time()</a>
+    embeddings = load_embeddings(args.word_embs_file, tok2idx,
+                                            args.word_dim)
+    token_embedder = TokenEmbedder(embeddings, tok2idx)
+    &#47&#47token_embedder = nn.Embedding(args.max_vocab_size, args.word_dim,
+    &#47&#47                              padding_idx=0)
+
+    encoder = MultiLayerRNNEncoder(args.word_dim, args.hid_dim,
+                                   args.n_layers, nn.LSTMCell)
+    model = MultiTaskModel(encoder, token_embedder, tasks)
+    if args.cuda:
+        model = model.cuda()
+    log.info(<a id="change">&quot\tFinished building model in {0}s&quot.format(
+        time.time() - start_time)</a>)
+
+    model.train_model(args.n_epochs, args.optimizer, args.lr)
+</code></pre>

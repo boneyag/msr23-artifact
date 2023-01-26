@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+@ops.RegisterGradient("DeepExplainGrad")
+def deepexplain_grad(op, grad):
+    <a id="change">mode = tf.get_default_graph().get_tensor_by_name("deepexplain_mode:0")</a>
+    &#47&#47mode = tf.Print(mode, [mode], &quotmode flag: &quot)
+
+    def default():
+        input = op.inputs[0]
+        return grad * grad_activation(op.name)(input)
+
+    <a id="change">cases = OrderedDict({
+        tf.equal(mode, 0): (lambda: DummyZero.nonlinearity_grad_override(op, grad)),
+        tf.equal(mode, 1): (lambda: Saliency.nonlinearity_grad_override(op, grad)),
+        tf.equal(mode, 2): (lambda: GradientXInput.nonlinearity_grad_override(op, grad)),
+        tf.equal(mode, 3): (lambda: IntegratedGradients.nonlinearity_grad_override(op, grad)),
+        tf.equal(mode, 4): (lambda: EpsilonLRP.nonlinearity_grad_override(op, grad)),
+    })</a>
+    return tf.case(cases, default=default, exclusive=True)
+
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+@ops.RegisterGradient("DeepExplainGrad")
+def deepexplain_grad(op, grad):
+    global _ENABLED_METHOD_CLASS
+    <a id="change">if _ENABLED_METHOD_CLASS is not None:
+        return _ENABLED_METHOD_CLASS.nonlinearity_grad_override(op, grad)
+    else:
+        return grad * grad_activation(op.name)(op.inputs[0])
+
+
+</a>class DeepExplain(object):
+
+    def __init__(self, graph=tf.get_default_graph(), sess=tf.get_default_session()):
+        self.method = None</code></pre>

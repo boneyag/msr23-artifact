@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      raise NotImplementedError(
+          &quotMean and var only support SparseTensors with rank 2&quot)
+
+    <a id="change">mean_values = tf.gather(x_mean, x.indices[:, 1])</a>
+    x_minus_mean = x.values - mean_values
+  else:
+    x_minus_mean = x - x_mean
+  x_variance = tf.reduce_sum(</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    col_sum_of_squares = tf.math.unsorted_segment_sum(
+        tf.square(x_minus_mean), col_indices, col_count)
+    <a id="change">x_variance = tf.where(x_count &gt; 0,
+                          col_sum_of_squares / x_count,
+                          tf.zeros_like(x_count, dtype=x.dtype))</a>
+
+  else:
+    x_mean = tf.reduce_sum(x, axis=axis) / x_count
+    x_minus_mean = x - x_mean</code></pre>

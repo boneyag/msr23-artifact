@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    &#47&#47 pose = predict.getposeNP(frames,dlc_cfg, sess, inputs, outputs)
+                    &#47&#47 PredicteData[batch_num*batchsize:(batch_num+1)*batchsize, :] = pose
+                    PredicteData[
+                        <a id="change">"frame" + str(batch_num * batchsize + l).zfill(strwidth)</a>
+                    ] = D[l]
+            break
+        counter += 1
+    cap.close()</code></pre><h3>After Change</h3><pre><code class='java'>
+        if counter % step == 0:
+            pbar.update(step)
+        frame = cap.read_frame(crop=cfg["cropping"])
+        <a id="change">inds = []</a>
+        if frame is not None:
+            frames[batch_ind] = img_as_ubyte(frame)
+            <a id="change">inds.append(counter)</a>
+            if batch_ind == batchsize - 1:
+                &#47&#47 PredicteData[&quotframe&quot+str(counter)]=predict.get_detectionswithcosts(frame, dlc_cfg, sess, inputs, outputs, outall=False,nms_radius=dlc_cfg.nmsradius,det_min_score=dlc_cfg.minconfidence)
+                D = predict.get_batchdetectionswithcosts(
+                    frames,
+                    dlc_cfg,
+                    dist_grid,
+                    batchsize,
+                    num_joints,
+                    num_idchannel,
+                    stride,
+                    halfstride,
+                    det_min_score,
+                    sess,
+                    inputs,
+                    outputs,
+                )
+                <a id="change">for ind, data in zip(inds, D):
+                    PredicteData["frame" + str(ind).zfill(strwidth)] = data
+               </a> batch_ind = 0
+                inds.clear()
+                batch_num += 1
+            else:</code></pre>

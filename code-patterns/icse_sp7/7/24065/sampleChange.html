@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    An example of a tf model class 
+    def _build(self, *args, **kwargs):
+        images_shape = self.get_from_config(&quotimages_shape&quot, (0, 3))
+        <a id="change">num_features =  images_shape[-1]</a>
+        num_classes = self.get_from_config(&quotnum_classes&quot, 3)
+
+        x = tf.placeholder("float", [None, num_features], name=&quotx&quot)
+        y = tf.placeholder("int32",[None], name=&quoty&quot)
+        y_oe = tf.one_hot(y, num_classes, name=&quottargets&quot)
+
+        <a id="change">w = tf.Variable(tf.zeros([num_features, num_classes]))</a>
+        b = <a id="change">tf.Variable(tf.zeros([num_classes]))</a>
+
+        <a id="change">y_ = tf.nn.softmax(tf.matmul(x, w) + b, name=&quotpredictions&quot)</a>
+
+        &#47&#47 Define a cost function
+        &#47&#47tf.losses.add_loss(tf.losses.softmax_cross_entropy(y_oe, y_))
+        loss = tf.losses.softmax_cross_entropy(y_oe, y_)</code></pre><h3>After Change</h3><pre><code class='java'>
+class MyModel(TFModel):
+    An example of a tf model class 
+    def _build(self, *args, **kwargs):
+        images_shape = self.get_from_config(&quotimages_shape&quot, <a id="change">(12, 12, 1)</a>)
+        num_classes = self.get_from_config(&quotnum_classes&quot, 3)
+
+        x = tf.placeholder("float", [None] + list(images_shape), name=&quotx&quot)
+        y = tf.placeholder("int32",[None], name=&quoty&quot)
+        y_oe = tf.one_hot(y, num_classes, name=&quottargets&quot)
+
+        c = conv2d_block(x, 32, 3, conv=dict(kernel_initializer=tf.contrib.layers.xavier_initializer()), max_pooling=dict(strides=4))
+        f = flatten(c)
+        <a id="change">f = tf.layers.dense(f, num_classes)</a>
+        y_ = tf.identity(f, name=&quotpredictions&quot)
+
+        &#47&#47 Define a cost function
+        &#47&#47tf.losses.add_loss(tf.losses.softmax_cross_entropy(y_oe, y_))</code></pre>

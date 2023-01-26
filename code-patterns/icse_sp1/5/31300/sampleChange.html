@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Positive Phase
+        for i in range(samples_batch.shape[0]):
+            if bases_batch is None:
+                <a id="change">for par in rbm.state_dict():
+                    grad[&quotrbm_am&quot][par] += self.nn_state.gradient(samples_batch[i])[&quotrbm_am&quot][par]/float(samples_batch.shape[0])
+           </a> else:
+                b_flag = 0
+                for j in range(self.nn_state.num_visible):
+                    if (bases_batch[i][j] != &quotZ&quot):</code></pre><h3>After Change</h3><pre><code class='java'>
+            for par in rbm.state_dict():
+                tmp[par]=0.0    
+            grad[net] = tmp
+            <a id="change">grad_data[net] = tmp</a>
+        
+        if bases_batch is None:
+            grad_data = self.nn_state.gradient(samples_batch)
+        else:
+            &#47&#47 Positive Phase
+            for i in range(samples_batch.shape[0]):
+                b_flag = 0
+                for j in range(self.nn_state.num_visible):
+                    if (bases_batch[i][j] != &quotZ&quot):
+                        b_flag = 1
+                if (b_flag == 0):
+                    for par in getattr(self.nn_state, &quotrbm_am&quot).state_dict():
+                        grad_data[&quotrbm_am&quot][par] += self.nn_state.gradient(samples_batch[i])[&quotrbm_am&quot][par]
+                else:
+                    rotated_grad = self.nn_state.rotate_grad(bases_batch[i],samples_batch[i])
+                    for net in self.nn_state.networks:
+                        for par in getattr(self.nn_state, net).state_dict():
+                            grad_data[net][par] += rotated_grad[net][par]
+            
+        self.nn_state.sample(k)
+        grad_model = self.nn_state.gradient(self.nn_state.visible_state)
+        for net in self.nn_state.networks:
+            <a id="change">for par in grad_data[net].keys():
+                grad[net][par] = grad_data[net][par]/float(samples_batch.shape[0])&#47&#47 - grad_model[net][par]/float(self.nn_state.visible_state.shape[0])
+       </a> for par in grad_data[&quotrbm_am&quot].keys():
+            grad[&quotrbm_am&quot][par] -= grad_model[&quotrbm_am&quot][par]/float(self.nn_state.visible_state.shape[0])
+        return grad
+        </code></pre>

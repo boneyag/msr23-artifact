@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            print(&quotprediction done!&quot)
+
+            red_mask = np.zeros((img_shape+(3,)))
+            <a id="change">red_mask[:, :] = (0, 0, 255)</a>
+
+            &#47&#47 print(image.shape)
+            &#47&#47 image = (image * (1 - display_mask) + red_mask * display_mask).astype(np.uint8)
+            image = prediction</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            dismap = np.expand_dims(dismap, axis=-1)
+
+            <a id="change">image = image[:, :, ::-1]</a> &#47&#47 change to rgb
+            merge_input = np.concatenate((image, dismap), axis=2).astype(np.float32)
+            inputs = torch.from_numpy(merge_input.transpose((2, 0, 1))[np.newaxis, ...])
+
+            &#47&#47 Run a forward pass
+            inputs = inputs.to(device)
+            outputs = net.forward(inputs)
+            outputs = upsample(outputs, size=(450, 450), mode=&quotbilinear&quot, align_corners=True)
+            outputs = outputs.to(torch.device(&quotcpu&quot))
+
+            prediction = np.transpose(outputs.data.numpy()[0, ...], (1, 2, 0))
+            prediction = 1 / (1 + np.exp(-prediction))
+            prediction = np.squeeze(prediction)
+            prediction[prediction&gt;0.8] = 255
+            prediction[prediction&lt;=0.8] = 0
+            print(&quotprediction done!&quot)
+            prediction = <a id="change">np.expand_dims(prediction, axis=-1).astype(np.uint8)</a>
+            image = image[:, :, ::-1] &#47&#47 change to bgr
+            <a id="change">display_mask = np.concatenate([prediction, prediction, prediction], axis=-1)</a>
+            image = cv2.addWeighted(image, 0.9, display_mask, 0.5, 0.1)
+
+        if k == 99:
+            break</code></pre>

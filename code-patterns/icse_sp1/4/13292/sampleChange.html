@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            value_list.append(value_matrix[i, j])
+
+    index_tensor = torch.LongTensor(index_list)
+    <a id="change">value_tensor = torch.FloatTensor(value_list)</a>
+    res = torch.sparse.FloatTensor(index_tensor, value_tensor, torch.Size([num_target_points, row_length]))
+    return res
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    num_target_points, num_coefficients = value_matrix.size()
+
+    <a id="change">row_tensor = torch.arange(0, num_target_points).unsqueeze(1)</a>
+    row_tensor = row_tensor.repeat(1, num_coefficients).type_as(index_matrix)
+    index_tensor = <a id="change">torch.cat([row_tensor.view(1, -1), index_matrix.view(1, -1)], 0)</a>
+    value_tensor = value_matrix.view(-1)
+
+    nonzero_indices = value_tensor.nonzero()
+    if nonzero_indices.storage():</code></pre>

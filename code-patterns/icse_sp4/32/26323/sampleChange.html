@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 embed fc and att feats
+        fc_feats = self.fc_embed(fc_feats)
+        _att_feats = <a id="change">self.att_embed(att_feats.view(-1, self.att_feat_size))</a>
+        <a id="change">att_feats = _att_feats.view(*(att_feats.size()[:-1] + (self.rnn_size,)))</a>
+
+        &#47&#47 Project the attention feats first to reduce memory and computation comsumptions.
+        p_att_feats = self.ctx2att(<a id="change">att_feats.view(-1, self.rnn_size)</a>)
+        <a id="change">p_att_feats = p_att_feats.view(*(att_feats.size()[:-1] + (self.att_hid_size,)))</a>
+
+        assert beam_size &lt;= self.vocab_size + 1, &quotlets assume this for now, otherwise this corner case causes a few headaches down the road. can be dealt with in future if needed&quot
+        seq = torch.LongTensor(self.seq_length, batch_size).zero_()
+        seqLogprobs = torch.FloatTensor(self.seq_length, batch_size)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        return logprobs, state
+
+    def _sample_beam(<a id="change">self</a>, fc_feats, att_feats, att_masks=None, opt={}):
+        beam_size = opt.get(&quotbeam_size&quot, 10)
+        batch_size = fc_feats.size(0)
+
+        &#47&#47 embed fc and att feats
+        fc_feats = self.fc_embed(fc_feats)
+        att_feats = <a id="change">pack_wrapper(self.att_embed, att_feats, att_masks)</a>
+
+        &#47&#47 Project the attention feats first to reduce memory and computation comsumptions.
+        p_att_feats = self.ctx2att(att_feats)
+</code></pre>

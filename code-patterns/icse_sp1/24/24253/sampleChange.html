@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                x = self.batch_norm_ops[i](x)
+            activation_func = getattr(F, activation)
+            fc_func = self.layers[i]
+            x = <a id="change">fc_func(x) if activation == "linear" else activation_func(fc_func(x))</a>
+
+        value = self.value(x)
+        if action is not None:
+            x = torch.cat((x, action), dim=1)</code></pre><h3>After Change</h3><pre><code class='java'>
+            state = input.state.float_features
+            action = None
+
+        <a id="change">x</a> = state
+        for i, activation in enumerate(self.activations[:-1]):
+            if self.use_batch_norm:
+                x = self.batch_norm_ops[i](x)
+
+            x = <a id="change">self.layers[i](x)</a>
+            <a id="change">if activation == "linear":
+                continue
+            elif activation == "tanh":
+                activation_func = torch.tanh
+            else:
+                activation_func = getattr(F, activation)
+           </a> <a id="change">x = activation_func(x)</a>
+
+        value = self.value(x)
+        if action is not None:
+            x = torch.cat((x, action), dim=1)</code></pre>

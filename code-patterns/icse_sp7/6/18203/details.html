@@ -1,0 +1,48 @@
+<html><h3>32f2649c5cda9acca3354e3246d798d8e0cec5dc,optuna/storages/_rdb/storage.py,RDBStorage,_get_trials,#RDBStorage#Any#Any#,929
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if len(excluded_trial_ids) &gt;= self._get_trials_failed_excluded_trial_ids_len:
+            trial_models = self._get_trial_models_inclusive(study_id, excluded_trial_ids, session)
+        else:
+            <a id="change">try:
+                trial_models = (
+                    session.query(models.TrialModel)
+                    .filter(
+                        ~models.TrialModel.trial_id.in_(excluded_trial_ids),
+                        models.TrialModel.study_id == study_id,
+                    )
+                    .all()
+                )
+            except OperationalError as e:
+                &#47&#47 Likely exceeding the number of maximum allowed variables. This number differ
+                &#47&#47 between database dialects. For SQLite for instance,
+                &#47&#47 see https://www.sqlite.org/limits.html and the section describing
+                &#47&#47 SQLITE_MAX_VARIABLE_NUMBER.
+
+                _logger.warning(
+                    "Caught an error from sqlalchemy: {}. Falling back to a slower alternative. "
+                    "".format(str(e))
+                )
+
+                &#47&#47 Bookkeeping to circumvent the same error in the next call.
+                self._get_trials_failed_excluded_trial_ids_len = len(excluded_trial_ids)
+
+                trial_models = self._get_trial_models_inclusive(
+                    study_id, excluded_trial_ids, session
+                )
+
+       </a> trials = [self._build_frozen_trial_from_trial_model(trial) for trial in trial_models]
+
+        self._commit(session)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            .filter(models.TrialModel.study_id == study_id,)
+            .all()
+        )
+        <a id="change">trial_ids = set(trial_id_tuple[0] for trial_id_tuple in trial_ids)</a>
+        <a id="change">trial_ids -= excluded_trial_ids</a>
+        trial_models = (
+            session.query(models.TrialModel)
+            .filter(
+                models.TrialModel.trial_id.in_(trial_ids), models.TrialModel.study_id == study_id,</code></pre><img src="100424220.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pfnet/optuna/commit/32f2649c5cda9acca3354e3246d798d8e0cec5dc#diff-6048e6b64855f2df6bcd963dee2c988e671a2971a5aad48ef5e88c5f6d49b3adL929' target='_blank'>Link</a></div><div id='project'> Project Name: pfnet/optuna</div><div id='commit'> Commit Name: 32f2649c5cda9acca3354e3246d798d8e0cec5dc</div><div id='time'> Time: 2020-07-04</div><div id='author'> Author: hiroyuki.vincent.yamazaki@gmail.com</div><div id='file'> File Name: optuna/storages/_rdb/storage.py</div><div id='class'> Class Name: RDBStorage</div><div id='method'> Method Name: _get_trials</div><BR><BR><div id='link'><a href='https://github.com/bokeh/bokeh/commit/dd5e27bff94075466bf549deb6dfaab7ad22ed1c#diff-535298086ace1be4c557a859f1b1fdbd855ff1e9309dc37e47b6c848c27e2428L21' target='_blank'>Link</a></div><div id='project'> Project Name: bokeh/bokeh</div><div id='commit'> Commit Name: dd5e27bff94075466bf549deb6dfaab7ad22ed1c</div><div id='time'> Time: 2017-05-13</div><div id='author'> Author: bryanv@continuum.io</div><div id='file'> File Name: bokeh/util/serialization.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/has2k1/plotnine/commit/8afc45fa9c6d70f74ce140ef1d1347a33099b8d6#diff-bed758da9191c793e62e267f61efcc3716fe155729afc960c519fee829b1ec39L45' target='_blank'>Link</a></div><div id='project'> Project Name: has2k1/plotnine</div><div id='commit'> Commit Name: 8afc45fa9c6d70f74ce140ef1d1347a33099b8d6</div><div id='time'> Time: 2016-07-20</div><div id='author'> Author: has2k1@gmail.com</div><div id='file'> File Name: ggplotx/positions/position_jitterdodge.py</div><div id='class'> Class Name: position_jitterdodge</div><div id='method'> Method Name: setup_params</div><BR>

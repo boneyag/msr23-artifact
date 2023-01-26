@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        q_targets = batch[&quotrewards&quot] + (1. - float_terminals) * self.gamma * np.squeeze(
+            self.get_target_value_estimate(batch[&quotnext_states&quot]))
+
+        <a id="change">self.session.run([self.optimize_op, self.loss, self.training_v, self.advantage, self.q], {
+            self.q_targets: q_targets,
+            self.actions: batch[&quotactions&quot],
+            self.state: batch[&quotstates&quot]})</a>
+
+    def create_outputs(self, last_hidden_layer, scope):
+        
+        Creates NAF specific outputs.</code></pre><h3>After Change</h3><pre><code class='java'>
+        q_targets = batch[&quotrewards&quot] + (1. - float_terminals) * self.gamma * np.squeeze(
+            self.get_target_value_estimate(batch[&quotnext_states&quot]))
+
+        <a id="change">feed_dict = {
+            self.episode_length: [len(batch[&quotrewards&quot])],
+            self.q_targets: q_targets,
+            self.actions: batch[&quotactions&quot],
+            self.state: batch[&quotstates&quot]}</a>
+
+        fetches = [self.optimize_op, self.loss, self.training_v, self.advantage, self.q]
+        fetches.extend(self.training_network.internal_state_outputs)
+        fetches.extend(self.target_network.internal_state_outputs)
+
+        <a id="change">for n, internal_state in enumerate(self.training_network.internal_state_inputs):
+            feed_dict[internal_state] = self.training_internal_states[n]
+
+       </a> for n, internal_state in enumerate(self.target_network.internal_state_inputs):
+            <a id="change">feed_dict[internal_state]</a> = self.target_internal_states[n]
+
+        fetched = self.session.run(fetches, feed_dict)
+
+        <a id="change">self.training_internal_states = fetched[2:len(self.training_internal_states)]</a>
+        self.target_internal_states = fetched[2 + len(self.training_internal_states):]
+
+    def create_outputs(self, last_hidden_layer, scope):
+        </code></pre>

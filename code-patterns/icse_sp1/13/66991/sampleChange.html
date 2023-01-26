@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 We want everything to be a DataFrame. We&quotre going to default
+        &#47&#47 to key to handle items where the user hard codes a aesthetic
+        &#47&#47 (i.e. alpha=0.6)
+        <a id="change">mapping = pd.DataFrame({
+            ae: data.get(key, key)
+            for ae, key in aes.items()
+        })</a>
+        if "color" in mapping:
+            mapping[&quotcolor&quot] = data[&quotcolor_mapping&quot]
+        if "size" in mapping:
+            mapping[&quotsize&quot] = data[&quotsize_mapping&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        mapping = {}
+        extra = {}
+        <a id="change">for ae, key in aes.items():
+            if isinstance(key, list) or hasattr(key, "__array__"):
+                &#47&#47 direct assignment of a list/array to the aes -&gt; it&quots done in the get_layer step
+                mapping[ae] = key
+            elif key in data:
+                &#47&#47 a column or a transformed column
+                mapping[ae] = data[key]
+            else:
+                &#47&#47 now we have a single value. ggplot2 treats that as if all rows should be this
+                &#47&#47 value, so lets do the same. To ensure that all rows get this value, we have to
+                &#47&#47 do that after we constructed the dataframe.
+                &#47&#47 See also the _apply_transform function below, which does this already for
+                &#47&#47 string values.
+                extra[ae] = key
+       </a> mapping = pd.DataFrame(mapping)
+        for ae, key in extra.items():
+            mapping[ae] = key
+</code></pre>

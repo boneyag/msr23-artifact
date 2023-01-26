@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def aggregate(self, inputs, index, ptr=None, dim_size=None):
+        
+        &#47&#47this is probably not needed
+        <a id="change">if ptr is not None:
+            raise ValueError(&quot`GravNetConv` does not support `ptr` in aggregate.&quot)
+       </a> return torch.cat([scatter(inputs, index, dim=self.node_dim, dim_size=dim_size,reduce="mean"),
+                       scatter(inputs, index, dim=self.node_dim, dim_size=dim_size,reduce="max")], dim=1)
+     
+    def message(self, x_i, x_j, edge_weights):</code></pre><h3>After Change</h3><pre><code class='java'>
+    def aggregate(self, inputs, index, ptr=None, dim_size=None):
+        if ptr is not None:
+            for _ in range(self.node_dim):
+                <a id="change">ptr = ptr.unsqueeze(0)</a>
+            aggr_mean = segment_csr(inputs, ptr, reduce=&quotmean&quot)
+            aggr_max = segment_csr(inputs, ptr, reduce=&quotmax&quot)
+        else:
+            aggr_mean = scatter(inputs, index, dim=self.node_dim,</code></pre>

@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def is_banned_from_room(self, room_id: str, user_id: str) -&gt; (bool, Union[str, None]):
+        ban = self.redis.hget(RedisKeys.banned_users(room_id), user_id)
+        <a id="change">return self._is_banned(ban)</a>
+
+    def remove_global_ban(self, user_id: str) -&gt; str:
+        self.redis.hdel(RedisKeys.banned_users(), user_id)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def is_banned_from_room(self, room_id: str, user_id: str) -&gt; (bool, Union[str, None]):
+        ban = self.redis.hget(RedisKeys.banned_users(room_id), user_id)
+        is_banned, time = self._is_banned(ban)
+        <a id="change">if not is_banned:
+            return False, None
+
+       </a> now = datetime.utcnow()
+        <a id="change">end = datetime.fromtimestamp(float(time))</a>
+        if now &gt; end:
+            self.redis.hdel(RedisKeys.banned_users(), user_id)
+            return False, None
+        return True, time</code></pre>

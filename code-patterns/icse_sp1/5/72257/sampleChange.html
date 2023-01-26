@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    csvfile = os.path.join(csvdir, table_name + &quot.csv&quot)
+    df.to_csv(csvfile, index=False)
+    tbl = pudl.models.entities.PUDLBase.metadata.tables[table_name]
+    with <a id="change">open(csvfile, &quotr&quot, encoding=&quotutf8&quot)</a> as f:
+        postgres_copy.copy_from(f, tbl, engine, columns=tuple(df.columns),
+                                format=&quotcsv&quot, header=True, delimiter=&quot,&quot)
+    &#47&#47 TODO: For the CEMS, this function is called many times, but the CSV</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 max_size is in bytes; spill to disk if &gt;2GB
+    with tempfile.SpooledTemporaryFile(max_size=2*1024**3, encoding=&quotutf8&quot) as f:
+        df.to_csv(f, index=False)
+        <a id="change">f.seek(0)</a>
+        postgres_copy.copy_from(f, tbl, engine, columns=tuple(df.columns),
+                                format=&quotcsv&quot, header=True, delimiter=&quot,&quot)
+        if keep_csv:
+            import shutil</code></pre>

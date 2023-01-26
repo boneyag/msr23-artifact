@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          target_input, time_steps.step_type, training=False)
+      target_q_values = tf.minimum(target_q_values1, target_q_values2)
+      actor_loss = tf.exp(self._log_alpha) * log_pi - target_q_values
+      <a id="change">if nest_utils.is_batched_nested_tensors(
+          time_steps, self.time_step_spec, num_outer_dims=2):
+        &#47&#47 Sum over the time dimension.
+        actor_loss = tf.reduce_sum(input_tensor=actor_loss, axis=1)
+     </a> reg_loss = self._actor_network.losses if self._actor_network else None
+      agg_loss = common.aggregate_losses(
+          per_example_loss=actor_loss,
+          sample_weight=weights,</code></pre><h3>After Change</h3><pre><code class='java'>
+      target_q_values2, _ = self._critic_network_2(
+          target_input, time_steps.step_type, training=False)
+      target_q_values = tf.minimum(target_q_values1, target_q_values2)
+      <a id="change">actor_loss</a> = tf.exp(self._log_alpha) * log_pi - target_q_values
+      <a id="change">if actor_loss.shape.rank &gt; 1:
+        &#47&#47 Sum over the time dimension.
+        actor_loss = tf.reduce_sum(
+            actor_loss, axis=range(1, actor_loss.shape.rank))
+     </a> reg_loss = self._actor_network.losses if self._actor_network else None
+      agg_loss = common.aggregate_losses(
+          per_example_loss=actor_loss,
+          sample_weight=weights,</code></pre>

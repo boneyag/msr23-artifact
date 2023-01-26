@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    }
+
+    M = 128
+    <a id="change">qf1 = NNQFunction(
+        observation_shape=env.observation_space.shape,
+        action_shape=env.action_space.shape,
+        hidden_layer_sizes=[M, M],
+        name=&quotqf1&quot)</a>
+    qf2 = NNQFunction(
+        observation_shape=env.observation_space.shape,
+        action_shape=env.action_space.shape,
+        hidden_layer_sizes=[M, M],</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    M = 128
+
+    q_functions = <a id="change">tuple(
+        NNQFunction(
+            observation_shape=env.observation_space.shape,
+            action_shape=env.action_space.shape,
+            hidden_layer_sizes=(M, M),
+            name=&quotqf{}&quot.format(i))
+        for i in range(2))</a>
+    vf = NNVFunction(
+        observation_shape=env.observation_space.shape,
+        hidden_layer_sizes=[M, M])
+
+    if variant[&quotpolicy_type&quot] == &quotgmm&quot:
+        policy = GMMPolicy(
+            observation_shape=env.observation_space.shape,
+            action_shape=env.action_space.shape,
+            K=4,
+            hidden_layer_sizes=[M, M],
+            qf=q_functions[0],
+            reg=0.001
+        )
+    elif variant[&quotpolicy_type&quot] == &quotlsp&quot:
+        bijector_config = {
+            "scale_regularization": 0.0,
+            "num_coupling_layers": 2,
+            "translation_hidden_sizes": (M,),
+            "scale_hidden_sizes": (M,),
+        }
+
+        policy = LatentSpacePolicy(
+            observation_shape=env.observation_space.shape,
+            action_shape=env.action_space.shape,
+            mode="train",
+            squash=True,
+            bijector_config=bijector_config,
+            observations_preprocessor=None,
+            q_function=<a id="change">q_functions[0]</a>
+        )
+
+    plotter = QFPolicyPlotter(
+        qf=<a id="change">q_functions[0]</a>,
+        policy=policy,
+        obs_lst=np.array([[-2.5, 0.0],
+                          [0.0, 0.0],</code></pre>

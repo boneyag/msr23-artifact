@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def choose_action(self, curr_state, phase=RunPhase.TRAIN):
+        &#47&#47 convert to batch so we can run it through the network
+        observation = curr_state[&quotobservation&quot]
+        <a id="change">observation = np.expand_dims(np.array(observation), 0)</a>
+
+        if self.env.discrete_controls:
+            &#47&#47 DISCRETE
+            _, action_values = self.main_network.online_network.predict(observation)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def choose_action(self, current_state, phase=RunPhase.TRAIN):
+        if self.env.discrete_controls:
+            &#47&#47 DISCRETE
+            _, action_values = self.main_network.online_network.predict(<a id="change">self.tf_input_state(current_state)</a>)
+            action_values = action_values.squeeze()
+
+            if phase == RunPhase.TRAIN:
+                action = self.exploration_policy.get_action(action_values)
+            else:
+                action = np.argmax(action_values)
+            action_info = {"action_probability": action_values[action]}
+            &#47&#47 self.entropy.add_sample(-np.sum(action_values * np.log(action_values)))
+        else:
+            &#47&#47 CONTINUOUS
+            _, action_values_mean, action_values_std = self.main_network.online_network.predict(<a id="change">self.tf_input_state(current_state)</a>)
+            action_values_mean = action_values_mean.squeeze()
+            action_values_std = action_values_std.squeeze()
+            if phase == RunPhase.TRAIN:</code></pre>

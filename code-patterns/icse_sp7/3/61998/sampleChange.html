@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                                             directory=checkpoint_dir,
+                                                             max_to_keep=5)
+        devices = [&quot/device:GPU:{}&quot.format(i) for i in range(self.gpus)]
+        self.strategy = <a id="change">tf.distribute.MirroredStrategy(devices)</a>
+
+
+    def _train(self, loader, steps=0, **kwargs):
+        Train an epoch of data using either the input loader or using `tf.dataset`</code></pre><h3>After Change</h3><pre><code class='java'>
+                                                             max_to_keep=5)
+        strategy_type = kwargs.get(&quotstrategy_type&quot, &quotmirror&quot)
+        self.eval_device = kwargs.get(&quoteval_device&quot, &quot/device:GPU:0&quot)
+        <a id="change">if strategy_type == &quottpu&quot:
+            self.eval_device = &quot/device:CPU:0&quot
+            gpus = 0
+        else:
+            gpus = int(kwargs.get(&quotgpus&quot, 1))
+       </a> endpoint = kwargs.get(&quotendpoint&quot)
+        self.strategy = create_distribute_strategy(strategy_type, gpus, endpoint)
+
+    def reset_strategy_to_eval(self):</code></pre>

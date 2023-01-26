@@ -1,0 +1,59 @@
+<html><h3>f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b,gpytorch/lazy/matmul_lazy_variable.py,MatmulLazyVariable,_batch_get_indices,#MatmulLazyVariable#Any#Any#Any#,56
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return self.__class__(self.rhs._transpose_nonbatch(), self.lhs._transpose_nonbatch())
+
+    def _batch_get_indices(self, batch_indices, left_indices, right_indices):
+        <a id="change">outer_size = batch_indices.size(0)</a>
+        <a id="change">inner_size = self.lhs.size(-1)</a>
+        <a id="change">inner_indices = Variable(right_indices.data.new(inner_size))</a>
+        <a id="change">torch.arange(0, inner_size, out=inner_indices.data)</a>
+
+        <a id="change">left_vals = self.lhs._batch_get_indices(
+            _outer_repeat(batch_indices, inner_size),
+            _outer_repeat(left_indices, inner_size),
+            _inner_repeat(inner_indices, outer_size),
+        )</a>
+        <a id="change">right_vals = self.rhs._batch_get_indices(
+            _outer_repeat(batch_indices, inner_size),
+            _inner_repeat(inner_indices, outer_size),
+            _outer_repeat(right_indices, inner_size),
+        )</a>
+
+        <a id="change">return (left_vals.view(-1, inner_size) * right_vals.view(-1, inner_size)).sum(-1)</a>
+
+    def _get_indices(self, left_indices, right_indices):
+        outer_size = left_indices.size(0)
+        inner_size = self.lhs.size(-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+        return self.__class__(self.rhs._transpose_nonbatch(), self.lhs._transpose_nonbatch())
+
+    def _batch_get_indices(self, batch_indices, left_indices, right_indices):
+        <a id="change">n_indices = left_indices.numel()</a>
+        <a id="change">if n_indices &gt; self.size(-1) * self.size(-2) * self.size(-3):
+            return self._evaluated[batch_indices, left_indices, right_indices]
+
+        else:
+            outer_size = batch_indices.size(0)
+            inner_size = self.lhs.size(-1)
+            inner_indices = right_indices.new(inner_size)
+            torch.arange(0, inner_size, out=inner_indices.data)
+
+            left_vals = self.lhs._batch_get_indices(
+                _outer_repeat(batch_indices, inner_size),
+                _outer_repeat(left_indices, inner_size),
+                _inner_repeat(inner_indices, outer_size),
+            )
+            right_vals = self.rhs._batch_get_indices(
+                _outer_repeat(batch_indices, inner_size),
+                _inner_repeat(inner_indices, outer_size),
+                _outer_repeat(right_indices, inner_size),
+            )
+
+            return (left_vals.view(-1, inner_size) * right_vals.view(-1, inner_size)).sum(-1)
+
+   </a> def _get_indices(self, left_indices, right_indices):
+        n_indices = left_indices.numel()
+        if n_indices &gt; self.size(-1) * self.size(-2):
+            return self._evaluated[left_indices, right_indices]</code></pre><img src="52773669.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 31</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b#diff-9411a9dc6182c1382fef822b46ea0e72de4e5f319b50b9e7a033112a9fea5b29L57' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b</div><div id='time'> Time: 2018-08-06</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/matmul_lazy_variable.py</div><div id='class'> Class Name: MatmulLazyVariable</div><div id='method'> Method Name: _batch_get_indices</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b#diff-9411a9dc6182c1382fef822b46ea0e72de4e5f319b50b9e7a033112a9fea5b29L76' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b</div><div id='time'> Time: 2018-08-06</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/matmul_lazy_variable.py</div><div id='class'> Class Name: MatmulLazyVariable</div><div id='method'> Method Name: _get_indices</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b#diff-81b403b3cf0ed9b055a5a09f688dd3c5cb0608f3e7c0bbe9e5807cfba3f4a0a8L59' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b</div><div id='time'> Time: 2018-08-06</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/root_lazy_variable.py</div><div id='class'> Class Name: RootLazyVariable</div><div id='method'> Method Name: _batch_get_indices</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b#diff-9411a9dc6182c1382fef822b46ea0e72de4e5f319b50b9e7a033112a9fea5b29L57' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: f0eea66ce83fc59910c623aa4e50ddfdd1f3ae7b</div><div id='time'> Time: 2018-08-06</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/matmul_lazy_variable.py</div><div id='class'> Class Name: MatmulLazyVariable</div><div id='method'> Method Name: _batch_get_indices</div><BR>

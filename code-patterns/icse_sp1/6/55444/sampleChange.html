@@ -1,0 +1,116 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        :type dataset: nalaf.structures.data.Dataset
+        
+        outer_bar = Bar(&quotProcessing [SpaCy]&quot, max=len(list(dataset.parts())))
+        <a id="change">for part in dataset.parts():
+
+            for sent_index, sentence in enumerate(part.sentences):
+
+                sentence_tokens = [nalaf_token.word for nalaf_token in sentence]
+
+                &#47&#47 Use spacy with custom tokenization.
+                &#47&#47
+                &#47&#47 Info:
+                &#47&#47  * https://github.com/explosion/spaCy/issues/668
+                &#47&#47  * https://github.com/explosion/spaCy/issues/245&#47&#47issuecomment-178014020
+                &#47&#47  * https://github.com/explosion/spaCy/issues/42&#47&#47issuecomment-135755528
+                &#47&#47  * also: https://books.google.de/books?id=1-4lDQAAQBAJ&pg=PA346&lpg=PA346&dq=spacy+tokens_from_list&source=bl&ots=26oMINRNXS&sig=hDDr29jnlKFlMZmfy_5U7XhCia8&hl=en&sa=X&sqi=2&ved=0ahUKEwi9r8P_lNXQAhVBWxoKHV4KDPIQ6AEIPDAF&#47&#47v=onepage&q=spacy%20tokens_from_list&f=false
+                &#47&#47  * finally: https://spacy.io/docs/usage/customizing-tokenizer
+
+                spacy_doc = self.nlp.tokenizer.tokens_from_list(sentence_tokens)
+                for pipe in filter(None, self.nlp.pipeline):
+                    pipe(spacy_doc)
+
+                for spacy_token in spacy_doc:
+                    assert spacy_token.tag_ != "" and spacy_token.dep_ != "", "The list of tokens was actually not tagged nor parsed"
+
+                    nalaf_token = part.sentences[sent_index][spacy_token.i]
+                    nalaf_token.features = {
+                        &quotid&quot: spacy_token.i,
+                        &quotpos&quot: spacy_token.tag_,
+                        &quotcoarsed_pos&quot: spacy_token.pos_,  &#47&#47 https://spacy.io/docs/usage/pos-tagging&#47&#47pos-tagging-english
+                        &quotdep&quot: spacy_token.dep_,
+                        &quotlemma&quot: spacy_token.lemma_,
+                        &quotprob&quot: spacy_token.prob,
+                        &quotis_punct&quot: spacy_token.is_punct,
+                        &quotis_stop&quot: spacy_token.is_stop,
+                        &quotcluster&quot: spacy_token.cluster,
+                        &quotdependency_from&quot: None,
+                        &quotdependency_to&quot: [],
+                        &quotuser_dependency_from&quot: [],  &#47&#47 User-defined dependency of any nature
+                        &quotuser_dependency_to&quot: [],  &#47&#47 User-defined dependency of any nature
+                        &quotis_root&quot: False,
+                    }
+
+                for spacy_token in spacy_doc:
+                    self._dependency_path(spacy_token, sent_index, part)
+
+            part.percolate_tokens_to_entities()
+            part.compute_tokens_depth()
+            part.set_entities_head_tokens()
+
+            outer_bar.next()
+
+       </a> outer_bar.finish()
+
+        if self.constituency_parser is True:
+            self.parser.parse(dataset)</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        outer_bar = Bar(&quotProcessing [SpaCy]&quot, max=len(dataset.documents))
+
+        <a id="change">for docid, document in dataset.documents.items():
+            for partid, part in document.parts.items():
+                for sent_index, sentence in enumerate(part.sentences):
+
+                    sentence_tokens = [nalaf_token.word for nalaf_token in sentence]
+
+                    &#47&#47 Use spacy with custom tokenization.
+                    &#47&#47
+                    &#47&#47 Info:
+                    &#47&#47  * https://github.com/explosion/spaCy/issues/668
+                    &#47&#47  * https://github.com/explosion/spaCy/issues/245&#47&#47issuecomment-178014020
+                    &#47&#47  * https://github.com/explosion/spaCy/issues/42&#47&#47issuecomment-135755528
+                    &#47&#47  * also: https://books.google.de/books?id=1-4lDQAAQBAJ&pg=PA346&lpg=PA346&dq=spacy+tokens_from_list&source=bl&ots=26oMINRNXS&sig=hDDr29jnlKFlMZmfy_5U7XhCia8&hl=en&sa=X&sqi=2&ved=0ahUKEwi9r8P_lNXQAhVBWxoKHV4KDPIQ6AEIPDAF&#47&#47v=onepage&q=spacy%20tokens_from_list&f=false
+                    &#47&#47  * finally: https://spacy.io/docs/usage/customizing-tokenizer
+
+                    spacy_doc = self.nlp.tokenizer.tokens_from_list(sentence_tokens)
+                    for pipe in filter(None, self.nlp.pipeline):
+                        pipe(spacy_doc)
+
+                    for spacy_token in spacy_doc:
+                        assert spacy_token.tag_ != "" and spacy_token.dep_ != "", "The list of tokens was actually not tagged nor parsed"
+
+                        nalaf_token = part.sentences[sent_index][spacy_token.i]
+                        nalaf_token.features = {
+                            &quotid&quot: spacy_token.i,
+                            &quotpos&quot: spacy_token.tag_,
+                            &quotcoarsed_pos&quot: spacy_token.pos_,  &#47&#47 https://spacy.io/docs/usage/pos-tagging&#47&#47pos-tagging-english
+                            &quotdep&quot: spacy_token.dep_,
+                            &quotlemma&quot: spacy_token.lemma_,
+                            &quotprob&quot: spacy_token.prob,
+                            &quotis_punct&quot: spacy_token.is_punct,
+                            &quotis_stop&quot: spacy_token.is_stop,
+                            &quotcluster&quot: spacy_token.cluster,
+                            &quotdependency_from&quot: None,
+                            &quotdependency_to&quot: [],
+                            &quotuser_dependency_from&quot: [],  &#47&#47 User-defined dependency of any nature
+                            &quotuser_dependency_to&quot: [],  &#47&#47 User-defined dependency of any nature
+                            &quotis_root&quot: False,
+                        }
+
+                    for spacy_token in spacy_doc:
+                        self._dependency_path(spacy_token, sent_index, part)
+
+                part.percolate_tokens_to_entities()
+                part.compute_tokens_depth()
+                part.set_entities_head_tokens()
+
+            outer_bar.next()
+
+       </a> outer_bar.finish()
+
+        if self.constituency_parser is True:
+            self.parser.parse(dataset)</code></pre>

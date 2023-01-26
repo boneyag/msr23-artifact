@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        while any([udf.is_alive() for udf in self.udfs]) and count_parsed &lt; total_count:
+            if docs_added &lt; total_count:
+                <a id="change">in_queue.put(next(xs_generator))</a>
+                docs_added += 1
+            if docs_added == total_count:
+                in_queue.put(UDF.QUEUE_CLOSED)
+                docs_added += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Create a Queue to feed documents to parsers
+        manager = Manager()
+        in_queue = <a id="change">manager.Queue()</a>
+
+        &#47&#47 Use an output queue to track multiprocess progress
+        out_queue = JoinableQueue()
+
+        total_count = len(xs)
+
+        &#47&#47 Start UDF Processes
+        for i in range(parallelism):
+            udf = self.udf_class(
+                in_queue=in_queue,
+                out_queue=out_queue,
+                worker_id=i,
+                **self.udf_init_kwargs
+            )
+            udf.apply_kwargs = kwargs
+            self.udfs.append(udf)
+
+        &#47&#47 Start the UDF processes, and then join on their completion
+        for udf in self.udfs:
+            udf.start()
+
+        &#47&#47 Fill input queue with documents
+        pool = Pool(parallelism)
+        <a id="change">in_tuples = ((in_queue, x) for x in xs)</a>
+        pool.map_async(func=async_fill_input_queue, iterable=in_tuples)
+
+        count_parsed = 0
+        while count_parsed &lt; total_count:</code></pre>

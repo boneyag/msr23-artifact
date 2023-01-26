@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        assert self.LabelVolume.meta.axistags == self.RawVolume.meta.axistags
+
+        taggedOutputShape = self.LabelVolume.meta.getTaggedShape()
+        if &quott&quot in <a id="change">taggedOutputShape.keys()</a>:
+            assert taggedOutputShape[&quott&quot] == 1
+        assert set(taggedOutputShape.keys()) - set(&quott&quot) == set(&quotxyzc&quot), "Input volumes must have xyzc axes."
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    Output = OutputSlot()
+
+    def setupOutputs(self):
+        <a id="change">if self.LabelVolume.meta.axistags != self.RawVolume.meta.axistags:
+            raise Exception(&quotraw and label axis tags do not match&quot)
+
+       </a> taggedOutputShape = self.LabelVolume.meta.getTaggedShape()
+        taggedRawShape = self.RawVolume.meta.getTaggedShape()
+
+        <a id="change">if not np.all(list(taggedOutputShape.get(k, 0) == taggedRawShape.get(k, 0)
+                           for k in "xyzc")):
+            raise Exception("shapes do not match. label volume shape: {}."
+                            " raw data shape: {}".format(self.LabelVolume.meta.shape,
+                                                         self.RawVolume.meta.shape))
+
+       </a> if taggedOutputShape.get(&quott&quot, 1) != 1:
+            raise Exception(&quotthis operator cannot handle multiple time slices&quot)
+        <a id="change">if set(taggedOutputShape.keys()) - set(&quott&quot) != set(&quotxyzc&quot):
+            raise Exception("Input volumes must have xyzc axes.")
+
+        &#47&#47 Remove the spatial dims (keep t if present)
+       </a> del taggedOutputShape[&quotx&quot]
+        del taggedOutputShape[&quoty&quot]
+        del taggedOutputShape[&quotz&quot]
+        del taggedOutputShape[&quotc&quot]</code></pre>

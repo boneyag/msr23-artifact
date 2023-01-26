@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        adj = g.adjacency_matrix(ctx=ctx).to_dense()
+        cheb = nn.ChebConv(5, 2, k)
+        dense_cheb = nn.DenseChebConv(5, 2, k)
+        for i in range(<a id="change">len(cheb.fc)</a>):
+            dense_cheb.W.data[i] = cheb.fc[i].weight.data.t()
+        if cheb.bias is not None:
+            dense_cheb.bias.data = cheb.bias.data</code></pre><h3>After Change</h3><pre><code class='java'>
+        dense_cheb = nn.DenseChebConv(5, 2, k)
+        &#47&#47for i in range(len(cheb.fc)):
+        &#47&#47    dense_cheb.W.data[i] = cheb.fc[i].weight.data.t()
+        dense_cheb.W.data = <a id="change">cheb.linear.weight.data.transpose(-1, -2).view(k, 5, 2)</a>
+        if cheb.linear.bias is not None:
+            dense_cheb.bias.data = cheb.linear.bias.data
+        feat = F.randn((100, 5))
+        cheb = cheb.to(ctx)</code></pre>

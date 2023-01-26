@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    base_model = MNASNet(0.5, _DEFAULT_DEPTHS, _DEFAULT_CONVOPS, _DEFAULT_KERNEL_SIZES,
+                         _DEFAULT_NUM_LAYERS, _DEFAULT_SKIPS)
+    <a id="change">trainer = PyTorchImageClassificationTrainer(base_model, dataset_cls="CIFAR10",
+                                                dataset_kwargs={"root": "data/cifar10", "download": True},
+                                                dataloader_kwargs={"batch_size": 32},
+                                                optimizer_kwargs={"lr": 1e-3},
+                                                trainer_kwargs={"max_epochs": 1})</a>
+
+    &#47&#47 new interface
+    applied_mutators = []
+    applied_mutators.append(BlockMutator(&quotmutable_0&quot))</code></pre><h3>After Change</h3><pre><code class='java'>
+    base_model = MNASNet(0.5, _DEFAULT_DEPTHS, _DEFAULT_CONVOPS, _DEFAULT_KERNEL_SIZES,
+                         _DEFAULT_NUM_LAYERS, _DEFAULT_SKIPS)
+
+    <a id="change">train_transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])</a>
+    valid_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+    <a id="change">train_dataset = bm(CIFAR10)(root=&quotdata/cifar10&quot, train=True, download=True, transform=train_transform)</a>
+    test_dataset = bm(CIFAR10)(root=&quotdata/cifar10&quot, train=False, download=True, transform=valid_transform)
+    <a id="change">trainer = pl.Classification(train_dataloader=pl.DataLoader(train_dataset, batch_size=100),
+                                val_dataloaders=pl.DataLoader(test_dataset, batch_size=100),
+                                max_epochs=1, limit_train_batches=0.2)</a>
+
+    applied_mutators = [
+        BlockMutator(&quotmutable_0&quot),
+        BlockMutator(&quotmutable_1&quot)</code></pre>

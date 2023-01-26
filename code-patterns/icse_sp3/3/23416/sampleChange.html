@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    cluster = ray_start_cluster_head
+    redis_address = cluster.address
+    runtime_env = f{{  "working_dir": "{working_dir}" }}
+    script = <a id="change">driver_script.format(
+        redis_address=redis_address,
+        working_dir=working_dir,
+        runtime_env=runtime_env)</a>
+
+    out = run_string_as_driver(script)
+    assert out.strip().split()[-1] == "1000"
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    redis_address = cluster.address
+    runtime_env = f{{  "working_dir": "{working_dir}" }}
+    execute_statement = "print(sum(ray.get([run_test.remote()] * 1000)))"
+    script = <a id="change">driver_script.format(**locals())</a>
+    out = run_string_as_driver(script)
+    assert out.strip().split()[-1] == "1000"
+    from ray._private.runtime_env import PKG_DIR
+    assert len(list(Path(PKG_DIR).iterdir())) == 1</code></pre>

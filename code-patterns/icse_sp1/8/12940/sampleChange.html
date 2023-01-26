@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    output = encoder(input_ids=input_ids, token_type_ids=segment_ids, attention_mask=input_mask)
+    if len(output) == 2:
+        return EncoderOutput(pooled=output[1], unpooled=<a id="change">output[0]</a>,)
+    elif len(output) &gt; 2:
+        &#47&#47 Extend later with attention, hidden_acts, etc
+        return EncoderOutput(pooled=output[1], unpooled=output[0], other=output[2:])</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    
+    model_arch = ModelArchitectures.from_encoder(encoder)
+    <a id="change">if model_arch in [
+        ModelArchitectures.BERT,
+        ModelArchitectures.ROBERTA,
+        ModelArchitectures.ALBERT,
+        ModelArchitectures.XLM_ROBERTA,
+    ]:
+        pooled, unpooled, other = get_output_from_standard_transformer_models(
+            encoder=encoder, input_ids=input_ids, segment_ids=segment_ids, input_mask=input_mask,
+        )
+    elif model_arch == ModelArchitectures.ELECTRA:
+        pooled, unpooled, other = get_output_from_electra(
+            encoder=encoder, input_ids=input_ids, segment_ids=segment_ids, input_mask=input_mask,
+        )
+    elif model_arch in [
+        ModelArchitectures.BART,
+        ModelArchitectures.MBART,
+    ]:
+        pooled, unpooled, other = get_output_from_bart_models(
+            encoder=encoder, input_ids=input_ids, input_mask=input_mask,
+        )
+    else:
+        raise KeyError(model_arch)
+
+    &#47&#47 Extend later with attention, hidden_acts, etc
+   </a> if other:
+        return EncoderOutput(pooled=pooled, unpooled=unpooled, other=other)
+    else:
+        return EncoderOutput(pooled=pooled, unpooled=unpooled)</code></pre>

@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            self.body.add(nn.BatchNorm(gamma_initializer=&quotzeros&quot))
+
+        <a id="change">if use_se:
+            self.se = nn.HybridSequential(prefix=&quot&quot)
+            self.se.add(nn.Conv2D(channels // 4, kernel_size=1, padding=0))
+            self.se.add(nn.Activation(&quotrelu&quot))
+            self.se.add(nn.Conv2D(channels * 4, kernel_size=1, padding=0))
+            self.se.add(nn.Activation(&quotsigmoid&quot))
+        else:
+            self.se = None
+
+       </a> if downsample:
+            self.downsample = nn.HybridSequential(prefix=&quot&quot)
+            self.downsample.add(nn.Conv2D(channels * 4, kernel_size=1, strides=stride,
+                                          use_bias=False))</code></pre><h3>After Change</h3><pre><code class='java'>
+        for :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.
+    
+    def __init__(self, channels, cardinality, bottleneck_width, stride,
+                 downsample=False, last_gamma=False, use_se=Fal<a id="change">se,
+                 norm_layer=BatchNorm, norm_kwargs=Non</a>e, **kwargs):
+        super(Block, self).__init__(**kwargs)
+        D = int(math.floor(channels * (bottleneck_width / 64)))
+        group_width = cardinality * D
+
+        self.body = nn.HybridSequential(prefix=&quot&quot)
+        self.body.add(nn.Conv2D(group_width, kernel_size=1, use_bias=False))
+        self.body.add(norm_layer(**({} if norm_kwargs is None else norm_kwargs)))
+        self.body.add(nn.Activation(&quotrelu&quot))
+        self<a id="change">.body.add(nn.Conv2D(group_width, kernel_size=3, strides=st</a>ride, padding=1,
+                                groups=cardinality, use_bias=False))
+        self.body.add(norm_layer(**({} if norm_kwargs is None else norm_kwargs)))
+        self.body.add(nn.Activation(&quotrelu&quot))
+        self.body.add(nn.Conv2D(channels * 4, kernel<a id="change">_size=1, use_bias=False))
+        if last_gamma:
+         </a>   self.body.add(norm_layer(**({} if norm_kwargs is None else norm_kwargs)))
+        else:
+            self.body.add(norm_layer(gamma_initializer=&quotzeros&quot,
+                                     **({} if norm_kwargs is None else norm_kwargs)))</code></pre>

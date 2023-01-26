@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 Keep track of the old ready statuses so we know if
+        &#47&#47 something changed
+        <a id="change">readyFlags = {}</a>
+        for k, oslot in <a id="change">self.outputs.items()</a>:
+            <a id="change">readyFlags[k] = oslot.meta._ready</a>
+
+        &#47&#47 All unconnected outputs are no longer ready
+        for oslot in self.outputs.values():
+            <a id="change">oslot.meta._ready &= (oslot.partner is not None)</a>
+
+        &#47&#47 If the ready status changed, signal it.
+        <a id="change">for k, oslot in self.outputs.items():
+            if readyFlags[k] != oslot.meta._ready:
+                oslot._sig_unready(self)
+                oslot._changed()
+
+   </a> def setupOutputs(self):
+        This method is called when all input slots of an operator
+        are successfully connected, a successful connection is also
+        established if the input slot is not connected to another</code></pre><h3>After Change</h3><pre><code class='java'>
+        if slot._optional:
+            return
+
+        <a id="change">newly_unready_slots = []</a>
+        def setunready(s):
+            for ss in s._subSlots:
+                setunready(ss)
+            was_ready = s.meta._ready
+            s.meta._ready &= (s.partner is not None)
+            if was_ready and s.meta._ready:
+                newly_unready_slots.append(s)
+
+        &#47&#47 All unconnected outputs are no longer ready
+        for oslot in self.outputs.values():
+            setunready(oslot)
+
+        &#47&#47 If the ready status changed, signal it.
+        <a id="change">for s in newly_unready_slots:
+            s._sig_unready(s)
+            s._changed()
+
+   </a> def setupOutputs(self):
+        This method is called when all input slots of an operator
+        are successfully connected, a successful connection is also
+        established if the input slot is not connected to another</code></pre>

@@ -1,0 +1,36 @@
+<html><h3>13831dd959789127f9735275757f1d660de22b82,pymc3/variational/stein.py,Stein,dlogp,#Stein#,53
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    @node_property
+    def dlogp(self):
+        loc_random = self.input_matrix[<a id="change">..., :</a>self.approx.local_size]
+        glob_random = self.input_matrix[..., self.approx.local_size:]
+        loc_grad, glob_grad = tt.grad(
+            self.logp_norm.sum(),
+            [self.approx.symbolic_random_local_matrix,
+             self.approx.symbolic_random_global_matrix],
+            disconnected_inputs=&quotignore&quot
+        )
+        <a id="change">loc_grad, glob_grad = theano.clone(
+            [loc_grad, glob_grad],
+            {self.approx.symbolic_random_local_matrix: loc_random,
+             self.approx.symbolic_random_global_matrix: glob_random}
+        )</a>
+        return tt.concatenate([loc_grad, glob_grad], axis=-1)
+
+    @memoize
+    @change_flags(compute_test_value=&quotoff&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+        dlogp = tt.concatenate(list(map(unpack, gradients_for_rmatrices)), axis=-1)
+
+        if self.use_histogram:
+            <a id="change">dlogp = theano.clone(
+                dlogp,
+                dict(zip(self.approx.symbolic_randoms, self.approx.collect(&quothistogram&quot)))
+            )</a>
+        return dlogp
+
+    @node_property
+    def grad(self):</code></pre><img src="224680372.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pymc-devs/pymc3/commit/13831dd959789127f9735275757f1d660de22b82#diff-cdd09f88fadfe8963aabc35073434682534428fcc7b0b9d29391fe5f33fdfdfcL26' target='_blank'>Link</a></div><div id='project'> Project Name: pymc-devs/pymc3</div><div id='commit'> Commit Name: 13831dd959789127f9735275757f1d660de22b82</div><div id='time'> Time: 2017-09-02</div><div id='author'> Author: maxim.v.kochurov@gmail.com</div><div id='file'> File Name: pymc3/variational/stein.py</div><div id='class'> Class Name: Stein</div><div id='method'> Method Name: dlogp</div><BR><BR><div id='link'><a href='https://github.com/brilee/MuGo/commit/5b1feb37e68471a811a90e008eff787da294c477#diff-3d9f5c51ee85fb2da79a74349657cb62bb9abc5a02fd3d0238ffc76251310e24L144' target='_blank'>Link</a></div><div id='project'> Project Name: brilee/MuGo</div><div id='commit'> Commit Name: 5b1feb37e68471a811a90e008eff787da294c477</div><div id='time'> Time: 2016-09-07</div><div id='author'> Author: brian.kihoon.lee@gmail.com</div><div id='file'> File Name: policy.py</div><div id='class'> Class Name: PolicyNetwork</div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/brilee/MuGo/commit/5b1feb37e68471a811a90e008eff787da294c477#diff-3d9f5c51ee85fb2da79a74349657cb62bb9abc5a02fd3d0238ffc76251310e24L176' target='_blank'>Link</a></div><div id='project'> Project Name: brilee/MuGo</div><div id='commit'> Commit Name: 5b1feb37e68471a811a90e008eff787da294c477</div><div id='time'> Time: 2016-09-07</div><div id='author'> Author: brian.kihoon.lee@gmail.com</div><div id='file'> File Name: policy.py</div><div id='class'> Class Name: PolicyNetwork</div><div id='method'> Method Name: check_accuracy</div><BR>

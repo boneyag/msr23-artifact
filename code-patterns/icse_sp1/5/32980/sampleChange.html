@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            loc, scale = pdparam.transpose(0, 1)
+        &#47&#47 scale (stdev) must be &gt; 0, use softplus with positive
+        scale = <a id="change">F.softplus(scale) +</a> 1e-8
+        if isinstance(pdparam, list):  &#47&#47 split output
+            &#47&#47 construct covars from a batched scale tensor
+            covars = torch.diag_embed(scale)</code></pre><h3>After Change</h3><pre><code class='java'>
+        else:
+            loc, scale = pdparam.transpose(0, 1)
+        &#47&#47 scale (stdev) must be &gt; 0, log-clamp-exp
+        <a id="change">scale = torch.clamp(scale, min=-20, max=2).exp()</a>
+        if isinstance(pdparam, list):  &#47&#47 split output
+            &#47&#47 construct covars from a batched scale tensor
+            covars = torch.diag_embed(scale)
+            action_pd = ActionPD(loc=loc, covariance_matrix=covars)</code></pre>

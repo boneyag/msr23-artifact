@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        loss.requires_grad_(True)
+        grads = torch.autograd.grad(loss, args, allow_unused=True)
+
+        <a id="change">for i, arg in enumerate(args):
+            if toggled[i]:
+                arg.requires_grad = False
+
+       </a> return grads
+
+    def _preconditioner(self):
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Easy case: if we don&quott require any gradients, then just return!
+        if not len(args_with_grads):
+            return tuple(None <a id="change">for</a> _ in args)
+
+        &#47&#47 Normal case: we&quotll use the autograd to get us a derivative
+        with torch.autograd.enable_grad():
+            loss = (left_vecs * self._matmul(right_vecs)).sum()
+            loss.requires_grad_(True)
+            <a id="change">actual_grads = deque(torch.autograd.grad(loss, args_with_grads, allow_unused=True))</a>
+
+        &#47&#47 Now make sure that the object we return has one entry for every item in args
+        grads = []
+        for arg in args:</code></pre>

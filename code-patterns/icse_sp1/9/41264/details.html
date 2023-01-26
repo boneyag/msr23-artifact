@@ -1,0 +1,44 @@
+<html><h3>82478ffacdd98fcc0750ff086af240a3f37a8b10,src/spn/algorithms/layerwise/layers.py,Product,forward,#Product#Any#,96
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.cardinality == x.shape[1]:
+            return x.sum(1)
+
+        <a id="change">x_split = list(torch.split(x, self.cardinality, dim=1))</a>
+
+        &#47&#47 Check if splits have the same shape (If split cannot be made even, the last chunk will be smaller)
+        if x_split[-1].shape != x_split[0].shape:
+            &#47&#47 How much is the last chunk smaller
+            diff = <a id="change">x_split[0].shape[1]</a> - x_split[-1].shape[1]
+
+            &#47&#47 Pad the last chunk by the difference with zeros (=maginalized nodes)
+            x_split[-1] = F.pad(
+                x_split[-1], pad=[0, 0, 0, diff], mode="constant", value=0.0
+            )
+
+        &#47&#47 Stack along new split axis
+        <a id="change">x_split_stack = torch.stack(x_split, dim=2)</a>
+
+        &#47&#47 Sum over feature axis
+        result = torch.sum(x_split_stack, dim=1)
+        return result</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Pad if in_features % cardinality != 0
+        if self._pad &gt; 0:
+            <a id="change">x = F.pad(x, pad=(0, 0, 0, self._pad), value=0)</a>
+
+        &#47&#47 Use convolution with weights of 1 and stride/kernel size of &#47&#47children
+        &#47&#47 Simulate a single feature map, therefore [n, d, c] -&gt; [n, c&quot=1, d, c], that is 
+        &#47&#47 - The convolution channel input and output size will be 1
+        &#47&#47 - The feature dimension (d) will be the height dimension
+        &#47&#47 - The channel dimension (c) will be the width dimension
+        &#47&#47 Convolution is then applied along the width with stride/ksize &#47&#47children and along
+        &#47&#47 the height with stride/ksize 1
+        x = x.unsqueeze(1)
+        <a id="change">result = F.conv2d(x, weight=self._conv_weights, stride=(self.cardinality, 1))</a>
+
+        &#47&#47 Remove simulated channel
+        result = result.squeeze(1)
+        return result</code></pre><img src="195105313.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/SPFlow/SPFlow/commit/82478ffacdd98fcc0750ff086af240a3f37a8b10#diff-981598e4096ac4d5f0d738ff59bb03b52560be102d85e5bbef75d1071738a531L95' target='_blank'>Link</a></div><div id='project'> Project Name: SPFlow/SPFlow</div><div id='commit'> Commit Name: 82478ffacdd98fcc0750ff086af240a3f37a8b10</div><div id='time'> Time: 2019-08-22</div><div id='author'> Author: steven.lang.mz@gmail.com</div><div id='file'> File Name: src/spn/algorithms/layerwise/layers.py</div><div id='class'> Class Name: Product</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/dask/dask-image/commit/cbbcea8795e8da754a5b3ffb1a08ef66afd84eef#diff-60a374c703dcf39413713f8dd108028587228bb7e3205616d19a8734f40bc05aL59' target='_blank'>Link</a></div><div id='project'> Project Name: dask/dask-image</div><div id='commit'> Commit Name: cbbcea8795e8da754a5b3ffb1a08ef66afd84eef</div><div id='time'> Time: 2018-09-02</div><div id='author'> Author: jakirkham@gmail.com</div><div id='file'> File Name: dask_image/ndmeasure/_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _ravel_shape_indices</div><BR><BR><div id='link'><a href='https://github.com/nilearn/nilearn/commit/c943318502c17ea9d909e79ce898431282768cb9#diff-28d693c9d4971ec1a35f4d44ac00b6a59781157e9407baad74658a63badef94eL6' target='_blank'>Link</a></div><div id='project'> Project Name: nilearn/nilearn</div><div id='commit'> Commit Name: c943318502c17ea9d909e79ce898431282768cb9</div><div id='time'> Time: 2015-07-28</div><div id='author'> Author: elvis.dohmatob@inria.fr</div><div id='file'> File Name: plot_poldrack_space_net.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/nilearn/nilearn/commit/07bbcbb72cbfcea9ef10087167163138165c5003#diff-28d693c9d4971ec1a35f4d44ac00b6a59781157e9407baad74658a63badef94eL6' target='_blank'>Link</a></div><div id='project'> Project Name: nilearn/nilearn</div><div id='commit'> Commit Name: 07bbcbb72cbfcea9ef10087167163138165c5003</div><div id='time'> Time: 2015-07-28</div><div id='author'> Author: elvis.dohmatob@inria.fr</div><div id='file'> File Name: plot_poldrack_space_net.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

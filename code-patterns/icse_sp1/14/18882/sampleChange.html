@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                raise DimensionMismatchError((&quotDifferential equation defining &quot
+                                              &quot%s is not homogeneous&quot) % var,
+                                             dim_LHS, dim_RHS)
+        <a id="change">for var in self._static_equation_names:
+            dim_RHS = self._get_units_for_RHS(var)            
+            dim_LHS = get_dimensions(self._units[var])
+            if not dim_LHS is dim_RHS:
+                raise DimensionMismatchError((&quotStatic equation defining &quot
+                                              &quot%s is not homogeneous&quot) % var,
+                                             dim_LHS, dim_RHS)
+
+        
+    &#47&#47
+    &#47&#47 Representation
+    &#47&#47 
+
+   </a> def __str__(self):
+        s = &quot&quot
+        for var in self._diff_equation_names:
+            s += (&quotd&quot + var + &quot/dt = &quot + self._string_expressions[var] + &quot: &quot +</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47TODO: Check for dependencies and reorder static equations
+
+    def check_units(self):
+        <a id="change">for var, eq in self._equations.iteritems():
+            if eq.eq_type == &quotparameter&quot:
+                &#47&#47 no need to check units for parameters
+                continue
+            
+            if eq.eq_type == &quotdiff_equation&quot:
+                try:
+                    eq.expr.check_unit_against(self._units[var] / second,
+                                               self._units)
+                except DimensionMismatchError as dme:
+                    raise DimensionMismatchError((&quotDifferential equation defining &quot
+                                                  &quot%s does not use consistent units: %s&quot) % 
+                                                 (var, dme.desc), *dme._dims)
+            elif eq.eq_type == &quotstatic_equation&quot:
+                try:
+                    eq.expr.check_unit_against(self._units[var],
+                                               self._units)
+                except DimensionMismatchError as dme:
+                    raise DimensionMismatchError((&quotStatic equation defining &quot
+                                                  &quot%s does not use consistent units: %s&quot) % 
+                                                 (var, dme.desc), *dme._dims)                
+            else:
+                raise AssertionError(&quotUnknown equation type: "%s"&quot % eq.eq_type)
+        
+    &#47&#47
+    &#47&#47 Representation
+    &#47&#47 
+
+   </a> def __str__(self):
+        strings = [str(eq) for eq in self._equations.itervalues()]
+        return &quot\n&quot.join(strings)
+</code></pre>

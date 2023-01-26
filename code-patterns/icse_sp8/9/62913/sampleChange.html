@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 self.add_weights([self.alpha_low, self.alpha_high])
+
+    def forward(self, inputs):
+        <a id="change">outputs = self._apply_activation(
+            inputs, **{
+                &quotalpha_low&quot: self.alpha_low_constrained,
+                &quotalpha_high&quot: self.alpha_high_constrained,
+                &quotname&quot: "ptrelu6_activation"
+            }
+        )</a>
+        <a id="change">return outputs</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.alpha_high_constrained = tf.nn.sigmoid(self.alpha_high, name="constraining_alpha_high_in_0_1")
+
+    def forward(self, inputs):
+        <a id="change">pos = tf.nn.relu(inputs)</a>
+        <a id="change">pos_6 = -tf.nn.relu(inputs - 6) + self.alpha_high_constrained * tf.nn.relu(inputs - 6)</a>
+        neg = -self.alpha_low_constrained * tf.nn.relu(<a id="change">-inputs</a>)
+
+        <a id="change">return pos + pos_6 + neg</a>
+</code></pre>

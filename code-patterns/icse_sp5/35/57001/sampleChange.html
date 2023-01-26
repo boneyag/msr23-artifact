@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 copy all necessary files produced in docker container to host
+        for file_suffix in [
+            "features.csv", "features_with_classes.csv", "classes.pkl"]:
+            cmd = <a id="change">[
+                "docker", "cp", "%s:/tmp/%s_%s" %
+                    (container_name, featureset_key, file_suffix),
+                cfg.FEATURES_FOLDER]</a>
+            <a id="change">status_code = call(cmd, stdout=PIPE, stderr=PIPE)</a>
+            print(
+                os.path.join(
+                    cfg.FEATURES_FOLDER,"%s_%s" % (featureset_key,
+                                                   file_suffix)),</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    try:
+        &#47&#47 Instantiate Docker client
+        <a id="change">client = Client(base_url=&quotunix://var/run/docker.sock&quot)</a>
+        &#47&#47 Create container
+        <a id="change">cont_id = container_name = client.create_container(
+            "mltsp/featurize",
+            volumes={"/home/mltsp": "", "/Data": ""})["Id"]</a>
+        &#47&#47 Start container
+        <a id="change">client.start(cont_id,
+                     binds={cfg.PROJECT_PATH: {"bind": "/home/mltsp"},
+                            cfg.DATA_PATH: {"bind": "/Data"}})</a>
+        &#47&#47 Wait for process to complete
+        <a id="change">client.wait(cont_id)</a>
+        <a id="change">stdout = client.logs(container=cont_id, stdout=True)</a>
+        stderr = client.logs(container=cont_id, stderr=True)
+        &#47&#47 Copy resulting data files from container to host machine
+        for file_suffix in [
+            "features.csv", "features_with_classes.csv", "classes.pkl"]:
+            path = "/tmp/%s_%s" % (featureset_key, file_suffix)
+            <a id="change">target = cfg.FEATURES_FOLDER</a>
+            <a id="change">docker_copy(client, cont_id, path, target=target)</a>
+            print(
+                os.path.join(
+                    cfg.FEATURES_FOLDER,"%s_%s" % (featureset_key,
+                                                   file_suffix)),</code></pre>

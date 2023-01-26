@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+from tensorflow_encrypted.protocol import Pond, Server
+from tensorflow_encrypted.layer import Conv2D
+
+<a id="change">server0 = Server(&quot/job:localhost/replica:0/task:0/device:CPU:0&quot)</a>
+<a id="change">server1 = Server(&quot/job:localhost/replica:0/task:0/device:CPU:1&quot)</a>
+<a id="change">crypto_producer = Server(&quot/job:localhost/replica:0/task:0/device:CPU:2&quot)</a>
+
+with <a id="change">Pond(server0, server1, crypto_producer)</a> as prot:
+
+    a = prot.define_constant(np.array([4, 3, 2, 1]).reshape(2, 2))
+    b = prot.define_constant(np.array([4, 3, 2, 1]).reshape(2, 2))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+config = tfe.LocalConfig(3)
+
+with Pond(<a id="change">*config</a>.players) as prot:
+
+    a = prot.define_constant(np.array([4, 3, 2, 1]).reshape(2, 2))
+    b = prot.define_constant(np.array([4, 3, 2, 1]).reshape(2, 2))
+    c = a * b
+
+    d = prot.define_private_variable(np.array([1., 2., 3., 4.]).reshape(2, 2))
+    e = prot.define_private_variable(np.array([1., 2., 3., 4.]).reshape(2, 2))
+    &#47&#47 f = (d * .5 + e * .5)
+    f = d * e
+
+    &#47&#47 convolutions
+    conv_input_shape = (32, 1, 28, 28)  &#47&#47 NCHW
+    conv_input = prot.define_private_variable(np.random.normal(size=conv_input_shape))
+    conv_layer = Conv2D((4, 4, 1, 20), strides=2)
+    conv_layer.initialize(conv_input_shape)
+    conv_out = conv_layer.forward(conv_input)
+
+    with <a id="change">config.session()</a> as sess:
+        sess.run(tf.global_variables_initializer())
+
+        print("multiplication : ")</code></pre>

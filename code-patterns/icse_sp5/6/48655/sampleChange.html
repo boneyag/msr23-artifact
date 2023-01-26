@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        C1 = np.concatenate([[0], C.flatten()])
+        bc = C.shape[0]
+        dim = C.shape[-1]
+        diag_idx = <a id="change">np.arange(1, dim + 1)</a>
+        index = np.diag(diag_idx)[None, ...]
+        index = np.repeat(index, bc, 0)
+        inc = np.repeat(
+            np.arange(0, C.size, C.shape[1]).reshape((-1, 1)),
+            C.shape[1], 1
+        )
+        <a id="change">index[index.nonzero()] += inc.flatten()</a>
+        z[0] = C1[index]
+
+    def grad(self, inputs, gout):
+        (gz,) = gout</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        bc = C.shape[0]
+        dim = C.shape[-1]
+        <a id="change">Cd = np.zeros((bc, dim, dim), C.dtype)</a>
+        bidx = np.repeat(np.arange(bc), dim)
+        didx = np.tile(np.arange(dim), bc)
+        Cd[bidx, didx, didx] = C.flatten()
+        z[0] = Cd</code></pre>

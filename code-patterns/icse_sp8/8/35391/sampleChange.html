@@ -1,0 +1,105 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            try:
+                event_name = event_["eventName"]
+                &#47&#47 only process these two event types
+                <a id="change">if event_name not in [OBJECT_DELETE, OBJECT_PUT]:
+                    continue
+               </a> bucket = unquote(event_["s3"]["bucket"]["name"])
+                &#47&#47 In the grand tradition of IE6, S3 events turn spaces into &quot+&quot
+                key = unquote_plus(event_["s3"]["object"]["key"])
+                version_id = event_["s3"]["object"].get("versionId")
+                version_id = unquote(version_id) if version_id else None
+                &#47&#47 OBJECT_DELETE does not include "eTag"
+                etag = unquote(event_["s3"]["object"].get("eTag", ""))
+
+                &#47&#47 Get two levels of extensions to handle files like .csv.gz
+                path = pathlib.PurePosixPath(key)
+                ext1 = path.suffix
+                ext2 = path.with_suffix(&quot&quot).suffix
+                ext = (ext2 + ext1).lower()
+
+                &#47&#47 Handle delete  first and then continue so that
+                &#47&#47 head_object and get_object (below) don&quott fail
+                if event_name == OBJECT_DELETE:
+                    batch_processor.append(
+                        event_name,
+                        bucket=bucket,
+                        ext=ext,
+                        etag=etag,
+                        key=key,
+                        last_modified=now_like_boto3(),
+                        text="",
+                        version_id=version_id
+                    )
+                    continue
+
+                try:
+                    head = retry_s3(
+                        "head",
+                        bucket,
+                        key,
+                        s3_client=s3_client,
+                        version_id=version_id,
+                        etag=etag
+                    )
+                except botocore.exceptions.ClientError as exception:
+                    &#47&#47 "null" version sometimes results in 403s for buckets
+                    &#47&#47 that have changed versioning, retry without it
+                    if (exception.response.get(&quotError&quot, {}).get(&quotCode&quot) == "403"
+                            and version_id == "null"):
+                        head = retry_s3(
+                            "head",
+                            bucket,
+                            key,
+                            s3_client=s3_client,
+                            version_id=None,
+                            etag=etag
+                        )
+                    else:
+                        raise exception
+
+                size = head["ContentLength"]
+                last_modified = head["LastModified"]
+                meta = head["Metadata"]
+
+                try:
+                    text = get_contents(
+                        bucket,
+                        key,
+                        ext,
+                        etag=etag,
+                        version_id=version_id,
+                        s3_client=s3_client,
+                        size=size
+                    )
+                &#47&#47 we still want an entry for this document in elastic so that, e.g.,
+                &#47&#47 the file counts from elastic are correct. re-raise below.
+                except Exception as exc:  &#47&#47 pylint: disable=broad-except
+                    text = ""
+                    content_exception = exc
+                    print("Content extraction failed", exc, bucket, key, etag, version_id)
+
+                &#47&#47 decode Quilt-specific metadata
+                <a id="change">if meta and "helium" in meta:
+                    try:
+                        decoded_helium = json.loads(meta["helium"])
+                        meta["helium"] = decoded_helium or {}
+                    except (KeyError, json.JSONDecodeError):
+                        print("Unable to parse Quilt &quothelium&quot metadata", meta)
+
+               </a> batch_processor.append(
+                    event_name,
+                    bucket=bucket,
+                    key=key,</code></pre><h3>After Change</h3><pre><code class='java'>
+            try:
+                event_name = event_["eventName"]
+                &#47&#47 Process all Create:* and Remove:* events
+                <a id="change">if not any(event_name.startswith(n) for n in EVENT_PREFIX.values()):
+                    continue
+               </a> bucket = unquote(event_["s3"]["bucket"]["name"])
+                &#47&#47 In the grand tradition of IE6, S3 events turn spaces into &quot+&quot
+                key = unquote_plus(event_["s3"]["object"]["key"])
+                version_id = event_["s3"]["object"].get("versionId")</code></pre>

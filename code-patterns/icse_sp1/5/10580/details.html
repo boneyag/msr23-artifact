@@ -1,0 +1,25 @@
+<html><h3>47ba6dedb917847460b098c5f2b776a4c8bd0c1b,torchdiffeq/_impl/adjoint.py,,odeint_adjoint,#Any#Any#Any#,168
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    shapes, func, y0, t, rtol, atol, method, options, event_fn, decreasing_time = _check_inputs(func, y0, t, rtol, atol, method, options, event_fn, SOLVERS)
+
+    if "norm" in options and "norm" not in adjoint_options:
+        adjoint_shapes = [torch.Size(()), y0.shape, y0.shape] + [<a id="change">torch.Size([sum(param.numel() for param in adjoint_params)])</a>]
+        <a id="change">adjoint_options["norm"] = _wrap_norm([_rms_norm, options["norm"], options["norm"]], adjoint_shapes)</a>
+
+    ans = OdeintAdjointMethod.apply(shapes, func, y0, t, rtol, atol, method, options, event_fn, adjoint_rtol, adjoint_atol,
+                                    adjoint_method, adjoint_options, t.requires_grad, *adjoint_params)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    for p in adjoint_params:
+        if not p.requires_grad:
+            &#47&#47 Issue a warning if a user-specified norm is specified.
+            <a id="change">if &quotnorm&quot in adjoint_options and adjoint_options[&quotnorm&quot] != &quotseminorm&quot:
+                warnings.warn("An adjoint parameter was passed without requiring gradient. For efficiency this will be "
+                              "excluded from the adjoint pass, and will not appear as a tensor in the adjoint norm.")
+
+   </a> adjoint_params = tuple(p for p in adjoint_params if p.requires_grad)
+
+    &#47&#47 Normalise to non-tupled state.
+    shapes, func, y0, t, rtol, atol, method, options, event_fn, decreasing_time = _check_inputs(func, y0, t, rtol, atol, method, options, event_fn, SOLVERS)</code></pre><img src="70213341.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/rtqichen/torchdiffeq/commit/47ba6dedb917847460b098c5f2b776a4c8bd0c1b#diff-1ce4b6309bc5eacc0914bdafff9c0aeecefbe346c9963006c00ae848dd8ea4e2L167' target='_blank'>Link</a></div><div id='project'> Project Name: rtqichen/torchdiffeq</div><div id='commit'> Commit Name: 47ba6dedb917847460b098c5f2b776a4c8bd0c1b</div><div id='time'> Time: 2021-01-05</div><div id='author'> Author: rtqichen@gmail.com</div><div id='file'> File Name: torchdiffeq/_impl/adjoint.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: odeint_adjoint</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/418f0445cd4baa9457fc23361803ae3c3a32a336#diff-2342a4727e8aac6d632463cfbc8fc719c6dbae5de8125dce3771228023da1b53L13' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 418f0445cd4baa9457fc23361803ae3c3a32a336</div><div id='time'> Time: 2020-06-11</div><div id='author'> Author: kaw293@cornell.edu</div><div id='file'> File Name: gpytorch/kernels/rff_kernel.py</div><div id='class'> Class Name: RFFKernel</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/2185f24dda7b33194d4240b2a6301230ce1cd7f5#diff-7eb9d6ee118a4b8eec65a0a0c9892d54bbbadd303bfc1a39d7e306a7b97bdff5L70' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 2185f24dda7b33194d4240b2a6301230ce1cd7f5</div><div id='time'> Time: 2019-04-02</div><div id='author'> Author: jake.gardner@uber.com</div><div id='file'> File Name: gpytorch/kernels/spectral_mixture_kernel.py</div><div id='class'> Class Name: SpectralMixtureKernel</div><div id='method'> Method Name: __init__</div><BR>

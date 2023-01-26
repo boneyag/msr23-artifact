@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        pretrained_model_file_path=args.resume.strip(),
+        use_cuda=use_cuda)
+    if hasattr(net, "module"):
+        input_image_size = <a id="change">net.module.in_size[0] if hasattr(net.module, "in_size") else args.input_size</a>
+    else:
+        input_image_size = net.in_size[0] if hasattr(net, "in_size") else args.input_size
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    assert (hasattr(real_net, "num_classes"))
+    num_classes = real_net.num_classes
+
+    <a id="change">ds_metainfo = get_dataset_metainfo(dataset_name=args.dataset)</a>
+    <a id="change">ds_metainfo.update(args=args)</a>
+
+    train_data = get_train_data_source(
+        ds_metainfo=ds_metainfo,
+        batch_size=batch_size,
+        num_workers=args.num_workers)
+    val_data = get_val_data_source(
+        ds_metainfo=ds_metainfo,
+        batch_size=batch_size,
+        num_workers=args.num_workers)
+
+    optimizer, lr_scheduler, start_epoch = prepare_trainer(
+        net=net,
+        optimizer_name=args.optimizer_name,
+        wd=args.wd,
+        momentum=args.momentum,
+        lr_mode=args.lr_mode,
+        lr=args.lr,
+        lr_decay_period=args.lr_decay_period,
+        lr_decay_epoch=args.lr_decay_epoch,
+        lr_decay=args.lr_decay,
+        &#47&#47 warmup_epochs=args.warmup_epochs,
+        &#47&#47 batch_size=batch_size,
+        num_epochs=args.num_epochs,
+        &#47&#47 num_training_samples=num_training_samples,
+        state_file_path=args.resume_state)
+
+    if args.save_dir and args.save_interval:
+        <a id="change">param_names = ds_metainfo.val_metric_capts + ds_metainfo.train_metric_capts + ["Train.Loss", "LR"]</a>
+        lp_saver = TrainLogParamSaver(
+            checkpoint_file_name_prefix="{}_{}".format(<a id="change">ds_metainfo.short_label</a>, args.model),
+            last_checkpoint_file_name_suffix="last",
+            best_checkpoint_file_name_suffix=None,
+            last_checkpoint_dir_path=args.save_dir,</code></pre>

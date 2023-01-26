@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                 batchnorm: bool=False, dropout=False, name: str=&quotembedder&quot, input_rescaling=None, input_offset=None,
+                 input_clipping=None):
+        super().__init__()
+        <a id="change">self.activation_function</a> = activation_function
+        <a id="change">self.scheme = scheme</a>
+        <a id="change">self.batchnorm = batchnorm</a>
+        <a id="change">self.dropout</a> = dropout
+
+        <a id="change">if input_rescaling is None:
+            input_rescaling = {&quotimage&quot: 255.0, &quotvector&quot: 1.0}
+       </a> <a id="change">if input_offset is None:
+            input_offset = {&quotimage&quot: 0.0, &quotvector&quot: 0.0}
+
+       </a> <a id="change">self.input_rescaling</a> = input_rescaling
+        <a id="change">self.input_offset</a> = input_offset
+        <a id="change">self.input_clipping = input_clipping</a>
+        <a id="change">self.name</a> = name
+
+    @property
+    def path(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def iterable_to_items(obj):
+    if isinstance(obj, dict) or isinstance(obj, OrderedDict) or isinstance(obj, types.MappingProxyType):
+        ite<a id="change">ms =</a> obj.items()
+    elif isinstance(obj, list):
+        items = enumerate(obj)
+    else:
+        raise ValueError("The given object is not a dict or a list")
+    return items
+
+
+def unfold_dict_or_list(obj: Union[Dict, List, OrderedDict]):
+    
+    Recursively unfolds all the parameters in dictionaries and lists
+    :param obj: a dictionary or list to unfold
+    :return: the unfolded parameters dictionary
+    "<a id="change">""
+    pa</a>rameters = OrderedDict()
+    items = iterable_to_items(obj)
+    for k, v in items:
+        if isinstance(v, dict) or isinstance(v, list) or isinstance(v, OrderedDict):
+            if &quottensorflow.&quot not in str(v.__class__):
+                parameters[k] = unfold_dict_or_list(v)
+        elif &quottensorflow.&quot in str(v.__cl<a id="change">ass__):
+            parameters[k] = v
+        elif hasattr(v, &quot__dict__&quot):
+            sub_params = v.__dict__
+            if &quot__objclass__&quot not in sub_params.keys():
+   </a>             <a id="change">try:
+                    parameters[k] = unfold_dict_or_list(sub_params)
+ </a>               except RecursionError:
+                    parameters[k] = sub_params
+                paramete<a id="change">rs[k][&quot__class</a>__&quot] = v.__class__.__name__
+            else:
+                &#47&#47 unf<a id="change">olding this type of object will result in infinite recursion
+                parameters[k</a>] = sub_pa<a id="change">rams
+        else:
+            parameters[k] = v
+    if not isinstance(obj, OrderedDict) and not isinstan</a>ce(obj, list):
+        parameters = OrderedDict(sorted(parameters.items()))
+    return parameters
+</code></pre>

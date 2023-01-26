@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    raise ProcessExecutionFailure(
+      exit_code, stdout, stderr, &quotjavac compilation&quot)
+
+  <a id="change">yield JavacCompileResult()</a>
+
+
+def create_javac_compile_rules():
+  return [</code></pre><h3>After Change</h3><pre><code class='java'>
+def javac_compile_process_result(javac_compile_req):
+  java_files = javac_compile_req.javac_sources.java_files
+  for java_file in java_files:
+    <a id="change">if not java_file.endswith(".java"):
+      raise ValueError("Can only compile .java files but got {}".format(java_file))
+ </a> sources_snapshot = yield Get(Snapshot, PathGlobs, PathGlobs(java_files, ()))
+  process_request = ExecuteProcessRequest.create_from_snapshot(
+    argv=javac_compile_req.argv_from_source_snapshot(sources_snapshot),
+    env=dict(),
+    snapshot=sources_snapshot,
+    output_files=tuple(java_file[:-5] + ".class" <a id="change">for</a> java_file in java_files),
+  )
+  javac_proc_result = yield Get(ExecuteProcessResult, ExecuteProcessRequest, process_request)
+</code></pre>

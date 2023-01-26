@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+&#47&#47 Horovod: scale learning rate by the number of GPUs.
+&#47&#47 Gradient Accumulation: scale learning rate by batches_per_allreduce
+optimizer = <a id="change">optim.SGD(model.parameters(),
+                      lr=(args.base_lr *
+                          args.batches_per_allreduce * hvd.size()),
+                      momentum=args.momentum, weight_decay=args.wd)</a>
+
+&#47&#47 Horovod: (optional) compression algorithm.
+compression = hvd.Compression.fp16 if args.fp16_allreduce else hvd.Compression.none
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        lr_scaler = args.batches_per_allreduce * hvd.local_size()
+
+&#47&#47 Horovod: scale learning rate by the number of GPUs.
+<a id="change">optimizer = optim.SGD(model.parameters(),
+                      lr=(args.base_lr *
+                          lr_scaler),
+                      momentum=args.momentum, weight_decay=args.wd)</a>
+
+&#47&#47 Horovod: (optional) compression algorithm.
+compression = hvd.Compression.fp16 if args.fp16_allreduce else hvd.Compression.none
+
+&#47&#47 Horovod: wrap optimizer with DistributedOptimizer.
+<a id="change">optimizer</a> = hvd.DistributedOptimizer(
+    optimizer, named_parameters=model.named_parameters(),
+    compression=compression,
+    backward_passes_per_step=args.batches_per_allreduce,</code></pre>

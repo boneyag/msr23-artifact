@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        _, col = data.index
+
+        zero = torch.zeros(data.num_nodes, out=col.new().float())
+        <a id="change">one = torch.ones(col.size(0), out=zero.new())</a>
+
+        <a id="change">degree = zero.scatter_add_(0, col, one)</a>
+        degree /= degree.max()
+        degree = degree[col]
+
+        if data.weight is None:
+            data.weight = degree
+        else:
+            degree, weight = degree.unsqueeze(1), data.weight.unsqueeze(1)
+            data.weight = torch.cat(<a id="change">[degree, weight]</a>, dim=1)
+
+        return data
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if pseudo is not None and self.cat:
+            pseudo = pseudo.unsqueeze(-1) if pseudo.dim() == 1 else pseudo
+            <a id="change">deg = deg.type_as(pseudo)</a>
+            data.weight = torch.cat([pseudo, deg], dim=-1)
+        else:
+            data.weight = deg
+</code></pre>

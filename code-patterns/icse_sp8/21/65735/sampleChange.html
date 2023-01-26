@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.in_size = in_size
+        self.keypoints = keypoints
+        self.return_heatmap = return_heatmap
+        <a id="change">self.out_size = (in_size[0] // 4, in_size[1] // 4)</a>
+
+        with self.init_scope():
+            self.backbone = backbone
+
+            in_channels = backbone_out_channels
+            self.decoder = SimpleSequential()
+            with self.decoder.init_scope():
+                for i, out_channels in enumerate(channels):
+                    setattr(self.decoder, "unit{}".format(i + 1), DeconvBlock(
+                        in_channels=in_channels,
+                        out_channels=out_channels,
+                        ksize=4,
+                        stride=2,
+                        pad=1))
+                    in_channels = out_channels
+
+            <a id="change">self.final_block = conv1x1(
+                in_channels=in_channels,
+                out_channels=keypoints,
+                use_bias=True)</a>
+
+    def __call__(self, x):
+        x = self.backbone(x)
+        x = self.decoder(x)</code></pre><h3>After Change</h3><pre><code class='java'>
+    keypoints : int, default 17
+        Number of keypoints.
+    
+    def __init__(<a id="change">self</a>,
+                 backbone,
+                 backbone_out_channels,
+                 channels,
+                 return_heatmap=False,
+                 in_channels=3,
+                 in_size=(256, 192),
+                 keypoints=17,
+                 **kwargs):
+        super(SimplePose, self).__init__(**kwargs)
+        assert (in_channels == 3)
+        self.in_size = in_size
+        self.keypoints = keypoints
+        self.return_heatmap = return_heatmap
+
+        with self.init_scope():
+            self.backbone = backbone
+
+            in_channels = backbone_out_channels
+            <a id="change">self.decoder</a> = SimpleSequential()
+            with self.decoder.init_scope():
+                for i, out_channels in enumerate(channels):
+                    setattr(self.decoder, "unit{}".format(i + 1), DeconvBlock(
+                        in_channels=in_channels,
+                        out_channels=out_channels,
+                        ksize=4,
+                        stride=2,
+                        pad=1))
+                    in_channels = out_channels
+                setattr(<a id="change">self.decoder</a>, "final_block", conv1x1(
+                    in_channels=in_channels,
+                    out_channels=keypoints,
+                    use_bias=True))
+
+            <a id="change">self.heatmap_max_det = HeatmapMaxDetBlock()</a>
+
+    def __call__(self, x):
+        x = self.backbone(x)
+        heatmap = self.decoder(x)</code></pre>

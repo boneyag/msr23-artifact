@@ -1,0 +1,53 @@
+<html><h3>327ffc711693f1d0fe9ef6c40f086a33a9231019,chainer_chemistry/models/gat.py,GraphAttentionNetworks,update,#GraphAttentionNetworks#Any#Any#Any#,71
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                           self.heads, self.hidden_dim))
+        device_id = cuda.get_device_from_array(h_i.array).id
+        h_j = functions.copy(h_i, device_id)
+        <a id="change">h_j = functions.transpose(h_j, (0, 2, 1, 3, 4))</a>
+
+        &#47&#47 (minibatch, atom, atom, heads, out_dim * 2)
+        e = functions.concat([h_i, h_j], axis=4)
+
+        &#47&#47 (minibatch, heads, atom, atom, out_dim * 2)
+        e = functions.transpose(e, (0, 3, 1, 2, 4))
+        &#47&#47 (minibatch * heads, atom * atom, out_dim * 2)
+        e = functions.reshape(e, (mb * self.heads, atom * atom,
+                                  self.hidden_dim * 2))
+        &#47&#47 (minibatch * heads, atom * atom, 1)
+        e = self.attenstion_layers[step](e)
+
+        &#47&#47 (minibatch, heads, atom, atom)
+        e = functions.reshape(e, (mb, self.heads, atom, atom))
+        &#47&#47 (heads, minibatch, atom, atom)
+        <a id="change">e = functions.transpose(e, (1, 0, 2, 3))</a>
+        e = functions.leaky_relu(e)
+        &#47&#47 z = functions.reshape(z, (self.heads, mb, atom, atom))
+
+        cond = adj.array.astype(xp.bool)
+        cond = xp.broadcast_to(cond, e.array.shape)
+        &#47&#47 TODO(mottodora): find better way to ignore non connected
+        e = functions.where(cond, e,
+                            xp.broadcast_to(xp.array(-10000), e.array.shape)
+                            .astype(xp.float32))
+        &#47&#47 (heads, minibatch, atom, atom)
+        alpha = functions.softmax(e)
+        &#47&#47 (minibatch, heads, atom, atom)
+        <a id="change">alpha = functions.transpose(alpha, (1, 0, 2, 3))</a>
+        &#47&#47 (minibatch, heads, atom, out_dim)
+        h = functions.transpose(h, (0, 2, 1, 3))
+        &#47&#47 (minibatch, heads, atom, out_dim)
+        h_new = functions.matmul(alpha, h)</code></pre><h3>After Change</h3><pre><code class='java'>
+                                           self.heads, self.hidden_dim))
+
+        &#47&#47 (minibatch, atom, 1, heads, out_dim)
+        <a id="change">h_j = functions.reshape(h, (mb, atom, 1, self.heads, self.hidden_dim))</a>
+        &#47&#47 (minibatch, atom, atom, heads, out_dim)
+        <a id="change">h_j = functions.broadcast_to(h_j, (mb, atom, atom,
+                                           self.heads, self.hidden_dim))</a>
+
+        &#47&#47 (minibatch, atom, atom, heads, out_dim * 2)
+        e = functions.concat([h_i, h_j], axis=4)
+</code></pre><img src="61613036.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pfnet-research/chainer-chemistry/commit/327ffc711693f1d0fe9ef6c40f086a33a9231019#diff-db109bfda419575ff14a064cd0ac3ce787cf727566b195e63bdf984a02ff5b81L71' target='_blank'>Link</a></div><div id='project'> Project Name: pfnet-research/chainer-chemistry</div><div id='commit'> Commit Name: 327ffc711693f1d0fe9ef6c40f086a33a9231019</div><div id='time'> Time: 2018-08-19</div><div id='author'> Author: mottodora@gmail.com</div><div id='file'> File Name: chainer_chemistry/models/gat.py</div><div id='class'> Class Name: GraphAttentionNetworks</div><div id='method'> Method Name: update</div><BR><BR><div id='link'><a href='https://github.com/interactiveaudiolab/nussl/commit/b82419f321b3b52841065e00d1f50945d7e8a2ee#diff-bf041b6b2bf61d9db19b4ba534dfba2012a48eea0bfd4d1a050b85453025f169L48' target='_blank'>Link</a></div><div id='project'> Project Name: interactiveaudiolab/nussl</div><div id='commit'> Commit Name: b82419f321b3b52841065e00d1f50945d7e8a2ee</div><div id='time'> Time: 2020-03-16</div><div id='author'> Author: prem@u.northwestern.edu</div><div id='file'> File Name: nussl/separation/primitive/hpss.py</div><div id='class'> Class Name: HPSS</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/dmlc/gluon-cv/commit/47c6377324b4906ed5e133011350c22d1f809466#diff-1fb4dc400fd1e4f5f73b4e1d923e107d937837640793b5987643687ef3a903b1L38' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-cv</div><div id='commit'> Commit Name: 47c6377324b4906ed5e133011350c22d1f809466</div><div id='time'> Time: 2020-05-01</div><div id='author'> Author: cheungchih@gmail.com</div><div id='file'> File Name: scripts/gan/srgan/train_srgan.py</div><div id='class'> Class Name: SubpixelBlock</div><div id='method'> Method Name: hybrid_forward</div><BR>

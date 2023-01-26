@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 Add annotations for in-data skips
+        offsets = [0] + self._raw_lengths[:-1]
+        <a id="change">for extra, first_samp, offset in zip(self._raw_extras,
+                                             self._first_samps, offsets):
+            for skip in extra:
+                if skip[&quotent&quot] is None:  &#47&#47 these are skips
+                    if self.annotations is None:
+                        self.set_annotations(Annotations((), (), ()))
+                    start = skip[&quotfirst&quot] - first_samp + offset
+                    stop = skip[&quotlast&quot] - first_samp + offset
+                    self.annotations.append(
+                        _sync_onset(self, start / self.info[&quotsfreq&quot]),
+                        (stop - start + 1) / self.info[&quotsfreq&quot],
+                        &quotBAD_ACQ_SKIP&quot)
+       </a> if preload:
+            self._preload_data(preload)
+        else:
+            self.preload = False</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Add annotations for in-data skips
+        for extra in self._raw_extras:
+            start = np.array(<a id="change">[e[&quotfirst&quot] for e in extra if e[&quotent&quot] is None]</a>)
+            stop = np.array([e[&quotlast&quot] for e in extra if e[&quotent&quot] is None])
+            duration = (stop - start + 1.) / self.info[&quotsfreq&quot]
+
+            <a id="change">annot = Annotations(onset=(start / self.info[&quotsfreq&quot]),
+                                duration=duration,
+                                description=&quotBAD_ACQ_SKIP&quot,
+                                orig_time=self.info[&quotmeas_date&quot])</a>
+
+            if self.annotations is None:
+                self.set_annotations(annot)
+            else:</code></pre>

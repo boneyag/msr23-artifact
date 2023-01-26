@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return HttpResponse("Invalid upload code: " + upload_code, status=400)
+
+    latest_result = Result.objects.filter(session=session).latest(&quotcreation_time&quot)
+    <a id="change">task_ids = [t for t in (latest_result.task_ids or &quot&quot).split(&quot,&quot) if t.strip() != &quot&quot]</a>
+    <a id="change">tasks = TaskUtil.get_tasks(task_ids)</a>
+    <a id="change">overall_status, num_completed = TaskUtil.get_task_status(tasks, len(task_ids))</a>
+    next_config = latest_result.next_configuration
+
+    LOG.debug("result_id: %s, overall_status: %s, tasks_completed: %s/%s, "
+              "next_config: %s\n", latest_result.pk, overall_status, num_completed,</code></pre><h3>After Change</h3><pre><code class='java'>
+    task_res = celery.result.result_from_tuple(task_tuple)
+
+    task_list = []
+    <a id="change">task = task_res</a>
+    <a id="change">while task is not None:
+        task_list.append(task)
+        task = task.parent
+
+   </a> group_res = celery.result.GroupResult(task_res.task_id, results=task_list)
+    next_config = latest_result.next_configuration
+
+    LOG.debug("result_id: %s, succeeded: %s, failed: %s, ready: %s, tasks_completed: %s/%s, "</code></pre>

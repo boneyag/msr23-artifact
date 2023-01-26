@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    graph_state = self._get_graph_state()
+    result = None
+    for summary in summaries_iterable:
+      <a id="change">if summary is None:
+        continue
+      else:
+        &#47&#47 This conversion is necessary to maintain compatibility with previous
+        &#47&#47 versions, and will be removed in future (0.15).
+        &#47&#47 TODO(b/127336397): Remove this.
+        if isinstance(summary, (six.binary_type, six.text_type)):
+          assert not summary
+          continue
+        with graph_state.lock:
+          if self._use_core_quantile_ops:
+            graph_state.thread_hostile_merge_inputs_callable(*summary)
+            if result is not None:
+              graph_state.thread_hostile_merge_inputs_callable(*result)  &#47&#47 pylint: disable=not-an-iterable
+          else:
+            graph_state.thread_hostile_merge_inputs_callable(summary)
+            if result is not None:
+              graph_state.thread_hostile_merge_inputs_callable(result)
+          result = graph_state.thread_hostile_flush_summary_callable()
+   </a> return result
+
+  def extract_output(self, summary):
+    graph_state = self._get_graph_state()</code></pre><h3>After Change</h3><pre><code class='java'>
+    graph_state = self._get_graph_state()
+    while True:
+      batched_summaries = list(itertools.islice(summaries, 100))
+      <a id="change">if not batched_summaries:
+        break
+     </a> with graph_state.lock:
+        if self._use_core_quantile_ops:
+          graph_state.thread_hostile_merge_summary_callable(*result)
+          <a id="change">for summary in batched_summaries:
+            graph_state.thread_hostile_merge_summary_callable(*summary)
+       </a> else:
+          graph_state.thread_hostile_merge_summary_callable(result)
+          <a id="change">for summary in batched_summaries:
+            graph_state.thread_hostile_merge_summary_callable(summary)
+       </a> result = graph_state.thread_hostile_flush_summary_callable()
+    return result
+
+  def extract_output(self, summary):</code></pre>

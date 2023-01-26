@@ -1,0 +1,92 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def call(self, inputs, training=None):
+        &#47&#47 inputs.shape=[None, input_num_capsule, input_dim_vector]
+        &#47&#47 Expand dims to [None, input_num_capsule, 1, 1, input_dim_vector]
+        inputs_expand = <a id="change">K.expand_dims(K.expand_dims(inputs, 2), 2)</a>
+
+        &#47&#47 Replicate num_capsule dimension to prepare being multiplied by W
+        &#47&#47 Now it has shape = [None, input_num_capsule, num_capsule, 1, input_dim_vector]
+        inputs_tiled = K.tile(inputs_expand, [1, 1, self.num_capsule, 1, 1])
+
+         
+        &#47&#47 Begin: inputs_hat computation V1 ---------------------------------------------------------------------&#47&#47
+        &#47&#47 Compute `inputs * W` by expanding the first dim of W. More time-consuming and need batch_size.
+        &#47&#47 w_tiled.shape = [batch_size, input_num_capsule, num_capsule, input_dim_vector, dim_vector]
+        w_tiled = K.tile(K.expand_dims(self.W, 0), [self.batch_size, 1, 1, 1, 1])
+        
+        &#47&#47 Transformed vectors, inputs_hat.shape = [None, input_num_capsule, num_capsule, 1, dim_vector]
+        inputs_hat = K.batch_dot(inputs_tiled, w_tiled, [4, 3])
+        &#47&#47 End: inputs_hat computation V1 ---------------------------------------------------------------------&#47&#47
+        
+
+        &#47&#47 Begin: inputs_hat computation V2 ---------------------------------------------------------------------&#47&#47
+        &#47&#47 Compute `inputs * W` by scanning inputs_tiled on dimension 0. This is faster but requires Tensorflow.
+        &#47&#47 inputs_hat.shape = [None, input_num_capsule, num_capsule, 1, dim_vector]
+        inputs_hat = tf.scan(lambda ac, x: K.batch_dot(x, self.W, [3, 2]),
+                             elems=inputs_tiled,
+                             initializer=K.zeros([self.input_num_capsule, self.num_capsule, 1, self.dim_vector]))
+        &#47&#47 End: inputs_hat computation V2 ---------------------------------------------------------------------&#47&#47
+        
+        &#47&#47 Begin: routing algorithm V1, dynamic ------------------------------------------------------------&#47&#47
+        def body(i, b, outputs):
+            c = tf.nn.softmax(b, dim=2)  &#47&#47 dim=2 is the num_capsule dimension
+            outputs = squash(K.sum(c * inputs_hat, 1, keepdims=True))
+            if i != 1:
+                b = b + K.sum(inputs_hat * outputs, -1, keepdims=True)
+            return [i-1, b, outputs]
+
+        cond = lambda i, b, inputs_hat: i &gt; 0
+        loop_vars = [K.constant(self.num_routing), self.bias, K.sum(inputs_hat, 1, keepdims=True)]
+        shape_invariants = [tf.TensorShape([]),
+                            tf.TensorShape([None, self.input_num_capsule, self.num_capsule, 1, 1]),
+                            tf.TensorShape([None, 1, self.num_capsule, 1, self.dim_vector])]
+        _, _, outputs = tf.while_loop(cond, body, loop_vars, shape_invariants)
+        &#47&#47 End: routing algorithm V1, dynamic ------------------------------------------------------------&#47&#47
+        
+
+        &#47&#47 Begin: routing algorithm V2, static -----------------------------------------------------------&#47&#47
+        &#47&#47 Routing algorithm V2. Use iteration. V2 and V1 both work without much difference on performance
+        assert self.num_routing &gt; 0, &quotThe num_routing should be &gt; 0.&quot
+        for i in range(self.num_routing):
+            c = tf.nn.softmax(self.bias, dim=2)  &#47&#47 dim=2 is the num_capsule dimension
+            &#47&#47 outputs.shape=[None, 1, num_capsule, 1, dim_vector]
+            <a id="change">outputs = squash(K.sum(c * inputs_hat, 1, keepdims=True))</a>
+
+            &#47&#47 last iteration needs not compute bias which will not be passed to the graph any more anyway.
+            if i != self.num_routing - 1:
+                &#47&#47 self.bias = K.update_add(self.bias, K.sum(inputs_hat * outputs, [0, -1], keepdims=True))
+                <a id="change">self.bias += K.sum(inputs_hat * outputs, -1, keepdims=True)</a>
+            &#47&#47 tf.summary.histogram(&quotBigBee&quot, self.bias)  &#47&#47 for debugging
+        &#47&#47 End: routing algorithm V2, static ------------------------------------------------------------&#47&#47
+
+        return K.reshape(outputs, [-1, self.num_capsule, self.dim_vector])</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Begin: Routing algorithm ---------------------------------------------------------------------&#47&#47
+        &#47&#47 In forward pass, `inputs_hat_stopped` = `inputs_hat`;
+        &#47&#47 In backward, no gradient can flow from `inputs_hat_stopped` back to `inputs_hat`.
+        <a id="change">inputs_hat_stopped = K.stop_gradient(inputs_hat)</a>
+        
+        &#47&#47 The prior for coupling coefficient, initialized as zeros.
+        <a id="change">b = K.zeros(shape=[self.batch_size, self.num_capsule, self.input_num_capsule])</a>
+
+        assert self.num_routing &gt; 0, &quotThe num_routing should be &gt; 0.&quot
+        for i in range(self.num_routing):
+            &#47&#47 c.shape=[batch_size, num_capsule, input_num_capsule]
+            c = tf.nn.softmax(b, dim=1)
+
+            &#47&#47 At last iteration, use `inputs_hat` to compute `outputs` in order to backpropagate gradient
+            if i == self.num_routing - 1:
+                &#47&#47 c.shape =  [batch_size, num_capsule, input_num_capsule]
+                &#47&#47 inputs_hat.shape=[None, num_capsule, input_num_capsule, dim_capsule]
+                &#47&#47 The first two dimensions as `batch` dimension,
+                &#47&#47 then matmal: [input_num_capsule] x [input_num_capsule, dim_capsule] -&gt; [dim_capsule].
+                &#47&#47 outputs.shape=[None, num_capsule, dim_capsule]
+                <a id="change">outputs = squash(K.batch_dot(c, inputs_hat, [2, 2]))</a>  &#47&#47 [None, 10, 16]
+            else:  &#47&#47 Otherwise, use `inputs_hat_stopped` to update `b`. No gradients flow on this path.
+                <a id="change">outputs = squash(K.batch_dot(c, inputs_hat_stopped, [2, 2]))</a>
+
+                &#47&#47 outputs.shape =  [None, num_capsule, dim_capsule]
+                &#47&#47 inputs_hat.shape=[None, num_capsule, input_num_capsule, dim_capsule]
+                &#47&#47 The first two dimensions as `batch` dimension,</code></pre>

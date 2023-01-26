@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      (&quotBatchSizeFive&quot, 5),
+  )
+  def testGatherAllOverCapacity(self, batch_size):
+    <a id="change">if tf.executing_eagerly():
+      self.skipTest(&quotb/123883577&quot)
+   </a> spec = specs.TensorSpec([], tf.int32, &quotaction&quot)
+    replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
+        spec, batch_size=batch_size, max_length=10)
+
+    &#47&#47 Each element has its batch index in the 100s place.
+    <a id="change">actions = tf.stack([
+        tf.Variable(x * 100).count_up_to(15 + x * 100)
+        for x in range(batch_size)
+    ])</a>
+
+    <a id="change">add_op = replay_buffer.add_batch(actions)</a>
+    items = replay_buffer.gather_all()
+    expected = [
+        list(range(5 + x * 100, 15 + x * 100)) for x in range(batch_size)
+    ]
+
+    self.evaluate(tf.compat.v1.global_variables_initializer())
+    <a id="change">for _ in range(15):
+      self.evaluate(add_op)
+   </a> items_ = self.evaluate(items)
+    self.assertAllClose(expected, items_)
+
+  @parameterized.named_parameters(</code></pre><h3>After Change</h3><pre><code class='java'>
+    ]
+
+    self.evaluate(tf.compat.v1.global_variables_initializer())
+    <a id="change">self.evaluate(add_data())</a>
+    items = replay_buffer.gather_all()
+    items_ = self.evaluate(items)
+    self.assertAllClose(expected, items_)
+</code></pre>

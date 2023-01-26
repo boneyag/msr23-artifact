@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if run in [dqn.DQNTrainer, sac.SACTrainer] and fw == "torch":
+            continue
+        print("Testing {} with framework={}".format(run, fw))
+        <a id="change">config["eager"] = fw == "eager"</a>
+        <a id="change">config["use_pytorch"] = fw == "torch"</a>
+
+        <a id="change">eager_ctx = None</a>
+        <a id="change">if fw == "tf":
+            assert not tf.executing_eagerly()
+        elif fw == "eager":
+            eager_ctx = eager_mode()
+            eager_ctx.__enter__()
+            assert tf.executing_eagerly()
+
+       </a> trainer = run(config=config, env=env)
+
+        policy = trainer.get_policy()
+        vars = policy.get_weights()</code></pre><h3>After Change</h3><pre><code class='java'>
+                           continuous=False,
+                           layer_key=("fc", (0, 4)),
+                           logp_func=None):
+    <a id="change">config</a> = config.copy()
+    &#47&#47 Run locally.
+    config["num_workers"] = 0
+    &#47&#47 Env setup.
+    if continuous:
+        env = "Pendulum-v0"
+        obs_batch = preprocessed_obs_batch = np.array([[0.0, 0.1, -0.1]])
+    else:
+        env = "FrozenLake-v0"
+        config["env_config"] = {"is_slippery": False, "map_name": "4x4"}
+        obs_batch = np.array([0])
+        preprocessed_obs_batch = one_hot(obs_batch, depth=16)
+
+    prev_r = None if prev_a is None else np.array(0.0)
+
+    &#47&#47 Test against all frameworks.
+    for fw in <a id="change">framework_iterator(config)</a>:
+        if run in [dqn.DQNTrainer, sac.SACTrainer] and fw == "torch":
+            continue
+</code></pre>

@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        CreateDigest([FileContent(script_path, script_content.encode(), is_executable=True)]),
+    )
+
+    <a id="change">paths = []</a>
+    search_path = create_path_env_var(request.search_path)
+    result = await Get(
+        FallibleProcessResult,
+        &#47&#47 We use a volatile process to force re-run since any binary found on the host system today
+        &#47&#47 could be gone tomorrow. Ideally we&quotd only do this for local processes since all known
+        &#47&#47 remoting configurations include a static container image as part of their cache key which
+        &#47&#47 automatically avoids this problem.
+        UncacheableProcess(
+            Process(
+                description=f"Searching for `{request.binary_name}` on PATH={search_path}",
+                level=LogLevel.DEBUG,
+                input_digest=script_digest,
+                argv=[script_path, request.binary_name],
+                env={"PATH": search_path},
+            )
+        ),
+    )
+    if result.exit_code == 0:
+        <a id="change">paths.extend(result.stdout.decode().splitlines())</a>
+
+    return BinaryPaths(binary_name=request.binary_name, paths=paths)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if result.exit_code != 0:
+        return binary_paths
+
+    <a id="change">found_paths = result.stdout.decode().splitlines()</a>
+    if not request.test_args:
+        return dataclasses.replace(binary_paths, paths=[BinaryPath(path) for path in found_paths])
+
+    results = await MultiGet(
+        Get(
+            FallibleProcessResult,
+            UncacheableProcess(
+                Process(argv=[path, *request.test_args], description=f"Test binary {path}.")
+            ),
+        )
+        for path in found_paths
+    )
+    return dataclasses.replace(
+        binary_paths,
+        paths=<a id="change">[
+            BinaryPath.fingerprinted(path, result.stdout)
+            for path, result in zip(found_paths, results)
+            if result.exit_code == 0
+        ]</a>,
+    )
+
+</code></pre>

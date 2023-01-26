@@ -1,0 +1,97 @@
+<html><h3>2c88f7c0b01bf7559372091ce906d0a29ffea529,examples/pytorch/graphsage/experimental/train_dist.py,,run,#Any#Any#Any#,31
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                print(&quotEpoch {:05d} | Step {:05d} | Loss {:.4f} | Train Acc {:.4f} | Speed (samples/sec) {:.4f} | GPU {:.1f} MiB | time {:.3f} s&quot.format(
+                    epoch, step, loss.item(), acc.item(), np.mean(iter_tput[3:]), gpu_mem_alloc, np.sum(step_time[-args.log_every:])))
+            start = time.time()
+            <a id="change">num_steps -= 1</a>
+            &#47&#47 We have to ensure all trainer process run the same number of steps.
+            <a id="change">if num_steps == 0:
+                break
+
+       </a> toc = time.time()
+        print(&quotEpoch Time(s): {:.4f}, sample: {:.4f}, data copy: {:.4f}, forward: {:.4f}, backward: {:.4f}, update: {:.4f}, &#47&#47seeds: {}, &#47&#47inputs: {}&quot.format(
+            toc - tic, sample_time, copy_time, forward_time, backward_time, update_time, num_seeds, num_inputs))
+        epoch += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+    profiler = Profiler()
+    profiler.start()
+    epoch = 0
+    <a id="change">for epoch in range(args.num_epochs):
+        tic = time.time()
+
+        sample_time = 0
+        copy_time = 0
+        forward_time = 0
+        backward_time = 0
+        update_time = 0
+        num_seeds = 0
+        num_inputs = 0
+        start = time.time()
+        &#47&#47 Loop over the dataloader to sample the computation dependency graph as a list of
+        &#47&#47 blocks.
+        step_time = []
+        for step, blocks in enumerate(dataloader):
+            tic_step = time.time()
+            sample_time += tic_step - start
+
+            &#47&#47 The nodes for input lies at the LHS side of the first block.
+            &#47&#47 The nodes for output lies at the RHS side of the last block.
+            input_nodes = blocks[0].srcdata[dgl.NID]
+            seeds = blocks[-1].dstdata[dgl.NID]
+
+            &#47&#47 Load the input features as well as output labels
+            start = time.time()
+            batch_inputs, batch_labels = load_subtensor(g, seeds, input_nodes, device)
+            copy_time += time.time() - start
+
+            num_seeds += len(blocks[-1].dstdata[dgl.NID])
+            num_inputs += len(blocks[0].srcdata[dgl.NID])
+            &#47&#47 Compute loss and prediction
+            start = time.time()
+            batch_pred = model(blocks, batch_inputs)
+            loss = loss_fcn(batch_pred, batch_labels)
+            forward_end = time.time()
+            optimizer.zero_grad()
+            loss.backward()
+            compute_end = time.time()
+            forward_time += forward_end - start
+            backward_time += compute_end - forward_end
+
+            &#47&#47 Aggregate gradients in multiple nodes.
+            for param in model.parameters():
+                if param.requires_grad and param.grad is not None:
+                    th.distributed.all_reduce(param.grad.data,
+                            op=th.distributed.ReduceOp.SUM)
+                    param.grad.data /= args.num_client
+
+            optimizer.step()
+            update_time += time.time() - compute_end
+
+            step_t = time.time() - tic_step
+            step_time.append(step_t)
+            iter_tput.append(num_seeds / (step_t))
+            if step % args.log_every == 0:
+                acc = compute_acc(batch_pred, batch_labels)
+                gpu_mem_alloc = th.cuda.max_memory_allocated() / 1000000 if th.cuda.is_available() else 0
+                print(&quotEpoch {:05d} | Step {:05d} | Loss {:.4f} | Train Acc {:.4f} | Speed (samples/sec) {:.4f} | GPU {:.1f} MiB | time {:.3f} s&quot.format(
+                    epoch, step, loss.item(), acc.item(), np.mean(iter_tput[3:]), gpu_mem_alloc, np.sum(step_time[-args.log_every:])))
+            start = time.time()
+
+        toc = time.time()
+        print(&quotEpoch Time(s): {:.4f}, sample: {:.4f}, data copy: {:.4f}, forward: {:.4f}, backward: {:.4f}, update: {:.4f}, &#47&#47seeds: {}, &#47&#47inputs: {}&quot.format(
+            toc - tic, sample_time, copy_time, forward_time, backward_time, update_time, num_seeds, num_inputs))
+        epoch += 1
+
+
+        toc = time.time()
+        print(&quotEpoch Time(s): {:.4f}&quot.format(toc - tic))
+        &#47&#47if epoch % args.eval_every == 0 and epoch != 0:
+        &#47&#47    eval_acc = evaluate(model, g, g.ndata[&quotfeatures&quot], g.ndata[&quotlabels&quot], val_nid, args.batch_size, device)
+        &#47&#47    print(&quotEval Acc {:.4f}&quot.format(eval_acc))
+
+   </a> profiler.stop()
+    print(profiler.output_text(unicode=True, color=True))
+    &#47&#47 clean up
+    g._client.barrier()</code></pre><img src="115533063.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/2c88f7c0b01bf7559372091ce906d0a29ffea529#diff-39814c88734b1145f8709949d52360e8c453d4bcc5b9375c674f9988b9ceabf7L55' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: 2c88f7c0b01bf7559372091ce906d0a29ffea529</div><div id='time'> Time: 2020-07-01</div><div id='author'> Author: zhengda1936@gmail.com</div><div id='file'> File Name: examples/pytorch/graphsage/experimental/train_dist.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/scikit-image/scikit-image/commit/cc31d7f56d6cd8569a5f7b47c254d89a85e8691b#diff-44559a4746a4d26ae3e6d498f11f011cb1a2038500424f039abdb0bb859dbbafL276' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-image/scikit-image</div><div id='commit'> Commit Name: cc31d7f56d6cd8569a5f7b47c254d89a85e8691b</div><div id='time'> Time: 2017-04-17</div><div id='author'> Author: grlee77@gmail.com</div><div id='file'> File Name: skimage/transform/pyramids.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: pyramid_laplacian</div><BR><BR><div id='link'><a href='https://github.com/calico/basenji/commit/25da570d5c5baa71d55dc9623e3a8bb20f878f86#diff-e23adbe9eb14215de0d6f2deee773b0cc585b6000831d6cd6253e493131aa49cL109' target='_blank'>Link</a></div><div id='project'> Project Name: calico/basenji</div><div id='commit'> Commit Name: 25da570d5c5baa71d55dc9623e3a8bb20f878f86</div><div id='time'> Time: 2019-11-11</div><div id='author'> Author: drk@calicolabs.com</div><div id='file'> File Name: basenji/trainer.py</div><div id='class'> Class Name: Trainer</div><div id='method'> Method Name: fit_tape</div><BR>

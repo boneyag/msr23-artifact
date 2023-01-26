@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                futures.append(executor.submit(self._exec_all_actions, batch, True))
+
+            &#47&#47 wait until all batches have been processed
+            _ = <a id="change">[future.result() for future in futures]</a>
+        else:
+            self._run_seq(batch_generator)
+        return self
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.prefetch_queue = q.Queue(maxsize=prefetch)
+            service_executor = cf.ThreadPoolExecutor(max_workers=2)
+            service_executor.submit(self._put_batches_into_queue, batch_generator)
+            future = <a id="change">service_executor.submit(self._run_batches_from_queue)</a>
+            &#47&#47 wait until all batches have been processed
+            _ = future.result()            
+        else:
+            self.prefetch_queue = None</code></pre>

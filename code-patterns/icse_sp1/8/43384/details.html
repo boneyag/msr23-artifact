@@ -1,0 +1,43 @@
+<html><h3>f10a216a5f1cc1b70df62b2ba8c96f05da7cd4c9,variance_reduction/baseline_comparison_prototype.py,,,#,11
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+advantages = tf.placeholder(tf.float32, name="reward_signal")
+
+&#47&#47 FIXME this doesn&quott work as a deep copy
+<a id="change">score_old = tf.identity(score, name="score_old")</a>
+
+&#47&#47 The loss function. This sends the weights in the direction of making actions
+&#47&#47 that gave good advantage (reward over time) more likely, and actions that
+&#47&#47 didn&quott less likely.</code></pre><h3>After Change</h3><pre><code class='java'>
+input_y = tf.placeholder(tf.float32, [None, Out], name="input_y")
+advantages = tf.placeholder(tf.float32, name="reward_signal")
+
+score_old = tf.placeholder(tf.float32, <a id="change">[None, Out * 2]</a>, name="score_old")
+
+&#47&#47 The loss function. This sends the weights in the direction of making actions
+&#47&#47 that gave good advantage (reward over time) more likely, and actions that
+&#47&#47 didn&quott less likely.
+&#47&#47 Log likelihood: https://en.wikipedia.org/wiki/Multivariate_normal_distribution
+&#47&#47 &#47&#47Likelihood_function
+stds = tf.abs(score[0][Out:])  &#47&#47 TODO Use log_std instead
+means = tf.abs(score[0][:Out])
+stds_old = tf.abs(score_old[0][Out:])
+means_old = tf.abs(score_old[0][:Out])
+<a id="change">zs = (input_y - means) / stds</a>
+zs_old = <a id="change">(input_y - means_old) / stds_old</a>
+loglik_old = -0.5 * (
+    tf.reduce_sum(tf.log(stds_old), axis=-1) + tf.reduce_sum(tf.square(zs_old),
+                                                             axis=-1) + Out * tf.log(
+        2 * np.pi))
+loglik_new = -0.5 * (
+    tf.reduce_sum(tf.log(stds), axis=-1) + tf.reduce_sum(tf.square(zs),
+                                                         axis=-1) + Out * tf.log(
+        2 * np.pi))
+&#47&#47 FIXME this is giving nan values :(
+<a id="change">likratio = tf.exp(loglik_new - loglik_old)</a>
+loss = -tf.reduce_mean(likratio * advantages)
+&#47&#47 loss = -tf.reduce_mean(loglik_new * advantages)
+newGrads = tf.gradients(loss, tvars)
+</code></pre><img src="203862759.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/flow-project/flow/commit/f10a216a5f1cc1b70df62b2ba8c96f05da7cd4c9#diff-57e668f5aaad094ff77212e5cb3b8c026ba0d32686677880d08ea7a54858689cL24' target='_blank'>Link</a></div><div id='project'> Project Name: flow-project/flow</div><div id='commit'> Commit Name: f10a216a5f1cc1b70df62b2ba8c96f05da7cd4c9</div><div id='time'> Time: 2017-02-11</div><div id='author'> Author: cathywu@eecs.berkeley.edu</div><div id='file'> File Name: variance_reduction/baseline_comparison_prototype.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/openai/pixel-cnn/commit/bc4a0ecb1c146647632c3add2de814a64ab9d44a#diff-e758567cbb4d22941e5bdfef128b13ab0f6631d91785cbe68cfca00c5ed5fa57L222' target='_blank'>Link</a></div><div id='project'> Project Name: openai/pixel-cnn</div><div id='commit'> Commit Name: bc4a0ecb1c146647632c3add2de814a64ab9d44a</div><div id='time'> Time: 2018-06-18</div><div id='author'> Author: feanorliu@tencent.com</div><div id='file'> File Name: pixel_cnn_pp/nn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: deconv2d</div><BR><BR><div id='link'><a href='https://github.com/openai/pixel-cnn/commit/bc4a0ecb1c146647632c3add2de814a64ab9d44a#diff-e758567cbb4d22941e5bdfef128b13ab0f6631d91785cbe68cfca00c5ed5fa57L193' target='_blank'>Link</a></div><div id='project'> Project Name: openai/pixel-cnn</div><div id='commit'> Commit Name: bc4a0ecb1c146647632c3add2de814a64ab9d44a</div><div id='time'> Time: 2018-06-18</div><div id='author'> Author: feanorliu@tencent.com</div><div id='file'> File Name: pixel_cnn_pp/nn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: conv2d</div><BR>

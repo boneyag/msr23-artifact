@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with \
+            tqdm(unit=&quotB&quot, unit_scale=True, miniters=1, desc=path.name) as t, \
+            path.open("wb") as f, \
+            <a id="change">urlopen(req)</a> as resp:
+
+            def update_to(b=1, bsize=1, tsize=None):
+                if tsize is not None:
+                    t.total = tsize
+                t.update(b * bsize - t.n)
+
+            headers = resp.info()
+            &#47&#47 This capitalization was copied from the stdlib too
+            if "content-length" in headers:
+                size = int(headers["Content-Length"])
+
+            update_to(blocknum, bs, size)
+            while True:
+                block = resp.read(bs)
+                if not block:
+                    break
+                <a id="change">read += len(block)</a>
+                f.write(block)
+                blocknum += 1
+                update_to(blocknum, bs, size)
+        &#47&#47 fmt: on</code></pre><h3>After Change</h3><pre><code class='java'>
+        with \
+            tqdm(unit=&quotB&quot, unit_scale=True, miniters=1, desc=path.name) as t, \
+            path.open("wb") as f, \
+            <a id="change">urlopen</a>(Request(url, headers={"User-agent": "scanpy-user"})) as resp:
+
+            t.total = int(resp.info().get("content-length", 0))
+
+            block = resp.read(blocksize)
+            while block:
+                f.write(block)
+                blocknum += 1
+                <a id="change">t.update(blocknum * blocksize - t.n)</a>
+                block = resp.read(blocksize)
+        &#47&#47 fmt: on
+    except Exception:
+        &#47&#47 Make sure file doesn’t exist half-downloaded</code></pre>

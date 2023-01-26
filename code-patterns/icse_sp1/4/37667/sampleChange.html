@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 the ones that didn&quott spike. However, in the refractory period we only
+    &#47&#47 consider those that spiked. May have to change that...
+    new_refractory = T.set_subtensor(
+        self.refrac_until[<a id="change">output_spikes.nonzero()</a>], time + self.tau_refrac)
+    updates.append((self.refrac_until, new_refractory))
+
+    return output_spikes</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Add impulse
+    new_mem = self.mem + masked_imp
+    &#47&#47 Store spiking
+    spiking_samples = T.le(rng.uniform(<a id="change">[settings[&quotbatch_size&quot], 1]</a>),
+                           settings[&quotsoftmax_clockrate&quot]*settings[&quotdt&quot]/1000.)
+    <a id="change">spiking_neurons = T.repeat(spiking_samples, 10, axis=1)</a>
+    activ = T.nnet.softmax(new_mem)
+    max_activ = T.max(activ, axis=1, keepdims=True)
+    output_spikes = T.eq(activ, max_activ).astype(&quotfloat32&quot)
+    output_spikes = T.set_subtensor(
+        output_spikes[T.eq(spiking_neurons, 0).nonzero()], 0.)
+    <a id="change">new_and_reset_mem = T.set_subtensor(new_mem[spiking_neurons.nonzero()], 0.)</a>
+    updates.append((self.mem, new_and_reset_mem))
+
+    return output_spikes
+</code></pre>

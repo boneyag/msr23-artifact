@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def call(self, x):
+        mean = K.mean(x, axis=self.axis, keepdims=True)
+        std = K.std(x, axis=self.axis, keepdims=True)
+        <a id="change">return self.gamma * (x - mean) / (std + self.eps) + self.beta</a>
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def call(self, inputs):
+        mean = K.mean(inputs, axis=self.axis, keepdims=True)
+        variance = K.mean(K.square(<a id="change">inputs - mean</a>), axis=-1, keepdims=True)
+        <a id="change">std = K.sqrt(variance + self.eps)</a>
+        outputs = <a id="change">(inputs - mean) / std</a>
+        if self.scale:
+            outputs *= self.gamma
+        if self.center:
+            <a id="change">outputs += self.beta</a>
+        <a id="change">return outputs</a>
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+</code></pre>

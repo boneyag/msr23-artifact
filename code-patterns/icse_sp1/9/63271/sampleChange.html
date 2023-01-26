@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                            outputs
+                        )
+                    if isinstance(output, tuple):
+                        <a id="change">output = list(output)</a>
+                    if not isinstance(output, list):
+                        output = [output]
+                    outputs[operation.name] = output
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                        try:
+                            inputs = []
+                            for op_input in operation.inputs:
+                                <a id="change">if isinstance(op_input[1], int):
+                                    &#47&#47 The output of the indicated operation has only
+                                    &#47&#47 one field; use that as the input to the current op
+                                    op_name, field_idx = op_input
+                                    inputs.append(outputs[op_name][field_idx])
+                                elif isinstance(op_input[1], str):
+                                    &#47&#47 The output of the indicated operation has a dict
+                                    &#47&#47 of fields; extract the designated field by name
+                                    op_name, field_key = op_input
+                                    inputs.append(outputs[op_name][field_key])
+                                else:
+                                    raise ValueError(
+                                        f"Invalid input to operation {operation}: "
+                                        f"{op_input}. Expected an input specification "
+                                        f"of type (str, int) or (str, str)."
+                                    )
+                       </a> except Exception:
+                            raise ValueError(f"Unrecognized operation {operation}.")
+                        output = self.module_pool[operation.module_name].forward(
+                            *inputs</code></pre>

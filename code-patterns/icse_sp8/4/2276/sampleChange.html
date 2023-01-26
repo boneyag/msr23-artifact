@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def default_resource_request(cls, config):
+        cf = dict(cls._default_config, **config)
+        Trainer._validate_config(cf)
+        return <a id="change">Resources(
+            cpu=cf["num_cpus_for_driver"],
+            gpu=cf["num_gpus"],
+            memory=cf["memory"],
+            object_store_memory=cf["object_store_memory"],
+            extra_cpu=cf["num_cpus_per_worker"] * cf["num_workers"] +
+            cf["num_aggregation_workers"],
+            extra_gpu=cf["num_gpus_per_worker"] * cf["num_workers"],
+            extra_memory=cf["memory_per_worker"] * cf["num_workers"],
+            extra_object_store_memory=cf["object_store_memory_per_worker"] *
+            cf["num_workers"])</a>
+
+
+def make_learner_thread(local_worker, config):
+    if config["num_gpus"] &gt; 1 or config["num_data_loader_buffers"] &gt; 1:</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Return PlacementGroupFactory containing all needed resources
+        &#47&#47 (already properly defined as device bundles).
+        return PlacementGroupFactory(
+            bundles=[<a id="change">{
+                &#47&#47 Driver + Aggregation Workers:
+                &#47&#47 Force to be on same node to maximize data bandwidth
+                &#47&#47 between aggregation workers and the learner (driver).
+                &#47&#47 Aggregation workers tree-aggregate experiences collected
+                &#47&#47 from RolloutWorkers (n rollout workers map to m
+                &#47&#47 aggregation workers, where m &lt; n) and always use 1 CPU
+                &#47&#47 each.
+                "CPU": cf["num_cpus_for_driver"] +
+                cf["num_aggregation_workers"],
+                "GPU": cf["num_gpus"]
+            }</a>] + [
+                {
+                    &#47&#47 RolloutWorkers.
+                    "CPU": cf["num_cpus_per_worker"],</code></pre>

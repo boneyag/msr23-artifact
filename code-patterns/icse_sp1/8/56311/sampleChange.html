@@ -1,0 +1,73 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        }],
+        span_1_key: input_data,
+    }
+    <a id="change">with beam_impl.Context(temp_dir=self.get_temp_dir()):
+      with beam.Pipeline() as p:
+
+        flat_data = p | &quotCreateInputData&quot &gt;&gt; beam.Create(
+            list(itertools.chain(*input_data_dict.values())))
+
+        &#47&#47 wrap each value in input_data_dict as a pcoll.
+        input_data_pcoll_dict = {}
+        for a, b in six.iteritems(input_data_dict):
+          input_data_pcoll_dict[a] = p | a &gt;&gt; beam.Create(b)
+
+        transform_fn_1, cache_output = (
+            (flat_data, input_data_pcoll_dict, {}, input_metadata)
+            | &quotAnalyze&quot &gt;&gt;
+            (beam_impl.AnalyzeDatasetWithCache(preprocessing_fn)))
+        _ = (
+            cache_output | &quotWriteCache&quot &gt;&gt;
+            analyzer_cache.WriteAnalysisCacheToFS(self._cache_dir))
+
+        transformed_dataset = (((input_data_pcoll_dict[span_1_key],
+                                 input_metadata), transform_fn_1)
+                               | &quotTransform&quot &gt;&gt; beam_impl.TransformDataset())
+
+        del input_data_pcoll_dict
+        transformed_data, unused_transformed_metadata = transformed_dataset
+
+        expected_transformed_data = [
+            {
+                &quotx_mean&quot: 6.0,
+                &quotx_min&quot: -2.0,
+                &quoty_mean&quot: -0.25,
+                &quoty_min&quot: -4.0,
+                &quots_integerized&quot: 0,
+            },
+            {
+                &quotx_mean&quot: 6.0,
+                &quotx_min&quot: -2.0,
+                &quoty_mean&quot: -0.25,
+                &quoty_min&quot: -4.0,
+                &quots_integerized&quot: 1,
+            },
+        ]
+        beam_test_util.assert_that(
+            transformed_data,
+            beam_test_util.equal_to(expected_transformed_data),
+            label=&quotfirst&quot)
+
+        transform_fn_dir = os.path.join(self.base_test_dir, &quottransform_fn_1&quot)
+        _ = transform_fn_1 | tft_beam.WriteTransformFn(transform_fn_dir)
+
+        for key in input_data_dict:
+          self.assertIn(key, cache_output)
+          self.assertEqual(7, len(cache_output[key]))
+
+   </a> with beam_impl.Context(temp_dir=self.get_temp_dir()):
+      with beam.Pipeline() as p:
+
+        flat_data = p | &quotCreateInputData&quot &gt;&gt; beam.Create(</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Only 2 from transform.
+    self.assertEqual(_get_counter_value(p.metrics, &quotnum_instances&quot), 2)
+    self.assertEqual(_get_counter_value(p.metrics, &quotcache_entries_decoded&quot), 14)
+    <a id="change">self.assertEqual(_get_counter_value(p.metrics, &quotcache_entries_encoded&quot), 0)</a>
+
+    &#47&#47 The root CreateSavedModel is optimized away because the data doesn&quott get
+    &#47&#47 processed at all (only cache).
+    self.assertEqual(_get_counter_value(p.metrics, &quotsaved_models_created&quot), 1)</code></pre>

@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47 again, we compute the root decomposition by pulling across the diagonals
+                dlt_inv_root = dlt.sqrt().inverse()
+                dlt_root = dlt.sqrt()
+                <a id="change">symm_prod = KroneckerProductLazyTensor(
+                    *[d.matmul(k).matmul(d) for k, d in zip(lt.lazy_tensors, dlt_inv_root.lazy_tensors)]
+                )</a>
+                evals, evecs = symm_prod.symeig(eigenvectors = True)
+                evals_p_i_root = DiagLazyTensor((evals + 1.).reciprocal().sqrt())
+                return MatmulLazyTensor(dlt_inv_root, MatmulLazyTensor(evecs, evals_p_i_root))
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 again, we compute the root decomposition by pulling across the diagonals
+                dlt_sqrt, evals_p_i, evecs = _symmetrize_kpadlt_constructor(lt, dlt)
+                dlt_inv_root = dlt_sqrt.inverse()
+                evals_p_i_root = DiagLazyTensor(<a id="change">evals_p_i</a>.diag().reciprocal().sqrt())
+                return MatmulLazyTensor(dlt_inv_root, MatmulLazyTensor(evecs, evals_p_i_root))
+
+        return super()._root_inv_decomposition(initial_vectors=initial_vectors)</code></pre>

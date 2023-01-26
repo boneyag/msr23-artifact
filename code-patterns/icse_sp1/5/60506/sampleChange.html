@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Observation
+        batched_size = tf.shape(input=terminal)[0]
+        observation = self.fn_observe_timestep(
+            states={name: tf.stop_gradient(input=state[:batched_size]) <a id="change">for</a> name, state in self.current_states.items()},
+            internals={name: tf.stop_gradient(input=internal[:batched_size]) for name, internal in self.current_internals.items()},
+            actions={name: tf.stop_gradient(input=action[:batched_size]) for name, action in self.current_actions.items()},
+            terminal=tf.stop_gradient(input=terminal),</code></pre><h3>After Change</h3><pre><code class='java'>
+        increment_episode = tf.assign_add(ref=self.episode, value=num_episodes)
+        increment_global_episode = tf.assign_add(ref=self.global_episode, value=num_episodes)
+
+        <a id="change">with tf.control_dependencies(control_inputs=(increment_episode, increment_global_episode)):
+            &#47&#47 Stop gradients
+            fn = (lambda x: tf.stop_gradient(input=x[:self.buffer_index]))
+            states = util.map_tensors(fn=fn, tensors=self.states_buffer)
+            internals = util.map_tensors(fn=fn, tensors=self.internals_buffer)
+            actions = util.map_tensors(fn=fn, tensors=self.actions_buffer)
+            terminal = tf.stop_gradient(input=terminal)
+            reward = tf.stop_gradient(input=reward)
+
+            &#47&#47 Observation
+            observation = self.fn_observe_timestep(
+                states=states,
+                internals=internals,
+                actions=actions,
+                terminal=terminal,
+                reward=reward
+            )
+
+       </a> with tf.control_dependencies(control_inputs=(observation,)):
+            &#47&#47 Reset index
+            reset_index = tf.assign(ref=self.buffer_index, value=0)
+</code></pre>

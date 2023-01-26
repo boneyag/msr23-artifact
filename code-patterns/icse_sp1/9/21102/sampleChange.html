@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      try:
+        raw_dict = json.loads(line)
+        labels = raw_dict.pop(&quotlabels&quot)
+        metadata = <a id="change">dict()</a>
+        &#47&#47 labels is a comma-seprated list of key, value pairs
+        for pair in labels.split(&quot,&quot):
+          &#47&#47 Need to strip leading and trailing &quot|&quot from each pair
+          key, _, value = pair[1:-1].partition(&quot:&quot)
+          metadata[key] = value
+        <a id="change">raw_dict[&quotmetadata&quot] = metadata</a>
+        samples.append(raw_dict)
+      except Exception as e:
+        logging.info(&quotException processing sample %s&quot, line)
+        logging.info(&quotException was: %s&quot, e)</code></pre><h3>After Change</h3><pre><code class='java'>
+  
+
+  with open(path, &quotr&quot) as file:
+    <a id="change">samples = [json.loads(s) for s in file if s]</a>
+  <a id="change">for sample in samples:
+    &#47&#47 Chop &quot|&quot at the beginning and end of labels and split labels by &quot|,|&quot
+    fields = sample.pop(&quotlabels&quot)[1:-1].split(&quot|,|&quot)
+    &#47&#47 Turn the fields into [[key, value], ...]
+    key_values = [field.split(&quot:&quot, 1) for field in fields]
+    sample[&quotmetadata&quot] = {k: v for k, v in key_values}
+
+  &#47&#47 We can&quott use a SampleCollector because SampleCollector.AddSamples depends on
+  &#47&#47 having a benchmark and a benchmark_spec.
+ </a> publishers = SampleCollector._PublishersFromFlags()
+  for publisher in publishers:
+    publisher.PublishSamples(samples)
+</code></pre>

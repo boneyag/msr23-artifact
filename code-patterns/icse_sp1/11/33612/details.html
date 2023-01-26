@@ -1,0 +1,61 @@
+<html><h3>aab3902d4a7d55f5a86058854adc36b8a12c873f,catalyst/dl/callbacks/base.py,OptimizerCallback,on_batch_end,#OptimizerCallback#Any#,202
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return
+
+        self._accumulation_counter += 1
+        <a id="change">if not self.fp16:
+            model = state.model
+            optimizer = state.get_key(
+                key="optimizer", inner_key=self.optimizer_key
+            )
+            loss.backward()
+
+            if (self._accumulation_counter + 1) % self.accumulation_steps == 0:
+                self.grad_step(
+                    optimizer=optimizer,
+                    optimizer_wd=self._optimizer_wd,
+                    grad_clip_fn=self.grad_clip_fn
+                )
+                model.zero_grad()
+                self._accumulation_counter = 0
+        else:
+            model = state.model
+            model.zero_grad()
+            optimizer = state.get_key(
+                key="optimizer", inner_key=self.optimizer_key
+            )
+            loss = state.get_key(key="loss", inner_key=self.optimizer_key)
+            scaled_loss = self.fp16_grad_scale * loss.float()
+            scaled_loss.backward()
+
+            master_params = list(optimizer.param_groups[0]["params"])
+            model_params = list(
+                filter(lambda p: p.requires_grad, model.parameters())
+            )
+            copy_grads(source=model_params, target=master_params)
+            for param in master_params:
+                param.grad.data.mul_(1. / self.fp16_grad_scale)
+            self.grad_step(
+                optimizer=optimizer,
+                optimizer_wd=self._optimizer_wd,
+                grad_clip_fn=self.grad_clip_fn
+            )
+            copy_params(source=master_params, target=model_params)
+            torch.cuda.synchronize()
+
+   </a> def on_epoch_end(self, state):
+        optimizer = state.get_key(
+            key="optimizer", inner_key=self.optimizer_key
+        )</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def on_batch_end(self, state):
+        loss = state.get_key(key="loss", inner_key=self.loss_key)
+        <a id="change">if isinstance(loss, dict):
+            loss = list(loss.values())
+       </a> if isinstance(loss, list):
+            loss = torch.mean(torch.stack(loss))
+
+        if self.prefix is not None:</code></pre><img src="164934806.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/aab3902d4a7d55f5a86058854adc36b8a12c873f#diff-94f0b9669517bfb949ba9c8c8bd57cbd96ea0f16b7482a95010f509c6c577190L197' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: aab3902d4a7d55f5a86058854adc36b8a12c873f</div><div id='time'> Time: 2019-05-20</div><div id='author'> Author: ekhvedchenya@gmail.com</div><div id='file'> File Name: catalyst/dl/callbacks/base.py</div><div id='class'> Class Name: OptimizerCallback</div><div id='method'> Method Name: on_batch_end</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/365f621b24631a03f995e3b30e1800d327e42fc1#diff-b33e355dd27235d2b7b60307276fae5c0630d0663baca2d3dd0288fcf9969cd1L263' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: 365f621b24631a03f995e3b30e1800d327e42fc1</div><div id='time'> Time: 2017-04-24</div><div id='author'> Author: joshuarchin@gmail.com</div><div id='file'> File Name: keras/layers/recurrent.py</div><div id='class'> Class Name: Recurrent</div><div id='method'> Method Name: call</div><BR>

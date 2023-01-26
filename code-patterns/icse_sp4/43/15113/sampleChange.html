@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if sys.version_info &gt;= (3, 6):
+            assert len(ctx.get_ciphers()) &gt; 2  &#47&#47 Most likely
+
+    <a id="change">c = {
+        "tls": {
+            "ca-file": ca_file,
+            "scheduler": {"key": key1, "cert": cert1},
+            "worker": {"cert": keycert1},
+        }
+    }</a>
+    with <a id="change">new_config(c)</a>:
+        sec = Security()
+
+    d = sec.get_listen_args("scheduler")
+    assert not d["require_encryption"]
+    ctx = d["ssl_context"]
+    basic_checks(ctx)
+    many_ciphers(ctx)
+
+    d = sec.get_listen_args("worker")
+    ctx = d["ssl_context"]
+    basic_checks(ctx)
+    many_ciphers(ctx)
+
+    &#47&#47 No cert defined =&gt; no TLS
+    d = sec.get_listen_args("client")
+    assert d.get("ssl_context") is None
+
+    &#47&#47 With more settings
+    <a id="change">c["tls"]["ciphers"]</a> = FORCED_CIPHER
+    c["require-encryption"] = True
+
+    with <a id="change">new_config(c)</a>:
+        sec = Security()
+
+    d = sec.get_listen_args("scheduler")</code></pre><h3>After Change</h3><pre><code class='java'>
+        if sys.version_info &gt;= (3, 6):
+            assert len(ctx.get_ciphers()) &gt; 2  &#47&#47 Most likely
+
+    <a id="change">c = {
+        "distributed.comm.tls.ca-file": ca_file,
+        "distributed.comm.tls.scheduler.key": key1,
+        "distributed.comm.tls.scheduler.cert": cert1,
+        "distributed.comm.tls.worker.cert": keycert1,
+    }</a>
+    with <a id="change">dask.config.set(c)</a>:
+        sec = Security()
+
+    d = sec.get_listen_args("scheduler")
+    assert not d["require_encryption"]
+    ctx = d["ssl_context"]
+    basic_checks(ctx)
+    many_ciphers(ctx)
+
+    d = sec.get_listen_args("worker")
+    ctx = d["ssl_context"]
+    basic_checks(ctx)
+    many_ciphers(ctx)
+
+    &#47&#47 No cert defined =&gt; no TLS
+    d = sec.get_listen_args("client")
+    assert d.get("ssl_context") is None
+
+    &#47&#47 With more settings
+    <a id="change">c["distributed.comm.tls.ciphers"]</a> = FORCED_CIPHER
+    c["distributed.comm.require-encryption"] = True
+
+    with <a id="change">dask.config.set(c)</a>:
+        sec = Security()
+
+    d = sec.get_listen_args("scheduler")</code></pre>

@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Find out where the model was serialized to
+    serialization_prefix = config.get(&quottrainer&quot, {}).get(&quotserialization_prefix&quot)
+    <a id="change">if serialization_prefix is None:
+        raise ConfigurationError("trainer.serialization_prefix must be specified in config")
+
+
+    &#47&#47 Load vocabulary from file
+   </a> vocab_dir = os.path.join(serialization_prefix, &quotvocabulary&quot)
+    vocab = Vocabulary.from_files(vocab_dir)
+
+    &#47&#47 Load the evaluation data
+    dataset_reader = DatasetReader.from_params(config.pop(&quotdataset_reader&quot))
+    evaluation_data_path = args.evaluation_data_file
+    logger.info("Reading evaluation data from %s", evaluation_data_path)
+    dataset = dataset_reader.read(evaluation_data_path)
+    dataset.index_instances(vocab)
+
+    &#47&#47 Set up GPU or CPU
+    <a id="change">cuda_device = args.cuda_device</a>
+
+    &#47&#47 Instantiate model
+    weights_file = args.weights_file or os.path.join(serialization_prefix, "best.th")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    with open(args.config_file) as config_file:
+        config = Params(replace_none(json.loads(config_file.read())))
+
+    <a id="change">model = Model.load(config,
+                       weights_file=args.weights_file,
+                       cuda_device=args.cuda_device)</a>
+    model.eval()
+
+    vocab = model._vocab  &#47&#47 pylint: disable=protected-access
+</code></pre>

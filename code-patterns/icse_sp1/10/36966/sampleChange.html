@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def compute_full_test_accuracy(self):
+        Returns the network&quots mean classification (top-1) or regression (L2) accuracy on the entire training set.
+        <a id="change">num_test = self.__total_raw_samples - self.__total_training_samples</a>
+        <a id="change">num_batches = int(num_test/self.__batch_size)</a>
+
+        if num_batches == 0:
+            warnings.warn(&quotLess than a batch of testing data&quot)
+            exit()
+
+        sum = 0.0
+
+        <a id="change">for i in range(num_batches):
+            x_test, y_test = tf.train.batch([self.__test_images, self.__test_labels],
+                                                    batch_size=self.__batch_size,
+                                                    num_threads=self.__num_threads)
+
+            x_test = tf.reshape(x_test, shape=[-1, self.__image_height, self.__image_width, self.__image_depth])
+
+            x_test_predicted = self.forward_pass(x_test, deterministic=True)
+
+            if self.__problem_type == definitions.ProblemType.CLASSIFICATION:
+                test_class_predictions = tf.argmax(tf.nn.softmax(x_test_predicted), 1)
+
+                test_correct_predictions = tf.equal(test_class_predictions, tf.argmax(y_test, 1))
+                test_acc = tf.reduce_mean(tf.cast(test_correct_predictions, tf.float32))
+
+                sum = sum + test_acc
+            elif self.__problem_type == definitions.ProblemType.REGRESSION:
+                y_test = loaders.label_string_to_tensor(y_test, self.__batch_size, self.__num_regression_outputs)
+                test_loss = self.__batch_mean_l2_loss(tf.sub(x_test_predicted, y_test))
+
+                sum = sum + test_loss
+
+       </a> return sum / num_batches
+
+    def shut_down(self):
+        Stop all queues and end session. The model cannot be used anymore after a shut down is completed.</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def compute_full_test_accuracy(self):
+        Returns the network&quots mean classification (top-1) or regression (L2) accuracy on the entire training set.
+        <a id="change">with self.__graph.as_default():
+            num_test = self.__total_raw_samples - self.__total_training_samples
+            num_batches = int(num_test/self.__batch_size)
+
+            if num_batches == 0:
+                warnings.warn(&quotLess than a batch of testing data&quot)
+                exit()
+
+            sum = 0.0
+
+            for i in range(num_batches):
+                x_test, y_test = tf.train.batch([self.__test_images, self.__test_labels],
+                                                        batch_size=self.__batch_size,
+                                                        num_threads=self.__num_threads)
+
+                x_test = tf.reshape(x_test, shape=[-1, self.__image_height, self.__image_width, self.__image_depth])
+
+                x_test_predicted = self.forward_pass(x_test, deterministic=True)
+
+                if self.__problem_type == definitions.ProblemType.CLASSIFICATION:
+                    test_class_predictions = tf.argmax(tf.nn.softmax(x_test_predicted), 1)
+
+                    test_correct_predictions = tf.equal(test_class_predictions, tf.argmax(y_test, 1))
+                    test_acc = tf.reduce_mean(tf.cast(test_correct_predictions, tf.float32))
+
+                    sum = sum + test_acc
+                elif self.__problem_type == definitions.ProblemType.REGRESSION:
+                    y_test = loaders.label_string_to_tensor(y_test, self.__batch_size, self.__num_regression_outputs)
+                    test_loss = self.__batch_mean_l2_loss(tf.sub(x_test_predicted, y_test))
+
+                    sum = sum + test_loss
+
+       </a> return sum / num_batches
+
+    def shut_down(self):
+        Stop all queues and end session. The model cannot be used anymore after a shut down is completed.</code></pre>

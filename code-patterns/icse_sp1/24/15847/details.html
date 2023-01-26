@@ -1,0 +1,79 @@
+<html><h3>8896f02f94da16afe5b3ea5330e4f99245b75d6b,examples/pendulum_ac.py,,experiment,#Any#Any#,102
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        J = compute_J(dataset_callback.get(), gamma=1.)
+        dataset_callback.clean()
+        display_callback()
+        <a id="change">print(&quotMean Reward at iteration &quot + str(i) + &quot: &quot +
+              str(np.sum(J) / n_steps/n_episodes))</a>
+
+    print(&quotPress a button to visualize the pendulum...&quot)
+    input()
+    core.evaluate(n_steps=n_steps, render=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+def experiment(n_epochs, n_episodes):
+    np.random.seed()
+
+    <a id="change">logger = Logger(StochasticAC_AVG.__name__, results_dir=None)</a>
+    <a id="change">logger.strong_line()</a>
+    <a id="change">logger.info(&quotExperiment Algorithm: &quot + StochasticAC_AVG.__name__)</a>
+
+    &#47&#47 MDP
+    n_steps = 5000
+    mdp = InvertedPendulum(horizon=n_steps)
+
+    &#47&#47 Agent
+    n_tilings = 11
+    alpha_r = Parameter(.0001)
+    alpha_theta = Parameter(.001 / n_tilings)
+    alpha_v = Parameter(.1 / n_tilings)
+    tilings = Tiles.generate(n_tilings-1, [10, 10],
+                             mdp.info.observation_space.low,
+                             mdp.info.observation_space.high + 1e-3)
+
+    phi = Features(tilings=tilings)
+
+    tilings_v = tilings + Tiles.generate(1, [1, 1],
+                                         mdp.info.observation_space.low,
+                                         mdp.info.observation_space.high + 1e-3)
+    psi = Features(tilings=tilings_v)
+
+    input_shape = (phi.size,)
+
+    mu = Regressor(LinearApproximator, input_shape=input_shape,
+                   output_shape=mdp.info.action_space.shape)
+
+    std = Regressor(LinearApproximator, input_shape=input_shape,
+                    output_shape=mdp.info.action_space.shape)
+
+    std_0 = np.sqrt(1.)
+    std.set_weights(np.log(std_0) / n_tilings * np.ones(std.weights_size))
+
+    policy = StateLogStdGaussianPolicy(mu, std)
+
+    agent = StochasticAC_AVG(mdp.info, policy,
+                             alpha_theta, alpha_v, alpha_r,
+                             lambda_par=.5,
+                             value_function_features=psi,
+                             policy_features=phi)
+
+    &#47&#47 Train
+    dataset_callback = CollectDataset()
+    display_callback = Display(agent._V, mu, std,
+                               mdp.info.observation_space.low,
+                               mdp.info.observation_space.high,
+                               phi, psi)
+    core = Core(agent, mdp, callbacks_fit=[dataset_callback])
+
+    for i in trange(n_epochs, leave=False):
+        core.learn(n_episodes=n_episodes,
+                   n_steps_per_fit=1, render=False)
+        J = compute_J(dataset_callback.get(), gamma=1.)
+        dataset_callback.clean()
+        display_callback()
+        <a id="change">logger.epoch_info(i+1, R_mean=np.sum(J) / n_steps/n_episodes)</a>
+
+    logger.info(&quotPress a button to visualize the pendulum...&quot)
+    input()
+    core.evaluate(n_steps=n_steps, render=True)</code></pre><img src="93355216.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 16</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/8896f02f94da16afe5b3ea5330e4f99245b75d6b#diff-1d68f3f273aaea04a8c043b2c71bb442a598aa634ebf9114678f8e2b092a79b9L105' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 8896f02f94da16afe5b3ea5330e4f99245b75d6b</div><div id='time'> Time: 2021-01-08</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/pendulum_ac.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/8896f02f94da16afe5b3ea5330e4f99245b75d6b#diff-9325ff88a87910aa716c15c6dcd7e7b78b5f66ed27b9d06221557ece5e4219e6L95' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 8896f02f94da16afe5b3ea5330e4f99245b75d6b</div><div id='time'> Time: 2021-01-08</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/pendulum_dpg.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/60ebba7d23a946b55de9aaa34d08637e42e75d3b#diff-f711d28845e9dfa29eeac4300f1cbecd27d9244dc994925bdf44edbad4e89ee5L27' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 60ebba7d23a946b55de9aaa34d08637e42e75d3b</div><div id='time'> Time: 2021-01-08</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/lqr_bbo.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/8896f02f94da16afe5b3ea5330e4f99245b75d6b#diff-e9f36076e7ead3a1c33d593d4a18427b0098b8a42d02649a46b325788616fc15L27' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 8896f02f94da16afe5b3ea5330e4f99245b75d6b</div><div id='time'> Time: 2021-01-08</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/lqr_pg.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR><BR><div id='link'><a href='https://github.com/AIRLab-POLIMI/mushroom/commit/8896f02f94da16afe5b3ea5330e4f99245b75d6b#diff-1d68f3f273aaea04a8c043b2c71bb442a598aa634ebf9114678f8e2b092a79b9L105' target='_blank'>Link</a></div><div id='project'> Project Name: AIRLab-POLIMI/mushroom</div><div id='commit'> Commit Name: 8896f02f94da16afe5b3ea5330e4f99245b75d6b</div><div id='time'> Time: 2021-01-08</div><div id='author'> Author: boris.ilpossente@hotmail.it</div><div id='file'> File Name: examples/pendulum_ac.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: experiment</div><BR>

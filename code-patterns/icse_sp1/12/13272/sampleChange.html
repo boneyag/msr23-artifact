@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if self._variational:
+      self._embedding_mean = layers.Dense(
+          self._embedding_dimension, in_layers=prev_layer)
+      <a id="change">self._embedding_stddev = layers.Dense(
+          self._embedding_dimension, in_layers=prev_layer)</a>
+      <a id="change">prev_layer = layers.CombineMeanStd(
+          [self._embedding_mean, self._embedding_stddev], training_only=True)</a>
+    <a id="change">return prev_layer</a>
+
+  def _create_decoder(self, n_layers, dropout):
+    Create the decoder layers.
+    prev_layer = layers.Repeat(</code></pre><h3>After Change</h3><pre><code class='java'>
+  def _create_encoder(self, n_layers, dropout):
+    Create the encoder as a tf.keras.Model.
+    input = self._create_features()
+    <a id="change">gather_indices = Input(shape=(2,), dtype=tf.int32)</a>
+    prev_layer = input
+    for i in range(n_layers):
+      if dropout &gt; 0.0:
+        prev_layer = Dropout(rate=dropout)(prev_layer)
+      prev_layer = GRU(
+          self._embedding_dimension, return_sequences=True)(prev_layer)
+    prev_layer = Lambda(lambda x: tf.gather_nd(x[0], x[1]))(
+        [prev_layer, gather_indices])
+    <a id="change">return tf.keras.Model(inputs=[input, gather_indices], outputs=prev_layer)</a>
+
+  def _create_decoder(self, n_layers, dropout):
+    Create the decoder as a tf.keras.Model.
+    input = Input(shape=(self._embedding_dimension,))</code></pre>

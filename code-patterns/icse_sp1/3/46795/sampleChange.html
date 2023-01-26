@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def prepare_env(global_def=&quot&quot, extra_dict={}):
+    &#47&#47 initial values
+    env.sos_dict.set(&quotSOS_VERSION&quot, __version__)
+    <a id="change">try:
+        &#47&#47 global def could fail due to execution on remote host...
+        &#47&#47 we also execute global_def way before others and allows variables set by
+        &#47&#47 global_def be overwritten by other passed variables
+        &#47&#47
+        &#47&#47 note that we do not handle parameter in tasks because values should already be
+        &#47&#47 in sos_task dictionary
+        gd = strip_param_defs(global_def)
+        env.sos_dict.quick_update(extra_dict)
+        SoS_exec(&quot&quot&quot\
+import os, sys
+from sos.runtime import *
+&quot&quot&quot + gd)
+    except Exception as e:
+        env.logger.warning(
+            f&quotFailed to execute global definition {short_repr(gd)}: {e}&quot)
+
+</a>def statementMD5(stmts):
+    def _get_tokens(statement):
+        return [x[1] for x in generate_tokens(StringIO(statement).readline) if x[1] not in (&quot&quot, &quot\n&quot)]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    env.sos_dict.clear()
+
+    if gdef:
+        exec(<a id="change">compile(gdef, filename="&lt;ast&gt;", mode="exec")</a>,
+            env.sos_dict._dict)
+    env.sos_dict.quick_update(gvars)
+</code></pre>

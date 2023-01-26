@@ -1,0 +1,79 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            loss, _, = sess.run(
+                [answer_net.loss, answer_net.train_op], feed_dict=feed_dict)
+            if count % 100 == 0:
+                <a id="change">logger.debug(&quot%d %g except:%g, loss:%g&quot %
+                             (count, used, used / count * len(batches), loss))</a>
+            loss_sum += loss
+        else:
+            feed_dict = {answer_net.query_word: query,
+                         answer_net.query_mask: query_mask,
+                         answer_net.query_lengths: query_lengths,
+                         answer_net.passage_word: passage,
+                         answer_net.passage_mask: passage_mask,
+                         answer_net.passage_lengths: passage_lengths,
+                         answer_net.query_char_ids: query_char,
+                         answer_net.query_char_lengths: query_char_lengths,
+                         answer_net.passage_char_ids: passage_char,
+                         answer_net.passage_char_lengths: passage_char_lengths}
+            position1, position2 = sess.run(
+                [answer_net.begin_prob, answer_net.end_prob], feed_dict=feed_dict)
+            position1_result += position1.tolist()
+            position2_result += position2.tolist()
+            contexts += context
+            ids = np.concatenate((ids, sample_id))
+            if count % 100 == 0:
+                logger.debug(<a id="change">&quot%d %g except:%g&quot %
+                             (count, used, used / count * len(batches))</a>)
+    loss = loss_sum / len(batches)
+    if is_training:
+        return loss</code></pre><h3>After Change</h3><pre><code class='java'>
+    timer = Timer()
+    count = 0
+    for batch in batches:
+        <a id="change">used</a> = timer.get_elapsed(False)
+        count += 1
+        qps = batch[&quotqp_pairs&quot]
+        question_tokens = [qp[&quotquestion_tokens&quot] for qp in qps]
+        passage_tokens = [qp[&quotpassage_tokens&quot] for qp in qps]
+        context = [(qp[&quotpassage&quot], qp[&quotpassage_tokens&quot]) for qp in qps]
+        sample_id = [qp[&quotid&quot] for qp in qps]
+
+        _, query, query_mask, query_lengths = data.get_word_input(
+            data=question_tokens, word_dict=word_vcb, embed=embed, embed_dim=cfg.word_embed_dim)
+        _, passage, passage_mask, passage_lengths = data.get_word_input(
+            data=passage_tokens, word_dict=word_vcb, embed=embed, embed_dim=cfg.word_embed_dim)
+
+        query_char, query_char_lengths = data.get_char_input(
+            data=question_tokens, char_dict=char_vcb, max_char_length=cfg.max_char_length)
+
+        passage_char, passage_char_lengths = data.get_char_input(
+            data=passage_tokens, char_dict=char_vcb, max_char_length=cfg.max_char_length)
+
+        if is_training:
+            answer_begin, answer_end = data.get_answer_begin_end(qps)
+
+        if is_training:
+            feed_dict = {answer_net.query_word: query,
+                         answer_net.query_mask: query_mask,
+                         answer_net.query_lengths: query_lengths,
+                         answer_net.passage_word: passage,
+                         answer_net.passage_mask: passage_mask,
+                         answer_net.passage_lengths: passage_lengths,
+                         answer_net.query_char_ids: query_char,
+                         answer_net.query_char_lengths: query_char_lengths,
+                         answer_net.passage_char_ids: passage_char,
+                         answer_net.passage_char_lengths: passage_char_lengths,
+                         answer_net.answer_begin: answer_begin,
+                         answer_net.answer_end: answer_end}
+            loss, _, = sess.run(
+                [answer_net.loss, answer_net.train_op], feed_dict=feed_dict)
+            if count % 100 == 0:
+                <a id="change">logger.debug(&quot%d %g except:%g, loss:%g&quot, count, used, used / count * len(batches), loss)</a>
+            loss_sum += loss
+        else:
+            feed_dict = {answer_net.query_word: query,
+                         answer_net.query_mask: query_mask,</code></pre>

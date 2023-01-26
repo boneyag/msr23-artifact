@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            maxval = -1e20
+            maxidx = -1
+            <a id="change">iy = 0</a>
+            <a id="change">while iy &lt; roi_bin_grid_h:
+                y = roi_start_h + ph * bin_size_h + \
+                    (iy + .5) * bin_size_h / roi_bin_grid_h
+                ix = 0
+                while ix &lt; roi_bin_grid_w:
+                    x = roi_start_w + pw * bin_size_w + \
+                        (ix + .5) * bin_size_w / roi_bin_grid_w
+
+                    &#47&#47 bilinear interpolation {{
+                    y_low, x_low, y_high, x_high, w1, w2, w3, w4 = \
+                        _get_bilinear_interp_params(y, x, height, width)
+                    if y_low is None:
+                        continue
+
+                    v1 = bottom_data[roi_batch_ind, c, y_low, x_low]
+                    v2 = bottom_data[roi_batch_ind, c, y_low, x_high]
+                    v3 = bottom_data[roi_batch_ind, c, y_high, x_low]
+                    v4 = bottom_data[roi_batch_ind, c, y_high, x_high]
+
+                    tmpval = w1 * v1 + w2 * v2 + w3 * v3 + w4 * v4
+                    bottom_index = iy * roi_bin_grid_w + ix
+                    if (tmpval &gt; maxval):
+                        maxval = tmpval
+                        maxidx = bottom_index
+
+                    ix += 1
+                iy += 1
+
+           </a> top_data[n, ctop, ph, pw] = maxval
+            self.argmax_data[n, ctop, ph, pw] = maxidx
+
+        return top_data,</code></pre><h3>After Change</h3><pre><code class='java'>
+                y = roi_start_h + ph * bin_size_h + \
+                    (iy + .5) * bin_size_h / roi_bin_grid_h
+                y, y_low, y_high = _get_bounds(y, height)
+                if <a id="change">y is None o</a>r y_low is None or y_high is None:
+                    continue
+                for ix in six.moves.range(roi_bin_grid_w):
+                    x = roi_start_w + pw * bin_size_w + \
+                        (ix + .5) * bin_size_w / roi_bin_grid_w
+
+                    <a id="change">x, x_low, x_high = _get_bounds(x, width)</a>
+                    <a id="change">if x is None or x_low is None or x_high is None:
+                        continue
+
+                    &#47&#47 bilinear interpolation {{
+                   </a> w1, w2, w3, w4 = _get_bilinear_interp_params(
+                        y, x, y_low, x_low, y_high, x_high)
+
+                    v1 = bottom_data[roi_batch_ind, c, y_low, x_low]</code></pre>

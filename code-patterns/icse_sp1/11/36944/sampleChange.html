@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        it = util.peekable(iter(matches))
+        curr = it.next()
+        while it.hasnext():
+            <a id="change">next = it.peek()</a>
+            &#47&#47 we have to make sure that there&quots no matchresult from another group
+            &#47&#47 between curr and next
+            if curr.text != next.text or (resultindex[curr] != resultindex[next] - 1):
+                merged.append(curr)
+                curr = it.next()
+            else:
+                logger.debug(&quotmerging adjacent identical matches %d and %d&quot, it.index - 1, it.index)
+                del resultindex[curr]
+                newindex = <a id="change">resultindex[next]</a>
+                del <a id="change">resultindex[next]</a>
+                it.next()
+                curr = matchresult(curr.start, next.end, curr.text, curr.match)
+                resultindex[curr] = newindex
+        merged.append(curr)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _mergeadjacent(self, matches):
+        merged = []
+        resultindex = self._resultindex()
+        sametext = <a id="change">itertools.groupby(matches, lambda m: m.text)</a>
+        <a id="change">for text, ll in sametext:
+            for l in util.groupcontinuous(ll, key=lambda m: resultindex[m]):
+                if len(l) == 1:
+                    merged.append(l[0])
+                else:
+                    start = l[0].start
+                    end = l[-1].end
+                    endindex = resultindex[l[-1]]
+                    for mr in l:
+                        del resultindex[mr]
+                    merged.append(matchresult(start, end, text, None))
+                    resultindex[merged[-1]] = endindex
+       </a> return merged
+
+    def _mergeunknowns(self, matches):
+        merged = []</code></pre>

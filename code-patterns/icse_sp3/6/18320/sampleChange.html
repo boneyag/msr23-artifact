@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        assert(gradOutput.is_contiguous() == True)
+        
+        <a id="change">with torch.cuda.device_of(input1):
+            b, c, h, w = input1.size()
+            gradInput1 = input1.new().resize_(b,c,h,w).zero_()
+
+            b, c, h, w = input2.size()
+            gradInput2 = input2.new().resize_(b,c,h,w).zero_()
+
+            resample2d.Resample2d_cuda_backward(input1, input2, gradOutput, gradInput1, gradInput2, self.kernel_size)
+
+       </a> return gradInput1, gradInput2</code></pre><h3>After Change</h3><pre><code class='java'>
+        input1, input2 = ctx.saved_tensors
+
+        grad_input1 = Variable(input1.new(input1.size()).zero_())
+        grad_input2 = Variable(<a id="change">input1</a>.new(input2.size()).zero_())
+
+        resample2d.Resample2d_cuda_backward(input1, input2, grad_output.data,
+                                            grad_input1.data, grad_input2.data,</code></pre>

@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                S = np.diagflat(S)
+            else:
+                if self.kernel_type == "geometric":
+                    <a id="change">S = np.diagflat(1/(1-self.lamda*Dij))</a>
+                elif self.kernel_type == "exponential":
+                    S = np.diagflat(np.exp(self.lamda*Dij))
+
+            return ff.dot(S).dot(ff.T)</code></pre><h3>After Change</h3><pre><code class='java'>
+                    S = expm(self.lamda*XY).T
+
+            return np.sum(S)
+        elif <a id="change">self</a>.method_type == "fast" and (self.p is not None or self.kernel_type == "exponential"):
+            &#47&#47 Spectral demoposition algorithm as presented in
+            &#47&#47 [Vishwanathan et al., 2006] p.13, s.4.4, with
+            &#47&#47 complexity of O((|E|+|V|)|E||V|^2) for graphs
+            &#47&#47 witout labels
+
+            &#47&#47 calculate kernel
+            qi_Pi, wi = X
+            qj_Pj, wj = Y
+
+            &#47&#47 calculate flanking factor
+            ff = np.expand_dims(np.kron(qi_Pi, qj_Pj), axis=0)
+
+            &#47&#47 calculate D based on the method
+            Dij = np.kron(wi, wj)
+            if self.p is not None:
+                D = np.ones(shape=(Dij.shape[0],))
+                S = self._mu[0] * D
+                for k in self._mu[1:]:
+                    D *= Dij
+                    S += k*D
+
+                S = np.diagflat(S)
+            else:
+                &#47&#47 Exponential
+                S = np.diagflat(np.exp(self.lamda*Dij))
+            return ff.dot(S).dot(ff.T)
+        else:
+            &#47&#47 Random Walk
+            &#47&#47 Conjugate Gradient Method as presented in
+            &#47&#47 [Vishwanathan et al., 2006] p.12, s.4.2
+            Ax, Ay = X, Y
+            xs, ys = Ax.shape[0], Ay.shape[0]
+            mn = xs*ys
+
+            def lsf(x, lamda):
+                xm = x.reshape((xs, ys), order=&quotF&quot)
+                y = np.reshape(multi_dot((Ax, xm, Ay)), (mn,), order=&quotF&quot)
+                return x - self.lamda * y
+
+            &#47&#47 A*x=b
+            A = LinearOperator((mn, mn), matvec=lambda x: lsf(x, self.lamda))
+            <a id="change">b = np.ones(mn)</a>
+            x_sol, _ = cg(A, b, tol=1.0e-6, maxiter=20)
+            return np.sum(x_sol)
+
+</code></pre>

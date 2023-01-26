@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            x = pyro.sample("x_{}".format(self.t),
+                            dist.Normal(self.x_mean + w, 1), obs=x)
+            y = pyro.sample("y_{}".format(self.t),
+                            dist.MultivariateNormal(self.y_mean + w.unsqueeze(-1), <a id="change">torch.eye(self.state_size)</a>),
+                            obs=y)
+        self.t += 1
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def step(self, state, y=None):
+        self.t += 1
+        state["z"] = pyro.sample("z_{}".format(self.t),
+                                 dist.Normal(<a id="change">state["z"].matmul(self.A)</a>,
+                                             self.B*self.sigma_z).to_event(1))
+        y = pyro.sample("y_{}".format(self.t),
+                        dist.Normal(state["z"][..., 0], self.sigma_y),
+                        obs=y)
+
+        <a id="change">state["z_{}".format(self.t)] = state["z"]</a>  &#47&#47 saved for testing
+
+        return state["z"], y
+</code></pre>

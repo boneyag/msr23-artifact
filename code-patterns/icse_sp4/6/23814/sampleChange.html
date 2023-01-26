@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        ]
+        &#47&#47  Rebuild original constraints with scaling factor
+        for raw_constr in self._additional_constraints_raw:
+            <a id="change">self._constraints.append(raw_constr(self._w / k))</a>
+        &#47&#47 Sharpe ratio is invariant w.r.t scaled weights, so we must
+        &#47&#47 replace infinities and negative infinities
+        &#47&#47 new_lower_bound = np.nan_to_num(self._lower_bounds, neginf=-1)
+        &#47&#47 new_upper_bound = np.nan_to_num(self._upper_bounds, posinf=1)</code></pre><h3>After Change</h3><pre><code class='java'>
+        new_constraints = []
+        &#47&#47 Must rebuild the constraints
+        for constr in self._constraints:
+            <a id="change">if isinstance(constr, cp.constraints.nonpos.Inequality):
+                &#47&#47 Either the first or second item is the expression
+                if isinstance(
+                    constr.args[0], cp.expressions.constants.constant.Constant
+                ):
+                    new_constraints.append(constr.args[1] &gt;= constr.args[0] * k)
+                else:
+                    new_constraints.append(constr.args[0] &lt;= constr.args[1] * k)
+            elif isinstance(constr, cp.constraints.zero.Equality):
+                new_constraints.append(constr.args[0] == constr.args[1] * k)
+            else:
+                raise TypeError(
+                    "Please check that your constraints are in a suitable format"
+                )
+
+        &#47&#47 Transformed max_sharpe convex problem:
+       </a> self._constraints = [
+            (self.expected_returns - risk_free_rate).T * self._w == 1,
+            cp.sum(self._w) == k,
+            k &gt;= 0,</code></pre>

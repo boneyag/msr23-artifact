@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+class TestSimpleGPRegression(unittest.TestCase):
+    def test_posterior_latent_gp_and_likelihood_without_optimization(self):
+        &#47&#47 We&quotre manually going to set the hyperparameters to be ridiculous
+        <a id="change">likelihood = GaussianLikelihood(log_noise_bounds=(-3, 3))</a>
+        gp_model = ExactGPModel(train_x.data, train_y.data, likelihood)
+        &#47&#47 Update bounds to accommodate extreme parameters
+        gp_model.covar_module.set_bounds(log_lengthscale=(-10, 10))
+        likelihood.set_bounds(log_noise=(-10, 10))
+        &#47&#47 Update parameters
+        gp_model.covar_module.initialize(log_lengthscale=-10)
+        <a id="change">gp_model.mean_module.initialize(constant=0)</a>
+        likelihood.initialize(log_noise=-10)
+
+        &#47&#47 Compute posterior distribution
+        gp_model.eval()</code></pre><h3>After Change</h3><pre><code class='java'>
+class TestSimpleGPRegression(unittest.TestCase):
+    def test_posterior_latent_gp_and_likelihood_without_optimization(self):
+        &#47&#47 We&quotre manually going to set the hyperparameters to be ridiculous
+        <a id="change">likelihood = GaussianLikelihood(
+            log_noise_prior=SmoothedBoxPrior(exp(-10), exp(10), sigma=0.5, log_transform=True)
+        )</a>
+        gp_model = ExactGPModel(train_x.data, train_y.data, likelihood)
+        &#47&#47 Update lengthscale prior to accommodate extreme parameters
+        gp_model.covar_module.set_priors(
+            log_lengthscale=SmoothedBoxPrior(exp(-10), exp(10), sigma=0.5, log_transform=True)</code></pre>

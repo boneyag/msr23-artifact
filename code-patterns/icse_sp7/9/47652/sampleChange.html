@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  @contextmanager
+  def distribution(self, files=None, executables=None, libs=None):
+    with temporary_dir() as jdk_root:
+      <a id="change">jdk_bin_dir = os.path.join(jdk_root, &quotbin&quot)</a>
+      os.mkdir(jdk_bin_dir)
+      for f in maybe_list(files or ()):
+        touch(<a id="change">os</a>.path.join(jdk_bin_dir, f))
+      for exe in maybe_list(executables or (), expected_type=self.EXE):
+        path = os.path.join(jdk_bin_dir, exe.name)
+        with safe_open(path, &quotw&quot) as fp:</code></pre><h3>After Change</h3><pre><code class='java'>
+  @contextmanager
+  def distribution(self, files=None, executables=None, java_home=None):
+    with temporary_dir() as dist_root:
+      <a id="change">with environment_as(DIST_ROOT=os.path.join(dist_root, java_home) if java_home else dist_root):
+        for f in maybe_list(files or ()):
+          touch(os.path.join(dist_root, f))
+        for exe in maybe_list(executables or (), expected_type=self.EXE):
+          path = os.path.join(dist_root, exe.relpath)
+          with safe_open(path, &quotw&quot) as fp:
+            fp.write(exe.contents or &quot&quot)
+          chmod_plus_x(path)
+        yield dist_root
+
+ </a> def setUp(self):
+    super(MockDistributionTest, self).setUp()
+    &#47&#47 Save local cache and then flush so tests get a clean environment. _CACHE restored in tearDown.
+    self._local_cache = Distribution._CACHE</code></pre>

@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return total_size[&quotsize_in_bytes__sum&quot] if total_size[&quotsize_in_bytes__sum&quot] else 0
+
+    def _get_job_stats(self, jobs, range_param):
+        <a id="change">result = {
+            &quottotal&quot: jobs.count(),
+            &quotpending&quot: jobs.filter(start_time__isnull=True).count(),
+            &quotcompleted&quot: jobs.filter(end_time__isnull=False).count(),
+            &quotsuccessful&quot: jobs.filter(success=True).count(),
+            &quotopen&quot: jobs.filter(start_time__isnull=False, end_time__isnull=True, success__isnull=True).count(),
+            &#47&#47 via https://stackoverflow.com/questions/32520655/get-average-of-difference-of-datetime-fields-in-django
+            &quotaverage_time&quot: jobs.filter(start_time__isnull=False, end_time__isnull=False, success=True).aggregate(
+                average_time=Avg(F(&quotend_time&quot) - F(&quotstart_time&quot)))[&quotaverage_time&quot]
+        }</a>
+
+        if not result[&quotaverage_time&quot]:
+            result[&quotaverage_time&quot] = 0
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+        return total_size[&quotsize_in_bytes__sum&quot] if total_size[&quotsize_in_bytes__sum&quot] else 0
+
+    def _get_job_stats(self, jobs, range_param):
+        result = <a id="change">jobs.aggregate(
+            total=Count(&quotid&quot), 
+            pending=Count(&quotid&quot, filter=Q(start_time__isnull=True)),
+            completed=Count(&quotid&quot, filter=Q(end_time__isnull=False)),
+            successful=Count(&quotid&quot, filter=Q(success=True)),
+            open=Count(&quotid&quot, filter=Q(start_time__isnull=False, end_time__isnull=True, success__isnull=True)),
+        )</a>
+        &#47&#47 via https://stackoverflow.com/questions/32520655/get-average-of-difference-of-datetime-fields-in-django
+        <a id="change">result[&quotaverage_time&quot]</a> = jobs.filter(start_time__isnull=False, end_time__isnull=False, success=True).aggregate(
+                average_time=Avg(F(&quotend_time&quot) - F(&quotstart_time&quot)))[&quotaverage_time&quot]
+
+        if not result[&quotaverage_time&quot]:</code></pre>

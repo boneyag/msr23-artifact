@@ -1,0 +1,104 @@
+<html><h3>887f94bd4f292778622304ba627727a6dacad43f,deepchem/models/tensorgraph/layers.py,IterRefLSTMEmbedding,create_tensor,#IterRefLSTMEmbedding#Any#Any#,2896
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      Returns two tensors of same shape as input. Namely the output shape will
+      be [(n_test, n_feat), (n_support, n_feat)]
+    
+    n_feat = <a id="change">self.n_feat</a>
+
+    &#47&#47 Support set lstm
+    support_lstm = LSTMStep(n_feat, 2 * n_feat)
+    <a id="change">self.q_init</a> = model_ops.zeros([self.n_support, n_feat])
+    self.support_states_init = support_lstm.get_initial_states(
+        [<a id="change">self.n_support</a>, n_feat])
+
+    &#47&#47 Test lstm
+    test_lstm = LSTMStep(n_feat, 2 * n_feat)
+    <a id="change">self.p_init = model_ops.zeros([self.n_test, n_feat])</a>
+    <a id="change">self.test_states_init</a> = test_lstm.get_initial_states([self.n_test, n_feat])
+
+    self.trainable_weights = []
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    self.test_states_init = test_lstm.get_initial_states([self.n_test, n_feat])
+    return (support_lstm, test_lstm)
+
+  def create_tensor(<a id="change">self</a>, in_layers=None, set_tensors=True, **kwargs):
+    Execute this layer on input tensors.
+
+    Parameters
+    ----------
+    in_layers: list
+      List of two tensors (X, Xp). X should be of shape (n_test, n_feat) and
+      Xp should be of shape (n_support, n_feat) where n_test is the size of
+      the test set, n_support that of the support set, and n_feat is the number
+      of per-atom features.
+
+    Returns
+    -------
+    list
+      Returns two tensors of same shape as input. Namely the output shape will
+      be [(n_test, n_feat), (n_support, n_feat)]
+    
+    <a id="change">if tfe.in_eager_mode():
+      if not self._built:
+        self._support_lstm, self._test_lstm = self._create_variables()
+      support_lstm = self._support_lstm
+      test_lstm = self._test_lstm
+    else:
+      support_lstm, test_lstm = self._create_variables()
+      self.trainable_weights = []
+
+    &#47&#47 self.build()
+   </a> inputs = self._get_input_tensors(in_layers)
+    if len(inputs) != 2:
+      raise ValueError(
+          "IterRefLSTMEmbedding layer must have exactly two parents")
+    x, xp = inputs
+
+    &#47&#47 Get initializations
+    p = self.p_init
+    q = self.q_init
+    &#47&#47 Rename support
+    z = xp
+    states = self.support_states_init
+    x_states = self.test_states_init
+
+    for d in range(self.max_depth):
+      &#47&#47 Process support xp using attention
+      e = _cosine_dist(z + q, xp)
+      a = tf.nn.softmax(e)
+      &#47&#47 Get linear combination of support set
+      r = model_ops.dot(a, xp)
+
+      &#47&#47 Process test x using attention
+      x_e = _cosine_dist(x + p, z)
+      x_a = tf.nn.softmax(x_e)
+      s = model_ops.dot(x_a, z)
+
+      &#47&#47 Generate new support attention states
+      qr = model_ops.concatenate([q, r], axis=1)
+      q, states = support_lstm(qr, *states)
+
+      &#47&#47 Generate new test attention states
+      ps = model_ops.concatenate([p, s], axis=1)
+      p, x_states = test_lstm(ps, *x_states)
+
+      &#47&#47 Redefine
+      z = r
+
+    if set_tensors:
+      self.xp = x + p
+      self.xpq = xp + q
+      self.out_tensor = self.xp
+    <a id="change">if tfe.in_eager_mode() and not self._built:
+      self.variables = self._support_lstm.variables + self._test_lstm.variables + [
+          self.q_init, self.p_init
+      ]
+      self._built = True
+
+   </a> return [x + p, xp + q]
+
+  def none_tensors(self):
+    p_init, q_init = self.p_init, self.q_init,</code></pre><img src="97936854.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 27</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/887f94bd4f292778622304ba627727a6dacad43f#diff-972803a74a51af2d54b7671dbbc4d2dd3f051e00445d4a58cf6bdfe53c4008f7L2896' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 887f94bd4f292778622304ba627727a6dacad43f</div><div id='time'> Time: 2018-03-25</div><div id='author'> Author: peastman@stanford.edu</div><div id='file'> File Name: deepchem/models/tensorgraph/layers.py</div><div id='class'> Class Name: IterRefLSTMEmbedding</div><div id='method'> Method Name: create_tensor</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/887f94bd4f292778622304ba627727a6dacad43f#diff-972803a74a51af2d54b7671dbbc4d2dd3f051e00445d4a58cf6bdfe53c4008f7L2896' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 887f94bd4f292778622304ba627727a6dacad43f</div><div id='time'> Time: 2018-03-25</div><div id='author'> Author: peastman@stanford.edu</div><div id='file'> File Name: deepchem/models/tensorgraph/layers.py</div><div id='class'> Class Name: IterRefLSTMEmbedding</div><div id='method'> Method Name: create_tensor</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/887f94bd4f292778622304ba627727a6dacad43f#diff-972803a74a51af2d54b7671dbbc4d2dd3f051e00445d4a58cf6bdfe53c4008f7L2786' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 887f94bd4f292778622304ba627727a6dacad43f</div><div id='time'> Time: 2018-03-25</div><div id='author'> Author: peastman@stanford.edu</div><div id='file'> File Name: deepchem/models/tensorgraph/layers.py</div><div id='class'> Class Name: AttnLSTMEmbedding</div><div id='method'> Method Name: create_tensor</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/887f94bd4f292778622304ba627727a6dacad43f#diff-972803a74a51af2d54b7671dbbc4d2dd3f051e00445d4a58cf6bdfe53c4008f7L2414' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 887f94bd4f292778622304ba627727a6dacad43f</div><div id='time'> Time: 2018-03-25</div><div id='author'> Author: peastman@stanford.edu</div><div id='file'> File Name: deepchem/models/tensorgraph/layers.py</div><div id='class'> Class Name: GraphConv</div><div id='method'> Method Name: create_tensor</div><BR>

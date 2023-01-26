@@ -1,0 +1,171 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      &#47&#47 The guide to serve a exported TensorFlow model is at:
+      &#47&#47    https://www.tensorflow.org/serving/serving_basic
+      tf.logging.info(&quotStarting to export model.&quot)
+      <a id="change">resnet_classifier.export_saved_model(
+          export_dir_base=FLAGS.export_dir,
+          serving_input_receiver_fn=imagenet_input.image_serving_input_fn)</a>
+
+
+if __name__ == &quot__main__&quot:
+  tf.logging.set_verbosity(tf.logging.INFO)</code></pre><h3>After Change</h3><pre><code class='java'>
+          .PER_HOST_V2))  &#47&#47 pylint: disable=line-too-long
+
+  if FLAGS.inference_with_all_cores:
+    <a id="change">resnet_classifier = tf.contrib.tpu.TPUEstimator(
+        use_tpu=FLAGS.use_tpu,
+        model_fn=resnet_model_fn,
+        config=config,
+        train_batch_size=FLAGS.train_batch_size,
+        eval_batch_size=FLAGS.eval_batch_size,
+        export_to_tpu=FLAGS.export_to_tpu,
+        experimental_exported_model_uses_all_cores=FLAGS
+        .inference_with_all_cores)</a>
+  else:
+    resnet_classifier = tf.contrib.tpu.TPUEstimator(
+        use_tpu=FLAGS.use_tpu,
+        model_fn=resnet_model_fn,
+        config=config,
+        train_batch_size=FLAGS.train_batch_size,
+        eval_batch_size=FLAGS.eval_batch_size,
+        export_to_tpu=FLAGS.export_to_tpu)
+  assert FLAGS.precision == &quotbfloat16&quot or FLAGS.precision == &quotfloat32&quot, (
+      &quotInvalid value for --precision flag; must be bfloat16 or float32.&quot)
+  tf.logging.info(&quotPrecision: %s&quot, FLAGS.precision)
+  use_bfloat16 = FLAGS.precision == &quotbfloat16&quot
+
+  &#47&#47 Input pipelines are slightly different (with regards to shuffling and
+  &#47&#47 preprocessing) between training and evaluation.
+  if FLAGS.bigtable_instance:
+    tf.logging.info(&quotUsing Bigtable dataset, table %s&quot, FLAGS.bigtable_table)
+    select_train, select_eval = _select_tables_from_flags()
+    imagenet_train, imagenet_eval = [imagenet_input.ImageNetBigtableInput(
+        is_training=is_training,
+        use_bfloat16=use_bfloat16,
+        transpose_input=FLAGS.transpose_input,
+        selection=selection) for (is_training, selection) in
+                                     [(True, select_train),
+                                      (False, select_eval)]]
+  else:
+    if FLAGS.data_dir == FAKE_DATA_DIR:
+      tf.logging.info(&quotUsing fake dataset.&quot)
+    else:
+      tf.logging.info(&quotUsing dataset: %s&quot, FLAGS.data_dir)
+    imagenet_train, imagenet_eval = [
+        imagenet_input.ImageNetInput(
+            is_training=is_training,
+            data_dir=FLAGS.data_dir,
+            transpose_input=FLAGS.transpose_input,
+            cache=FLAGS.use_cache and is_training,
+            image_size=FLAGS.image_size,
+            num_parallel_calls=FLAGS.num_parallel_calls,
+            use_bfloat16=use_bfloat16) for is_training in [True, False]
+    ]
+
+  steps_per_epoch = FLAGS.num_train_images // FLAGS.train_batch_size
+  eval_steps = FLAGS.num_eval_images // FLAGS.eval_batch_size
+
+  if FLAGS.mode == &quoteval&quot:
+
+    &#47&#47 Run evaluation when there&quots a new checkpoint
+    for ckpt in evaluation.checkpoints_iterator(
+        FLAGS.model_dir, timeout=FLAGS.eval_timeout):
+      tf.logging.info(&quotStarting to evaluate.&quot)
+      try:
+        start_timestamp = time.time()  &#47&#47 This time will include compilation time
+        eval_results = resnet_classifier.evaluate(
+            input_fn=imagenet_eval.input_fn,
+            steps=eval_steps,
+            checkpoint_path=ckpt)
+        elapsed_time = int(time.time() - start_timestamp)
+        tf.logging.info(&quotEval results: %s. Elapsed seconds: %d&quot,
+                        eval_results, elapsed_time)
+
+        &#47&#47 Terminate eval job when final checkpoint is reached
+        current_step = int(os.path.basename(ckpt).split(&quot-&quot)[1])
+        if current_step &gt;= FLAGS.train_steps:
+          tf.logging.info(
+              &quotEvaluation finished after training step %d&quot, current_step)
+          break
+
+      except tf.errors.NotFoundError:
+        &#47&#47 Since the coordinator is on a different job than the TPU worker,
+        &#47&#47 sometimes the TPU worker does not finish initializing until long after
+        &#47&#47 the CPU job tells it to start evaluating. In this case, the checkpoint
+        &#47&#47 file could have been deleted already.
+        tf.logging.info(
+            &quotCheckpoint %s no longer exists, skipping checkpoint&quot, ckpt)
+
+  else:   &#47&#47 FLAGS.mode == &quottrain&quot or FLAGS.mode == &quottrain_and_eval&quot
+    current_step = estimator._load_global_step_from_checkpoint_dir(FLAGS.model_dir)  &#47&#47 pylint: disable=protected-access,line-too-long
+    steps_per_epoch = FLAGS.num_train_images // FLAGS.train_batch_size
+
+    tf.logging.info(&quotTraining for %d steps (%.2f epochs in total). Current&quot
+                    &quot step %d.&quot,
+                    FLAGS.train_steps,
+                    FLAGS.train_steps / steps_per_epoch,
+                    current_step)
+
+    start_timestamp = time.time()  &#47&#47 This time will include compilation time
+
+    if FLAGS.mode == &quottrain&quot:
+      hooks = []
+      if FLAGS.use_async_checkpointing:
+        hooks.append(
+            async_checkpoint.AsyncCheckpointSaverHook(
+                checkpoint_dir=FLAGS.model_dir,
+                save_steps=max(100, FLAGS.iterations_per_loop)))
+      if FLAGS.profile_every_n_steps &gt; 0:
+        hooks.append(
+            tpu_profiler_hook.TPUProfilerHook(
+                save_steps=FLAGS.profile_every_n_steps,
+                output_dir=FLAGS.model_dir, tpu=FLAGS.tpu)
+            )
+      resnet_classifier.train(
+          input_fn=imagenet_train.input_fn,
+          max_steps=FLAGS.train_steps,
+          hooks=hooks)
+
+    else:
+      assert FLAGS.mode == &quottrain_and_eval&quot
+      while current_step &lt; FLAGS.train_steps:
+        &#47&#47 Train for up to steps_per_eval number of steps.
+        &#47&#47 At the end of training, a checkpoint will be written to --model_dir.
+        next_checkpoint = min(current_step + FLAGS.steps_per_eval,
+                              FLAGS.train_steps)
+        resnet_classifier.train(
+            input_fn=imagenet_train.input_fn, max_steps=next_checkpoint)
+        current_step = next_checkpoint
+
+        tf.logging.info(&quotFinished training up to step %d. Elapsed seconds %d.&quot,
+                        next_checkpoint, int(time.time() - start_timestamp))
+
+        &#47&#47 Evaluate the model on the most recent model in --model_dir.
+        &#47&#47 Since evaluation happens in batches of --eval_batch_size, some images
+        &#47&#47 may be excluded modulo the batch size. As long as the batch size is
+        &#47&#47 consistent, the evaluated images are also consistent.
+        tf.logging.info(&quotStarting to evaluate.&quot)
+        eval_results = resnet_classifier.evaluate(
+            input_fn=imagenet_eval.input_fn,
+            steps=FLAGS.num_eval_images // FLAGS.eval_batch_size)
+        tf.logging.info(&quotEval results at step %d: %s&quot,
+                        next_checkpoint, eval_results)
+
+      elapsed_time = int(time.time() - start_timestamp)
+      tf.logging.info(&quotFinished training up to step %d. Elapsed seconds %d.&quot,
+                      FLAGS.train_steps, elapsed_time)
+
+    if FLAGS.export_dir is not None:
+      &#47&#47 The guide to serve a exported TensorFlow model is at:
+      &#47&#47    https://www.tensorflow.org/serving/serving_basic
+      tf.logging.info(&quotStarting to export model.&quot)
+      <a id="change">export_path = resnet_classifier.export_saved_model(
+          export_dir_base=FLAGS.export_dir,
+          serving_input_receiver_fn=imagenet_input.image_serving_input_fn)</a>
+      if FLAGS.add_warmup_requests:
+        inference_warmup.write_warmup_requests(
+            export_path,
+            FLAGS.model_name,</code></pre>

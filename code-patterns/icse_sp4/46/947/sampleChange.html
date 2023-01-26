@@ -1,0 +1,85 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for message in consumer.get_messages():
+            num_message_retries = 0
+            disconnected_ws = set()
+            <a id="change">for _ws in consumer.ws:
+                try:
+                    await _ws.send(message)
+                except ConnectionClosed:
+                    disconnected_ws.add(_ws)
+           </a> consumer.remove_sockets(disconnected_ws)
+
+        &#47&#47 After trying a couple of time, we must check the status of the experiment
+        if num_message_retries &gt; MAX_RETRIES:</code></pre><h3>After Change</h3><pre><code class='java'>
+        consumer = request.app.job_logs_consumers[job_uuid]
+    else:
+        _logger.info(&quotAdd job log consumer for %s&quot, job_uuid)
+        <a id="change">consumer</a> = Consumer(
+            routing_key=&quot{}.{}&quot.format(RoutingKeys.LOGS_SIDECARS_JOBS, job_uuid),
+            queue=&quot{}.{}&quot.format(CeleryQueues.STREAM_LOGS_SIDECARS, job_uuid))
+        request.app.job_logs_consumers[job_uuid] = consumer
+        consumer.run()
+
+    def should_disconnect():
+        if not consumer.ws:
+            _logger.info(&quotStopping logs monitor for job uuid %s&quot, job_uuid)
+            RedisToStream.remove_job_logs(job_uuid=job_uuid)
+            &#47&#47 if job_uuid in request.app.job_logs_consumers:
+            &#47&#47     consumer = request.app.job_logs_consumers.pop(job_uuid, None)
+            &#47&#47     if consumer:
+            &#47&#47         consumer.stop()
+            return True
+        return False
+
+    &#47&#47 add socket manager
+    consumer.add_socket(ws)
+    should_quite = False
+    num_message_retries = 0
+
+    &#47&#47 Stream phase changes
+    <a id="change">status = None</a>
+    <a id="change">while status != JobLifeCycle.RUNNING and not JobLifeCycle.is_done(status):
+        job.refresh_from_db()
+        if status != job.last_status:
+            status = job.last_status
+            await notify(consumer=consumer, message=get_status_message(status))
+            if should_disconnect():
+                return
+        await asyncio.sleep(SOCKET_SLEEP)
+
+   </a> <a id="change">if JobLifeCycle.is_done(status):
+        await notify(consumer=consumer, message=get_status_message(status))
+        RedisToStream.remove_job_logs(job_uuid=job_uuid)
+        return
+
+   </a> while True:
+        num_message_retries += 1
+        for message in consumer.get_messages():
+            num_message_retries = 0
+            await notify(consumer=consumer, message=message)
+
+        &#47&#47 After trying a couple of time, we must check the status of the experiment
+        if num_message_retries &gt; MAX_RETRIES:
+            job.refresh_from_db()
+            if job.is_done:
+                _logger.info(&quotremoving all socket because the job `%s` is done&quot, job_uuid)
+                consumer.ws = set([])
+            else:
+                num_message_retries -= CHECK_DELAY
+
+        &#47&#47 Just to check if connection closed
+        if ws._connection_lost:  &#47&#47 pylint:disable=protected-access
+            _logger.info(&quotQuitting logs socket for job uuid %s&quot, job_uuid)
+            consumer.remove_sockets({ws, })
+            should_quite = True
+
+        <a id="change">if should_disconnect():
+            should_quite = True
+
+       </a> if should_quite:
+            return
+
+        await asyncio.sleep(SOCKET_SLEEP)</code></pre>

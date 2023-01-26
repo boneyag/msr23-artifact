@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        config = self.get_config(model_type, override_params=override_params)
+
+        <a id="change">step = run(
+            config,
+            get_dataset_fn=self.get_dataset, get_model_fn=self.get_model
+        )</a>
+        self.assertEqual(step, 2)
+
+        &#47&#47 We have to reset the graph to avoid having duplicate names.
+        tf.reset_default_graph()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Create new graph which will load previously saved checkpoint
+        tf.reset_default_graph()
+        new_session = <a id="change">tf.Session()</a>
+        new_saver = tf.train.import_meta_graph(
+            tmp_job_dir + &quot/test_runname/model.ckpt-3.meta&quot
+        )
+        new_saver.restore(
+            new_session, tmp_job_dir + &quot/test_runname/model.ckpt-3&quot
+        )
+
+        &#47&#47 Get tensor from graph and run it in session
+        w_tensor = tf.get_default_graph().get_tensor_by_name(
+            "mockfasterrcnn/w:0"
+        )
+        w_numpy = <a id="change">new_session.run(w_tensor)</a>
+
+        &#47&#47 Assert we correctly loaded the weight
+        self.assertArrayNear(w_numpy, [2.5, 3.0], err=0.01)
+</code></pre>

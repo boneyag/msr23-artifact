@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    req2 = create_requirement_lib(&quotreq2&quot)
+    req3 = create_requirement_lib(&quotreq3&quot)
+
+    <a id="change">pants_lib = self.make_target(
+      spec=&quot:pants_lib&quot,
+      target_type=PythonLibrary,
+      dependencies=[
+        req1,
+        req2,
+      ]
+    )</a>
+    self.make_target(
+      spec=&quot:pants_bin&quot,
+      target_type=PythonBinary,
+      entry_point=&quotpants.bin.pants_exe:main&quot,
+      dependencies=<a id="change">[
+        pants_lib  &#47&#47 Should be stripped in minify since pants_packaged provides these sources.
+      ]</a>
+    )
+    pants_packaged = self.make_target(
+      spec=&quot:pants_packaged&quot,
+      target_type=PythonLibrary,
+      provides=PythonArtifact(
+        name=&quotpants_packaged&quot,
+        version=&quot0.0.0&quot
+      ).with_binaries(
+        pants_bin=&quot:pants_bin&quot  &#47&#47 Should be stripped in minify since pants_packaged provides this.
+      )
+    )
+    contrib_lib = self.make_target(
+      spec=&quot:contrib_lib&quot,
+      target_type=PythonLibrary,
+      dependencies=<a id="change">[
+        pants_lib,  &#47&#47 Should be stripped in minify since pants_packaged provides these sources.
+        req3,
+      ]</a>
+    )
+    <a id="change">contrib_plugin = self.make_target(
+      spec=&quot:contrib_plugin&quot,
+      target_type=PythonLibrary,
+      provides=PythonArtifact(
+        name=&quotcontrib&quot,
+        version=&quot0.0.0&quot
+      ),
+      dependencies=[
+        contrib_lib,
+        pants_packaged,
+        req1
+      ]
+    )</a>
+    minified_dependencies = SetupPy.minified_dependencies(contrib_plugin)
+    assert minified_dependencies == OrderedSet([contrib_lib, req3, pants_packaged, req1])
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    contrib_plugin = self.create_python_library(
+      relpath=&quotcontrib/lib/src/python/pants/contrib&quot,
+      name=&quotplugin&quot,
+      provides=<a id="change">dedent(
+      setup_py(
+        name=&quotcontrib&quot,
+        version=&quot0.0.0&quot
+      )
+      )</a>,
+      dependencies=[
+        &quotcontrib/lib/src/python/pants/contrib/lib&quot,
+        &quotsrc/python/pants:pants_packaged&quot,</code></pre>

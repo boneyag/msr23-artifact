@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        j = self.J[:inputs.size(1)]
+
+        &#47&#47 attention weights
+        phi_t = g_t.unsqueeze(-1) * <a id="change">torch.exp(-0.5 * (mu_t.unsqueeze(-1) - j)**2 / (sig_t.unsqueeze(-1)**2))</a>
+        <a id="change">alpha_t</a> = <a id="change">self.COEF * torch.sum(phi_t, 1)</a>
+
+        &#47&#47 apply masking
+        if mask is not None:
+            alpha_t.data.masked_fill_(~mask, self._mask_value)
+
+        context = torch.bmm(alpha_t.unsqueeze(1), inputs).squeeze(1)
+        <a id="change">self.attention_weights</a> = alpha_t
+        self.mu_prev = mu_t
+        return context
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        j = self.J[:inputs.size(1)+1]
+
+        &#47&#47 attention weights
+        phi_t = g_t.unsqueeze(-1) * <a id="change">(1 / (1 + torch.sigmoid((mu_t.unsqueeze(-1) - j) / sig_t.unsqueeze(-1))))</a>
+
+        &#47&#47 discritize attention weights
+        <a id="change">alpha_t</a> = <a id="change">torch.sum(phi_t, 1)</a>
+        <a id="change">alpha_t = alpha_t[:, 1:] - alpha_t[:, :-1]</a>
+        <a id="change">alpha_t[alpha_t == 0] = 1e-8</a>
+
+        &#47&#47 apply masking
+        if mask is not None:
+            alpha_t.data.masked_fill_(~mask, self._mask_value)
+
+        context = torch.bmm(alpha_t.unsqueeze(1), inputs).squeeze(1)
+        <a id="change">self.attention_weights</a> = alpha_t
+        self.mu_prev = mu_t
+        return context
+</code></pre>

@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                            source=&quotX&quot, target=&quotAe&quot)
+
+        w = self.exc * torch.diag(torch.ones(self.n_neurons))
+        self.add_connection(Connection(source=self.layers[&quotAe&quot], target=<a id="change">self.layers[&quotAi&quot]</a>, w=w, wmin=0, wmax=self.exc),
+                            source=&quotAe&quot, target=&quotAi&quot)
+
+        w = -self.inh * (torch.ones(self.n_neurons, self.n_neurons) - torch.diag(torch.ones(self.n_neurons)))
+        self.add_connection(Connection(source=<a id="change">self.layers[&quotAi&quot]</a>, target=self.layers[&quotAe&quot], w=w, wmin=-self.inh, wmax=0),
+                            source=&quotAi&quot, target=&quotAe&quot)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Layers
+        input_layer = Input(n=self.n_inpt, traces=True, tc_trace=20.0)
+        <a id="change">exc_layer = DiehlAndCookNodes(
+            n=self.n_neurons, traces=True, rest=-65.0, reset=-60.0, thresh=-52.0, refrac=5,
+            tc_decay=100.0, tc_trace=20.0, theta_plus=theta_plus, tc_theta_decay=tc_theta_decay
+        )</a>
+        inh_layer = LIFNodes(
+            n=self.n_neurons, traces=False, rest=-60.0, reset=-45.0,
+            thresh=-40.0, tc_decay=10.0, refrac=2, tc_trace=20.0
+        )
+
+        &#47&#47 Connections
+        w = 0.3 * torch.rand(self.n_inpt, self.n_neurons)
+        <a id="change">input_exc_conn = Connection(
+            source=input_layer, target=exc_layer, w=w, update_rule=PostPre,
+            nu=nu, wmin=wmin, wmax=wmax, norm=norm
+        )</a>
+        w = self.exc * torch.diag(torch.ones(self.n_neurons))
+        exc_inh_conn = Connection(source=exc_layer, target=inh_layer, w=w, wmin=0, wmax=self.exc)
+        w = -self.inh * (torch.ones(self.n_neurons, self.n_neurons) - torch.diag(torch.ones(self.n_neurons)))
+        inh_exc_conn = Connection(source=inh_layer, target=exc_layer, w=w, wmin=-self.inh, wmax=0)
+
+        &#47&#47 Add to network
+        self.add_layer(input_layer, name=&quotX&quot)
+        self.add_layer(exc_layer, name=&quotAe&quot)
+        self.add_layer(inh_layer, name=&quotAi&quot)
+        <a id="change">self.add_connection(input_exc_conn, source=&quotX&quot, target=&quotAe&quot)</a>
+        self.add_connection(exc_inh_conn, source=&quotAe&quot, target=&quotAi&quot)
+        self.add_connection(inh_exc_conn, source=&quotAi&quot, target=&quotAe&quot)
+
+</code></pre>

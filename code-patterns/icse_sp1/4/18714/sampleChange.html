@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47 Stack the new list of record_ids on our output DataFrame:
+                new_grp = pd.DataFrame(new_grp, columns=self._years)
+
+                out_df = pd.concat(<a id="change">[out_df, new_grp]</a>)
+
+                &#47&#47 Save the seed record_id for use in indexing the output:
+                out_idx = out_idx + [self._best_of.loc[idx, &quotrecord_id&quot]]
+
+        out_df[&quotseed_id&quot] = out_idx
+        out_df = out_df.set_index(&quotseed_id&quot)
+        <a id="change">out_df = out_df.fillna(&quot&quot)</a>
+        return out_df
+
+    def score(self, X, y=None):  &#47&#47 noqa: N803
+        Scores a collection of FERC plant categorizations.</code></pre><h3>After Change</h3><pre><code class='java'>
+            data=[],
+            index=pd.Index([], name="seed_id"),
+            columns=self._years)
+        <a id="change">tmp_best = (
+            self._best_of.loc[:, ["record_id"] + list(self._years)]
+            .append(pd.DataFrame(data=[""], index=[-1], columns=["record_id"]))
+        )</a>
+        &#47&#47 For each record_id we&quotve been given:
+        for x in X:
+            &#47&#47 Find the index associated with the record ID we are predicting
+            &#47&#47 a grouping for:
+            idx = tmp_best[tmp_best.record_id == x].index.values[0]
+
+            &#47&#47 Mask the best_of dataframe, keeping only those entries where
+            &#47&#47 the index of the chosen record_id appears -- this results in a
+            &#47&#47 huge dataframe almost full of NaN values.
+            w_m = (
+                <a id="change">tmp_best</a>[self._years][tmp_best[self._years] == idx]
+                &#47&#47 Grab the index values of the rows in the masked dataframe which
+                &#47&#47 are NOT all NaN -- these are the indices of the *other* records
+                &#47&#47 which found the record x to be one of their best matches.</code></pre>

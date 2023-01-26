@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        fc_layer_params=[5],
+        dropout_layer_params=[0.5])
+
+    action_distributions1, _ = <a id="change">net(
+        time_step.observation, time_step.step_type, (), training=training)</a>
+    action_distributions2, _ = net(
+        time_step.observation, time_step.step_type, (), training=training)
+    mode1 = action_distributions1.mode()
+    mode2 = action_distributions2.mode()</code></pre><h3>After Change</h3><pre><code class='java'>
+        dropout_layer_params=[0.5])
+
+    modes = []
+    <a id="change">num_modes = 10</a>
+    for _ in range(num_modes):
+      action_distributions, _ = net(
+          time_step.observation, time_step.step_type, (), training=training)
+      modes.append(action_distributions.mode())
+
+    self.evaluate(tf.compat.v1.global_variables_initializer())
+    modes = self.evaluate(modes)
+
+    modes_differ = False
+    <a id="change">for i in range(num_modes):
+      for j in range(i+1, num_modes):
+        modes_differ = np.linalg.norm(modes[i] - modes[j]) &gt; 1e-6
+        if modes_differ:
+          break
+
+   </a> self.assertEqual(training, modes_differ)
+
+
+if __name__ == &quot__main__&quot:</code></pre>

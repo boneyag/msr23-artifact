@@ -1,0 +1,61 @@
+<html><h3>9a62e98e14c1ad88b29baee3e5ba55cb45ac7aec,test/test_pipeline/test_classification.py,SimpleClassificationPipelineTest,test_predict_batched_sparse,#SimpleClassificationPipelineTest#,428
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_predict_batched_sparse(self):
+        cs = SimpleClassificationPipeline.get_hyperparameter_search_space(
+            dataset_properties={&quotsparse&quot: True})
+        config = <a id="change">Configuration(cs,
+            values={"balancing:strategy": "none",
+                    "classifier:__choice__": "random_forest",
+                    "imputation:strategy": "mean",
+                    "one_hot_encoding:minimum_fraction": 0.01,
+                    "one_hot_encoding:use_minimum_fraction": "True",
+                    "preprocessor:__choice__": "no_preprocessing",
+                    &quotclassifier:random_forest:bootstrap&quot: &quotTrue&quot,
+                    &quotclassifier:random_forest:criterion&quot: &quotgini&quot,
+                    &quotclassifier:random_forest:max_depth&quot: &quotNone&quot,
+                    &quotclassifier:random_forest:min_samples_split&quot: 2,
+                    &quotclassifier:random_forest:min_samples_leaf&quot: 2,
+                    &quotclassifier:random_forest:max_features&quot: 0.5,
+                    &quotclassifier:random_forest:max_leaf_nodes&quot: &quotNone&quot,
+                    &quotclassifier:random_forest:n_estimators&quot: 100,
+                    &quotclassifier:random_forest:min_weight_fraction_leaf&quot: 0.0,
+                    "rescaling:__choice__": "min/max"})</a>
+        <a id="change">cls = SimpleClassificationPipeline(config)</a>
+
+        &#47&#47 Multiclass
+        X_train, Y_train, X_test, Y_test = get_dataset(dataset=&quotdigits&quot,
+                                                       make_sparse=True)
+        cls.fit(X_train, Y_train)
+        X_test_ = X_test.copy()
+        prediction_ = cls.predict(X_test_)
+        cls_predict = unittest.mock.Mock(wraps=<a id="change">cls.pipeline_</a>)
+        <a id="change">cls.pipeline_</a> = cls_predict
+        prediction = cls.predict(X_test, batch_size=20)
+        self.assertEqual((1647,), prediction.shape)
+        self.assertEqual(83, cls_predict.predict.call_count)</code></pre><h3>After Change</h3><pre><code class='java'>
+        X_test_ = X_test.copy()
+        prediction_ = cls.predict_proba(X_test_)
+        &#47&#47 The object behind the last step in the pipeline
+        cls_predict = unittest.mock.Mock(wraps=<a id="change">cls</a>.steps[-1][1].predict_proba)
+        cls.steps[-1][-1].predict_proba = cls_predict
+        prediction = cls.predict_proba(X_test, batch_size=20)
+        self.assertEqual((1647, 10), prediction.shape)
+        self.assertEqual(84, cls_predict.call_count)
+        assert_array_almost_equal(prediction_, prediction)
+
+        &#47&#47 Multilabel
+        X_train, Y_train, X_test, Y_test = get_dataset(dataset=&quotdigits&quot,
+                                                       make_sparse=True)
+        Y_train = np.array(list([(list([1 if i != y else 0 for i in range(10)]))
+                                 for y in Y_train]))
+        cls.fit(X_train, Y_train)
+        X_test_ = X_test.copy()
+        prediction_ = cls.predict_proba(X_test_)
+        &#47&#47 The object behind the last step in the pipeline
+        cls_predict = unittest.mock.Mock(wraps=<a id="change">cls</a>.steps[-1][1].predict_proba)
+        cls.steps[-1][-1].predict_proba = cls_predict
+        prediction = cls.predict_proba(X_test, batch_size=20)
+        self.assertEqual((1647, 10), prediction.shape)</code></pre><img src="311558706.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/9a62e98e14c1ad88b29baee3e5ba55cb45ac7aec#diff-0fec84578fbd1cf8aa8f53d400a6e596496a3a8b547a877292de6d01e9e19c6fL429' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 9a62e98e14c1ad88b29baee3e5ba55cb45ac7aec</div><div id='time'> Time: 2016-12-31</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: test/test_pipeline/test_classification.py</div><div id='class'> Class Name: SimpleClassificationPipelineTest</div><div id='method'> Method Name: test_predict_batched_sparse</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/34e04890315412b0cbb385420948ff0a0629e177#diff-9b4cc6fb0872380a940c3610ac7fa687526d62b1901fe5d70febbee31baf585cL63' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: 34e04890315412b0cbb385420948ff0a0629e177</div><div id='time'> Time: 2017-06-10</div><div id='author'> Author: aok25@cl.cam.ac.uk</div><div id='file'> File Name: examples/openai_gym_async.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/9a62e98e14c1ad88b29baee3e5ba55cb45ac7aec#diff-0fec84578fbd1cf8aa8f53d400a6e596496a3a8b547a877292de6d01e9e19c6fL429' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 9a62e98e14c1ad88b29baee3e5ba55cb45ac7aec</div><div id='time'> Time: 2016-12-31</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: test/test_pipeline/test_classification.py</div><div id='class'> Class Name: SimpleClassificationPipelineTest</div><div id='method'> Method Name: test_predict_batched_sparse</div><BR><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/8118fe98fb3c10515476ca49fceef2162a9754af#diff-0fec84578fbd1cf8aa8f53d400a6e596496a3a8b547a877292de6d01e9e19c6fL418' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 8118fe98fb3c10515476ca49fceef2162a9754af</div><div id='time'> Time: 2016-07-13</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: test/test_pipeline/test_classification.py</div><div id='class'> Class Name: SimpleClassificationPipelineTest</div><div id='method'> Method Name: test_predict_batched_sparse</div><BR>

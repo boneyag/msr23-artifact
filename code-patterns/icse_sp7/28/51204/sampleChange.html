@@ -1,0 +1,80 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            x(states_t, actions_tp0).squeeze_(dim=3)
+            for x in self.critics
+        ]
+        q_values_tp0_min = <a id="change">torch</a>.cat(q_values_tp0, dim=-1).min(dim=-1)[0]
+        &#47&#47 For now we use the same log_pi for each head.
+        policy_loss = torch.mean(logprob_tp0[:, None] - q_values_tp0_min)
+
+        &#47&#47 critic loss
+        actions_tp1, logprob_tp1 = self.actor(states_tp1, logprob=True)
+        logprob_tp1 = logprob_tp1 / self.reward_scale
+        q_values_t = [
+            x(states_t, actions_t).squeeze_(dim=3)
+            for x in self.critics
+        ]
+        &#47&#47 B x num_heads x num_critics
+        q_values_tp1 = <a id="change">torch.cat([
+            x(states_tp1, actions_tp1).squeeze_(dim=3)
+            for x in self.target_critics
+        ], dim=-1)</a>
+        &#47&#47 B x num_heads x 1
+        q_values_tp1 = <a id="change">q_values_tp1.min(dim=-1, keepdim=True)[0].detach()</a>
+
+        &#47&#47 Again, we use the same log_pi for each head.
+        logprob_tp1 = logprob_tp1[:, None, None]  &#47&#47 B x 1 x 1
+        &#47&#47 B x num_heads x 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 [{bs * num_heads}; num_critics] -&gt;   min over all critics
+        &#47&#47 [{bs * num_heads};]
+        q_values_tp0_min = (
+            <a id="change">torch</a>.cat(q_values_tp0, dim=-1)
+            .view(-1, <a id="change">self._num_critics</a>)
+            .min(dim=1)[0]
+        )
+        &#47&#47 For now we use the same log_pi for each head.
+        policy_loss = torch.mean(logprob_tp0[:, None] - q_values_tp0_min)
+
+        &#47&#47 critic loss
+        &#47&#47 [bs; action_size]
+        actions_tp1, logprob_tp1 = self.actor(states_tp1, logprob=True)
+        logprob_tp1 = logprob_tp1 / self.reward_scale
+
+        &#47&#47 {num_critics} * [bs; num_heads; 1, 1]
+        &#47&#47 -&gt; many-heads view transform
+        &#47&#47 {num_critics} * [{bs * num_heads}; 1]
+        q_values_t = [
+            x(states_t, actions_t)
+            .view(-1, 1)
+            for x in self.critics
+        ]
+
+        &#47&#47 {num_critics} * [bs; num_heads; 1]
+        q_values_tp1 = <a id="change">[
+            x(states_tp1, actions_tp1).squeeze_(dim=3)
+            for x in self.target_critics
+        ]</a>
+        &#47&#47 {num_critics} * [bs; num_heads; 1] -&gt; concat
+        &#47&#47 [bs; num_heads; num_critics] -&gt; min over all critics
+        &#47&#47 [bs; num_heads; 1]
+        q_values_tp1 = <a id="change">(
+            torch.cat(q_values_tp1, dim=-1)
+            .min(dim=-1, keepdim=True)[0]
+        )</a>
+
+        &#47&#47 Again, we use the same log_pi for each head.
+        logprob_tp1 = logprob_tp1[:, None, None]  &#47&#47 B x 1 x 1
+        &#47&#47 [bs; num_heads; 1]
+        v_target_tp1 = q_values_tp1 - logprob_tp1
+
+        &#47&#47 [bs; num_heads; 1] -&gt; many-heads view transform
+        &#47&#47 [{bs * num_heads}; 1]
+        q_target_t = <a id="change">(
+            rewards_t + (1 - done_t) * gammas * v_target_tp1
+        ).view(-1, 1).detach()</a>
+
+        value_loss = [
+            self.critic_criterion(x, q_target_t).mean() for x in q_values_t
+        ]</code></pre>

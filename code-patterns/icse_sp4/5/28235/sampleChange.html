@@ -1,0 +1,104 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.printer.status(status, msg)
+
+    def run_check(self, check, partition, environ):
+        <a id="change">try:
+            executor = RegressionTestExecutor(check, self.strict_check)
+            testcase = TestCase(executor)
+
+            executor.setup(
+                partition=partition,
+                environ=environ,
+                sched_account=self.sched_account,
+                sched_partition=self.sched_partition,
+                sched_reservation=self.sched_reservation,
+                sched_nodelist=self.sched_nodelist,
+                sched_exclude_nodelist=self.sched_exclude_nodelist,
+                sched_options=self.sched_options
+            )
+
+            ready_testcase = RunningTestCase(testcase, EnvironmentSnapshot())
+            partname = partition.fullname
+            if self._running_cases_counts[partname] &gt;= partition.max_jobs:
+                &#47&#47 Make sure that we still exceeded the job limit
+                getlogger().debug(&quotreached job limit (%s) for partition %s&quot %
+                                  (partition.max_jobs, partname))
+                self._update_running_counts()
+
+            if self._running_cases_counts[partname] &lt; partition.max_jobs:
+                &#47&#47 Test&quots environment is already loaded; no need to be reloaded
+                self._reschedule(ready_testcase, load_env=False)
+            else:
+                self._print_executor_status(&quotHOLD&quot, executor)
+                self._ready_cases[partname].append(ready_testcase)
+
+        except (KeyboardInterrupt, ReframeFatalError, AssertionError):
+            if not testcase.failed():
+                &#47&#47 test case failed during setup
+                testcase.fail(sys.exc_info())
+            self._failall()
+            raise
+        except BaseException:
+            &#47&#47 Here we are sure that test case has failed during setup, since
+            &#47&#47 _compile_and_run() handles already non-fatal exceptions. Though
+            &#47&#47 we check again the testcase, just in case.
+            if not testcase.failed():
+                testcase.fail(sys.exc_info())
+        finally:
+            if testcase.valid() and testcase.failed_stage == &quotsetup&quot:
+                &#47&#47 We need to print the result here only if the setup stage has
+                &#47&#47 finished, since otherwise _compile_and_run() prints it
+                self.printer.result(executor.check, partition, environ,
+                                    not testcase.failed())
+
+            self._test_cases.append(testcase)
+            self.environ_snapshot.load()
+
+   </a> def _update_running_counts(self):
+        Update the counts of running checks per partition.
+        getlogger().debug(&quotupdating counts for running test cases&quot)
+        freed_slots = {}</code></pre><h3>After Change</h3><pre><code class='java'>
+        super().run_check(check, partition, environ)
+        task = RegressionTask(check, self.task_listeners)
+        self._tasks.append(task)
+        <a id="change">try:
+            task.setup(partition, environ,
+                       sched_account=self.sched_account,
+                       sched_partition=self.sched_partition,
+                       sched_reservation=self.sched_reservation,
+                       sched_nodelist=self.sched_nodelist,
+                       sched_exclude_nodelist=self.sched_exclude_nodelist,
+                       sched_options=self.sched_options)
+
+            self.printer.status(&quotRUN&quot, task.check.info())
+            partname = partition.fullname
+            if self._running_tasks_counts[partname] &gt;= partition.max_jobs:
+                &#47&#47 Make sure that we still exceeded the job limit
+                getlogger().debug(&quotreached job limit (%s) for partition %s&quot %
+                                  (partition.max_jobs, partname))
+                self._poll_tasks()
+
+            if self._running_tasks_counts[partname] &lt; partition.max_jobs:
+                &#47&#47 Test&quots environment is already loaded; no need to be reloaded
+                self._reschedule(task, load_env=False)
+            else:
+                self.printer.status(&quotHOLD&quot, task.check.info(), just=&quotright&quot)
+                self._ready_tasks[partname].append(task)
+        except TaskExit:
+            return
+        except ABORT_REASONS as e:
+            if not task.failed:
+                &#47&#47 Abort was caused due to failure elsewhere, abort current
+                &#47&#47 task as well
+                task.abort(e)
+
+            self._failall(e)
+            raise
+
+   </a> def _poll_tasks(self):
+        Update the counts of running checks per partition.
+        getlogger().debug(&quotupdating counts for running test cases&quot)
+        getlogger().debug(&quotpolling %s task(s)&quot % len(self._running_tasks))</code></pre>

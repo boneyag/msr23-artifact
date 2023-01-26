@@ -1,0 +1,167 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                                  self._n_features,
+                                                  activation=tf.nn.relu,
+                                                  name=&quotfeatures_action&quot)
+                <a id="change">state_x_action = tf.multiply(features_state, features_action,
+                                             name=&quotstate_x_action&quot)</a>
+                self._features = tf.layers.dense(state_x_action,
+                                                 self._n_features,
+                                                 activation=tf.nn.relu,
+                                                 name=&quotfeatures&quot)
+            else:
+                self._features = features_state
+            hidden_5_flat = tf.layers.dense(self._features,
+                                            400,
+                                            activation=tf.nn.relu,
+                                            name=&quothidden_5_flat&quot)
+            hidden_5_conv = tf.reshape(hidden_5_flat, [-1, 5, 5, 16],
+                                       name=&quothidden_5_conv&quot)
+            hidden_5 = tf.layers.conv2d_transpose(
+                hidden_5_conv, 64, 3, 1, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_5&quot
+            )
+            hidden_6 = tf.layers.conv2d_transpose(
+                hidden_5, 64, 3, 1, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_6&quot
+            )
+            hidden_7 = tf.layers.conv2d_transpose(
+                hidden_6, 32, 4, 2, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_7&quot
+            )
+            if self._predict_next_frame:
+                output_kernels = 1
+            else:
+                output_kernels = 4
+            self._predicted_frame = tf.layers.conv2d_transpose(
+                hidden_7, output_kernels, 8, 4, activation=tf.nn.sigmoid,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                name=&quotpredicted_frame_conv&quot
+            )
+            if self._predict_next_frame:
+                self._predicted_frame = tf.reshape(
+                    self._predicted_frame,
+                    shape=[-1, convnet_pars[&quotheight&quot], convnet_pars[&quotwidth&quot]],
+                    name=&quotpredicted_frame&quot
+                )
+
+            if self._predict_next_frame:
+                self._target_frame = tf.placeholder(
+                    &quotfloat32&quot,
+                    shape=[None,
+                           convnet_pars[&quotheight&quot],
+                           convnet_pars[&quotwidth&quot]],
+                    name=&quottarget_frame&quot)
+            else:
+                self._target_frame = tf.placeholder(
+                    &quotfloat32&quot,
+                    shape=[None,
+                           convnet_pars[&quotheight&quot],
+                           convnet_pars[&quotwidth&quot],
+                           convnet_pars[&quothistory_length&quot]],
+                    name=&quottarget_frame&quot)
+
+            if self._predict_reward or self._predict_absorbing:
+                hidden_9 = tf.layers.dense(
+                    self._features,
+                    128,
+                    tf.nn.relu,
+                    kernel_initializer=tf.glorot_uniform_initializer(),
+                    name=&quothidden_9&quot
+                )
+                hidden_10 = tf.layers.dense(
+                    hidden_9,
+                    64,
+                    tf.nn.relu,
+                    kernel_initializer=tf.glorot_uniform_initializer(),
+                    name=&quothidden_10&quot
+                )
+                if self._predict_reward:
+                    self._target_reward = tf.placeholder(tf.int32,
+                                                         shape=[None, 1],
+                                                         name=&quottarget_reward&quot)
+                    self._target_reward_class = tf.clip_by_value(
+                        self._target_reward, -1, 1,
+                        name=&quottarget_reward_clipping&quot) + 1
+                    self._predicted_reward = tf.layers.dense(
+                        hidden_10, 3, tf.nn.sigmoid, name=&quotpredicted_reward&quot)
+                    predicted_reward = tf.clip_by_value(
+                        self._predicted_reward,
+                        1e-7,
+                        1 - 1e-7,
+                        name=&quotpredicted_reward_clipping&quot
+                    )
+                    predicted_reward_logits = tf.log(
+                        predicted_reward / (1 - predicted_reward),
+                        name=&quotpredicted_reward_logits&quot
+                    )
+                    self._xent_reward = tf.reduce_mean(
+                        tf.nn.sparse_softmax_cross_entropy_with_logits(
+                            labels=tf.squeeze(self._target_reward_class),
+                            logits=predicted_reward_logits,
+                            name=&quotsparse_softmax_cross_entropy_reward&quot
+                        ),
+                        name=&quotxent_reward&quot
+                    )
+                if self._predict_absorbing:
+                    self._target_absorbing = tf.placeholder(
+                        tf.float32, shape=[None, 1], name=&quottarget_absorbing&quot)
+                    self._predicted_absorbing = tf.layers.dense(
+                        hidden_10, 1, tf.nn.sigmoid, name=&quotpredicted_absorbing&quot)
+                    predicted_absorbing = tf.clip_by_value(
+                        self._predicted_absorbing,
+                        1e-7,
+                        1 - 1e-7,
+                        name=&quotpredicted_absorbing_clipping&quot
+                    )
+                    predicted_absorbing_logits = tf.log(
+                        predicted_absorbing / (1 - predicted_absorbing),
+                        name=&quotpredicted_absorbing_logits&quot)
+                    self._xent_absorbing = tf.reduce_mean(
+                        tf.nn.sigmoid_cross_entropy_with_logits(
+                            labels=tf.squeeze(self._target_absorbing),
+                            logits=predicted_absorbing_logits,
+                            name=&quotsigmoid_cross_entropy_absorbing&quot
+                        ),
+                        name=&quotxent_absorbing&quot
+                    )
+
+            predicted_frame = tf.clip_by_value(self._predicted_frame,
+                                               1e-7,
+                                               1 - 1e-7,
+                                               name=&quotpredicted_frame_clipping&quot)
+            predicted_frame_logits = tf.log(
+                predicted_frame / (1 - predicted_frame),
+                name=&quotpredicted_frame_logits&quot
+            )
+
+            self._xent_frame = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(
+                    labels=self._target_frame,
+                    logits=predicted_frame_logits,
+                    name=&quotsigmoid_cross_entropy_frame&quot
+                ),
+                name=&quotxent_frame&quot
+            )
+            self._xent = self._xent_frame
+            if self._predict_reward:
+                self._xent += self._xent_reward
+            if self._predict_absorbing:
+                <a id="change">self._xent</a> += self._xent_absorbing
+            if self._contractive:
+                raise NotImplementedError
+            else:</code></pre><h3>After Change</h3><pre><code class='java'>
+                                                  self._n_features,
+                                                  activation=tf.nn.relu,
+                                                  name=&quotfeatures_action&quot)
+                self._features = <a id="change">tf.multiply(features_state, features_action,
+                                             name=&quotstate_x_action&quot)</a>
+            else:
+                self._features = features_state
+            hidden_5_flat = tf.layers.dense(self._features,
+                                            400,</code></pre>

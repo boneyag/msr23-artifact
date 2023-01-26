@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+class GPClassificationModel(gpytorch.models.VariationalGP):
+    def __init__(self, train_x):
+        super(GPClassificationModel, self).__init__(train_x)
+        <a id="change">self.mean_module</a> = <a id="change">ConstantMean(prior=SmoothedBoxPrior(-1e-5, 1e-5))</a>
+        self.covar_module = ScaleKernel(
+            RBFKernel(log_lengthscale_prior=SmoothedBoxPrior(exp(-5), exp(6), sigma=0.1, log_transform=True)),
+            log_outputscale_prior=SmoothedBoxPrior(exp(-5), exp(6), sigma=0.1, log_transform=True),
+        )</code></pre><h3>After Change</h3><pre><code class='java'>
+        variational_distribution = VariationalDistribution(train_x.size(0))
+        variational_strategy = VariationalStrategy(self, train_x, variational_distribution)
+        super(GPClassificationModel, self).__init__(variational_strategy)
+        <a id="change">self.mean_module</a> = <a id="change">gpytorch.means.ConstantMean()</a>
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)</code></pre>

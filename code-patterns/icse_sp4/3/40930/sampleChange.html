@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Direct evaluation with datasets is coming in TF 1.11.  For now,
+    &#47&#47 we can perform evaluation using a standard Python generator with a smaller
+    &#47&#47 batch size.
+    <a id="change">batch_size = 32 * num_cores</a>
+    imagenet_eval = <a id="change">imagenet_input.ImageNetInput(
+        is_training=False,
+        data_dir=FLAGS.data,
+        &#47&#47 In normal execution, our dataset would generate data for each TPU
+        &#47&#47 core.  In this case, because we are feeding in from a Keras generator,
+        &#47&#47 we want to build a single batch for all of the cores, which will then
+        &#47&#47 be split for us.
+        per_core_batch_size=batch_size)</a>
+    score = model.evaluate_generator(
+        imagenet_eval.evaluation_generator(session_master),
+        steps=int(APPROX_IMAGENET_TEST_IMAGES // batch_size),
+        verbose=1)</code></pre><h3>After Change</h3><pre><code class='java'>
+    logging.info(&quotEvaluating the model on synthetic data.&quot)
+    model.evaluate(training_images, training_labels, verbose=0)
+  else:
+    imagenet_train, imagenet_eval = [<a id="change">imagenet_input.ImageNetInput(
+        is_training=is_training,
+        data_dir=FLAGS.data,
+        per_core_batch_size=PER_CORE_BATCH_SIZE)</a>
+                                     for is_training in [True, False]]
+    logging.info(&quotTraining model using real data in directory "%s".&quot,
+                 FLAGS.data)
+    num_epochs = 90  &#47&#47 Standard imagenet training regime.</code></pre>

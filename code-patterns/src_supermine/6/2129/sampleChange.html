@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    saving and loading a model.
+    
+    input_ = keras.Input((4,))
+    <a id="change">model = keras.Model(
+        input_,
+        [keras.layers.Softmax(name=&quothead_0&quot)(keras.layers.Dense(3)(input_)),
+         keras.layers.Softmax(name=&quothead_1&quot)(keras.layers.Dense(5)(input_))])</a>
+    metric = keras.metrics.BinaryAccuracy()
+    <a id="change">model.compile(optimizer=&quotrmsprop&quot,
+                  loss=&quotmse&quot,
+                  metrics={&quothead_0&quot: [metric, &quotaccuracy&quot]})</a>
+
+    &#47&#47 Run one iteration.
+    x = np.random.rand(2, 4)
+    y = {&quothead_0&quot: np.random.randint(2, size=(2, 3)),</code></pre><h3>After Change</h3><pre><code class='java'>
+    e.g. "head_0_accuracy" should not become "head_0_head_0_accuracy" after
+    saving and loading a model.
+    
+    <a id="change">with self.cached_session():
+      input_ = keras.Input((4,))
+      model = keras.Model(
+          input_,
+          [keras.layers.Softmax(name=&quothead_0&quot)(keras.layers.Dense(3)(input_)),
+           keras.layers.Softmax(name=&quothead_1&quot)(keras.layers.Dense(5)(input_))])
+      metric = keras.metrics.BinaryAccuracy()
+      model.compile(optimizer=&quotrmsprop&quot,
+                    loss=&quotmse&quot,
+                    metrics={&quothead_0&quot: [metric, &quotaccuracy&quot]})
+
+      &#47&#47 Run one iteration.
+      x = np.random.rand(2, 4)
+      y = {&quothead_0&quot: np.random.randint(2, size=(2, 3)),
+           &quothead_1&quot: np.random.randint(2, size=(2, 5))}
+      model.fit(x, y, verbose=0)
+
+      &#47&#47 Save and reload.
+      save_format = testing_utils.get_save_format()
+      saved_model_dir = self._save_model_dir()
+      keras.models.save_model(model, saved_model_dir, save_format=save_format)
+      loaded = keras.models.load_model(saved_model_dir)
+
+    &#47&#47 Make sure the metrics names from the model before saving match the loaded
+    &#47&#47 model.
+   </a> self.assertSequenceEqual(model.metrics_names, loaded.metrics_names)
+
+  @combinations.generate(combinations.combine(mode=[&quotgraph&quot, &quoteager&quot]))
+  def test_warning_when_saving_invalid_custom_mask_layer(self):</code></pre>

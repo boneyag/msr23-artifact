@@ -1,0 +1,105 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+             "int8", "int16", "int32",
+             "float16", "float32", "float64"]
+        ]
+        for backend, dtypes_to_test in <a id="change">zip(["scipy", "cv2"], dtypes_to_test_list)</a>:
+            &#47&#47 bool
+            if "bool" in dtypes_to_test:
+                with self.subTest(backend=backend, dtype="bool"):
+                    image = np.zeros((5, 5), dtype=bool)
+                    image[2, 2] = True
+                    <a id="change">image_aug</a> = iaa.blur_gaussian_(np.copy(image), sigma=0.75, backend=backend)
+                    assert image_aug.dtype.name == "bool"
+                    assert np.all(image_aug == (mask &gt; 0.5))
+
+            &#47&#47 uint, int
+            for dtype in [np.uint8, np.uint16, np.uint32, np.uint64, np.int8, np.int16, np.int32, np.int64]:
+                dtype = np.dtype(dtype)
+                if dtype.name in dtypes_to_test:
+                    with self.subTest(backend=backend, dtype=dtype.name):
+                        min_value, center_value, max_value = iadt.get_value_range_of_dtype(dtype)
+                        dynamic_range = max_value - min_value
+
+                        value = int(center_value + 0.4 * max_value)
+                        image = np.zeros((5, 5), dtype=dtype)
+                        image[2, 2] = value
+                        image_aug = iaa.blur_gaussian_(image, sigma=0.75, backend=backend)
+                        expected = (mask * value).astype(dtype)
+                        <a id="change">diff</a> = np.abs(image_aug.astype(np.int64) - expected.astype(np.int64))
+                        assert image_aug.shape == mask.shape
+                        assert image_aug.dtype.type == dtype
+                        if dtype.itemsize &lt;= 1:
+                            assert np.max(diff) &lt;= 4
+                        else:
+                            assert np.max(diff) &lt;= 0.01 * dynamic_range
+
+            &#47&#47 float
+            values = [5000, 1000**1, 1000**2, 1000**3]
+            for dtype, value in zip([np.float16, np.float32, np.float64, np.float128], values):
+                dtype = np.dtype(dtype)
+                if dtype.name in dtypes_to_test:
+                    with self.subTest(backend=backend, dtype=dtype.name):
+                        image = np.zeros((5, 5), dtype=dtype)
+                        image[2, 2] = value
+                        <a id="change">image_aug</a> = iaa.blur_gaussian_(image, sigma=0.75, backend=backend)
+                        expected = (mask * value).astype(dtype)
+                        diff = np.abs(image_aug.astype(np.float128) - expected.astype(np.float128))
+                        assert image_aug.shape == mask.shape</code></pre><h3>After Change</h3><pre><code class='java'>
+             "int8", "int16", "int32",
+             "float16", "float32", "float64"]
+        ]
+        gen = <a id="change">zip(["scipy", "cv2"], dtypes_to_test_list)</a>
+
+        for backend, dtypes_to_test in gen:
+            &#47&#47 bool
+            if "bool" in dtypes_to_test:
+                with self.subTest(backend=backend, dtype="bool"):
+                    image = np.zeros((5, 5), dtype=bool)
+                    image[2, 2] = True
+                    <a id="change">image_aug</a> = iaa.blur_gaussian_(
+                        np.copy(image), sigma=0.75, backend=backend)
+                    assert image_aug.dtype.name == "bool"
+                    assert np.all(image_aug == (mask &gt; 0.5))
+
+            &#47&#47 uint, int
+            uint_dts = [np.uint8, np.uint16, np.uint32, np.uint64]
+            int_dts = [np.int8, np.int16, np.int32, np.int64]
+            for dtype in uint_dts + int_dts:
+                dtype = np.dtype(dtype)
+                if dtype.name in dtypes_to_test:
+                    with self.subTest(backend=backend, dtype=dtype.name):
+                        min_value, center_value, max_value = \
+                            iadt.get_value_range_of_dtype(dtype)
+                        dynamic_range = max_value - min_value
+
+                        value = int(center_value + 0.4 * max_value)
+                        image = np.zeros((5, 5), dtype=dtype)
+                        image[2, 2] = value
+                        image_aug = iaa.blur_gaussian_(
+                            image, sigma=0.75, backend=backend)
+                        expected = (mask * value).astype(dtype)
+                        <a id="change">diff</a> = np.abs(image_aug.astype(np.int64)
+                                      - expected.astype(np.int64))
+                        assert image_aug.shape == mask.shape
+                        assert image_aug.dtype.type == dtype
+                        if dtype.itemsize &lt;= 1:
+                            assert np.max(diff) &lt;= 4
+                        else:
+                            assert np.max(diff) &lt;= 0.01 * dynamic_range
+
+            &#47&#47 float
+            float_dts = [np.float16, np.float32, np.float64, np.float128]
+            values = [5000, 1000**1, 1000**2, 1000**3]
+            for dtype, value in zip(float_dts, values):
+                dtype = np.dtype(dtype)
+                if dtype.name in dtypes_to_test:
+                    with self.subTest(backend=backend, dtype=dtype.name):
+                        image = np.zeros((5, 5), dtype=dtype)
+                        image[2, 2] = value
+                        <a id="change">image_aug</a> = iaa.blur_gaussian_(
+                            image, sigma=0.75, backend=backend)
+                        expected = (mask * value).astype(dtype)
+                        diff = np.abs(image_aug.astype(np.float128)</code></pre>

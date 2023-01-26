@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        )
+
+        retries = 0
+        <a id="change">while retries &lt;= MAX_ACTOR_DEAD_RETRIES:
+            try:
+                result = await self.router_handle.enqueue_request.remote(
+                    request_metadata, scope, http_body_bytes)
+                if not isinstance(result, ray.exceptions.RayActorError):
+                    await Response(result).send(scope, receive, send)
+                    break
+                logger.warning("Got RayActorError: {}".format(str(result)))
+                await asyncio.sleep(0.1)
+            except Exception as e:
+                error_message = "Internal Error. Traceback: {}.".format(e)
+                await error_sender(error_message, 500)
+                break
+        else:
+            logger.debug("Maximum actor death retries exceeded")
+            await error_sender(
+                "Internal Error. Maximum actor death retries exceeded", 500)
+
+
+</a>@ray.remote
+class HTTPProxyActor:
+    async def __init__(self, host, port, instance_name=None):
+        serve.init(name=instance_name)</code></pre><h3>After Change</h3><pre><code class='java'>
+        result = await self.router.enqueue_request(request_metadata, scope,
+                                                   http_body_bytes)
+
+        <a id="change">if isinstance(result, RayTaskError):
+            error_message = "Task Error. Traceback: {}.".format(result)
+            await error_sender(error_message, 500)
+        else:
+            await Response(result).send(scope, receive, send)
+
+
+</a>@ray.remote
+class HTTPProxyActor:
+    async def __init__(self, host, port, instance_name=None):
+        serve.init(name=instance_name)</code></pre>

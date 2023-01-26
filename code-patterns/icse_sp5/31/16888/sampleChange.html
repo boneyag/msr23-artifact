@@ -1,0 +1,97 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    in_channels = inputs[0].get_shape()[-1].value
+
+    &#47&#47 Generate the nb_affine weights and biases
+    <a id="change">self.W_list</a> = [
+        initializations.glorot_uniform([in_channels, <a id="change">self.out_channel</a>])
+        for k in range(<a id="change">self.num_deg</a>)
+    ]
+    <a id="change">self.b_list = [
+        model_ops.zeros(shape=[
+            self.out_channel,
+        ]) for k in range(self.num_deg)
+    ]</a>
+
+    &#47&#47 Extract atom_features
+    atom_features = inputs[0]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        ]) for k in range(self.num_deg)
+    ]
+
+  def create_tensor(<a id="change">self</a>, in_layers=None, set_tensors=True, **kwargs):
+    inputs = self._get_input_tensors(in_layers)
+    &#47&#47 in_layers = [atom_features, deg_slice, membership, deg_adj_list placeholders...]
+    in_channels = inputs[0].get_shape()[-1].value
+    <a id="change">if not tfe.in_eager_mode() or not self._built:
+      self._create_variables(in_channels)
+
+    &#47&#47 Extract atom_features
+   </a> atom_features = inputs[0]
+
+    &#47&#47 Extract graph topology
+    deg_slice = inputs[1]
+    deg_adj_lists = inputs[3:]
+
+    &#47&#47 Perform the mol conv
+    &#47&#47 atom_features = graph_conv(atom_features, deg_adj_lists, deg_slice,
+    &#47&#47                            self.max_deg, self.min_deg, self.W_list,
+    &#47&#47                            self.b_list)
+
+    W = iter(self.W_list)
+    b = iter(self.b_list)
+
+    &#47&#47 Sum all neighbors using adjacency matrix
+    deg_summed = self.sum_neigh(atom_features, deg_adj_lists)
+
+    &#47&#47 Get collection of modified atom features
+    new_rel_atoms_collection = (self.max_degree + 1 - self.min_degree) * [None]
+
+    for deg in range(1, self.max_degree + 1):
+      &#47&#47 Obtain relevant atoms for this degree
+      rel_atoms = deg_summed[deg - 1]
+
+      &#47&#47 Get self atoms
+      begin = tf.stack([deg_slice[deg - self.min_degree, 0], 0])
+      size = tf.stack([deg_slice[deg - self.min_degree, 1], -1])
+      self_atoms = tf.slice(atom_features, begin, size)
+
+      &#47&#47 Apply hidden affine to relevant atoms and append
+      rel_out = tf.matmul(rel_atoms, next(W)) + next(b)
+      self_out = tf.matmul(self_atoms, next(W)) + next(b)
+      out = rel_out + self_out
+
+      new_rel_atoms_collection[deg - self.min_degree] = out
+
+    &#47&#47 Determine the min_deg=0 case
+    if self.min_degree == 0:
+      deg = 0
+
+      begin = tf.stack([deg_slice[deg - self.min_degree, 0], 0])
+      size = tf.stack([deg_slice[deg - self.min_degree, 1], -1])
+      self_atoms = tf.slice(atom_features, begin, size)
+
+      &#47&#47 Only use the self layer
+      out = tf.matmul(self_atoms, next(W)) + next(b)
+
+      new_rel_atoms_collection[deg - self.min_degree] = out
+
+    &#47&#47 Combine all atoms back into the list
+    atom_features = tf.concat(axis=0, values=new_rel_atoms_collection)
+
+    if self.activation_fn is not None:
+      atom_features = self.activation_fn(atom_features)
+
+    out_tensor = atom_features
+    if set_tensors:
+      self._record_variable_scope(self.name)
+      self.out_tensor = out_tensor
+    <a id="change">if tfe.in_eager_mode() and not self._built:
+      self._built = True
+      self.variables = self.W_list + self.b_list
+   </a> return out_tensor
+
+  def sum_neigh(self, atoms, deg_adj_lists):
+    Store the summed atoms by degree</code></pre>

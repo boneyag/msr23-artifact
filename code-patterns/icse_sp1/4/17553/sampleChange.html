@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                dtype=self.dtype).tocsr()
+
+        if self.n_values == &quotauto&quot:
+            mask = <a id="change">np</a>.array(out.sum(axis=0)).ravel() != 0
+            active_features = np.where(mask)[0]
+            out = out[:, active_features]
+            self.active_features_ = active_features</code></pre><h3>After Change</h3><pre><code class='java'>
+        n_values = [0]
+
+        column_indices = []
+        <a id="change">data = []</a>
+        feature_indices = []
+
+        for idx, values_ in enumerate(uniques):
+            unique_elements, inverse = values_
+
+            &#47&#47 Number of unique elements in that column (without np.NaN)
+            n_uniques = np.sum(np.isfinite(unique_elements))
+            n_values.append(n_uniques)
+            offset = np.sum(n_values[:-1])
+
+            column_indices_idx = [offset if index &gt;= n_uniques
+                                  else index + offset
+                                  for index in inverse]
+            data_idx = [0 if index &gt;= n_uniques else 1 for index in inverse]
+            feature_indices_idx = {unique: index + offset
+                                   for index, unique in enumerate(unique_elements)
+                                   if np.isfinite(unique)}
+
+            column_indices.extend(column_indices_idx)
+            <a id="change">data.extend(data_idx)</a>
+            feature_indices.append(feature_indices_idx)
+
+        row_indices = np.tile(np.arange(n_samples, dtype=np.int32),
+                                    n_features)</code></pre>

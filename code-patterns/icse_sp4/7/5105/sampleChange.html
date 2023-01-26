@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            if total_cnt &gt; 1:
+                &#47&#47 parses are sorted inside paradigms, but they are unsorted overall
+                <a id="change">result.sort(reverse=True)</a>
+                result = [
+                    (fixed_word, tag, normal_form, para_id, idx, cnt/total_cnt * ESTIMATE_DECAY)
+                    for (cnt, fixed_word, tag, normal_form, para_id, idx) in result
+                ]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        total_counts = [1] * len(self._paradigm_prefixes) &#47&#47 smoothing; XXX: isn&quott max_cnt better?
+
+        <a id="change">for prefix_id, prefix in self._paradigm_prefixes:
+
+            if not word.startswith(prefix):
+                continue
+
+            suffixes_dawg = self._dictionary.prediction_suffixes_dawgs[prefix_id]
+
+            for i in self._prediction_splits:
+                end = word[-i:]  &#47&#47 XXX: this should be counted once, not for each prefix
+
+                para_data = suffixes_dawg.similar_items(end, self._ee)
+
+                for fixed_suffix, parses in para_data:
+                    for cnt, para_id, idx in parses:
+
+                        tag = self._build_tag_info(para_id, idx)
+
+                        if not tag.is_productive():
+                            continue
+
+                        total_counts[prefix_id] += cnt
+
+                        fixed_word = word[:-i] + fixed_suffix
+                        normal_form = self._build_normal_form(para_id, idx, fixed_word)
+
+                        parse = (cnt, fixed_word, tag, normal_form, para_id, idx, prefix_id)
+                        reduced_parse = parse[1:4]
+                        if reduced_parse in _seen_parses:
+                            continue
+
+                        result.append(parse)
+
+                if total_counts[prefix_id] &gt; 1:
+                    break
+
+       </a> result = [
+            (fixed_word, tag, normal_form, para_id, idx, cnt/total_counts[prefix_id] * ESTIMATE_DECAY)
+            for (cnt, fixed_word, tag, normal_form, para_id, idx, prefix_id) in result
+        ]</code></pre>

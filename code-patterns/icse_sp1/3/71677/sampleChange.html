@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    return tf.identity(mean), tf.identity(variance)
+
+            if is_train:
+                is_train = tf.cast(tf.ones(<a id="change">[]</a>), tf.bool)
+            else:
+                is_train = tf.cast(tf.zeros([]), tf.bool)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                                      trainable=False,)&#47&#47   restore=restore)
+            moving_variance = tf.get_variable(&quotmoving_variance&quot,
+                                          params_shape,
+                                          initializer=<a id="change">tf.constant_initializer(1.)</a>,
+                                          trainable=False,)&#47&#47   restore=restore)
+
+            &#47&#47&#47&#47 3.
+            &#47&#47 These ops will only be preformed when training.
+            mean, variance = tf.nn.moments(self.inputs, axis)
+            try:    &#47&#47 TF12
+                update_moving_mean = moving_averages.assign_moving_average(
+                                moving_mean, mean, decay, zero_debias=False)     &#47&#47 if zero_debias=True, has bias
+                update_moving_variance = moving_averages.assign_moving_average(
+                                moving_variance, variance, decay, zero_debias=False) &#47&#47 if zero_debias=True, has bias
+                &#47&#47 print("TF12 moving")
+            except Exception as e:  &#47&#47 TF11
+                update_moving_mean = moving_averages.assign_moving_average(
+                                moving_mean, mean, decay)
+                update_moving_variance = moving_averages.assign_moving_average(
+                                moving_variance, variance, decay)
+                &#47&#47 print("TF11 moving")
+
+            def mean_var_with_update():
+                with tf.control_dependencies([update_moving_mean, update_moving_variance]):
+                    return tf.identity(mean), tf.identity(variance)
+
+            &#47&#47 ema = tf.train.ExponentialMovingAverage(decay=decay)    &#47&#47 Akara
+            &#47&#47 def mean_var_with_update():
+            &#47&#47     ema_apply_op = ema.apply([moving_mean, moving_variance])
+            &#47&#47     with tf.control_dependencies([ema_apply_op]):
+            &#47&#47         return tf.identity(mean), tf.identity(variance)
+
+            &#47&#47&#47&#47 4. behaviour for training and testing
+            &#47&#47 if not is_train:    &#47&#47 test : mean=0, std=1
+            &#47&#47 &#47&#47 if is_train:      &#47&#47 train : mean=0, std=1
+            &#47&#47     is_train = tf.cast(tf.ones([]), tf.bool)
+            &#47&#47 else:
+            &#47&#47     is_train = tf.cast(tf.zeros([]), tf.bool)
+            &#47&#47
+            &#47&#47 &#47&#47 mean, var = control_flow_ops.cond(
+            &#47&#47 mean, var = tf.cond(
+            &#47&#47     &#47&#47 is_train, lambda: (mean, variance),     &#47&#47 when training, (x-mean(x))/var(x)
+            &#47&#47     is_train, mean_var_with_update,
+            &#47&#47     lambda: (moving_mean, moving_variance)) &#47&#47 when inferencing, (x-0)/1
+            &#47&#47
+            &#47&#47 self.outputs = act( tf.nn.batch_normalization(self.inputs, mean, var, beta, gamma, epsilon) )
+            if is_train:
+                mean, var = mean_var_with_update()
+                self.outputs = act( tf.nn.batch_normalization(self.inputs, mean, var, beta, gamma, epsilon) )
+            else:
+                &#47&#47 self.outputs = act( tf.nn.batch_normalization(self.inputs, ema.average(mean), ema.average(variance), beta, gamma, epsilon) ) &#47&#47 Akara
+                <a id="change">self.outputs = act( tf.nn.batch_normalization(self.inputs, moving_mean, moving_variance, beta, gamma, epsilon) )</a>    &#47&#47 Simiao
+                &#47&#47 self.outputs = act( tf.nn.batch_normalization(self.inputs, mean, variance, beta, gamma, epsilon) )
+
+            &#47&#47 variables = tf.get_collection(TF_GRAPHKEYS_VARIABLES, scope=vs.name)  &#47&#47 8 params in TF12 if zero_debias=True</code></pre>

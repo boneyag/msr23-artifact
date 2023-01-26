@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 generate predictions
+        preds = final_preds(output[-1].data.cpu(), meta[&quotcenter&quot], meta[&quotscale&quot], [64, 64])
+        for n in range(<a id="change">output</a>[-1].size(0)):
+            predictions[meta[&quotindex&quot][n], :, :] = preds[n, :, :]
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        score_map = output[-1].data.cpu()
+        if flip:
+            flip_input_var = torch.autograd.Variable(
+                    torch.from_numpy(<a id="change">fliplr(inputs.clone().numpy())</a>).float().cuda(), 
+                    volatile=True
+                )
+            flip_output_var = model(flip_input_var)
+            flip_output = flip_back(flip_output_var[-1].data.cpu())
+            score_map += flip_output
+
+
+
+        loss = 0
+        for o in output:
+            loss += criterion(o, target_var)
+        <a id="change">acc = accuracy(score_map.cuda(), target, idx)</a>
+
+        &#47&#47 generate predictions
+        preds = final_preds(score_map, meta[&quotcenter&quot], meta[&quotscale&quot], [64, 64])
+        for n in range(score_map.size(0)):</code></pre>

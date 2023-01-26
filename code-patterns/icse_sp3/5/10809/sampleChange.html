@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if self._graph_state is None:
+      if (getattr(self._thread_local, &quotgraph_state&quot, None) is None or
+          self._thread_local.graph_state.saved_model_dir != saved_model_dir):
+        <a id="change">start = datetime.datetime.now()</a>
+        tf_config = _maybe_deserialize_tf_config(self._serialized_tf_config)
+        self._thread_local.graph_state = self._GraphState(
+            saved_model_dir, self._input_schema, self._output_schema, tf_config)
+        self._graph_load_seconds_distribution.update(
+            int((<a id="change">datetime.datetime.now()</a> - start).total_seconds()))
+      self._graph_state = self._thread_local.graph_state
+    else:
+      assert self._graph_state.saved_model_dir == saved_model_dir</code></pre><h3>After Change</h3><pre><code class='java'>
+
+      self._session = tf.Session(
+          graph=self._graph_state.graph, config=self._graph_state.tf_config)
+      <a id="change">with self._session.graph.as_default():
+        self._session.run(tf.tables_initializer())
+
+    &#47&#47 This should remain true throughout the lifetime of this DoFn, regardless
+    &#47&#47 of whether or not self._graph_state was cached.
+   </a> assert self._graph_state.saved_model_dir == saved_model_dir
+
+    self._batch.append(element)
+    if len(self._batch) &gt;= self._desired_batch_size:</code></pre>

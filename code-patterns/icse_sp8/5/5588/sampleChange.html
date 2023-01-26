@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    status, error = datastore_object.transfer_entities(entity_list=entity_list)
+    result = {"status": status, "error": error}
+    if not status:
+        <a id="change">HttpResponse(json.dumps({"data": result}), content_type=&quotapplication/json&quot, status=500)</a>
+    return HttpResponse(json.dumps({"data": result}), content_type=&quotapplication/json&quot, status=200)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        HttpResponse : HttpResponse with appropriate status.
+    
+    response = {"success": False, "error": ""}
+    <a id="change">try:
+        entity_list_dict = json.loads(request.GET.get(&quotword_info&quot))
+        entity_list = entity_list_dict.get(&quotentity_list&quot)
+
+        datastore_object = DataStore()
+        datastore_object.transfer_entities(entity_list=entity_list)
+        response[&quotsuccess&quot] = True
+    except (ValueError, IndexNotFoundException, InvalidESURLException,
+            SourceDestinationSimilarException, InternalBackupException, AliasNotFoundException,
+            PointIndexToAliasException, FetchIndexForAliasException, DeleteIndexFromAliasException,
+            AliasForTransferException, IndexForTransferException) as error_message:
+        response[&quoterror&quot] = error_message
+        return HttpResponse(json.dumps(response), content_type=&quotapplication/json&quot, status=500)
+    except BaseException:
+        response[&quoterror&quot] = "Base exception occured"
+        return HttpResponse(json.dumps(response), content_type=&quotapplication/json&quot, status=500)
+
+   </a> return HttpResponse(json.dumps(response), content_type=&quotapplication/json&quot, status=200)
+</code></pre>

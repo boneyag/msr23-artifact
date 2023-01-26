@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _to_df(self, result):
+        response = result._data[&quotresponse&quot]
+        <a id="change">duration = result.stim.duration</a>
+        <a id="change">data = []</a>
+        for r in response.get(&quotannotationResults&quot, []):
+            for key, res in r.items():
+                if &quotLabel&quot in key:
+                    for annot in res:
+                        feats = [annot[&quotentity&quot][&quotdescription&quot]]
+                        for category in annot.get(&quotcategoryEntities&quot, []):
+                            feats.append(&quotcategory_&quot + category[&quotdescription&quot])
+                        if key == &quotframeLabelAnnotations&quot:
+                            <a id="change">data.extend(self._parse_frame(feats,
+                                                          annot,
+                                                          &quotconfidence&quot,
+                                                          duration))</a>
+                        else:
+                            &#47&#47 Good for shot or segment labels
+                            data.extend(self._parse_label(feats, annot))
+                elif key == &quotshotAnnotations&quot:</code></pre><h3>After Change</h3><pre><code class='java'>
+        df = pd.DataFrame(list(data.values()))
+        &#47&#47 If multiple confidences were parsed, uses the last one
+        if len(data) &gt; 0:
+            <a id="change">onsets, durations = zip(*list(data.keys()))</a>
+            result._onsets = onsets
+            result._durations = durations
+        result.features = list(df.columns)
+        return df</code></pre>

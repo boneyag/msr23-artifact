@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        raise KeyError("some edges missing nodes, possibly due to input data clipping issue")
+
+    &#47&#47 turn the coordinates into a DataFrame indexed by u, v, k
+    <a id="change">cols = ["u", "v", "k", "u_y", "u_x", "v_y", "v_x"]</a>
+    df = pd.DataFrame(coords, columns=cols).set_index(["u", "v", "k"])
+
+    &#47&#47 calculate great circle distances, fill nulls with zeros, then round
+    dists = distance.great_circle_vec(df["u_y"], df["u_x"], <a id="change">df["v_y"]</a>, df["v_x"])
+    dists = <a id="change">dists</a>.fillna(value=0).round(precision)
+    nx.set_edge_attributes(G, name="length", values=dists)
+
+    utils.log("Added edge lengths to graph")</code></pre><h3>After Change</h3><pre><code class='java'>
+        raise KeyError("some edges missing nodes, possibly due to input data clipping issue")
+
+    &#47&#47 calculate great circle distances, fill nulls with zeros, then round
+    dists = great_circle_vec(coords[<a id="change">:, 0</a>], coords[:, 1], coords[:, 2], coords[:, 3])
+    <a id="change">dists[np.isnan(dists)]</a> = 0
+    values = zip(uvk, dists.round(precision))
+    nx.set_edge_attributes(G, values=dict(values), name="length")
+</code></pre>

@@ -1,0 +1,52 @@
+<html><h3>58efec0f2bc7e8de2ea9b89ec638d4a0a2d60537,python/ray/util/sgd/torch/distributed_torch_runner.py,LocalDistributedRunner,_try_reserve_and_set_cuda,#LocalDistributedRunner#,278
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _try_reserve_and_set_cuda(self):
+        use_found_device = os.environ.get("CUDA_VISIBLE_DEVICES") is None \
+                           and <a id="change">torch.cuda.is_initialized()</a>
+        device = reserve_cuda_device()
+        &#47&#47 This needs to be set even if torch.cuda is already
+        &#47&#47 initialized because the env var is used later when
+        &#47&#47 starting the DDP setup.
+        os.environ["CUDA_VISIBLE_DEVICES"] = device
+        <a id="change">if use_found_device:
+            &#47&#47 Once cuda is initialized, torch.device ignores the os.env
+            &#47&#47 so we have to set the right actual device.
+            self._set_cuda_device(device)
+        else:
+            &#47&#47 if CUDA is not initialized, we can set the os.env.
+            &#47&#47 Even if initialized, we want to set the device to use BatchNorm.
+            &#47&#47 and make Torch think it only sees 1 GPU.
+            self._set_cuda_device("0")
+
+   </a> def _set_cuda_device(self, device_str):
+        Sets the CUDA device for this current local worker.
+        if self._is_set:
+            raise RuntimeError("CUDA devices already set.")</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 initialized because the env var is used later when
+        &#47&#47 starting the DDP setup.
+        os.environ["CUDA_VISIBLE_DEVICES"] = reserved_device
+        <a id="change">if visible_devices:
+            &#47&#47 We want to set the index on the visible devices list.
+            if reserved_device not in visible_devices:
+                raise RuntimeError(
+                    "TorchTrainer reserved a device {} that was not in the "
+                    "CUDA_VISIBLE_DEVICES {}. This may be because the "
+                    "Ray cluster is not set with the right env vars. "
+                    "If that is not the issue, please raise a "
+                    "Github issue.".format(reserved_device, visible_devices))
+            devices = visible_devices.split(",")
+            scoped_index = devices.index(reserved_device)
+            self._set_cuda_device(str(scoped_index))
+        else:
+            &#47&#47 Once cuda is initialized, torch.device ignores the os.env
+            &#47&#47 so we have to set the right actual device.
+            self._set_cuda_device(reserved_device)
+
+   </a> def _set_cuda_device(self, device_str):
+        Sets the CUDA device for this current local worker.
+        if self._is_set:
+            raise RuntimeError("CUDA devices already set.")</code></pre><img src="30726868.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/58efec0f2bc7e8de2ea9b89ec638d4a0a2d60537#diff-bcbbc871d3b955a0ea6b42e6dbc2213e0b847688efae523c35d5ab5b3ee175e9L278' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 58efec0f2bc7e8de2ea9b89ec638d4a0a2d60537</div><div id='time'> Time: 2020-06-12</div><div id='author'> Author: rliaw@berkeley.edu</div><div id='file'> File Name: python/ray/util/sgd/torch/distributed_torch_runner.py</div><div id='class'> Class Name: LocalDistributedRunner</div><div id='method'> Method Name: _try_reserve_and_set_cuda</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/448013222978734615aaebc8e312f946fdce94fe#diff-1f5f9e2fb9ca555627dcbfeb34c7a1eff9c08ae1395d2f192c2eebcba6742cf1L30' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 448013222978734615aaebc8e312f946fdce94fe</div><div id='time'> Time: 2021-03-31</div><div id='author'> Author: 74173148+iycheng@users.noreply.github.com</div><div id='file'> File Name: python/ray/util/client/server/dataservicer.py</div><div id='class'> Class Name: DataServicer</div><div id='method'> Method Name: Datapath</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/01be083e46d2e4614dc274b0edf29d0ddd516186#diff-cb5ddbb82857a637ec74b87d26483d4fad54398ab515b145a4391d90fe19cc75L279' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 01be083e46d2e4614dc274b0edf29d0ddd516186</div><div id='time'> Time: 2020-10-27</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/dataclass/utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: convert_namespace_to_omegaconf</div><BR>

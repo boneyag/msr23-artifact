@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    y[:, 2] = 1
+
+    ovr = OneVsRestClassifier(LogisticRegression())
+    <a id="change">assert_warns(UserWarning, ovr.fit, X, y)</a>
+    y_pred = ovr.predict(X)
+    assert_array_equal(np.array(y_pred), np.array(y))
+    y_pred = ovr.decision_function(X)
+    assert np.unique(y_pred[:, -2:]) == 1</code></pre><h3>After Change</h3><pre><code class='java'>
+    y[:, 2] = 1
+
+    ovr = OneVsRestClassifier(LogisticRegression())
+    <a id="change">msg = r&quotLabel .+ is present in all training examples&quot</a>
+    <a id="change">with pytest.warns(UserWarning, match=msg):
+        ovr.fit(X, y)
+   </a> y_pred = ovr.predict(X)
+    assert_array_equal(np.array(y_pred), np.array(y))
+    y_pred = ovr.decision_function(X)
+    assert np.unique(y_pred[:, -2:]) == 1
+    y_pred = ovr.predict_proba(X)
+    assert_array_equal(y_pred[:, -1], np.ones(X.shape[0]))
+
+    &#47&#47 y has a constantly absent label
+    y = np.zeros((10, 2))
+    y[5:, 0] = 1  &#47&#47 variable label
+    ovr = OneVsRestClassifier(LogisticRegression())
+
+    msg = r&quotLabel not 1 is present in all training examples&quot
+    <a id="change">with pytest.warns(UserWarning, match=msg):
+        ovr.fit(X, y)
+   </a> y_pred = ovr.predict_proba(X)
+    assert_array_equal(y_pred[:, -1], np.zeros(X.shape[0]))
+
+</code></pre>

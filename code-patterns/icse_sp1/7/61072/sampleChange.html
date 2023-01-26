@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        model.compile(optimizer=self.optimizer,
+                      loss=&quotcategorical_crossentropy&quot,
+                      metrics=<a id="change">[&quotaccuracy&quot]</a>)
+
+        return model
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                                    dropout_U=0.0)(backward)
+            else:
+                &#47&#47 first LSTM
+                <a id="change">forward = LSTM(name=&quotforward_{i:d}&quot.format(i=i),
+                               output_dim=output_dim,
+                               return_sequences=True,
+                               activation=&quottanh&quot,
+                               dropout_W=0.0,
+                               dropout_U=0.0)(x)</a>
+
+                if self.bidirectional:
+                    <a id="change">backward = LSTM(name=&quotbackward_{i:d}&quot.format(i=i),
+                                    go_backwards=True,
+                                    output_dim=output_dim,
+                                    return_sequences=True,
+                                    activation=&quottanh&quot,
+                                    dropout_W=0.0,
+                                    dropout_U=0.0)(x)</a>
+
+        &#47&#47 concatenate forward and backward
+        if self.bidirectional:
+            &#47&#47 FIXME -- check value of concat_axis=1
+            <a id="change">x = merge([forward, backward], mode=&quotconcat&quot, concat_axis=2)</a>
+        else:
+            x = forward
+
+        &#47&#47 stack dense layers
+        for i, output_dim in enumerate(self.dense):
+            <a id="change">x = TimeDistributed(Dense(output_dim,
+                                      activation=&quottanh&quot,
+                                      name=&quotdense_{i:d}&quot.format(i=i)))(x)</a>
+
+        &#47&#47 one dimension per class
+        <a id="change">outputs = TimeDistributed(Dense(self.output_dim, activation=&quotsoftmax&quot))(x)</a>
+
+        return Model(input=inputs, output=outputs)
+</code></pre>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        self.log_pi = self.distribution.log_prob(self.y)
+        self.pi = tf.exp(self.log_pi)
+        self._action = <a id="change">tf.tanh(self.pi)</a> if self.config["squash"] else self.pi
+
+        log_Z = 0.0
+        self.Q = self._qf(self.y)</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.inverse_x = self.distribution.bijector.inverse(self.y)
+
+
+        <a id="change">if self.config["squash"]:
+            self._action = tf.tanh(self.y)
+            squash_correction = tf.reduce_sum(
+                tf.log(1 - self._action ** 2 + EPS), axis=1)
+        else:
+            self._action = self.y
+            squash_correction = 0.0
+
+       </a> self.Q = self._qf(self._action)
+        self.log_pi = self.distribution.log_prob(self.y)
+        self.pi = tf.exp(self.log_pi)
+
+        log_Z = 0.0
+        surrogate_loss = tf.reduce_mean(
+            self.log_pi * tf.stop_gradient(
+                self.log_pi - self.Q <a id="change">-</a> squash_correction + log_Z))
+
+        reg_variables = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+        reg_loss = tf.reduce_sum(reg_variables)</code></pre>

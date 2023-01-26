@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.mean = layers[&quotlinear&quot](x=x, size=flat_size, bias=self.mean)
+        self.mean = tf.reshape(tensor=self.mean, shape=((-1,) + self.shape))
+        self.log_stddev = layers[&quotlinear&quot](x=x, size=flat_size, bias=self.log_stddev)
+        self.log_stddev = <a id="change">tf.reshape(tensor=self.log_stddev, shape=((-1,) + self.shape))</a>
+        self.log_stddev = tf.minimum(x=self.log_stddev, y=10.0)  &#47&#47 prevent infinity when exp
+        self.distribution = (self.mean, self.log_stddev)
+        self.deterministic = deterministic
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.log_stddev = tf.reshape(tensor=self.log_stddev, shape=shape)
+
+        &#47&#47 clip log stddev for numerical stability
+        <a id="change">log_eps = log(util.epsilon)</a>
+        self.log_stddev = tf.clip_by_value(t=self.log_stddev, clip_value_min=log_eps, clip_value_max=-log_eps)
+
+        &#47&#47 standard deviation
+        self.stddev = <a id="change">tf.exp(x=self.log_stddev)</a>
+
+        &#47&#47 general distribution values
+        self.distribution = (self.mean, self.log_stddev)
+        self.deterministic = deterministic</code></pre>

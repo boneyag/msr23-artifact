@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if hparams.quantize_ckpt or hparams.from_quantized_ckpt:
+        model_helper.add_quatization_variables(infer_model)
+
+    sess = <a id="change">tf.Session(
+        graph=infer_model.graph, config=utils.get_config_proto())</a>
+    with infer_model.graph.as_default():
+        load_fn = model_helper.load_model if not hparams.from_quantized_ckpt \
+            else model_helper.load_quantized_model
+        if hparams.quantize_ckpt:</code></pre><h3>After Change</h3><pre><code class='java'>
+    if hparams.quantize_ckpt or hparams.from_quantized_ckpt:
+        model_helper.add_quatization_variables(infer_model)
+
+    <a id="change">with tf.Session(graph=infer_model.graph, config=utils.get_config_proto()) as sess:
+        with infer_model.graph.as_default():
+            load_fn = model_helper.load_model if not hparams.from_quantized_ckpt \
+                else model_helper.load_quantized_model
+            if hparams.quantize_ckpt:
+                load_fn(infer_model.model, ckpt_path, sess, &quotinfer&quot)
+                load_fn = model_helper.load_quantized_model
+                ckpt_path = os.path.join(hparams.out_dir, &quotquant_&quot + os.path.basename(ckpt_path))
+                model_helper.quantize_checkpoint(sess, ckpt_path)
+            loaded_infer_model = load_fn(infer_model.model, ckpt_path, sess, &quotinfer&quot)
+
+        if num_workers == 1:
+            single_worker_inference(
+                sess,
+                infer_model,
+                loaded_infer_model,
+                inference_input_file,
+                inference_output_file,
+                hparams)
+        else:
+            multi_worker_inference(
+                sess,
+                infer_model,
+                loaded_infer_model,
+                inference_input_file,
+                inference_output_file,
+                hparams,
+                num_workers=num_workers,
+                jobid=jobid)
+
+
+</a>def single_worker_inference(sess,
+                            infer_model,
+                            loaded_infer_model,
+                            inference_input_file,</code></pre>

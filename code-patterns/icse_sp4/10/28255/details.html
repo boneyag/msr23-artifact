@@ -1,0 +1,49 @@
+<html><h3>054095d922edda5134e520522bc82a1b95cc5bd4,onnx_tf/backend_rep.py,TensorflowRep,run,#TensorflowRep#Any#,52
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    super(TensorflowRep, self).run(inputs, **kwargs)
+
+    &#47&#47 TODO: handle name scope if necessary
+    <a id="change">with self.graph.as_default():
+      with tf.compat.v1.Session() as sess:
+        if isinstance(inputs, dict):
+          feed_dict = inputs
+        elif isinstance(inputs, list) or isinstance(inputs, tuple):
+          if len(self.inputs) != len(inputs):
+            raise RuntimeError(&quotExpected {} values for uninitialized &quot
+                               &quotgraph inputs ({}), but got {}.&quot.format(
+                                   len(self.inputs), &quot, &quot.join(self.inputs),
+                                   len(inputs)))
+          feed_dict = dict(zip(self.inputs, inputs))
+        else:
+          &#47&#47 single input
+          feed_dict = dict([(self.inputs[0], inputs)])
+
+        feed_dict = {
+            self.tensor_dict[key]: feed_dict[key] for key in self.inputs
+        }
+
+        sess.run(tf.compat.v1.global_variables_initializer())
+        outputs = [self.tensor_dict[output] for output in self.outputs]
+
+        output_values = sess.run(outputs, feed_dict=feed_dict)
+        return namedtupledict(&quotOutputs&quot, self.outputs)(*output_values)
+
+ </a> def export_graph(self, path):
+    Export backend representation to a Tensorflow proto file.
+
+    This function obtains the graph proto corresponding to the ONNX</code></pre><h3>After Change</h3><pre><code class='java'>
+      &#47&#47 single input
+      feed_dict = dict([(self.inputs[0], inputs)])
+
+    input_dict = <a id="change">dict(
+        [(x[0], tf.constant(x[1])) for x in feed_dict.items()])</a>
+
+    <a id="change">output_values = self.tf_module(**input_dict)</a>
+    <a id="change">output_values = [val.numpy() if isinstance(val, tf.Tensor) else val for val in output_values]</a>
+
+    return namedtupledict(&quotOutputs&quot, self.outputs)(*output_values)
+
+  def export_graph(self, path):</code></pre><img src="143039620.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/onnx/onnx-tensorflow/commit/054095d922edda5134e520522bc82a1b95cc5bd4#diff-1e6ff1fe703eb6e9c19bdae957bbc2ab76bd9bcb39f79b5c311a248f7f5dc53eL52' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnx-tensorflow</div><div id='commit'> Commit Name: 054095d922edda5134e520522bc82a1b95cc5bd4</div><div id='time'> Time: 2020-09-09</div><div id='author'> Author: smonov@gmail.com</div><div id='file'> File Name: onnx_tf/backend_rep.py</div><div id='class'> Class Name: TensorflowRep</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/gyoisamurai/GyoiThon/commit/4f53bca9b044b20bc4aa8b7719bbbb2984623b3a#diff-9f46c9586b383e950a66c7b10f5fe4511b4d5750b64b26f02d379114cbc3e948L279' target='_blank'>Link</a></div><div id='project'> Project Name: gyoisamurai/GyoiThon</div><div id='commit'> Commit Name: 4f53bca9b044b20bc4aa8b7719bbbb2984623b3a</div><div id='time'> Time: 2018-06-04</div><div id='author'> Author: gyoiler3@gmail.com</div><div id='file'> File Name: classifier4gyoithon/GyoiClassifier.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/gyoisamurai/GyoiThon/commit/5765f471197edbf64a57dd2628dcd3051c7ea46c#diff-e64c3752c5b7f77bb87aeded8437cda7b5fb464700306722cb08e80c60c1d11cL207' target='_blank'>Link</a></div><div id='project'> Project Name: gyoisamurai/GyoiThon</div><div id='commit'> Commit Name: 5765f471197edbf64a57dd2628dcd3051c7ea46c</div><div id='time'> Time: 2018-06-04</div><div id='author'> Author: gyoiler3@gmail.com</div><div id='file'> File Name: gyoithon.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

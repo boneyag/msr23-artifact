@@ -1,0 +1,85 @@
+<html><h3>6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9,agents/reinforce.py,REINFORCEContinuous,build_network_normal,#REINFORCEContinuous#,183
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            inputs=self.states,
+            num_outputs=self.config["n_hidden_units"],
+            activation_fn=tf.tanh,
+            weights_initializer=<a id="change">tf.random_normal_initializer()</a>,
+            biases_initializer=tf.zeros_initializer())
+
+        mu = tf.contrib.layers.fully_connected(
+            inputs=L1,
+            num_outputs=1,
+            activation_fn=None,
+            weights_initializer=<a id="change">tf.random_normal_initializer()</a>,
+            biases_initializer=tf.zeros_initializer())
+        mu = tf.squeeze(mu, name="mu")
+
+        sigma_L1 = tf.contrib.layers.fully_connected(
+            inputs=self.states,
+            num_outputs=self.config["n_hidden_units"],
+            activation_fn=tf.tanh,
+            weights_initializer=tf.random_normal_initializer(),
+            biases_initializer=tf.zeros_initializer())
+        sigma = tf.contrib.layers.fully_connected(
+            inputs=sigma_L1,
+            num_outputs=1,
+            activation_fn=None,
+            weights_initializer=tf.random_normal_initializer(),
+            biases_initializer=tf.zeros_initializer())
+        sigma = tf.squeeze(sigma)
+        sigma = tf.nn.softplus(sigma) + 1e-5
+
+        <a id="change">self.normal_dist</a> = tf.contrib.distributions.Normal(mu, sigma)
+        <a id="change">self.action</a> = self.normal_dist.sample(1)
+        <a id="change">self.action</a> = tf.clip_by_value(self.action, self.env.action_space.low[0], self.env.action_space.high[0])
+        loss = -self.normal_dist.log_prob(self.a_n) * self.adv_n
+        &#47&#47 Add cross entropy cost to encourage exploration
+        loss -= 1e-1 * self.normal_dist.entropy()
+        loss = tf.clip_by_value(loss, -1e10, 1e10)
+        <a id="change">self.summary_loss</a> = tf.reduce_mean(loss)
+        &#47&#47 optimizer = tf.train.RMSPropOptimizer(learning_rate=self.config["learning_rate"], decay=0.9, epsilon=1e-9)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.config["learning_rate"])
+        self.train = optimizer.minimize(loss, global_step=tf.contrib.framework.get_global_step())</code></pre><h3>After Change</h3><pre><code class='java'>
+            inputs=self.states,
+            num_outputs=self.config["n_hidden_units"],
+            activation_fn=tf.tanh,
+            weights_initializer=<a id="change">tf.truncated_normal_initializer(mean=0.0, stddev=0.02)</a>,
+            biases_initializer=tf.zeros_initializer())
+
+        mu = tf.contrib.layers.fully_connected(
+            inputs=L1,
+            num_outputs=1,
+            activation_fn=None,
+            weights_initializer=<a id="change">tf.truncated_normal_initializer(mean=0.0, stddev=0.02)</a>,
+            biases_initializer=tf.zeros_initializer())
+        mu = tf.squeeze(mu, name="mu")
+
+        sigma_L1 = tf.contrib.layers.fully_connected(
+            inputs=self.states,
+            num_outputs=self.config["n_hidden_units"],
+            activation_fn=tf.tanh,
+            weights_initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.02),
+            biases_initializer=tf.zeros_initializer())
+        sigma = tf.contrib.layers.fully_connected(
+            inputs=sigma_L1,
+            num_outputs=1,
+            activation_fn=None,
+            weights_initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.02),
+            biases_initializer=tf.zeros_initializer())
+        sigma = tf.squeeze(sigma)
+        sigma = tf.nn.softplus(sigma) + 1e-5
+
+        <a id="change">self.normal_dist</a> = tf.contrib.distributions.Normal(mu, sigma)
+        <a id="change">self.action</a> = self.normal_dist.sample(1)
+        <a id="change">self.action</a> = tf.clip_by_value(self.action, self.env.action_space.low[0], self.env.action_space.high[0])
+        loss = -self.normal_dist.log_prob(self.a_n) * self.adv_n
+        &#47&#47 Add cross entropy cost to encourage exploration
+        loss -= 1e-1 * self.normal_dist.entropy()
+        loss = tf.clip_by_value(loss, -1e10, 1e10)
+        <a id="change">self.summary_loss</a> = tf.reduce_mean(loss)
+        &#47&#47 optimizer = tf.train.RMSPropOptimizer(learning_rate=self.config["learning_rate"], decay=0.9, epsilon=1e-9)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.config["learning_rate"])
+        self.train = optimizer.minimize(loss, global_step=tf.contrib.framework.get_global_step())</code></pre><img src="218476807.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/arnomoonens/yarll/commit/6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9#diff-8ccfe340600366f7a8c2b414a214dea7324eae1c496d6f78b3edd1938e00e56aL189' target='_blank'>Link</a></div><div id='project'> Project Name: arnomoonens/yarll</div><div id='commit'> Commit Name: 6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9</div><div id='time'> Time: 2017-06-02</div><div id='author'> Author: x-006@hotmail.com</div><div id='file'> File Name: agents/reinforce.py</div><div id='class'> Class Name: REINFORCEContinuous</div><div id='method'> Method Name: build_network_normal</div><BR><BR><div id='link'><a href='https://github.com/arnomoonens/yarll/commit/6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9#diff-8ccfe340600366f7a8c2b414a214dea7324eae1c496d6f78b3edd1938e00e56aL247' target='_blank'>Link</a></div><div id='project'> Project Name: arnomoonens/yarll</div><div id='commit'> Commit Name: 6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9</div><div id='time'> Time: 2017-06-02</div><div id='author'> Author: x-006@hotmail.com</div><div id='file'> File Name: agents/reinforce.py</div><div id='class'> Class Name: REINFORCEContinuous</div><div id='method'> Method Name: build_network_rnn</div><BR><BR><div id='link'><a href='https://github.com/arnomoonens/yarll/commit/6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9#diff-8ccfe340600366f7a8c2b414a214dea7324eae1c496d6f78b3edd1938e00e56aL189' target='_blank'>Link</a></div><div id='project'> Project Name: arnomoonens/yarll</div><div id='commit'> Commit Name: 6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9</div><div id='time'> Time: 2017-06-02</div><div id='author'> Author: x-006@hotmail.com</div><div id='file'> File Name: agents/reinforce.py</div><div id='class'> Class Name: REINFORCEContinuous</div><div id='method'> Method Name: build_network_normal</div><BR><BR><div id='link'><a href='https://github.com/arnomoonens/yarll/commit/6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9#diff-4e7d82c2a3b696f77df5a9a6eefdbe4eb3f16fb66c6ae44654c5d81dc162cccfL121' target='_blank'>Link</a></div><div id='project'> Project Name: arnomoonens/yarll</div><div id='commit'> Commit Name: 6a0d879dd254dcf5ccac86ac9958e203ddb4e1c9</div><div id='time'> Time: 2017-06-02</div><div id='author'> Author: x-006@hotmail.com</div><div id='file'> File Name: agents/a2c.py</div><div id='class'> Class Name: A2CDiscrete</div><div id='method'> Method Name: build_networks</div><BR>

@@ -1,0 +1,38 @@
+<html><h3>77b1d527138ea2385284ed8eae8322c589065d3f,texar/agents/seq_pg_agent.py,SeqPGAgent,_train_policy,#SeqPGAgent#Any#,108
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        discount_factor = self._hparams.discount_factor
+        qvalues = list(self._rewards)
+        for i in range(<a id="change">len(qvalues)</a> - 2, -1, -1):
+            qvalues[i] += discount_factor * qvalues[i + 1]
+
+        q_mean = np.mean(qvalues)</code></pre><h3>After Change</h3><pre><code class='java'>
+        qvalues = np.expand_dims(qvalues, -1)
+        max_seq_length = self._samples_py.shape[1]
+        if max_seq_length &gt; 1:
+            prefix = <a id="change">np.zeros(
+                [qvalues.shape[0], max_seq_length-1], dtype=qvalues.dtype)</a>
+            <a id="change">qvalues = np.concatenate([prefix, qvalues])</a>
+            for i in range(max_seq_length - 2, -1, -1):
+                qvalues[:, i] += discount_factor * qvalues[:, i + 1]
+
+        q_mean = np.mean(qvalues)
+        q_std = np.std(qvalues)
+        qvalues = [(q - q_mean) / q_std for q in qvalues]
+
+        fetches = dict(loss=self._train_op)
+        feed_dict_ = {
+            self._qvalue_inputs: qvalues
+        }
+        feed_dict_.update(feed_dict or {})
+
+        vals = self._sess.run(fetches, feed_dict=feed_dict_)
+
+        <a id="change">return vals[&quotloss&quot]</a>
+
+    @property
+    def sess(self):
+        The tf session.</code></pre><img src="8261646.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/asyml/texar/commit/77b1d527138ea2385284ed8eae8322c589065d3f#diff-1b84d258eb88af97880a285bcc5b30093d745900799e2a4662ac70aaf8a0b61dL108' target='_blank'>Link</a></div><div id='project'> Project Name: asyml/texar</div><div id='commit'> Commit Name: 77b1d527138ea2385284ed8eae8322c589065d3f</div><div id='time'> Time: 2018-04-26</div><div id='author'> Author: zhitinghu@gmail.com</div><div id='file'> File Name: texar/agents/seq_pg_agent.py</div><div id='class'> Class Name: SeqPGAgent</div><div id='method'> Method Name: _train_policy</div><BR><BR><div id='link'><a href='https://github.com/chainer/chainercv/commit/90b78b1379b3423aa3b4b5d0de7313f88bda23ab#diff-e539469b343bde8b45aff790b5366af7a49bb68316dff39e4e7b53fcd9ff98a1L24' target='_blank'>Link</a></div><div id='project'> Project Name: chainer/chainercv</div><div id='commit'> Commit Name: 90b78b1379b3423aa3b4b5d0de7313f88bda23ab</div><div id='time'> Time: 2019-02-17</div><div id='author'> Author: yuyuniitani@gmail.com</div><div id='file'> File Name: chainercv/utils/mask/mask_to_bbox.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: mask_to_bbox</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/002a9d5d2b2c26fff63293e3007ede9ab7dee616#diff-b1d27e7fec4411418d2e5347ab41597d2ebf4bff8ee2313f1d5c9f678cdca0eaL333' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: 002a9d5d2b2c26fff63293e3007ede9ab7dee616</div><div id='time'> Time: 2015-11-02</div><div id='author'> Author: makoto.matsuyama@gmx.com</div><div id='file'> File Name: keras/layers/core.py</div><div id='class'> Class Name: Merge</div><div id='method'> Method Name: output_shape</div><BR>

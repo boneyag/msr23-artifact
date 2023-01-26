@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                self.saver.variables = {k: v for k, v in self.saver.variables.items() if "adam" not in k and "global_step" not in k}
+                for weight in self.saver.variables:
+                    if weight.startswith("model/target/") and weight.endswith("/w:0"):
+                        self.saver.variables[weight] = <a id="change">normalize(self.saver.variables[weight], axis=0)</a> * self.config.weight_stddev
+                tf.logging.info("Finishing pre-fit initialisation...")
+            estimator.train(train_input_fn, hooks=train_hooks, steps=num_steps)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                        shape = w.shape
+                        if len(shape) ==1:
+                            continue
+                        <a id="change">w_flat = np.reshape(w, [-1, shape[-1]])</a>
+                        expectation_of_norm = ((self.config.weight_stddev ** 2) * w_flat.shape[0]) ** 0.5
+                        self.saver.variables[weight] = np.reshape(expectation_of_norm * w_flat / np.linalg.norm(w_flat, axis=0), shape)
+
+                tf.logging.info("Finishing pre-fit initialisation...")</code></pre>

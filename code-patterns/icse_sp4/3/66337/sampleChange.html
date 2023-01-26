@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Convert weights to integers.
+        if len(layer.weights):
+            weights, biases = layer.get_weights()
+            num_weight_bits = <a id="change">eval(self.config.get(
+                &quotloihi&quot, &quotconnection_kwargs&quot))[&quotnumWeightBits&quot]</a>
+            weights, biases = to_integer(weights, biases, num_weight_bits)
+            spike_layer.set_weights([weights, biases])
+
+        self._previous_layer_name = layer.name</code></pre><h3>After Change</h3><pre><code class='java'>
+            weights, biases = layer.get_weights()
+            weights, biases = to_integer(weights, biases, self.num_weight_bits)
+
+            <a id="change">if &quotFlatten&quot in self._previous_layer_name:
+                pl = self.parsed_model.get_layer(self._previous_layer_name)
+                shape = pl.input_shape[1:]
+                permutation = np.ravel(np.reshape(
+                    np.arange(int(np.prod(shape))), shape, &quotF&quot), &quotC&quot)
+                weights = weights[permutation]
+
+           </a> spike_layer.set_weights([weights, biases])
+
+        elif &quotAveragePooling&quot in get_type(layer):
+            weights, biases = spike_layer.get_weights()</code></pre>

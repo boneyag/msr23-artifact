@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47 Preference is to calculate energy from 
+                &#47&#47 native Energy data rather than Power data
+                &#47&#47 so don&quott overwrite with Power data.
+                <a id="change">if not energy.has_key(measurement.ac_type):
+                    energy[measurement.ac_type] = _energy_per_power_series(series)
+                    data_source_rank[measurement.ac_type] = 3 &#47&#47 least favourite
+           </a> elif isinstance(measurement, Energy):
+                if measurement.cumulative:
+                    <a id="change">energy[measurement.ac_type] = series.iloc[-1] - series.iloc[0]</a>
+                    <a id="change">data_source_rank[measurement.ac_type] = 1</a> &#47&#47 favourite
+                elif data_source_rank.get(measurement.ac_type, 3) &gt; 2:
+                    energy[measurement.ac_type] = series.sum()
+                    data_source_rank[measurement.ac_type] = 2</code></pre><h3>After Change</h3><pre><code class='java'>
+        Preference: Energy(cumulative) &gt; Energy &gt; Power
+        
+        energy = {}
+        <a id="change">for timeframe in df.results[&quotgood_sections&quot].last_results:
+            energy_for_timeframe = _energy_for_chunk(timeframe.slice(df))
+            for ac_type, e_for_ac_type in energy_for_timeframe.iteritems():
+                energy[ac_type] = energy.get(ac_type, 0) + e_for_ac_type
+
+       </a> energy_results = EnergyResults()
+        energy_results.append(df.timeframe, energy)
+        df.results = getattr(df, &quotresults&quot, {})
+        df.results[self.name] = energy_results</code></pre>

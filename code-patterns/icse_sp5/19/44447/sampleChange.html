@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _test_ddpg_trainer(self, use_gpu=False, use_all_avail_gpus=False):
+        environment = GridworldContinuous()
+        <a id="change">samples = environment.generate_samples(100000, 0.25, DISCOUNT)</a>
+        trainer = DDPGTrainer(
+            self.get_ddpg_parameters(),
+            environment.normalization,
+            environment.normalization_action,
+            environment.min_action_range,
+            environment.max_action_range,
+            use_gpu=use_gpu,
+            use_all_avail_gpus=use_all_avail_gpus,
+        )
+        evaluator = GridworldDDPGEvaluator(environment, True, DISCOUNT, False, samples)
+        <a id="change">tdps = environment.preprocess_samples(
+            samples, self.minibatch_size, use_gpu=use_gpu
+        )</a>
+
+        critic_predictor = trainer.predictor(actor=False)
+        evaluator.evaluate_critic(critic_predictor)
+        <a id="change">for tdp in tdps:
+            tdp.rewards = tdp.rewards.reshape(-1, 1)
+            tdp.not_terminals = tdp.not_terminals.reshape(-1, 1)
+            trainer.train(tdp)
+
+        &#47&#47 Make sure actor predictor works
+       </a> actor = trainer.predictor(actor=True)
+        evaluator.evaluate_actor(actor)
+
+        &#47&#47 Evaluate critic predicor for correctness</code></pre><h3>After Change</h3><pre><code class='java'>
+            ),
+        )
+
+    def _test_ddpg_trainer(<a id="change">self</a>, use_gpu=False, use_all_avail_gpus=False):
+        <a id="change">self.check_tolerance = False</a>
+        self.tolerance_threshold = 1.0
+        environment = GridworldContinuous()
+        trainer = DDPGTrainer(
+            self.get_ddpg_parameters(),
+            environment.normalization,
+            environment.normalization_action,
+            environment.min_action_range,
+            environment.max_action_range,
+            use_gpu=use_gpu,
+            use_all_avail_gpus=use_all_avail_gpus,
+        )
+        evaluator = GridworldDDPGEvaluator(environment, True, DISCOUNT, False)
+        <a id="change">self.evaluate_gridworld(environment, evaluator, trainer, trainer, use_gpu)</a>
+
+    def test_ddpg_trainer(self):
+        self._test_ddpg_trainer()
+</code></pre>

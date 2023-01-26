@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                ids = shuffled_ids[start:start + step_size]
+                loss = self._train(obs_flat[ids], actions_flat[ids],
+                                   rewards_flat[ids], advantages_flat[ids])
+            logger.log(<a id="change">&quotMini epoch: {} | Loss: {}&quot.format(epoch, loss)</a>)
+
+        self._value_function.fit(paths)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        obs_flat = torch.cat(filter_valids(obs, valids))
+        actions_flat = torch.cat(filter_valids(actions, valids))
+        rewards_flat = torch.cat(filter_valids(rewards, valids))
+        returns_flat = <a id="change">torch.cat(filter_valids(returns, valids))</a>
+        advs_flat = self._compute_advantage(rewards, valids, baselines)
+
+        with torch.no_grad():
+            policy_loss_before = self._compute_loss_with_adv(
+                obs_flat, actions_flat, rewards_flat, advs_flat)
+            <a id="change">vf_loss_before = self._value_function.compute_loss(
+                obs_flat, returns_flat)</a>
+            kl_before = self._compute_kl_constraint(obs)
+
+        self._train(obs_flat, actions_flat, rewards_flat, returns_flat,
+                    advs_flat)</code></pre>

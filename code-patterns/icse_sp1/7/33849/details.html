@@ -1,0 +1,26 @@
+<html><h3>7c3d0a5ea7405fe74cc31f5553f7c04d9804d42e,pytorch/pytorchcv/models/isqrtcovresnet.py,Covpool,forward,#Any#Any#,21
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        x = input
+        batch_size = x.data.shape[0]
+        channels = x.data.shape[1]
+        <a id="change">h = x.data.shape[2]</a>
+        w = x.data.shape[3]
+        M = h * w
+        x = x.reshape(batch_size, channels, M)
+        <a id="change">I_hat = (-1. / M / M) * torch.ones(M, M, device=x.device) + (1. / M) * torch.eye(M, M, device=x.device)</a>
+        <a id="change">I_hat = I_hat.view(1, M, M).repeat(batch_size, 1, 1).type(x.dtype)</a>
+        y = x.bmm(I_hat).bmm(x.transpose(1, 2))
+        ctx.save_for_backward(input, I_hat)
+        return y
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        batch, channels, height, width = x.size()
+        n = height * width
+        xn = x.reshape(batch, channels, n)
+        <a id="change">identity_bar = ((1.0 / n) * torch.eye(n, dtype=xn.dtype, device=xn.device)).unsqueeze(dim=0).repeat(batch, 1, 1)</a>
+        ones_bar = torch.full((batch, n, n), fill_value=(-1.0 / n / n), dtype=xn.dtype, device=xn.device)
+        i_bar = identity_bar + ones_bar
+        sigma = xn.bmm(i_bar).bmm(xn.transpose(1, 2))
+        ctx.save_for_backward(x, i_bar)</code></pre><img src="165853571.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/osmr/imgclsmob/commit/7c3d0a5ea7405fe74cc31f5553f7c04d9804d42e#diff-d855ce643ed5d37472984b7cebe0ff69bae2baee0121cf5c768b5d715db2aa5cL22' target='_blank'>Link</a></div><div id='project'> Project Name: osmr/imgclsmob</div><div id='commit'> Commit Name: 7c3d0a5ea7405fe74cc31f5553f7c04d9804d42e</div><div id='time'> Time: 2019-03-02</div><div id='author'> Author: osemery@gmail.com</div><div id='file'> File Name: pytorch/pytorchcv/models/isqrtcovresnet.py</div><div id='class'> Class Name: Covpool</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/jadore801120/attention-is-all-you-need-pytorch/commit/bed0a0ae26451c9897cf1ee0f7302e42eba9b42c#diff-a6a596f1b879b5a9b6619ca2e20a4a5ec1725229f46a2e80291aa2a89ef6dc5cL34' target='_blank'>Link</a></div><div id='project'> Project Name: jadore801120/attention-is-all-you-need-pytorch</div><div id='commit'> Commit Name: bed0a0ae26451c9897cf1ee0f7302e42eba9b42c</div><div id='time'> Time: 2018-08-23</div><div id='author'> Author: yhhuang@nlg.csie.ntu.edu.tw</div><div id='file'> File Name: transformer/Models.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_attn_subsequent_mask</div><BR><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/e2f66c0de2600308044ec3ab7731dae9017378fa#diff-72a902ff76f96299e4f6d2c9193247f8bf888111e493471d67f902165b62baefL42' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: e2f66c0de2600308044ec3ab7731dae9017378fa</div><div id='time'> Time: 2018-12-20</div><div id='author'> Author: vidurj@allenai.org</div><div id='file'> File Name: allennlp/modules/seq2seq_encoders/bidirectional_language_model_transformer.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: subsequent_mask</div><BR>

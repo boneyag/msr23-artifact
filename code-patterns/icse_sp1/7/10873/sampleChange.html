@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            if torch.is_tensor(item) and item.size(0) == num_nodes:
+                if key == &quoty&quot:
+                    <a id="change">one_hot = torch.zeros((item.shape[0], self._num_classes))\
+                        .scatter(1, item.unsqueeze(-1), 1)</a>
+
+                    aggr_labels = scatter_add(one_hot, pool, dim=0)
+                    data[key] = torch.argmax(aggr_labels, -1)
+                else:</code></pre><h3>After Change</h3><pre><code class='java'>
+    def __call__(self, data):
+        num_nodes = data.num_nodes
+
+        <a id="change">if &quotbatch&quot not in data:
+            batch = data.pos.new_zeros(num_nodes, dtype=torch.long)
+        else:
+            batch = data.batch
+
+       </a> cluster = voxel_grid(data.pos, batch, self.size, self.start, self.end)
+        cluster, perm = consecutive_cluster(cluster)
+
+        for key, item in data:
+            if bool(re.search(&quotedge&quot, key)):
+                raise ValueError(
+                    &quotGridSampling does not support coarsening of edges&quot)
+
+            if torch.is_tensor(item) and item.size(0) == num_nodes:
+                if key == &quoty&quot:
+                    item = F.one_hot(item)
+                    item = scatter_add(item, cluster, dim=0)
+                    data[key] = item.argmax(dim=-1)
+                elif key == &quotbatch&quot:
+                    data[key] = item[perm]
+                else:
+                    <a id="change">data[key]</a> = scatter_mean(item, cluster, dim=0)
+
+        return data
+</code></pre>

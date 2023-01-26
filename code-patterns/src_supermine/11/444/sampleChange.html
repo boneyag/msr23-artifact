@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        &#47&#47 shape = [B, L, 1]
+        dense_input = keras.layers.Dense(1, use_bias=False)(attention_input)
+        <a id="change">if attention_mask:
+            &#47&#47 Since attention_mask is 1.0 for positions we want to attend and
+            &#47&#47 0.0 for masked positions, this operation will create a tensor
+            &#47&#47 which is 0.0 for positions we want to attend and -10000.0 for
+            &#47&#47 masked positions.
+
+            &#47&#47 shape = [B, L, 1]
+            adder = (1.0 - K.tf.cast(attention_mask, K.tf.float32)) * -1000.0
+            &#47&#47 shape = [B, L, 1]
+            dense_input += adder
+        &#47&#47 shape = [B, L, 1]
+       </a> attention_probs = keras.layers.Lambda(
+            lambda x: keras.layers.activations.softmax(x, axis=1),
+            output_shape=lambda s: (s[0], s[1], s[2])
+        )(dense_input)</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        &#47&#47 shape = [B, L, 1]
+        dense_input = keras.layers.Dense(1, use_bias=False)(attention_input)
+        <a id="change">if attention_mask is not None:
+            &#47&#47 Since attention_mask is 1.0 for positions we want to attend and
+            &#47&#47 0.0 for masked positions, this operation will create a tensor
+            &#47&#47 which is 0.0 for positions we want to attend and -10000.0 for
+            &#47&#47 masked positions.
+
+            &#47&#47 shape = [B, L, 1]
+            dense_input = keras.layers.Lambda(
+                lambda x: x + (1.0 - attention_mask) * -1000.0,
+                name="attention_mask"
+            )(dense_input)
+        &#47&#47 shape = [B, L, 1]
+       </a> attention_probs = keras.layers.Lambda(
+            lambda x: keras.layers.activations.softmax(x, axis=1),
+            output_shape=lambda s: (s[0], s[1], s[2]),
+            name="attention_probs"</code></pre>

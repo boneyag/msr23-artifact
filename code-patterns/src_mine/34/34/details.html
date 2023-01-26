@@ -1,0 +1,103 @@
+<html><h3>811d018ccb0cc49ce7c3b3b37849bff07c865761,tflearn/layers/conv.py,,highway_conv_1d,#,1140
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot + scope, b)
+
+        &#47&#47 Weight and bias for the transform gate
+        <a id="change">with tf.name_scope(&quottransform_gate&quot) as transform_gate:
+            W_T = vs.variable(transform_gate + &quotW&quot, shape=nb_filter,
+                            regularizer=None, initializer=W_init,
+                            trainable=trainable, restore=restore)
+            tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot +
+                                 transform_gate, W_T)
+
+            b_T = vs.variable(transform_gate + &quotb&quot, shape=nb_filter,
+                              initializer=tf.constant_initializer(-3),
+                              trainable=trainable, restore=restore)
+            tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot +
+                                 transform_gate, b_T)
+
+       </a> if isinstance(activation, str):
+            activation = activations.get(activation)
+        elif hasattr(activation, &quot__call__&quot):
+            activation = activation
+        else:
+            raise ValueError("Invalid Activation.")
+
+        &#47&#47 Adding dummy dimension to fit with Tensorflow conv2d
+        inference = tf.expand_dims(incoming, 2)
+        &#47&#47shared convolution for gating
+        convolved = tf.nn.conv2d(inference, W, strides, padding)
+        H = activation(tf.squeeze(convolved + b, [2]))
+        <a id="change">T</a> = tf.sigmoid(tf.squeeze(tf.mul(convolved, W_T) + b_T, [2]))
+        <a id="change">C</a> = tf.sub(1.0, T)
+        <a id="change">Q</a> = tf.mul(H, T)
+        R = tf.mul(tf.squeeze(convolved, [2]), C)
+        <a id="change">inference</a> = tf.add(Q, R)
+
+        &#47&#47 Track activations.
+        tf.add_to_collection(tf.GraphKeys.ACTIVATIONS, inference)
+
+    &#47&#47 Add attributes to Tensor to easy access weights.
+    inference.scope = scope
+    <a id="change">inference.W</a> = W
+    inference.W_T = W_T
+    inference.b = b
+    inference.b_T = b_T</code></pre><h3>After Change</h3><pre><code class='java'>
+    padding = utils.autoformat_padding(padding)
+
+    with tf.variable_op_scope([incoming], scope, name, reuse=reuse) as scope:
+        name = <a id="change">scope.name</a>
+
+        W_init = weights_init
+        if isinstance(weights_init, str):
+            W_init = initializations.get(weights_init)()
+        W_regul = None
+        if regularizer:
+            W_regul = lambda x: losses.get(regularizer)(x, weight_decay)
+        W = vs.variable(&quotW&quot, shape=filter_size,
+                        regularizer=W_regul, initializer=W_init,
+                        trainable=trainable, restore=restore)
+        &#47&#47 Track per layer variables
+        tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot + name, W)
+
+        b_init = initializations.get(bias_init)()
+        b = vs.variable(&quotb&quot, shape=nb_filter,
+                        initializer=b_init, trainable=trainable,
+                        restore=restore)
+        &#47&#47 Track per layer variables
+        tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot + name, b)
+
+        &#47&#47 Weight and bias for the transform gate
+        W_T = vs.variable(&quotW_T&quot, shape=nb_filter,
+                        regularizer=None, initializer=W_init,
+                        trainable=trainable, restore=restore)
+        tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot + name, W_T)
+
+        <a id="change">b_T</a> = vs.variable(<a id="change">&quotb_T&quot</a>, shape=nb_filter,
+                          initializer=tf.constant_initializer(-3),
+                          trainable=trainable, restore=restore)
+        <a id="change">tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot + name, b_T)</a>
+
+        if isinstance(activation, str):
+            activation = activations.get(activation)
+        elif hasattr(activation, &quot__call__&quot):
+            activation = activation
+        else:
+            raise ValueError("Invalid Activation.")
+
+        &#47&#47 Adding dummy dimension to fit with Tensorflow conv2d
+        inference = tf.expand_dims(incoming, 2)
+        &#47&#47 Shared convolution for gating
+        convolved = tf.nn.conv2d(inference, W, strides, padding)
+        H = activation(tf.squeeze(convolved + b, [2]))
+        <a id="change">T</a> = tf.sigmoid(tf.squeeze(tf.mul(convolved, W_T) + b_T, [2]))
+        <a id="change">C</a> = tf.sub(1.0, T)
+        <a id="change">Q</a> = tf.mul(H, T)
+        R = tf.mul(tf.squeeze(convolved, [2]), C)
+        <a id="change">inference</a> = tf.add(Q, R)
+
+        &#47&#47 Track activations.
+        tf.add_to_collection(tf.GraphKeys.ACTIVATIONS, inference)</code></pre><img src="169738.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tflearn/tflearn/commit/811d018ccb0cc49ce7c3b3b37849bff07c865761#diff-1bd50109bb08c2a0314f5c517c8cab3b98178652bcee1d9fb4de0fc1b2e2a99aL1195' target='_blank'>Link</a></div><div id='project'> Project Name: tflearn/tflearn</div><div id='commit'> Commit Name: 811d018ccb0cc49ce7c3b3b37849bff07c865761</div><div id='time'> Time: 2016-06-23</div><div id='author'> Author: aymeric.damien@gmail.com</div><div id='file'> File Name: tflearn/layers/conv.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: highway_conv_1d</div><BR><BR><div id='link'><a href='https://github.com/tflearn/tflearn/commit/811d018ccb0cc49ce7c3b3b37849bff07c865761#diff-cb30eeb85e9a83878411c1b9c5a6cd9dc6bd58aa16f3070a73303e60f6de4ab3L420' target='_blank'>Link</a></div><div id='project'> Project Name: tflearn/tflearn</div><div id='commit'> Commit Name: 811d018ccb0cc49ce7c3b3b37849bff07c865761</div><div id='time'> Time: 2016-06-23</div><div id='author'> Author: aymeric.damien@gmail.com</div><div id='file'> File Name: tflearn/layers/core.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: highway</div><BR><BR><div id='link'><a href='https://github.com/tflearn/tflearn/commit/811d018ccb0cc49ce7c3b3b37849bff07c865761#diff-1bd50109bb08c2a0314f5c517c8cab3b98178652bcee1d9fb4de0fc1b2e2a99aL1195' target='_blank'>Link</a></div><div id='project'> Project Name: tflearn/tflearn</div><div id='commit'> Commit Name: 811d018ccb0cc49ce7c3b3b37849bff07c865761</div><div id='time'> Time: 2016-06-23</div><div id='author'> Author: aymeric.damien@gmail.com</div><div id='file'> File Name: tflearn/layers/conv.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: highway_conv_1d</div><BR>

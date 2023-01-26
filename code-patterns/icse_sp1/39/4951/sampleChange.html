@@ -1,0 +1,112 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        SET_TRAIN_FLAG(True)
+
+        epoch_loss = <a id="change">tf.keras.metrics.Sum()</a>
+        <a id="change">epoch_toks = tf.keras.metrics.Sum()</a>
+        start = time.time()
+        <a id="change">nstep_loss = tf.keras.metrics.Sum()</a>
+        nstep_div = <a id="change">tf.keras.metrics.Sum()</a>
+        self.nstep_start = time.time()
+
+        def _train_step_no_state(inputs):
+            Replicated training step.
+
+            features, y = inputs
+            loss = self.optimizer.update(self.model, features, y)
+            toks = tf.cast(self._num_toks(y), tf.float32)
+            report_loss = loss * toks
+            epoch_loss.update_state(report_loss)
+            nstep_loss.update_state(report_loss)
+            epoch_toks.update_state(toks)
+            nstep_div.update_state(toks)
+
+        def _train_step_with_state(inputs, hidden):
+            Replicated training step.
+
+            features, y = inputs
+            loss, hidden = self.optimizer.update_with_hidden(self.model, hidden, features, y)
+            toks = tf.cast(self._num_toks(y), tf.float32)
+            report_loss = loss * toks
+            epoch_loss.update_state(report_loss)
+            nstep_loss.update_state(report_loss)
+            epoch_toks.update_state(toks)
+            nstep_div.update_state(toks)
+            return hidden
+        if get_version(tf) &gt;= 2:
+            _train_step_with_state = tf.function(_train_step_with_state)
+            _train_step_no_state = tf.function(_train_step_no_state)
+
+        h = None
+        for inputs in ts:
+            if self.model.requires_state:
+                h = _train_step_with_state(inputs, h)
+            else:
+                _train_step_no_state(inputs)
+
+            step = self.optimizer.global_step.numpy() + 1
+            if step % self.nsteps == 0:
+                metrics = self.calc_metrics(<a id="change">nstep_loss</a>.result().numpy(), <a id="change">nstep_div</a>.result().numpy())
+                self.report(
+                    step, metrics, self.nstep_start,
+                    &quotTrain&quot, &quotSTEP&quot, reporting_fns, self.nsteps
+                )
+                nstep_loss.reset_states()
+                nstep_div.reset_states()
+                self.nstep_start = time.time()
+
+        epoch_loss = <a id="change">epoch_loss</a>.result().numpy()
+        epoch_toks = <a id="change">epoch_toks</a>.result().numpy()
+
+        metrics = self.calc_metrics(epoch_loss, epoch_toks)
+        self.train_epochs += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+
+        SET_TRAIN_FLAG(True)
+        <a id="change">epoch_loss = tf.Variable(0.0)</a>
+        epoch_div = <a id="change">tf.Variable(0, dtype=tf.int32)</a>
+        <a id="change">nstep_loss = tf.Variable(0.0)</a>
+        nstep_div = <a id="change">tf.Variable(0, dtype=tf.int32)</a>
+        self.nstep_start = time.time()
+        start = time.time()
+
+        def _train_step_no_state(inputs):
+            Replicated training step.
+
+            features, y = inputs
+            loss = self.optimizer.update(self.model, features, y)
+            toks = self._num_toks(y)
+            report_loss = loss * tf.cast(toks, tf.float32)
+            return report_loss, toks
+
+        def _train_step_with_state(inputs, hidden):
+            Replicated training step.
+
+            features, y = inputs
+            loss, hidden = self.optimizer.update_with_hidden(self.model, hidden, features, y)
+            toks = tf.cast(self._num_toks(y), tf.float32)
+            report_loss = loss * toks
+            return hidden, report_loss, toks
+
+        if get_version(tf) &gt;= 2:
+            _train_step_with_state = tf.function(_train_step_with_state)
+            _train_step_no_state = tf.function(_train_step_no_state)
+
+        h = None
+        for inputs in ts:
+            if self.model.requires_state:
+                h, step_report_loss, step_toks = _train_step_with_state(inputs, h)
+            else:
+                <a id="change">step_report_loss</a>, <a id="change">step_toks</a> = _train_step_no_state(inputs)
+
+            <a id="change">epoch_loss.assign_add(step_report_loss)</a>
+            <a id="change">nstep_loss.assign_add(step_report_loss)</a>
+            <a id="change">epoch_div.assign_add(step_toks)</a>
+            <a id="change">nstep_div.assign_add(step_toks)</a>
+
+            step = self.optimizer.global_step.numpy() + 1
+            if step % self.nsteps == 0:
+                metrics = self.calc_metrics(nstep_loss.numpy(), nstep_div.numpy())</code></pre>

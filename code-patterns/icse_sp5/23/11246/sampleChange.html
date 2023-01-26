@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 If you actually passed in Variables here instead of Tensors, this will be a huge memory
+        &#47&#47 leak, because it will prevent garbage collection for the computation graph.  We&quotll ensure
+        &#47&#47 that we&quotre using tensors here first.
+        <a id="change">if isinstance(predictions, Variable):
+            predictions = predictions.data
+       </a> <a id="change">if isinstance(gold_labels, Variable):
+            gold_labels = gold_labels.data
+       </a> <a id="change">if isinstance(mask, Variable):
+            mask = mask.data
+
+       </a> num_classes = predictions.size(-1)
+        if (gold_labels &gt;= num_classes).any():
+            raise ConfigurationError("A gold label passed to F1Measure contains an id &gt;= {}, "
+                                     "the number of classes.".format(num_classes))
+        if mask is None:
+            mask = ones_like(gold_labels)
+        mask = mask.float()
+        gold_labels = gold_labels.float()
+        positive_label_mask = gold_labels.eq(self._positive_label).float()
+        negative_label_mask = 1.0 - positive_label_mask
+
+        argmax_predictions = predictions.topk(1, -1)[1].float().squeeze(-1)
+
+        &#47&#47 True Negatives: correct non-positive predictions.
+        correct_null_predictions = (argmax_predictions !=
+                                    self._positive_label).float() * negative_label_mask
+        <a id="change">self._true_negatives</a> += (correct_null_predictions.float() * mask).sum()
+
+        &#47&#47 True Positives: correct positively labeled predictions.
+        correct_non_null_predictions = (argmax_predictions ==
+                                        self._positive_label).float() * positive_label_mask
+        <a id="change">self._true_positives</a> += (correct_non_null_predictions * mask).sum()
+
+        &#47&#47 False Negatives: incorrect negatively labeled predictions.
+        incorrect_null_predictions = (argmax_predictions !=</code></pre><h3>After Change</h3><pre><code class='java'>
+            A masking tensor the same size as ``gold_labels``.
+        
+        &#47&#47 Get the data from the Variables.
+        <a id="change">predictions, gold_labels, mask = self.unwrap_to_tensors(predictions, gold_labels, mask)</a>
+
+        num_classes = predictions.size(-1)
+        if (gold_labels &gt;= num_classes).any():
+            raise ConfigurationError("A gold label passed to F1Measure contains an id &gt;= {}, "</code></pre>

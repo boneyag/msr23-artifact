@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  @classmethod
+  def pool_v10(cls, node, input_dict, pool_func, pooling_type, strict=True):
+    x = input_dict[node.inputs[0]]
+    x_rank = len(<a id="change">x.get_shape()</a>)
+    <a id="change">spatial_size = x_rank - 2</a>
+
+    storage_format, _ = get_data_format(x_rank)
+
+    kernel_shape = node.attrs["kernel_shape"]</code></pre><h3>After Change</h3><pre><code class='java'>
+    if spatial_size &gt; 3:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+    <a id="change">if pooling_type == "MAX_WITH_ARGMAX" and x_rank != 4:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+   </a> if node.attrs.get("storage_order", 0) != 0:
+      exception.OP_UNSUPPORTED_EXCEPT("MaxPool with column major",
+                                      "Tensorflow")
+</code></pre>

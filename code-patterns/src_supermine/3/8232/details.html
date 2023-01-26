@@ -1,0 +1,46 @@
+<html><h3>b7920b1c847a5cdbe4728263fda80307fc6b6524,pytorch_lightning/trainer/connectors/logger_connector/epoch_result_store.py,HookResultStore,auto_reduce_results_on_epoch_end,#HookResultStore#,176
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47 Make sure we didn&quott create key
+                assert num_opt_idx &gt;= 0
+
+                <a id="change">for opt_idx in range(num_opt_idx + 1):
+                    &#47&#47 TODO: Figure out to reduce memory
+                    &#47&#47 TODO: How to start training in middle of epoch
+                    opt_outputs = epoch_metrics[opt_idx]
+
+                    &#47&#47 reduce across time first
+                    time_reduced_outputs = []
+                    for batch_idx in opt_outputs.keys():
+                        tbptt_outs = opt_outputs[batch_idx]
+                        tbptt_outs = tbptt_outs[0].__class__.reduce_across_time(tbptt_outs)
+                        if len(tbptt_outs) &gt; 1:
+                            time_reduced_outputs.append(tbptt_outs)
+
+                    if len(time_reduced_outputs) == 0:
+                        continue
+
+                    &#47&#47 reduce across training steps
+                    opt_outputs = time_reduced_outputs[0].__class__.reduce_on_epoch_end(time_reduced_outputs)
+
+                    &#47&#47 with manual opt need 1 + metrics because meta is always there
+                    if opt_outputs.minimize is not None:
+                        opt_outputs.minimize = opt_outputs.minimize.mean()
+
+                    self._internals_reduced[dl_idx][opt_idx] = opt_outputs
+
+                    &#47&#47 free memory
+                    del self._internals[dl_idx][opt_idx]
+           </a> else:
+                &#47&#47 no need to reduce as called only once
+                if len(epoch_metrics) == 1:
+                    reduced_epoch_metrics = epoch_metrics[0]</code></pre><h3>After Change</h3><pre><code class='java'>
+            epoch_metrics = self._internals[dl_idx]
+
+            if self._internal_type == ResultStoreType.INSIDE_BATCH_TRAIN_LOOP:
+                for opt_idx in <a id="change">list(epoch_metrics)</a>:
+                    &#47&#47 TODO: Figure out to reduce memory
+                    &#47&#47 TODO: How to start training in middle of epoch
+                    opt_outputs = epoch_metrics[opt_idx]</code></pre><img src="39027234.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/williamFalcon/pytorch-lightning/commit/b7920b1c847a5cdbe4728263fda80307fc6b6524#diff-8cc348656e5d5c12f8bb6930e41240da015887af602c1fcc4a0190420d4f7588L176' target='_blank'>Link</a></div><div id='project'> Project Name: williamFalcon/pytorch-lightning</div><div id='commit'> Commit Name: b7920b1c847a5cdbe4728263fda80307fc6b6524</div><div id='time'> Time: 2021-02-03</div><div id='author'> Author: carlossmocholi@gmail.com</div><div id='file'> File Name: pytorch_lightning/trainer/connectors/logger_connector/epoch_result_store.py</div><div id='class'> Class Name: HookResultStore</div><div id='method'> Method Name: auto_reduce_results_on_epoch_end</div><BR><BR><div id='link'><a href='https://github.com/PetrochukM/PyTorch-NLP/commit/dd2eaf6c174fdd757514bc06d1063e5f9c6bb4a0#diff-2c4d64f9df80f1f50179f19e91c15be51ff77a339e7e3910b48cbc032e963e68L90' target='_blank'>Link</a></div><div id='project'> Project Name: PetrochukM/PyTorch-NLP</div><div id='commit'> Commit Name: dd2eaf6c174fdd757514bc06d1063e5f9c6bb4a0</div><div id='time'> Time: 2019-10-20</div><div id='author'> Author: petrochukm@gmail.com</div><div id='file'> File Name: torchnlp/samplers/bucket_batch_sampler.py</div><div id='class'> Class Name: BucketBatchSampler</div><div id='method'> Method Name: __iter__</div><BR><BR><div id='link'><a href='https://github.com/shenweichen/DeepCTR/commit/2d720403e43ccbf2286c99876ce3bb8a9286f5c6#diff-cf4a64b1c1efe08096b1af015a14ab1518c3eba091e6e1fe13c10a872c26fb9dL1106' target='_blank'>Link</a></div><div id='project'> Project Name: shenweichen/DeepCTR</div><div id='commit'> Commit Name: 2d720403e43ccbf2286c99876ce3bb8a9286f5c6</div><div id='time'> Time: 2020-03-15</div><div id='author'> Author: wcshen1994@163.com</div><div id='file'> File Name: deepctr/layers/interaction.py</div><div id='class'> Class Name: FieldWiseBiInteraction</div><div id='method'> Method Name: call</div><BR>

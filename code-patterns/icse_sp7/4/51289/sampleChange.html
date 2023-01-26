@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        losses = {"output_" + str(i + 1): loss for i, loss in model.outputs}
+        losses[&quotbackdoor_detect&quot] = &quotbinary_crossentropy&quot
+        &#47&#47 losses = {&quotoutput_1&quot: model.losses[0], &quotoutput_2&quot: &quotbinary_crossentropy&quot}
+        print(<a id="change">self.embed_model.summary()</a>)
+        self.embed_model.compile(loss=losses, loss_weights=[1.0] * len(self.model.loss_weights_list) +
+                                                           [self.regularization])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.embed_model = Model(inputs=self.model.inputs, outputs=self.model.outputs + [backdoor_detect])
+        &#47&#47 print("printing model summary")
+        &#47&#47 Assuming outputs are default named output_1, ... output_n
+        <a id="change">if not model.losses:
+            &#47&#47 Assuming output layer is last layer
+            output_layer = len(model.layers) - 1
+            losses = {model.layers[output_layer].name: model.loss, &quotbackdoor_detect&quot: &quotbinary_crossentropy&quot}
+        else:
+            &#47&#47 TODO: this makes no sense
+            losses = {"output_" + str(i + 1): loss for i, loss in model.outputs}
+            losses[&quotbackdoor_detect&quot] = &quotbinary_crossentropy&quot
+        &#47&#47 losses = {&quotoutput_1&quot: model.losses[0], &quotoutput_2&quot: &quotbinary_crossentropy&quot}
+        &#47&#47 print(self.embed_model.summary())
+        &#47&#47 TODO: dynamically set optimizer and metric from original model
+       </a> self.embed_model.compile(optimizer=&quotadam&quot, loss=losses, loss_weights=[1.0] * len(self.model.loss_weights_list) +
+                                                                             [-self.regularization],
+                                 metrics=[&quotaccuracy&quot])
+        print("model loss")</code></pre>

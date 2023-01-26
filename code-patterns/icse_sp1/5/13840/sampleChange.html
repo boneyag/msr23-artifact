@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        img = np.array(Image.open(img_path))
+        while len(img.shape) != 3:
+            index += 1
+            <a id="change">img_path = self.img_files[index % len(self.img_files)].rstrip()</a>
+            img = np.array(Image.open(img_path))
+        h, w, _ = img.shape
+        dim_diff = np.abs(h - w)
+        &#47&#47 Upper (left) and lower (right) padding</code></pre><h3>After Change</h3><pre><code class='java'>
+        label_path = self.label_files[index % len(self.img_files)].rstrip()
+
+        labels = None
+        <a id="change">if os.path.exists(label_path):
+            labels = np.loadtxt(label_path).reshape(-1, 5)
+            &#47&#47 Extract coordinates for unpadded + unscaled image
+            x1 = w * (labels[:, 1] - labels[:, 3]/2)
+            y1 = h * (labels[:, 2] - labels[:, 4]/2)
+            x2 = w * (labels[:, 1] + labels[:, 3]/2)
+            y2 = h * (labels[:, 2] + labels[:, 4]/2)
+            &#47&#47 Adjust for added padding
+            x1 += pad[1][0]
+            y1 += pad[0][0]
+            x2 += pad[1][0]
+            y2 += pad[0][0]
+            &#47&#47 Calculate ratios from coordinates
+            labels[:, 1] = ((x1 + x2) / 2) / padded_w
+            labels[:, 2] = ((y1 + y2) / 2) / padded_h
+            labels[:, 3] *= w / padded_w
+            labels[:, 4] *= h / padded_h
+        &#47&#47 Fill matrix
+       </a> filled_labels = np.zeros((self.max_objects, 5))
+        if labels is not None:
+            filled_labels[range(len(labels))[:self.max_objects]] = labels[:self.max_objects]
+        filled_labels = torch.from_numpy(filled_labels)</code></pre>

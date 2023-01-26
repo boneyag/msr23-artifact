@@ -1,0 +1,40 @@
+<html><h3>a1260cc19342c4db61c6942a11c2b2b2b58f8bad,python/tvm/relay/frontend/keras.py,,_convert_reshape,#Any#Any#Any#,863
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if len(inshape) == 3 and len(tshape) == 1:
+        &#47&#47 (?, a, b) -&gt; (-1, ab)
+        shape = (-1, tshape[0])
+    elif <a id="change">len(inshape) in [2, 3]</a> and len(tshape) == 2:
+        &#47&#47 (?, cc) -&gt; (-1, c, c)
+        &#47&#47 (?, a, b) -&gt; (-1, c, c)
+        assert tshape[0] == tshape[1], "Only supports square target shapes, but got {}".format(
+            tshape
+        )
+        shape = (-1,) + tshape
+    else:
+        &#47&#47 (?, h, w, c) -&gt; (-1, c, H, W)
+        &#47&#47 (?, h, w, c) -&gt; (-1, c, hw)
+        &#47&#47 (?, hw, c) -&gt; (-1, c, h, w)
+        ch = inshape[-1]
+        assert ch == tshape[-1], (
+            "Only supports last dimension in target shape being equal to "
+            "the channel number of input tensor."
+        )
+        if etab.data_layout == "NCHW":
+            shape = (-1, ch) + tshape[:-1]
+        else:
+            shape = (-1,) + tshape[:-1] + <a id="change">(ch,)</a>
+    return _op.reshape(inexpr, newshape=shape)
+
+
+def _convert_lstm(inexpr, keras_layer, etab):</code></pre><h3>After Change</h3><pre><code class='java'>
+    if etab.data_layout == "NCHW" and (len(inshape) &gt; 3 or len(tshape) &gt; 2):
+        &#47&#47 Perform reshape in original NHWC format.
+        inexpr = _op.transpose(inexpr, [0] + list(range(2, len(inshape))) + [1])
+        <a id="change">inexpr = _op.reshape(inexpr, newshape=shape)</a>
+        return _op.transpose(inexpr, axes=[0, -1] + list(range(1, len(shape) - 1)))
+
+    return _op.reshape(inexpr, newshape=shape)
+</code></pre><img src="5312385.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/apache/incubator-tvm/commit/a1260cc19342c4db61c6942a11c2b2b2b58f8bad#diff-26a77a74173e4d0c3656ec9df791ecf0a9ea12b254b04352fde849604e64ae8cL865' target='_blank'>Link</a></div><div id='project'> Project Name: apache/incubator-tvm</div><div id='commit'> Commit Name: a1260cc19342c4db61c6942a11c2b2b2b58f8bad</div><div id='time'> Time: 2021-02-12</div><div id='author'> Author: trevmorr@amazon.com</div><div id='file'> File Name: python/tvm/relay/frontend/keras.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _convert_reshape</div><BR><BR><div id='link'><a href='https://github.com/logpai/loglizer/commit/7c960272c5ab4d25a022538f5849addec3e6bfee#diff-43fc2f56bcafd5edb2c8bf9aa213331585a7f29d8b193e07dfd329e56c95b036L82' target='_blank'>Link</a></div><div id='project'> Project Name: logpai/loglizer</div><div id='commit'> Commit Name: 7c960272c5ab4d25a022538f5849addec3e6bfee</div><div id='time'> Time: 2019-02-25</div><div id='author'> Author: zhujm.home@gmail.com</div><div id='file'> File Name: loglizer/preprocessing.py</div><div id='class'> Class Name: FeatureExtractor</div><div id='method'> Method Name: transform</div><BR><BR><div id='link'><a href='https://github.com/chainer/chainercv/commit/827e12f3b9506e0f78cc79445441cd9d1f25c055#diff-4f6428295d5e8623b5f27a4d0bb5e6c59923ac7a4f63dfdcefcfad355d45406fL55' target='_blank'>Link</a></div><div id='project'> Project Name: chainer/chainercv</div><div id='commit'> Commit Name: 827e12f3b9506e0f78cc79445441cd9d1f25c055</div><div id='time'> Time: 2018-04-24</div><div id='author'> Author: Hakuyume@users.noreply.github.com</div><div id='file'> File Name: chainercv/links/model/yolo/yolov3.py</div><div id='class'> Class Name: YOLOv3</div><div id='method'> Method Name: __call__</div><BR>

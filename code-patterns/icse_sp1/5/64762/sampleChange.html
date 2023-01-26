@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.y is not None: y = np.zeros(batch_size, dtype=np.int)
+        l = 0
+        for i in xrange(0, n, skip_size):
+            <a id="change">st = max(0, i - window_size)</a>
+            if i &lt; window_size: st = None  &#47&#47 zero indexing in reverse requires this
+            et = min(i + 1, window_size)
+            &#47&#47 logger.debug("i, l, st, et: %d %d, %d, %d" % (i, l, 0 if st is None else st, et))
+            x[l, 0:et, :] = self.samples[i:st:-1, :]</code></pre><h3>After Change</h3><pre><code class='java'>
+                x_, y_, w_ = x, y, w
+                if l &lt; batch_size:
+                    x_, y_, w_ = x[0:l, :, :], None if y is None else y[0:l], w[0:l]
+                <a id="change">yield x_, y_, w_</a>
+                if i + skip_size &lt; n:
+                    l = 0
+                    x = np.zeros(shape=(batch_size, window_size, d), dtype=np.float32)
+                    w = np.zeros(batch_size, dtype=np.int)</code></pre>

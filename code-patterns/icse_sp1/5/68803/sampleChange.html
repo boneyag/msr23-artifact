@@ -1,0 +1,101 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return tf.group(*assignments)
+
+        with tf.control_dependencies(control_inputs=util.flatten(xs=actions)):
+            <a id="change">reversed_variable_noise = self.cond(
+                pred=skip_variable_noise, true_fn=no_variable_noise,
+                false_fn=reverse_variable_noise
+            )</a>
+
+        &#47&#47 Update states/internals/actions buffers
+        def update_buffers():
+            operations = list()
+            buffer_index = self.buffer_index[parallel]
+            for name in self.states_spec:
+                operations.append(
+                    self.states_buffer[name].scatter_nd_update(
+                        indices=[(parallel, buffer_index)], updates=states[name]
+                    )
+                )
+            for name in self.internals_spec:
+                operations.append(
+                    self.internals_buffer[name].scatter_nd_update(
+                        indices=[(parallel, buffer_index)], updates=internals[name]
+                    )
+                )
+            for name in self.actions_spec:
+                operations.append(
+                    self.actions_buffer[name].scatter_nd_update(
+                        indices=[(parallel, buffer_index)], updates=actions[name]
+                    )
+                )
+
+            &#47&#47 Increment buffer index
+            with tf.control_dependencies(control_inputs=operations):
+                one = tf.constant(value=1, dtype=util.tf_dtype(dtype=&quotint&quot))
+                incremented_buffer_index = self.buffer_index.scatter_nd_add(
+                    indices=[(parallel,)], updates=[one]
+                )
+
+            with tf.control_dependencies(control_inputs=(incremented_buffer_index,)):
+                return tf.no_op()
+
+        with <a id="change">tf.control_dependencies(control_inputs=(reversed_variable_noise,))</a>:
+            updated_buffers = self.cond(
+                pred=independent, true_fn=tf.no_op, false_fn=update_buffers
+            )</code></pre><h3>After Change</h3><pre><code class='java'>
+                    assignments.append(variable.assign_sub(delta=noise, read_value=False))
+                return tf.group(*assignments)
+
+            <a id="change">reversed_variable_noise = self.cond(
+                pred=skip_variable_noise, true_fn=no_variable_noise,
+                false_fn=reverse_variable_noise
+            )</a>
+
+        &#47&#47 Update states/internals/actions buffers
+        <a id="change">with tf.control_dependencies(control_inputs=(reversed_variable_noise,)):
+
+            def update_buffers():
+                operations = list()
+                buffer_index = self.buffer_index[parallel]
+                for name in self.states_spec:
+                    operations.append(
+                        self.states_buffer[name].scatter_nd_update(
+                            indices=[(parallel, buffer_index)], updates=states[name]
+                        )
+                    )
+                for name in self.internals_spec:
+                    operations.append(
+                        self.internals_buffer[name].scatter_nd_update(
+                            indices=[(parallel, buffer_index)], updates=internals[name]
+                        )
+                    )
+                for name in self.actions_spec:
+                    operations.append(
+                        self.actions_buffer[name].scatter_nd_update(
+                            indices=[(parallel, buffer_index)], updates=actions[name]
+                        )
+                    )
+
+                &#47&#47 Increment buffer index
+                with tf.control_dependencies(control_inputs=operations):
+                    one = tf.constant(value=1, dtype=util.tf_dtype(dtype=&quotint&quot))
+                    incremented_buffer_index = self.buffer_index.scatter_nd_add(
+                        indices=[(parallel,)], updates=[one]
+                    )
+
+                with tf.control_dependencies(control_inputs=(incremented_buffer_index,)):
+                    return tf.no_op()
+
+            updated_buffers = self.cond(
+                pred=independent, true_fn=tf.no_op, false_fn=update_buffers
+            )
+
+        &#47&#47 Return timestep
+       </a> with tf.control_dependencies(control_inputs=(updated_buffers,)):
+            &#47&#47 Function-level identity operation for retrieval (plus enforce dependency)
+            for name, spec in self.actions_spec.items():
+                actions[name] = util.identity_operation(</code></pre>

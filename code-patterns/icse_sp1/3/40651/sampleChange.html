@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def get_registry_context(build_backend: Optional[str]) -&gt; RegistryContextSpec:
+    registry_config = RegistryAccess.objects.filter(id=conf.get(ACCESS_REGISTRY))
+    if registry_config.exists():
+        <a id="change">registry_config = registry_config.last()</a>
+        return get_registry_spec_from_config(registry_config)
+
+    if conf.get(REGISTRY_IN_CLUSTER):
+        return get_in_cluster_registry_spec(build_backend=build_backend)</code></pre><h3>After Change</h3><pre><code class='java'>
+            if conf.get(REGISTRY_IN_CLUSTER):
+                secret = None
+                secret_items = None
+                <a id="change">if registry_config.k8s_secret:
+                    secret = registry_config.k8s_secret.k8s_ref
+                    secret_items = registry_config.k8s_secret.items
+               </a> return get_in_cluster_registry_spec(
+                    build_backend=build_backend, secret=secret, secret_items=secret_items)
+            else:
+                raise ContainerRegistryError(&quotThe default registry has no host defined.&quot)</code></pre>

@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    for train_metric in train_metrics:
+      train_metric.tf_summaries(step_metrics=train_metrics[:2])
+    <a id="change">summary_op = tf.contrib.summary.all_summary_ops()</a>
+
+    with eval_summary_writer.as_default(), \
+         tf.compat.v2.summary.record_if(True):
+      for eval_metric in eval_metrics:
+        eval_metric.tf_summaries()
+
+    init_agent_op = tf_agent.initialize()
+
+    with tf.compat.v1.Session() as sess:
+      &#47&#47 Initialize the graph.
+      train_checkpointer.initialize_or_restore(sess)
+      rb_checkpointer.initialize_or_restore(sess)
+      &#47&#47 TODO(sguada) Remove once Periodically can be saved.
+      common_utils.initialize_uninitialized_variables(sess)
+
+      sess.run(init_agent_op)
+      <a id="change">tf.contrib.summary.initialize(session=sess)</a>
+
+      &#47&#47 Compute evaluation metrics.
+      global_step_val = sess.run(global_step)
+      metric_utils.compute_summaries(
+          eval_metrics,
+          eval_py_env,
+          eval_py_policy,
+          num_episodes=num_eval_episodes,
+          global_step=global_step_val,
+          callback=eval_metrics_callback,
+      )
+
+      collect_call = sess.make_callable(collect_op)
+      train_step_call = sess.make_callable(<a id="change">[train_op, summary_op, global_step]</a>)
+      clear_rb_call = sess.make_callable(clear_rb_op)
+
+      timed_at_step = sess.run(global_step)</code></pre><h3>After Change</h3><pre><code class='java'>
+      common_utils.initialize_uninitialized_variables(sess)
+
+      sess.run(init_agent_op)
+      <a id="change">sess.run(train_summary_writer.init())</a>
+      <a id="change">sess.run(eval_summary_writer.init())</a>
+
+      &#47&#47 Compute evaluation metrics.
+      global_step_call = sess.make_callable(global_step)
+      global_step_val = global_step_call()</code></pre>

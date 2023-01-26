@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        logger.info("Initializing remaining parameters with default initializer: %s",
+                    self._default_initializer)
+        <a id="change">for name, parameter in not_explicitly_initialized_parameters:
+            if any(re.search(exclude_regex, name) for exclude_regex in self._exclude):
+                logger.info("Excluding %s from default initialization", name)
+            else:
+                logger.info("Initializing %s using the default initializer", name)
+                self._default_initializer(parameter)
+
+   </a> @classmethod
+    def from_params(cls, params: Params) -&gt; "InitializerApplicator":
+        
+        Converts a Params object into an InitializerApplicator. The json should</code></pre><h3>After Change</h3><pre><code class='java'>
+            The Pytorch module to apply the initializers to.
+        
+        logger.info("Initializing parameters")
+        <a id="change">unused_regexes = set([initializer[0] for initializer in self._initializers])</a>
+        uninitialized_parameters = set()
+        &#47&#47 Store which initialisers were applied to which parameters.
+        for name, parameter in module.named_parameters():
+            for initializer_regex, initializer in self._initializers:
+                if re.search(initializer_regex, name):
+                    logger.info("Initializing %s using %s intitializer", name, initializer_regex)
+                    initializer(parameter)
+                    unused_regexes.discard(initializer_regex)
+                    break
+            else:  &#47&#47 no break
+                uninitialized_parameters.add(name)
+        <a id="change">for regex in unused_regexes:
+            logger.warning("Did not use initialization regex that was passed: %s", regex)
+       </a> logger.info("Done initializing parameters; the following parameters are using their "
+                    "default initialization from their code")
+        for name in uninitialized_parameters:
+            logger.info("   %s", name)</code></pre>

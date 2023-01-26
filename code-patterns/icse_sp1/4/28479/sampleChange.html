@@ -1,0 +1,77 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Nothing to do for already-encoded databases.
+    &#47&#47 TODO(github.com/ChrisCummins/clgen/issues/130): Refactor this after
+    &#47&#47 splitting out Corpus class.
+    <a id="change">if self.config.HasField(&quotpre_encoded_corpus_url&quot):
+      return
+
+   </a> preprocessed_lock_path = pathlib.Path(
+        self.preprocessed.url[len(&quotsqlite:///&quot):]).parent / &quotLOCK&quot
+    with lockfile.LockFile(preprocessed_lock_path):
+      self.preprocessed.Create(self.config)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Nothing to do for already-encoded databases.
+    &#47&#47 TODO(github.com/ChrisCummins/clgen/issues/130): Refactor this after
+    &#47&#47 splitting out Corpus class.
+    <a id="change">if self.config.HasField(&quotpre_encoded_corpus_url&quot):
+      with self.dashboard_db.Session(commit=True) as session:
+        config_to_store = corpus_pb2.Corpus()
+        config_to_store.CopyFrom(self.config)
+        &#47&#47 Clear the contentfiles field, since we use the content_id to uniquely
+        &#47&#47 identify the input files. This means that corpuses with the same content
+        &#47&#47 files delivered through different means (e.g. two separate but identical
+        &#47&#47 directories) have the same hash.
+        config_to_store.ClearField(&quotcontentfiles&quot)
+        corpus = session.GetOrAdd(
+            dashboard_db.Corpus,
+            config_proto_sha1=crypto.sha1(config_to_store.SerializeToString()),
+            config_proto=str(config_to_store),
+            preprocessed_url=&quot&quot,
+            encoded_url=self.encoded.url,
+            summary=self.GetShortSummary(),
+        )
+        session.flush()
+        self._dashboard_db_id = corpus.id
+      return
+
+   </a> preprocessed_lock_path = pathlib.Path(
+        self.preprocessed.url[len(&quotsqlite:///&quot):]).parent / &quotLOCK&quot
+    with lockfile.LockFile(preprocessed_lock_path):
+      self.preprocessed.Create(self.config)
+    if not self.preprocessed.size:
+      raise errors.EmptyCorpusException(
+          f"Pre-processed corpus contains no files: &quot{self.preprocessed.url}&quot")
+    encoded_lock_path = pathlib.Path(
+        self.encoded.url[len(&quotsqlite:///&quot):]).parent / &quotLOCK&quot
+    with lockfile.LockFile(encoded_lock_path):
+      start_time = time.time()
+      atomizer = self.atomizer
+      app.Log(1, &quot%s: %s tokens in %s ms&quot,
+              type(atomizer).__name__, humanize.Commas(atomizer.vocab_size),
+              humanize.Commas(int((time.time() - start_time) * 1000)))
+      self.encoded.Create(self.preprocessed, atomizer,
+                          self.config.contentfile_separator)
+
+    &#47&#47 Add entry to dashboard database
+    with self.dashboard_db.Session(commit=True) as session:
+      config_to_store = corpus_pb2.Corpus()
+      <a id="change">config_to_store.CopyFrom(self.config)</a>
+      &#47&#47 Clear the contentfiles field, since we use the content_id to uniquely
+      &#47&#47 identify the input files. This means that corpuses with the same content
+      &#47&#47 files delivered through different means (e.g. two separate but identical
+      &#47&#47 directories) have the same hash.
+      config_to_store.ClearField(&quotcontentfiles&quot)
+      <a id="change">corpus = session.GetOrAdd(
+          dashboard_db.Corpus,
+          config_proto_sha1=crypto.sha1(config_to_store.SerializeToString()),
+          config_proto=str(config_to_store),
+          preprocessed_url=self.preprocessed.url,
+          encoded_url=self.encoded.url,
+          summary=self.GetShortSummary(),
+      )</a>
+      session.flush()
+      self._dashboard_db_id = corpus.id
+
+  @property</code></pre>

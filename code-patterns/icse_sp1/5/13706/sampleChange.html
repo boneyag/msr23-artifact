@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        out = graph.add_layer(self.batch_norm(planes), out)
+        if downsample is not None:
+            downsample_out = graph.add_layer(StubReLU(), node_id)
+            <a id="change">downsample_out = graph.add_layer(downsample[0], downsample_out)</a>
+            <a id="change">residual_node_id = graph.add_layer(downsample[1], downsample_out)</a>
+        out = graph.add_layer(StubAdd(), (out, residual_node_id))
+        return out
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        out = graph.add_layer(self.conv(planes, planes, kernel_size=3), out)
+
+        residual_node_id = graph.add_layer(StubReLU(), residual_node_id)
+        <a id="change">residual_node_id = graph.add_layer(self.conv(in_planes,
+                                                     planes * self.block_expansion,
+                                                     kernel_size=1,
+                                                     stride=stride), residual_node_id)</a>
+        out = graph.add_layer(StubAdd(), (out, residual_node_id))
+        return out
+</code></pre>

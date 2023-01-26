@@ -1,0 +1,131 @@
+<html><h3>a637960fab61b66848a36e6a5caf0204c155af01,keras/engine/sequential.py,Sequential,add,#Sequential#Any#,94
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                 &quotFor multi-output layers, &quot
+                                 &quotuse the functional API.&quot)
+
+            <a id="change">self.outputs</a> = [layer._inbound_nodes[-1].output_tensors[0]]
+            self.inputs = network.get_source_inputs(self.outputs[0])
+
+            &#47&#47 We create an input node, which we will keep updated
+            &#47&#47 as we add more layers
+            base_layer.Node(outbound_layer=self,
+                            inbound_layers=[],
+                            node_indices=[],
+                            tensor_indices=[],
+                            input_tensors=self.inputs,
+                            output_tensors=self.outputs,
+                            &#47&#47 no model-level masking for now
+                            input_masks=[None for _ in self.inputs],
+                            output_masks=[None],
+                            input_shapes=[x._keras_shape for x in self.inputs],
+                            output_shapes=[self.outputs[0]._keras_shape])
+        else:
+            output_tensor = layer(self.outputs[0])
+            if isinstance(output_tensor, list):
+                raise TypeError(&quotAll layers in a Sequential model &quot
+                                &quotshould have a single output tensor. &quot
+                                &quotFor multi-output layers, &quot
+                                &quotuse the functional API.&quot)
+            self.outputs = [output_tensor]
+            &#47&#47 update self._inbound_nodes
+            self._inbound_nodes[0].output_tensors = self.outputs
+            self._inbound_nodes[0].output_shapes = [
+                <a id="change">self</a>.outputs[<a id="change">0</a>]._keras_shape]
+
+        self.layers.append(layer)
+        self.built = False</code></pre><h3>After Change</h3><pre><code class='java'>
+                      &quotjust use your `Sequential` instance directly.&quot)
+        return self
+
+    def add(<a id="change">self</a>, layer):
+        Adds a layer instance on top of the layer stack.
+
+        &#47&#47 Arguments
+            layer: layer instance.
+
+        &#47&#47 Raises
+            TypeError: If `layer` is not a layer instance.
+            ValueError: In case the `layer` argument does not
+                know its input shape.
+            ValueError: In case the `layer` argument has
+                multiple output tensors, or is already connected
+                somewhere else (forbidden in `Sequential` models).
+        
+        if not isinstance(layer, Layer):
+            raise TypeError(&quotThe added layer must be &quot
+                            &quotan instance of class Layer. &quot
+                            &quotFound: &quot + str(layer))
+        self.built = False
+        if not self._layers:
+            set_inputs = False
+            &#47&#47 First layer in model: check that it is an input layer.
+            if not isinstance(layer, InputLayer):
+                &#47&#47 Create an input tensor and call `layer` on the input tensor.
+                &#47&#47 First, we need to infer the expected input shape and dtype.
+                first_layer = layer
+                if isinstance(layer, (Model, Sequential)):
+                    &#47&#47 We were passed a model as first layer.
+                    &#47&#47 This requires a specific way to figure out the
+                    &#47&#47 input shape and dtype.
+                    if not layer.layers:
+                        raise ValueError(&quotCannot add an empty model &quot
+                                         &quotto a `Sequential` model.&quot)
+                    &#47&#47 In case of nested models: recover the first layer
+                    &#47&#47 of the deepest model to infer input shape and dtype.
+                    first_layer = layer.layers[0]
+                    while isinstance(first_layer, (Model, Sequential)):
+                        first_layer = first_layer.layers[0]
+                    batch_shape = first_layer.batch_input_shape
+                    dtype = first_layer.dtype
+
+                if hasattr(first_layer, &quotbatch_input_shape&quot):
+                    batch_shape = first_layer.batch_input_shape
+                    dtype = first_layer.dtype
+                    &#47&#47 Instantiate the input layer.
+                    x = Input(
+                        batch_shape=batch_shape,
+                        dtype=dtype,
+                        name=layer.name + &quot_input&quot)
+                    &#47&#47 This will build the current layer
+                    &#47&#47 and create the node connecting the current layer
+                    &#47&#47 to the input layer we just created.
+                    layer(x)
+                    set_inputs = True
+                else:
+                    &#47&#47 The layer doesn&quott know about its expected shape.
+                    &#47&#47 We will have to
+                    &#47&#47 build the model lazily on `fit`/etc.
+                    batch_shape = None
+            else:
+                &#47&#47 Corner case where the user passes an InputLayer via `add`.
+                assert len(layer._inbound_nodes[-1].output_tensors) == 1
+                set_inputs = True
+
+            if set_inputs:
+                if len(layer._inbound_nodes[-1].output_tensors) != 1:
+                    raise ValueError(&quotAll layers in a Sequential model &quot
+                                     &quotshould have a single output tensor. &quot
+                                     &quotFor multi-output layers, &quot
+                                     &quotuse the functional API.&quot)
+                self.outputs = [layer._inbound_nodes[-1].output_tensors[0]]
+                self.inputs = network.get_source_inputs(self.outputs[0])
+        elif self.outputs:
+            output_tensor = layer(self.outputs[0])
+            if isinstance(output_tensor, list):
+                raise TypeError(&quotAll layers in a Sequential model &quot
+                                &quotshould have a single output tensor. &quot
+                                &quotFor multi-output layers, &quot
+                                &quotuse the functional API.&quot)
+            self.outputs = [output_tensor]
+        <a id="change">if self.inputs:
+            self.build()
+        else:
+            self._layers.append(layer)
+
+   </a> def pop(self):
+        Removes the last layer in the model.
+
+        &#47&#47 Raises</code></pre><img src="18421533.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/a637960fab61b66848a36e6a5caf0204c155af01#diff-3f56e791abb6fa7510fc1b987e6ad29cbc042b7e129af906d71be274bdb03e56L94' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: a637960fab61b66848a36e6a5caf0204c155af01</div><div id='time'> Time: 2018-05-01</div><div id='author'> Author: francois.chollet@gmail.com</div><div id='file'> File Name: keras/engine/sequential.py</div><div id='class'> Class Name: Sequential</div><div id='method'> Method Name: add</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/a637960fab61b66848a36e6a5caf0204c155af01#diff-3f56e791abb6fa7510fc1b987e6ad29cbc042b7e129af906d71be274bdb03e56L188' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: a637960fab61b66848a36e6a5caf0204c155af01</div><div id='time'> Time: 2018-05-01</div><div id='author'> Author: francois.chollet@gmail.com</div><div id='file'> File Name: keras/engine/sequential.py</div><div id='class'> Class Name: Sequential</div><div id='method'> Method Name: pop</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/44d558ad7f13251650f40475eef6652df59e4b09#diff-3c24b30b63bf9e6553df3222244517c64b9cec0f939dab64c31c3e85e0033aaeL254' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: 44d558ad7f13251650f40475eef6652df59e4b09</div><div id='time'> Time: 2016-02-22</div><div id='author'> Author: Nicholas.Eggert@target.com</div><div id='file'> File Name: keras/layers/containers.py</div><div id='class'> Class Name: Graph</div><div id='method'> Method Name: set_previous</div><BR>

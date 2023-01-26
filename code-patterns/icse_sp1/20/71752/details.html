@@ -1,0 +1,104 @@
+<html><h3>7fcbf3e1e8b59897042e01c8c07236ce7bc4c010,sbin/db_mgmt_ms.py,,,#,23
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    sys.exit("Cannot open url %s. Bad URL or not connected to the internet?"%(msbulletinurl))
+
+&#47&#47 check modification date
+<a id="change">i = info.find_one({&quotdb&quot: &quotms&quot})</a>
+if i is not None:
+    if f.headers[&quotlast-modified&quot] == i[&quotlast-modified&quot]:
+        print("Not modified")
+        sys.exit(0)
+
+if not os.path.exists(tmppath):
+    os.mkdir(tmppath)
+with open(tmppath+&quot/BulletinSearch.xlsx&quot, &quotwb&quot) as fp:
+    shutil.copyfileobj(f, fp)
+fp.close()
+     
+&#47&#47 parse xlsx and store in database
+wb = xlrd.open_workbook(tmppath+&quot/BulletinSearch.xlsx&quot)
+sh = wb.sheet_by_name(&quotBulletin Search&quot)
+header = [s.replace(&quot\n&quot, &quot &quot) for s in sh.row_values(0)]
+bulletin = {}
+software = {}
+prev_id = ""
+
+for rownum in range(sh.nrows-1):    
+    row =  sh.row_values(rownum + 1)
+    if row[1] == prev_id:
+        software = {}
+        software[&quotproduct&quot] = row[6]
+        software[&quotKB&quot] = str(row[7]).strip(&quot.0&quot)
+        software[&quotcomponent&quot] = row[8]
+        software[&quotimpact&quot] = row[9]
+        software[&quotseverity&quot] = row[10]        
+        software[&quotreplace_id&quot] = row[11][:8]
+        software[&quotreplace_bk&quot] = row[11][9:-1]
+        software[&quotreeboot&quot] = row[12]
+        bulletin[&quotsoftware&quot].append(software)
+    else:
+        if bulletin :
+            msbulletin.update({&quotid&quot: bulletin[&quotid&quot]}, {&quot$set&quot: bulletin}, upsert=True)
+        bulletin = {}
+        software = {}
+        bulletin[&quotPublished&quot] = minimalist_xldate_as_datetime(row[0], 0).isoformat()
+        bulletin[&quotid&quot] = row[1]
+        bulletin[&quotKB&quot] = str(row[2]).strip(&quot.0&quot)
+        bulletin[&quotseverity&quot] = row[3]
+        bulletin[&quotimpact&quot] = row[4]
+        bulletin[&quottitle&quot] = row[5]
+        software[&quotproduct&quot] = row[6]
+        software[&quotKB&quot] = str(row[7]).strip(&quot.0&quot)
+        software[&quotcomponent&quot] = row[8]
+        software[&quotimpact&quot] = row[9]
+        software[&quotseverity&quot] = row[10]
+        software[&quotreplace_id&quot] = row[11][:8]
+        software[&quotreplace_bk&quot] = row[11][9:-1]
+        software[&quotreeboot&quot] = row[12]
+        bulletin[&quotCVE&quot] = row[13].split(&quot,&quot)
+        bulletin[&quotsoftware&quot] = [software]
+        bulletin[&quoturl&quot] = bulletinurl + row[1].lower()
+        
+        prev_id = row[1]
+
+&#47&#47update database info after successful program-run
+<a id="change">info.update({&quotdb&quot: &quotms&quot}, {"$set": {&quotlast-modified&quot: f.headers[&quotlast-modified&quot]}}, upsert=True)</a>
+&#47&#47 shutil.rmtree(&quot./tmp&quot)
+
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        bulletin[&quotsoftware&quot].append(software)
+    else:
+        if bulletin :
+            <a id="change">dbLayer.updateMSB</a>ulletin(bulletin)
+        bulletin = {}
+        software = {}
+        bulletin[&quotPublished&quot] = minimalist_xldate_as_datetime(row[0], 0).isoformat()
+        bulletin[&quotid&quot] = row[1]
+        bulletin[&quotKB&quot] = str(row[2]).strip(&quot.0&quot)
+        bulletin[&quotseverity&quot] = row[3]
+        bulletin[&quotimpact&quot] = row[4]
+        bulletin[&quottitle&quot] = row[5]
+        software[&quotproduct&quot] = row[6]
+        software[&quotKB&quot] = str(row[7]).strip(&quot.0&quot)
+        software[&quotcomponent&quot] = row[8]
+        software[&quotimpact&quot] = row[9]
+        software[&quotseverity&quot] = row[10]
+        software[&quotreplace_id&quot] = row[11][:8]
+        software[&quotreplace_bk&quot] = row[11][9:-1]
+        software[&quotreeboot&quot] = row[12]
+        bulletin[&quotCVE&quot] = row[13].split(&quot,&quot)
+        bulletin[&quotsoftware&quot] = [software]
+        bulletin[&quoturl&quot] = bulletinurl + row[1].lower()
+        
+        prev_id = row[1]
+
+&#47&#47update database info after successful program-run
+<a id="change">dbLayer.setColUpdate(&quotms&quot, f.headers[&quotlast-modified&quot])</a>
+&#47&#47 shutil.rmtree(&quot./tmp&quot)
+
+
+</code></pre><img src="326291056.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 11</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cve-search/cve-search/commit/7fcbf3e1e8b59897042e01c8c07236ce7bc4c010#diff-a7e7a25ecaa87e7d05e86ba91f82131cf1794c4638164509c1d3544e40395807L27' target='_blank'>Link</a></div><div id='project'> Project Name: cve-search/cve-search</div><div id='commit'> Commit Name: 7fcbf3e1e8b59897042e01c8c07236ce7bc4c010</div><div id='time'> Time: 2015-09-25</div><div id='author'> Author: pieterjan.moreels@gmail.com</div><div id='file'> File Name: sbin/db_mgmt_ms.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/cve-search/cve-search/commit/f59302d0d8aafc18d42d0e56e8c8a1d9b30f5af6#diff-59e7581fcfaacc3f8b024de98b33cfae18c226854b016aee6b082b47da7e81f4L62' target='_blank'>Link</a></div><div id='project'> Project Name: cve-search/cve-search</div><div id='commit'> Commit Name: f59302d0d8aafc18d42d0e56e8c8a1d9b30f5af6</div><div id='time'> Time: 2015-10-21</div><div id='author'> Author: pieterjan.moreels@gmail.com</div><div id='file'> File Name: sbin/db_mgmt_vendorstatements.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/cve-search/cve-search/commit/7fcbf3e1e8b59897042e01c8c07236ce7bc4c010#diff-a7e7a25ecaa87e7d05e86ba91f82131cf1794c4638164509c1d3544e40395807L27' target='_blank'>Link</a></div><div id='project'> Project Name: cve-search/cve-search</div><div id='commit'> Commit Name: 7fcbf3e1e8b59897042e01c8c07236ce7bc4c010</div><div id='time'> Time: 2015-09-25</div><div id='author'> Author: pieterjan.moreels@gmail.com</div><div id='file'> File Name: sbin/db_mgmt_ms.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/cve-search/cve-search/commit/f59302d0d8aafc18d42d0e56e8c8a1d9b30f5af6#diff-63b80b1ca04d5ad6ef7b596edd76fa5a3be19c712c0f67014891e21551b302e7L29' target='_blank'>Link</a></div><div id='project'> Project Name: cve-search/cve-search</div><div id='commit'> Commit Name: f59302d0d8aafc18d42d0e56e8c8a1d9b30f5af6</div><div id='time'> Time: 2015-10-21</div><div id='author'> Author: pieterjan.moreels@gmail.com</div><div id='file'> File Name: sbin/db_mgmt_exploitdb.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

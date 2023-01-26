@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.execute_single_compilation(scala_targets, cp, upstream_analysis_caches)
+      else:
+        for target in scala_targets:
+          self.execute_single_compilation(<a id="change">[target]</a>, cp, upstream_analysis_caches)
+
+
+      &#47&#47 Now we can add the global output dir, so that subsequent goals can see it.</code></pre><h3>After Change</h3><pre><code class='java'>
+        for conf in self._confs:
+          cp.insert(0, (conf, self._resources_dir))
+
+      <a id="change">with self.invalidated(scala_targets, invalidate_dependants=True) as invalidated:
+        if self._flatten:
+          &#47&#47 We must defer invalidation to zinc. If we exclude files from a repeat build, zinc will assume
+          &#47&#47 the files were deleted and will nuke the corresponding class files. So we build all_targets
+          &#47&#47 in one pass and let zinc figure it out.
+          self.execute_single_compilation(invalidated.combined_all_versioned_targets(), cp, upstream_analysis_caches)
+        else:
+          &#47&#47 We must pass all targets,even valid ones, to execute_single_compilation(), so it can
+          &#47&#47 track the deps and the upstream analysis map correctly.
+          for vt in invalidated.all_versioned_targets():
+            self.execute_single_compilation(vt, cp, upstream_analysis_caches)
+
+      &#47&#47 Now we add the global output dir, so that subsequent goals can see it.
+     </a> with self.context.state(&quotclasspath&quot, []) as cp:
+        for conf in self._confs:
+          cp.insert(0, (conf, self._classes_dir))
+</code></pre>

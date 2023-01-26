@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        if not tf.executing_eagerly():
+            _state = read_json(basename + &quot.state&quot)
+            _state[&quotsess&quot] = kwargs.pop(&quotsess&quot, <a id="change">tf.compat.v1.Session()</a>)
+            _state[&quotmodel_type&quot] = kwargs.get(&quotmodel_type&quot, &quotdefault&quot)
+            embeddings = {}
+            embeddings_dict = _state.pop("embeddings")</code></pre><h3>After Change</h3><pre><code class='java'>
+            _state[&quotsess&quot] = kwargs.pop(&quotsess&quot, create_session())
+            embeddings_info = _state.pop("embeddings")
+
+            <a id="change">with _state[&quotsess&quot].graph.as_default():
+                embeddings = reload_embeddings(embeddings_info, basename)
+                for k in embeddings_info:
+                    if k in kwargs:
+                        _state[k] = kwargs[k]
+
+                _state[&quotmodel_type&quot] = kwargs.get(&quotmodel_type&quot, &quotdefault&quot)
+                model = cls.create(embeddings, **_state)
+                model._state = _state
+
+                do_init = kwargs.get(&quotinit&quot, True)
+                if do_init:
+                    init = tf.compat.v1.global_variables_initializer()
+                    model.sess.run(init)
+
+                model.saver = tf.compat.v1.train.Saver()
+                model.saver.restore(model.sess, basename)
+       </a> else:
+            _state = read_json(basename + &quot.state&quot)
+            _state[&quotmodel_type&quot] = kwargs.get(&quotmodel_type&quot, &quotdefault&quot)
+            embeddings = {}</code></pre>

@@ -1,0 +1,86 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    tokenizer = tokenization.FullTokenizer(
+        vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
+
+    examples = <a id="change">read_examples(FLAGS.input_file)</a>
+
+    features = convert_examples_to_features(
+        examples=examples, seq_length=FLAGS.max_seq_length, tokenizer=tokenizer)
+
+    unique_id_to_feature = {}
+    for feature in features:
+        unique_id_to_feature[feature.unique_id] = feature
+
+    model_fn = model_fn_builder(
+        bert_config=bert_config,
+        init_checkpoint=FLAGS.init_checkpoint,
+        layer_indexes=layer_indexes,
+        use_one_hot_embeddings=FLAGS.use_one_hot_embeddings)
+
+    estimator = Estimator(model_fn=model_fn)
+
+    <a id="change">input_fn</a> = input_fn_builder(
+        features=features, seq_length=FLAGS.max_seq_length)
+
+    with codecs.getwriter("utf-8")(tf.gfile.Open(FLAGS.output_file,
+                                                 "w")) as writer:
+        for result in estimator.predict(input_fn):
+            <a id="change">unique_id</a> = int(result["unique_id"])
+            <a id="change">feature</a> = unique_id_to_feature[unique_id]
+            output_json = collections.OrderedDict()
+            output_json["linex_index"] = unique_id
+            all_features = []
+            for (i, token) in enumerate(feature.tokens):
+                all_layers = []
+                for (j, layer_index) in enumerate(layer_indexes):
+                    layer_output = result["layer_output_%d" % j]
+                    layers = collections.OrderedDict()
+                    layers["index"] = layer_index
+                    layers["values"] = [
+                        round(float(x), 6) for <a id="change">x</a> in layer_output[i:(i + 1)].flat
+                    ]
+                    all_layers.append(layers)
+                features = collections.OrderedDict()</code></pre><h3>After Change</h3><pre><code class='java'>
+    bert_config = modeling.BertConfig.from_json_file(FLAGS.bert_config_file)
+
+    features = convert_examples_to_features(
+        examples=<a id="change">read_examples(FLAGS.input_file)</a>,
+        seq_length=FLAGS.max_seq_length,
+        tokenizer=tokenization.FullTokenizer(
+            vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case))
+
+    unique_id_to_feature = {f.unique_id: f for f in features}
+
+    model_fn = model_fn_builder(
+        bert_config=bert_config,
+        init_checkpoint=FLAGS.init_checkpoint,
+        layer_indexes=layer_indexes,
+        use_one_hot_embeddings=FLAGS.use_one_hot_embeddings)
+
+    estimator = Estimator(model_fn=model_fn)
+
+    <a id="change">input_fn</a> = input_fn_builder(
+        features=features, seq_length=FLAGS.max_seq_length)
+
+    with codecs.getwriter("utf-8")(tf.gfile.Open(FLAGS.output_file,
+                                                 "w")) as writer:
+        for result in estimator.predict(input_fn):
+            <a id="change">unique_id</a> = int(result["unique_id"])
+            <a id="change">feature</a> = unique_id_to_feature[unique_id]
+            output_json = collections.OrderedDict()
+            output_json["linex_index"] = unique_id
+            all_features = []
+            for (i, token) in enumerate(feature.tokens):
+                all_layers = []
+                for (j, layer_index) in enumerate(layer_indexes):
+                    layer_output = result["layer_output_%d" % j]
+                    layers = collections.OrderedDict()
+                    layers["index"] = layer_index
+                    layers["values"] = [
+                        round(float(x), 6) for <a id="change">x</a> in layer_output[i:(i + 1)].flat
+                    ]
+                    all_layers.append(layers)
+                features = collections.OrderedDict()</code></pre>

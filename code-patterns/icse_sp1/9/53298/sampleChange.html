@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            training_state = {&quotepoch&quot: epoch,
+                              &quotval_metric_per_epoch&quot: val_metric_per_epoch,
+                              &quotoptimizer&quot: self._optimizer.state_dict()}
+            <a id="change">torch.save(training_state, os.path.join(self._serialization_dir,
+                                                    "training_state_epoch_{}.th".format(epoch)))</a>
+            if is_best:
+                logger.info("Best validation performance so far. "
+                            "Copying weights to &quot%s/best.th&quot.", self._serialization_dir)
+                shutil.copyfile(model_path, os.path.join(self._serialization_dir, "best.th"))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            if self._num_serialized_models_to_keep:
+                self._serialized_paths.append([time.time(), model_path, training_path])
+                <a id="change">if len(self._serialized_paths) &gt; self._num_serialized_models_to_keep:
+                    paths_to_remove = self._serialized_paths.pop(0)
+                    &#47&#47 Check to see if we should keep this checkpoint, if it has been longer
+                    &#47&#47 then self._keep_serialized_model_every_num_seconds since the last
+                    &#47&#47 kept checkpoint.
+                    remove_path = True
+                    if self._keep_serialized_model_every_num_seconds is not None:
+                        save_time = paths_to_remove[0]
+                        time_since_checkpoint_kept = save_time - self._last_permanent_saved_checkpoint_time
+                        if time_since_checkpoint_kept &gt; self._keep_serialized_model_every_num_seconds:
+                            &#47&#47 We want to keep this checkpoint.
+                            remove_path = False
+                            self._last_permanent_saved_checkpoint_time = save_time
+                    if remove_path:
+                        for fname in paths_to_remove[1:]:
+                            os.remove(fname)
+
+   </a> def _restore_checkpoint(self) -&gt; Tuple[int, List[float]]:
+        
+        Restores a model from a serialization_dir to the last saved checkpoint.
+        This includes an epoch count and optimizer state, which is serialized separately</code></pre>

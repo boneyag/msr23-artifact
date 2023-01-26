@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            N = len(range(0, reads_n, FLAGS.batch_size))
+            i_logits = 0
+            decoded_cnt = 0
+            <a id="change">val = {}</a>  &#47&#47 We could read vals out of order, that&quots why it&quots a dict
+            with tqdm(total=reads_n, desc="signal processing") as pbar:
+                while decoded_cnt &lt; N:
+                    l_sz, d_sz = sess.run([logits_queue_size, decode_queue_size])</code></pre><h3>After Change</h3><pre><code class='java'>
+        worker.setDaemon(True)
+        worker.start()
+
+        <a id="change">val = defaultdict(dict)</a>  &#47&#47 We could read vals out of order, that&quots why it&quots a dict
+        for name in tqdm(file_list, desc="basecalling fast5s"):
+            start_time = time.time()
+            if not name.endswith(&quot.signal&quot):
+                continue
+            file_pre = os.path.splitext(name)[0]
+            input_path = os.path.join(file_dir, name)
+            if FLAGS.mode == &quotrna&quot:
+                eval_data = read_data_for_eval(input_path, FLAGS.start,
+                                           seg_length=FLAGS.segment_len,
+                                           step=FLAGS.jump,
+                                           reverse = True)
+            else:
+                eval_data = read_data_for_eval(input_path, FLAGS.start,
+                                           seg_length=FLAGS.segment_len,
+                                           step=FLAGS.jump)
+            reads_n = eval_data.reads_n
+            reading_time = time.time() - start_time
+            reads = list()
+
+            N = len(range(0, reads_n, FLAGS.batch_size))
+            with tqdm(total=reads_n, desc="signal processing") as pbar:
+                while True:
+                    l_sz, d_sz = sess.run([logits_queue_size, decode_queue_size])
+                    pbar.set_postfix(logits_q=l_sz, decoded_q=d_sz, refresh=False)
+                    decoded_fname, i, predict_val, logits_prob = sess.run([decoded_fname_op, decode_idx_op, decode_predict_op, decode_prob_op], feed_dict={
+                        training: False
+                    })
+                    <a id="change">decoded_fname = decoded_fname.decode("UTF-8")</a>
+                    val[decoded_fname][i] = (predict_val, logits_prob)
+
+                    if decoded_fname == name:
+                        decoded_cnt = len(val[name])
+                        pbar.update(min(reads_n, decoded_cnt*FLAGS.batch_size) - (decoded_cnt -1) * FLAGS.batch_size)
+                        if decoded_cnt == N:
+                            break
+
+            qs_list = np.empty((0, 1), dtype=np.float)
+            qs_string = None
+            for i in trange(0, reads_n, FLAGS.batch_size, desc="further decoding"):
+                predict_val, logits_prob = <a id="change">val</a>[<a id="change">name</a>][i]
+                predict_read, unique = sparse2dense(predict_val)
+                predict_read = predict_read[0]
+                unique = unique[0]</code></pre>

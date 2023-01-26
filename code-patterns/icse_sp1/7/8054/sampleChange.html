@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      &#47&#47 Need to compute output shape dynamically.
+      dynamic_input_shape = tf.shape(tensor)
+      dynamic_shape = tf.concat(
+          <a id="change">[dynamic_input_shape[:start],
+           [-1],
+           dynamic_input_shape[start + self._size:]]</a>,
+          axis=0)
+
+      tensor = tf.reshape(tensor, dynamic_shape)</code></pre><h3>After Change</h3><pre><code class='java'>
+      &#47&#47 Need to compute output shape dynamically.
+      dynamic_input_shape = tf.shape(tensor)
+      dynamic_initial = dynamic_input_shape[:start]
+      <a id="change">dynamic_middle = tf.reduce_prod(
+          dynamic_input_shape[start:start + self._size], keep_dims=True)</a>
+      dynamic_final = dynamic_input_shape[start + self._size:]
+      dynamic_shape = tf.concat(
+          <a id="change">[dynamic_initial, dynamic_middle, dynamic_final]</a>, axis=0)
+
+      tensor = tf.reshape(tensor, dynamic_shape)
+      tensor.set_shape(static_shape)  &#47&#47 give it some static shape information</code></pre>

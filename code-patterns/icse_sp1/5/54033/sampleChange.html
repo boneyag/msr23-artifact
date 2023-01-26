@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        output_b_l_t, 2) == 0)] = self._num_timesteps
+                    guesses_b = np.argmin(first_spiketimes_b_l, 1)
+                else:
+                    guesses_b = <a id="change">np.argmax(np.sum(output_b_l_t, 2), 1)</a>
+                echo(&quot{:.2%}_&quot.format(np.mean(kwargs[str(&quottruth_b&quot)] ==
+                                              guesses_b)))
+
+            if self.config.getboolean(&quotconversion&quot, &quotuse_isi_code&quot) and \
+                    all(np.count_nonzero(output_b_l_t, (1, 2)) &gt;= self.top_k):
+                print("Finished early.")
+                break
+
+        if self.config.getboolean(&quotconversion&quot, &quotuse_isi_code&quot):
+            for b in range(self.batch_size):
+                for l in range(self.num_classes):
+                    spike = 0
+                    for t in range(self._num_timesteps):
+                        if output_b_l_t[b, l, t] != 0:
+                            spike = 1
+                        output_b_l_t[b, l, t] = spike
+
+        return np.cumsum(<a id="change">np.asarray(output_b_l_t, bool)</a>, 2)
+
+    def reset(self, sample_idx):
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                else:
+                    spike_sums_b_l = np.sum(output_b_l_t, 2)
+                    undecided_b = np.sum(spike_sums_b_l, 1) == 0
+                    guesses_b = <a id="change">np.argmax(spike_sums_b_l, 1)</a>
+                none_class_b = -1 * np.ones(self.batch_size)
+                clean_guesses_b = np.where(undecided_b, none_class_b, guesses_b)
+                echo(&quot{:.2%}_&quot.format(np.mean(kwargs[str(&quottruth_b&quot)] ==
+                                              clean_guesses_b)))</code></pre>

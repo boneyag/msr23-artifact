@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    input = scatter_max(cluster, input)
+    position = scatter_mean(cluster, position)
+
+    <a id="change">index = cluster[index.view(-1)].view(2, -1)</a>  &#47&#47 Replace edge indices with cluster indices.
+    mask = index[0, :] != index[1, :]  &#47&#47 Remove self-loops.
+    index = coalesce(index)  &#47&#47 Remove duplicates.
+
+    return <a id="change">input</a>, index, position
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    return index, position
+
+def max_pool(input, index, position, cluster):
+    <a id="change">_cluster = cluster.unsqueeze(1).expand(-1, input.size(1))</a>
+    input = <a id="change">scatter_add(_cluster, input, dim=0)</a>
+    return (input,) + _pool(index, position, cluster)
+
+
+def average_pool(input, index, position, cluster):</code></pre>

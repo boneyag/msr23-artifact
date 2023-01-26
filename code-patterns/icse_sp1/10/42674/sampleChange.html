@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                  k.ones_like(output_spikes) *
+                                  (self.time + self.tau_refrac),
+                                  self.refrac_until)
+        <a id="change">self.add_update([(self.refrac_until, new_refrac)])</a>
+
+        if self.spiketrain is not None:
+            self.add_update([(self.spiketrain, self.time * k.cast(
+                k.not_equal(output_spikes, 0), k.floatx()))])</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        return self.__class__.__name__
+
+    def update_neurons(<a id="change">self</a>):
+        Update neurons according to activation function.
+
+        &#47&#47 Update membrane potentials.
+        new_mem = self.get_new_mem()
+
+        &#47&#47 Generate spikes.
+        if hasattr(self, &quotactivation_str&quot) \
+                and self.activation_str == &quotsoftmax&quot:
+            output_spikes = self.softmax_activation(new_mem)
+        else:
+            output_spikes = self.linear_activation(new_mem)
+
+        &#47&#47 Reset membrane potential after spikes.
+        self.set_reset_mem(new_mem, output_spikes)
+
+        &#47&#47 Store refractory period after spikes.
+        if hasattr(self, &quotactivation_str&quot) \
+                and self.activation_str == &quotsoftmax&quot:
+            &#47&#47 We do not constrain softmax output neurons.
+            new_refrac = tf.identity(self.refrac_until)
+        else:
+            new_refrac = tf.where(tf.not_equal(output_spikes, 0),
+                                  self.time + self.tau_refrac,
+                                  self.refrac_until)
+        <a id="change">self.refrac_until.assign(new_refrac)</a>
+
+        if self.spiketrain is not None:
+            self.spiketrain.assign(self.time * tf.cast(
+                tf.not_equal(output_spikes, 0), <a id="change">self._floatx</a>))
+
+        &#47&#47 Compute post-synaptic potential.
+        psp = self.get_psp(output_spikes)
+
+        return tf.cast(psp, <a id="change">self._floatx</a>)
+
+    def linear_activation(self, mem):
+        Linear activation.</code></pre>

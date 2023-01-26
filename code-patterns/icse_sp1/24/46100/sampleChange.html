@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        layers_dicts = {&quotconv&quot: conv, &quotbatch_norm&quot: batch_norm}
+
+        net = VGG16.body(dim, inputs[&quotimages&quot], b_norm, **layers_dicts)
+        <a id="change">net = conv_block(dim, net, 100, 7, &quotca&quot, &quotconv-out-1&quot, **layers_dicts)</a>
+        <a id="change">net = conv_block(dim, net, 100, 1, &quotca&quot, &quotconv-out-2&quot, padding=&quotVALID&quot, **layers_dicts)</a>
+        <a id="change">net = conv_block(dim, net, n_classes, 1, &quotca&quot, &quotconv-out-3&quot, padding=&quotVALID&quot, **layers_dicts)</a>
+        conv7 = net
+        pool4 = tf.get_default_graph().get_tensor_by_name("body/block-3/output:0")
+        pool3 = tf.get_default_graph().get_tensor_by_name("body/block-2/output:0")
+        if arch == &quotFCN32&quot:</code></pre><h3>After Change</h3><pre><code class='java'>
+        batch_norm = {&quotmomentum&quot: 0.1,
+                      &quottraining&quot: self.is_training}
+
+        <a id="change">layers_dicts</a> = {&quotconv&quot: conv, &quotbatch_norm&quot: batch_norm}
+
+        net = VGG16.body(dim, inputs[&quotimages&quot], enable_batch_norm, **layers_dicts)
+        layout = &quotcna&quot * 3 if enable_batch_norm else &quotca&quot * 3
+        <a id="change">net = conv_block(dim, net, [100, 100, n_classes], [7, 1, 1], layout, &quotconv-out&quot, 
+                         padding=[&quotSAME&quot, &quotVALID&quot, &quotVALID&quot], **layers_dicts)</a>
+        conv7 = net
+        pool4 = tf.get_default_graph().get_tensor_by_name("body/block-3/output:0")
+        pool3 = tf.get_default_graph().get_tensor_by_name("body/block-2/output:0")
+        if arch == &quotFCN32&quot:</code></pre>

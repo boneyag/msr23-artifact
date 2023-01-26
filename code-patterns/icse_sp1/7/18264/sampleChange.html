@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  else:
+    paths = [path]
+
+  <a id="change">heap = []</a>
+  for path in paths:
+    it = (
+        proto.FromString(buf)
+        for buf in python_io.tf_record_iterator(path, options))
+    heap.append(_ComparableSortedRecordIterator(it, key))
+  heapq.heapify(heap)
+  i = 0
+  <a id="change">while heap:
+    i += 1
+    if max_records is not None and i &gt; max_records:
+      return
+
+    nextit = heap[0]
+    yield nextit.value
+    nextit.advance()
+    &#47&#47 Because nextit.advance() mutates the first entry in the heap, the heap
+    &#47&#47 invariant may not be satisfied at this point. If the iterator is exhausted
+    &#47&#47 we should just pop it off. Otherwise, we call heapreplace and replace the
+    &#47&#47 item with itself, since this triggers the check to efficiently fix the
+    &#47&#47 heap invariant in this case where just the top element may not satisfy it.
+    if nextit.exhausted:
+      heapq.heappop(heap)
+    else:
+      heapq.heapreplace(heap, nextit)
+
+
+</a>def write_tfrecords(protos, output_path, options=None):
+  Writes protos to output_path.
+
+  This function writes serialized strings of each proto in protos to output_path</code></pre><h3>After Change</h3><pre><code class='java'>
+        for buf in python_io.tf_record_iterator(path, options))
+    keyed_iterables.append(((key(elem), elem) for elem in protos))
+
+  <a id="change">for i, (_, value) in enumerate(heapq.merge(*keyed_iterables)):
+    if max_records is not None and i &gt;= max_records:
+      return
+    yield value
+
+
+</a>def write_tfrecords(protos, output_path, options=None):
+  Writes protos to output_path.
+
+  This function writes serialized strings of each proto in protos to output_path</code></pre>

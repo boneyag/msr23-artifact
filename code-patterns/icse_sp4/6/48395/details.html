@@ -1,0 +1,46 @@
+<html><h3>d7148f390db12a3f7e4b43ab584648b2e4a1882d,pyro/distributions/spanning_tree.py,SpanningTree,log_partition_function,#SpanningTree#,109
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 See https://en.wikipedia.org/wiki/Kirchhoff%27s_theorem
+        V = self.num_vertices
+        grid = make_complete_graph(V)
+        shift = <a id="change">self</a>.edge_logits.detach().max()
+        edge_probs = <a id="change">(self.edge_logits - shift)</a>.exp()
+        adjacency = torch.zeros(V, V, dtype=edge_probs.dtype)
+        adjacency[grid[0], grid[1]] = edge_probs
+        adjacency[grid[1], grid[0]] = edge_probs
+        laplacian = adjacency.sum(-1).diag() - adjacency
+        truncated = laplacian[:-1, :-1]
+        try:
+            import gpytorch
+            log_det = gpytorch.lazy.NonLazyTensor(truncated).logdet()
+        except ImportError:
+            log_det = torch.cholesky(truncated).diag().log().sum() * 2
+        <a id="change">return log_det + shift * (V - 1)</a>
+
+    def log_prob(self, edges):
+        if self._validate_args:
+            self.validate_edges(edges)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 See https://en.wikipedia.org/wiki/Kirchhoff%27s_theorem
+        V = self.num_vertices
+        v1, v2 = make_complete_graph(V).unbind(0)
+        <a id="change">logits = self.edge_logits.new_full((V, V), -math.inf)</a>
+        logits[v1, v2] = self.edge_logits
+        logits[v2, v1] = self.edge_logits
+        log_diag = logits.logsumexp(-1)
+        &#47&#47 Numerically stabilize so that laplacian has 1&quots on the diagonal.
+        shift = 0.5 * log_diag
+        <a id="change">laplacian = torch.eye(V) - (logits - shift - shift[:, None]).exp()</a>
+        truncated = laplacian[:-1, :-1]
+        try:
+            import gpytorch
+            log_det = gpytorch.lazy.NonLazyTensor(truncated).logdet()
+        except ImportError:
+            log_det = torch.cholesky(truncated).diag().log().sum() * 2
+        <a id="change">return log_det + log_diag[:-1].sum()</a>
+
+    def log_prob(self, edges):
+        if self._validate_args:
+            self.validate_edges(edges)</code></pre><img src="224059354.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/uber/pyro/commit/d7148f390db12a3f7e4b43ab584648b2e4a1882d#diff-2961f8062e8cfa849cb6f357c7877d5438bdd5b9c9995adfddf2d2c045c94df3L109' target='_blank'>Link</a></div><div id='project'> Project Name: uber/pyro</div><div id='commit'> Commit Name: d7148f390db12a3f7e4b43ab584648b2e4a1882d</div><div id='time'> Time: 2020-11-07</div><div id='author'> Author: fritz.obermeyer@gmail.com</div><div id='file'> File Name: pyro/distributions/spanning_tree.py</div><div id='class'> Class Name: SpanningTree</div><div id='method'> Method Name: log_partition_function</div><BR><BR><div id='link'><a href='https://github.com/maciejkula/spotlight/commit/bed4f2dd50ff54eb7629362c3d03a3b758e0745a#diff-2a93c03f28550ec68b1b7cfcae940b96788d84d85ed53de6832d72f872d549d1L115' target='_blank'>Link</a></div><div id='project'> Project Name: maciejkula/spotlight</div><div id='commit'> Commit Name: bed4f2dd50ff54eb7629362c3d03a3b758e0745a</div><div id='time'> Time: 2017-08-09</div><div id='author'> Author: maciej.kula@gmail.com</div><div id='file'> File Name: spotlight/layers.py</div><div id='class'> Class Name: BloomEmbedding</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/masa-su/pixyz/commit/8a0793f34b6c8f7b8e5164da424504ef1a4fb744#diff-cb8cdbc73096c4020e08273dad60df74b322dd406b1c748e0594e1cec7eb307fL76' target='_blank'>Link</a></div><div id='project'> Project Name: masa-su/pixyz</div><div id='commit'> Commit Name: 8a0793f34b6c8f7b8e5164da424504ef1a4fb744</div><div id='time'> Time: 2018-11-04</div><div id='author'> Author: masa@weblab.t.u-tokyo.ac.jp</div><div id='file'> File Name: Tars/losses/adversarial_loss.py</div><div id='class'> Class Name: AdversarialJSDivergence</div><div id='method'> Method Name: g_loss</div><BR>

@@ -1,0 +1,174 @@
+<html><h3>ae95a28d571e8e3e4cdbd22ca14f0c7b681f75bd,art/attacks/carlini.py,CarliniLInfMethod,generate,#CarliniLInfMethod#Any#,544
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            x_adv_batch[~attack_success] = x_batch[~attack_success]
+            x_adv[batch_index_1:batch_index_2] = x_adv_batch
+
+        <a id="change">adv_preds = np.argmax(self.classifier.predict(x_adv), axis=1)</a>
+        <a id="change">if self.targeted:
+            rate = np.sum(adv_preds == np.argmax(y, axis=1)) / x_adv.shape[0]
+        else:
+            preds = np.argmax(self.classifier.predict(x), axis=1)
+            rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+       </a> <a id="change">logger.info(&quotSuccess rate of C&W attack: %.2f%%&quot, 100 * rate)</a>
+
+        return x_adv
+
+    def set_params(self, **kwargs):</code></pre><h3>After Change</h3><pre><code class='java'>
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        
+        <a id="change">x_adv</a> = x.astype(NUMPY_DTYPE)
+
+        &#47&#47 Parse and save attack-specific parameters
+        params_cpy = dict(kwargs)
+        y = params_cpy.pop(str(&quoty&quot), None)
+        self.set_params(**params_cpy)
+
+        &#47&#47 Assert that, if attack is targeted, y_val is provided:
+        if self.targeted and y is None:
+            raise ValueError(&quotTarget labels `y` need to be provided for a targeted attack.&quot)
+
+        &#47&#47 No labels provided, use model prediction as correct class
+        if y is None:
+            y = get_labels_np_array(self.classifier.predict(x, logits=False))
+
+        &#47&#47 Compute perturbation with implicit batching
+        nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
+        for batch_id in range(nb_batches):
+            logger.debug(&quotProcessing batch %i out of %i&quot, batch_id, nb_batches)
+
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            x_batch = x_adv[batch_index_1:batch_index_2]
+            y_batch = y[batch_index_1:batch_index_2]
+
+            (clip_min_per_pixel, clip_max_per_pixel) = self.classifier.clip_values
+            clip_min = np.clip(x_batch - self.eps, clip_min_per_pixel, clip_max_per_pixel)
+            clip_max = np.clip(x_batch + self.eps, clip_min_per_pixel, clip_max_per_pixel)
+
+            &#47&#47 The optimization is performed in tanh space to keep the
+            &#47&#47 adversarial images bounded from clip_min and clip_max.
+            x_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
+
+            &#47&#47 Initialize perturbation in tanh space:
+            x_adv_batch = x_batch.copy()
+            x_adv_batch_tanh = x_batch_tanh.copy()
+
+            &#47&#47 Initialize optimization:
+            z, loss = self._loss(x_adv_batch, y_batch)
+            attack_success = (loss &lt;= 0)
+            lr = self.learning_rate * np.ones(x_batch.shape[0])
+
+            for it in range(self.max_iter):
+                logger.debug(&quotIteration step %i out of %i&quot, it, self.max_iter)
+                logger.debug(&quotAverage Loss: %f&quot, np.mean(loss))
+
+                logger.debug(&quotSuccessful attack samples: %i out of %i&quot, int(np.sum(attack_success)), x_batch.shape[0])
+
+                &#47&#47 only continue optimization for those samples where attack hasn&quott succeeded yet:
+                active = ~attack_success
+                if np.sum(active) == 0:
+                    break
+
+                &#47&#47 compute gradient:
+                logger.debug(&quotCompute loss gradient&quot)
+                perturbation_tanh = -self._gradient_of_loss(z[active], y_batch[active], x_adv_batch[active],
+                                                            x_adv_batch_tanh[active], clip_min[active], clip_max[active])
+
+                &#47&#47 perform line search to optimize perturbation
+                &#47&#47 first, halve the learning rate until perturbation actually decreases the loss:
+                prev_loss = loss.copy()
+                best_loss = loss.copy()
+                best_lr = np.zeros(x_batch.shape[0])
+                halving = np.zeros(x_batch.shape[0])
+
+                for h in range(self.max_halving):
+                    logger.debug(&quotPerform halving iteration %i out of %i&quot, h, self.max_halving)
+                    do_halving = (loss[active] &gt;= prev_loss[active])
+                    logger.debug(&quotHalving to be performed on %i samples&quot, int(np.sum(do_halving)))
+                    if np.sum(do_halving) == 0:
+                        break
+                    active_and_do_halving = active.copy()
+                    active_and_do_halving[active] = do_halving
+
+                    lr_mult = lr[active_and_do_halving]
+                    for _ in range(len(x.shape)-1):
+                        lr_mult = lr_mult[:, np.newaxis]
+
+                    new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_halving] + \
+                        lr_mult * perturbation_tanh[do_halving]
+                    new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh,
+                                                       clip_min[active_and_do_halving],
+                                                       clip_max[active_and_do_halving])
+                    _, loss[active_and_do_halving] = self._loss(new_x_adv_batch, y_batch[active_and_do_halving])
+                    logger.debug(&quotNew Average Loss: %f&quot, np.mean(loss))
+                    logger.debug(&quotLoss: %s&quot, str(loss))
+                    logger.debug(&quotPrev_loss: %s&quot, str(prev_loss))
+                    logger.debug(&quotBest_loss: %s&quot, str(best_loss))
+
+                    best_lr[loss &lt; best_loss] = lr[loss &lt; best_loss]
+                    best_loss[loss &lt; best_loss] = loss[loss &lt; best_loss]
+                    lr[active_and_do_halving] /= 2
+                    halving[active_and_do_halving] += 1
+                lr[active] *= 2
+
+                &#47&#47 if no halving was actually required, double the learning rate as long as this
+                &#47&#47 decreases the loss:
+                for d in range(self.max_doubling):
+                    logger.debug(&quotPerform doubling iteration %i out of %i&quot, d, self.max_doubling)
+                    do_doubling = (halving[active] == 1) & (loss[active] &lt;= best_loss[active])
+                    logger.debug(&quotDoubling to be performed on %i samples&quot, int(np.sum(do_doubling)))
+                    if np.sum(do_doubling) == 0:
+                        break
+                    active_and_do_doubling = active.copy()
+                    active_and_do_doubling[active] = do_doubling
+                    lr[active_and_do_doubling] *= 2
+
+                    lr_mult = lr[active_and_do_doubling]
+                    for _ in range(len(x.shape)-1):
+                        lr_mult = lr_mult[:, np.newaxis]
+
+                    new_x_adv_batch_tanh = x_adv_batch_tanh[active_and_do_doubling] + \
+                        lr_mult * perturbation_tanh[do_doubling]
+                    new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh,
+                                                       clip_min[active_and_do_doubling],
+                                                       clip_max[active_and_do_doubling])
+                    _, loss[active_and_do_doubling] = self._loss(new_x_adv_batch,
+                                                                 y_batch[active_and_do_doubling])
+                    logger.debug(&quotNew Average Loss: %f&quot, np.mean(loss))
+                    best_lr[loss &lt; best_loss] = lr[loss &lt; best_loss]
+                    best_loss[loss &lt; best_loss] = loss[loss &lt; best_loss]
+
+                lr[halving == 1] /= 2
+
+                update_adv = (best_lr[active] &gt; 0)
+                logger.debug(&quotNumber of adversarial samples to be finally updated: %i&quot, int(np.sum(update_adv)))
+
+                if np.sum(update_adv) &gt; 0:
+                    active_and_update_adv = active.copy()
+                    active_and_update_adv[active] = update_adv
+                    best_lr_mult = best_lr[active_and_update_adv]
+                    for _ in range(len(x.shape)-1):
+                        best_lr_mult = best_lr_mult[:, np.newaxis]
+
+                    x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + \
+                        best_lr_mult * perturbation_tanh[update_adv]
+                    x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv_batch_tanh[active_and_update_adv],
+                                                                          clip_min[active_and_update_adv],
+                                                                          clip_max[active_and_update_adv])
+                    z[active_and_update_adv], loss[active_and_update_adv] = self._loss(
+                        x_adv_batch[active_and_update_adv], y_batch[active_and_update_adv])
+                    attack_success = (loss &lt;= 0)
+
+            &#47&#47 Update depending on attack success:
+            x_adv_batch[~attack_success] = x_batch[~attack_success]
+            x_adv[batch_index_1:batch_index_2] = x_adv_batch
+
+        <a id="change">logger.info(&quotSuccess rate of C&W L_inf attack: %.2f%%&quot,
+                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted))</a>
+
+        return x_adv
+
+    def set_params(self, **kwargs):</code></pre><img src="40482281.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 30</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/ae95a28d571e8e3e4cdbd22ca14f0c7b681f75bd#diff-c1ad1dccee8a742954884bfabae3e4b877eace13c3da1e2c11eec208489a5e5fL544' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: ae95a28d571e8e3e4cdbd22ca14f0c7b681f75bd</div><div id='time'> Time: 2019-04-25</div><div id='author'> Author: Maria-Irina.Nicolae@ibm.com</div><div id='file'> File Name: art/attacks/carlini.py</div><div id='class'> Class Name: CarliniLInfMethod</div><div id='method'> Method Name: generate</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/ae95a28d571e8e3e4cdbd22ca14f0c7b681f75bd#diff-c1ad1dccee8a742954884bfabae3e4b877eace13c3da1e2c11eec208489a5e5fL544' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: ae95a28d571e8e3e4cdbd22ca14f0c7b681f75bd</div><div id='time'> Time: 2019-04-25</div><div id='author'> Author: Maria-Irina.Nicolae@ibm.com</div><div id='file'> File Name: art/attacks/carlini.py</div><div id='class'> Class Name: CarliniLInfMethod</div><div id='method'> Method Name: generate</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/1c8990edea80ea31b78618fb4e8ab01396edc95b#diff-c1ad1dccee8a742954884bfabae3e4b877eace13c3da1e2c11eec208489a5e5fL175' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: 1c8990edea80ea31b78618fb4e8ab01396edc95b</div><div id='time'> Time: 2019-04-25</div><div id='author'> Author: Maria-Irina.Nicolae@ibm.com</div><div id='file'> File Name: art/attacks/carlini.py</div><div id='class'> Class Name: CarliniL2Method</div><div id='method'> Method Name: generate</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/ae95a28d571e8e3e4cdbd22ca14f0c7b681f75bd#diff-c1ad1dccee8a742954884bfabae3e4b877eace13c3da1e2c11eec208489a5e5fL175' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: ae95a28d571e8e3e4cdbd22ca14f0c7b681f75bd</div><div id='time'> Time: 2019-04-25</div><div id='author'> Author: Maria-Irina.Nicolae@ibm.com</div><div id='file'> File Name: art/attacks/carlini.py</div><div id='class'> Class Name: CarliniL2Method</div><div id='method'> Method Name: generate</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/1c8990edea80ea31b78618fb4e8ab01396edc95b#diff-c1ad1dccee8a742954884bfabae3e4b877eace13c3da1e2c11eec208489a5e5fL544' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: 1c8990edea80ea31b78618fb4e8ab01396edc95b</div><div id='time'> Time: 2019-04-25</div><div id='author'> Author: Maria-Irina.Nicolae@ibm.com</div><div id='file'> File Name: art/attacks/carlini.py</div><div id='class'> Class Name: CarliniLInfMethod</div><div id='method'> Method Name: generate</div><BR>

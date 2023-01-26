@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def updatePixels(self, tlc, shape, props, **pixelBlocks):
+        &#47&#47 convert endmember signature means into numpy ndarray
+        &#47&#47 must also transpose signatures so that you have an array of endmember mean values for B, G, R, etc.
+        signatures = np.array(<a id="change">[i for i in self.signatures.values()]</a>)
+        signaturesT = signatures.T
+
+        &#47&#47 get the input raster pixel block
+        inBlock = pixelBlocks[&quotraster_pixels&quot]
+
+        &#47&#47 transpose image ndarray axes so that you have an array of band values per pixel,
+        &#47&#47 e.g.: [B, G, R, NIR1, NIR2, MIR] for each pixel
+        inBlockT = inBlock.transpose([1, 2, 0])
+
+        &#47&#47&#47&#47 TO DO: this only works for 1 pixel at a time, specified by [row][col]
+        &#47&#47&#47&#47 assuming that inBlockT has correctly accessed a numpy ndarray
+        <a id="change">pixel = inBlockT[0][0]</a>
+        &#47&#47 solve simultaneous equations with numpy linear algebra least squares
+        <a id="change">results = np.linalg.lstsq(signaturesT, pixel)</a>
+
+        &#47&#47&#47&#47 TO DO:
+        &#47&#47&#47&#47 results[0] is a list of the endmembers solutions at a given pixel
+        &#47&#47&#47&#47 self.signatures.keys() should be the corresponding order of endmembers for reference</code></pre><h3>After Change</h3><pre><code class='java'>
+            return results
+
+        &#47&#47 np.apply_along_axis seems to be slower than native Python looping
+        <a id="change">outBlock = np.apply_along_axis(unmixPixel, 1, inBlockTFlat, signaturesT)</a>
+
+        &#47&#47 outBlock shape is (n, 4); must reconstruct into endmember bands with values in correct x,y
+        &#47&#47 e.g. you can reconstruct:  inBlockTFlat.reshape((1994,2310,6)) back to inBlockT
+        &#47&#47 here we need (1994,2310,4) without residuals; (1994,2310,5) with residuals
+        <a id="change">outBlockReshaped = outBlock.reshape(-1, inBlock.shape[-1], 5).transpose((2,0,1))</a>
+
+        pixelBlocks[&quotoutput_pixels&quot] = outBlockReshaped.astype(props[&quotpixelType&quot])
+        return pixelBlocks
+</code></pre>

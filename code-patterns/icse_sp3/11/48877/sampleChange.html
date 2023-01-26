@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        elif self.type == &quotprocessor_use&quot:
+            self._state = round(psutil.cpu_percent(interval=None))
+        elif self.type == &quotprocess&quot:
+            <a id="change">if any(self.argument in l.name() for l in psutil.process_iter()):
+                self._state = STATE_ON
+            else:
+                self._state = STATE_OFF
+       </a> elif self.type == &quotnetwork_out&quot or self.type == &quotnetwork_in&quot:
+            counters = psutil.net_io_counters(pernic=True)
+            if self.argument in counters:
+                counter = counters[self.argument][IO_COUNTER[self.type]]</code></pre><h3>After Change</h3><pre><code class='java'>
+        elif self.type == &quotprocessor_use&quot:
+            self._state = round(psutil.cpu_percent(interval=None))
+        elif self.type == &quotprocess&quot:
+            <a id="change">for proc in psutil.process_iter():
+                try:
+                    if self.argument == proc.name():
+                        self._state = STATE_ON
+                        return
+                except psutil.NoSuchProcess as err:
+                    _LOGGER.warning(
+                        "Failed to load process with id: %s, old name: %s",
+                        err.pid, err.name)
+           </a> self._state = STATE_OFF
+        elif self.type == &quotnetwork_out&quot or self.type == &quotnetwork_in&quot:
+            counters = psutil.net_io_counters(pernic=True)
+            if self.argument in counters:</code></pre>

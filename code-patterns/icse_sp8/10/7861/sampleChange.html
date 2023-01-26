@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return self._object_table(object_id)
+        else:
+            &#47&#47 Return the entire object table.
+            <a id="change">object_keys = self._keys(gcs_utils.TablePrefix_OBJECT_string + "*")</a>
+            object_ids_binary = <a id="change">{
+                key[len(gcs_utils.TablePrefix_OBJECT_string):]
+                for key in object_keys
+            }</a>
+
+            results = {}
+            <a id="change">for object_id_binary in object_ids_binary:
+                results[binary_to_object_id(object_id_binary)] = (
+                    self._object_table(binary_to_object_id(object_id_binary)))
+           </a> return results
+
+    def _actor_table(self, actor_id):
+        Fetch and parse the actor table information for a single actor ID.</code></pre><h3>After Change</h3><pre><code class='java'>
+        if object_id is not None:
+            object_id = ray.ObjectID(hex_to_binary(object_id))
+            object_info = self.global_state_accessor.get_object_info(object_id)
+            <a id="change">if object_info is None:
+                return {}
+            else:
+                object_location_info = gcs_utils.ObjectLocationInfo.FromString(
+                    object_info)
+                return self._gen_object_info(object_location_info)
+       </a> else:
+            <a id="change">object_table = self.global_state_accessor.get_object_table()</a>
+            results = {}
+            <a id="change">for i in range(len(object_table)):
+                object_location_info = gcs_utils.ObjectLocationInfo.FromString(
+                    object_table[i])
+                results[binary_to_hex(object_location_info.object_id)] = \
+                    self._gen_object_info(object_location_info)
+           </a> return results
+
+    def _gen_object_info(self, object_location_info):
+        Parse object location info.</code></pre>

@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      for index, (product_type, plan) in enumerate(self._waiting):
+        if all(promise in self._products_by_promise for promise in plan.promises):
+          self._waiting.pop(index)
+          func, args, kwargs = <a id="change">plan.bind({promise: self._products_by_promise[promise]
+                                          for promise in plan.promises})</a>
+          execute_plan = functools.partial(_execute_plan, func, product_type, plan.subjects)
+          self._pool.apply_async(execute_plan, args=args, kwds=kwargs, callback=self._results.put)
+
+    def _gather_one(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+      for index, (promise, plan) in enumerate(self._waiting):
+        if all(pr in self._products_by_promise for pr in plan.promises):
+          self._waiting.pop(index)
+          <a id="change">inputs = self.collect_inputs(self._products_by_promise, promise, plan)</a>
+          <a id="change">if isinstance(inputs, FailedToProduce):
+            &#47&#47 Short circuit plan execution since we don&quott have all the inputs it needs.
+            self._results.put((promise, plan.subjects, inputs))
+          else:
+            func, args, kwargs = plan.bind(inputs)
+
+            &#47&#47 A no-arg callable that, when executed, produces the promised product.
+            executable = functools.partial(func, *args, **kwargs)
+
+            &#47&#47 A wrapper of executable that handles failing slow as needed.
+            maybe_fail_slow_executor = functools.partial(maybe_fail_slow,
+                                                         executable,
+                                                         promise,
+                                                         plan,
+                                                         self._fail_slow)
+
+            &#47&#47 A picklable execution that returns the promise and subjects in addition to the
+            &#47&#47 product produced by executable.  We need this triple to feed the consume side of the
+            &#47&#47 _results queue.
+            execute_plan = functools.partial(_execute_plan,
+                                             maybe_fail_slow_executor,
+                                             promise,
+                                             plan.subjects)
+
+            self._pool.apply_async(execute_plan, callback=self._results.put)
+
+   </a> def _gather_one(self):
+      promise, subjects, product = self._results.get()
+      for subject in subjects:
+        self._products_by_promise[promise.rebind(subject)] = product</code></pre>

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        x = self.state_proc_model(x)
+        &#47&#47 Restack to batch_size x seq_len x rnn_input_dim
+        x = x.view(-1, self.seq_len, self.rnn_input_dim)
+        hid_0 = <a id="change">self.init_hidden(batch_size)</a>
+        <a id="change">_, final_hid = self.rnn_model(x, hid_0)</a>
+        final_hid.squeeze_(dim=0)
+        &#47&#47 return tensor if single tail, else list of tail tensors
+        if len(self.model_tails) == 1:
+            return self.model_tails[0](final_hid)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Restack to batch_size x seq_len x rnn_input_dim
+        x = x.view(-1, self.seq_len, self.rnn_input_dim)
+        if self.cell_type == &quotLSTM&quot:
+            _output, <a id="change">(h_n, c_n)</a> = self.rnn_model(x)
+        else:
+            _output, h_n = self.rnn_model(x)
+        hid_x = h_n[-1:].squeeze_(dim=0)  &#47&#47 get final time-layer</code></pre>

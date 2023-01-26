@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        lengths, or have inconsistent types.
+    
+    optimizer_utils.check_updates_parameters(updates, parameters)
+    <a id="change">for update, parameter in zip(updates, parameters):
+      &#47&#47 TODO(petebu): Add support for sparse tensors.
+      &#47&#47 TODO(petebu): Consider caching learning_rate cast.
+      &#47&#47 TODO(petebu): Consider the case when all updates are None.
+      if update is not None:
+        optimizer_utils.check_same_dtype(update, parameter)
+        mom, ms, mg = self._get_or_create_moving_vars(parameter)
+        learning_rate = tf.cast(self.learning_rate, update.dtype.base_dtype)
+        decay = tf.cast(self.decay, update.dtype.base_dtype)
+        momentum = tf.cast(self.momentum, update.dtype.base_dtype)
+        epsilon = tf.cast(self.epsilon, update.dtype.base_dtype)
+
+        &#47&#47 TODO(petebu): Use a tf.CriticalSection for the assignments.
+        ms.assign(tf.square(update) * (1. - decay) + ms * decay)
+        if self.centered:
+          mg.assign(update * (1. - decay) + mg * decay)
+          denominator = ms - mg + epsilon
+        else:
+          denominator = ms + epsilon
+        mom.assign(momentum * mom + (
+            learning_rate * update * tf.math.rsqrt(denominator)))
+        parameter.assign_sub(mom)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    optimizer_utils.check_updates_parameters(updates, parameters)
+    self._initialize(parameters)
+    <a id="change">for update, parameter, mom, ms, mg in six.moves.zip_longest(
+        updates, parameters, self.mom, self.ms, self.mg):
+      &#47&#47 TODO(petebu): Add support for sparse tensors.
+      &#47&#47 TODO(petebu): Consider caching learning_rate cast.
+      &#47&#47 TODO(petebu): Consider the case when all updates are None.
+      if update is not None:
+        optimizer_utils.check_same_dtype(update, parameter)
+        learning_rate = tf.cast(self.learning_rate, update.dtype.base_dtype)
+        decay = tf.cast(self.decay, update.dtype.base_dtype)
+        momentum = tf.cast(self.momentum, update.dtype.base_dtype)
+        epsilon = tf.cast(self.epsilon, update.dtype.base_dtype)
+
+        &#47&#47 TODO(petebu): Use a tf.CriticalSection for the assignments.
+        ms.assign(tf.square(update) * (1. - decay) + ms * decay)
+        if self.centered:
+          mg.assign(update * (1. - decay) + mg * decay)
+          denominator = ms - mg + epsilon
+        else:
+          denominator = ms + epsilon
+        mom.assign(momentum * mom + (
+            learning_rate * update * tf.math.rsqrt(denominator)))
+        parameter.assign_sub(mom)</a>
+</code></pre>

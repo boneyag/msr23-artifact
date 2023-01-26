@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 copy FP32 params back into FP16 model
+        offset = 0
+        <a id="change">for p in self.params:
+            if not p.requires_grad:
+                continue
+            numel = p.data.numel()
+            p.data.copy_(self.fp32_params.data[offset:offset+numel].view_as(p.data))
+            offset += numel
+
+   </a> def zero_grad(self):
+        Clears the gradients of all optimized parameters.
+        self.fp32_optimizer.zero_grad()
+        for p in self.params:</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 convert params back to FP16
+        for group in self.wrapped_optimizer.optimizer.param_groups:
+            group[&quotparams&quot] = group[&quotparams&quot].params  &#47&#47 unwrap from ConvertToFP32
+            <a id="change">for p in group[&quotparams&quot]:
+                p.data = p.data.half()
+                if p.grad is not None:
+                    p.grad.data = p.grad.data.half()
+
+   </a> def zero_grad(self):
+        Clears the gradients of all optimized parameters.
+        self.wrapped_optimizer.zero_grad()
+        self._grads_are_scaled = False</code></pre>

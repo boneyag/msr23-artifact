@@ -1,0 +1,60 @@
+<html><h3>128ea5274db96163c58a99405e7205abcab36192,onmt/Translator.py,Translator,translateBatch,#Translator#Any#Any#,84
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        def unbottle(m):
+            return m.view(beamSize, batchSize, -1)
+
+        <a id="change">while i &lt; self.opt.max_sent_length \
+              or any([len(b.finished) == 0 for b in beam]):
+            &#47&#47 Construct batch x beam_size nxt words.
+            &#47&#47 Get all the pending current beam words and arrange for forward.
+            inp = var(torch.stack([b.getCurrentState() for b in beam])
+                      .t().contiguous().view(1, -1))
+            
+            &#47&#47 Turn any copied words to UNKs
+            &#47&#47 0 is unk
+            if self.copy_attn:
+                inp = inp.masked_fill(inp.gt(len(self.fields["tgt"].vocab) - 1), 0)
+                            
+            &#47&#47 Run one step.
+            decOut, decStates, attn = \
+                self.model.decoder(inp, src, context, decStates)
+            decOut = decOut.squeeze(0)
+            &#47&#47 decOut: beam x rnn_size
+            
+            &#47&#47 (b) Compute a vector of batch*beam word scores.
+            if not self.copy_attn:
+                out = self.model.generator.forward(decOut).data
+                out = unbottle(out)
+                &#47&#47 beam x tgt_vocab
+            else:                
+                out = self.model.generator.forward(decOut, attn["copy"].squeeze(0),
+                                                   srcMap)
+                &#47&#47 beam x (tgt_vocab + extra_vocab)
+                out = dataset.collapseCopyScores(
+                    unbottle(out.data),
+                    batch, self.fields["tgt"].vocab)
+                &#47&#47 beam x tgt_vocab
+                out = out.log()
+
+            &#47&#47 (c) Advance each beam.
+            for j, b in enumerate(beam):
+                is_done = b.advance(out[:, j], unbottle(attn["copy"]).data[:, j])
+                decStates.beamUpdate_(j, b.getCurrentOrigin(), beamSize)
+                if is_done:
+                    break
+            i += 1
+            
+       </a> if "tgt" in batch.__dict__:
+            allGold = self._runTarget(batch, dataset)
+        else:
+            allGold = [0] * batchSize</code></pre><h3>After Change</h3><pre><code class='java'>
+            return m.view(beamSize, batchSize, -1)
+
+        for i in range(self.opt.max_sent_length):
+            if all(<a id="change">(b.done() for b in beam)</a>):
+                break
+
+            &#47&#47 Construct batch x beam_size nxt words.</code></pre><img src="19081139.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/128ea5274db96163c58a99405e7205abcab36192#diff-a6ee4fbb2b932113cbea6cbf0efb1fb763a70c3f68bacb21aac4ea4235123c36L92' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 128ea5274db96163c58a99405e7205abcab36192</div><div id='time'> Time: 2017-08-28</div><div id='author'> Author: srush@seas.harvard.edu</div><div id='file'> File Name: onmt/Translator.py</div><div id='class'> Class Name: Translator</div><div id='method'> Method Name: translateBatch</div><BR><BR><div id='link'><a href='https://github.com/google/deepvariant/commit/13a85e08e713f374933bc4fc082f67e1fa8dcd02#diff-38d03ed48272ff8aa5f3a6a6288a19287e9906e20fb8f93c2d02f96dce85c841L377' target='_blank'>Link</a></div><div id='project'> Project Name: google/deepvariant</div><div id='commit'> Commit Name: 13a85e08e713f374933bc4fc082f67e1fa8dcd02</div><div id='time'> Time: 2018-02-20</div><div id='author'> Author: cym@google.com</div><div id='file'> File Name: deepvariant/util/io_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: read_shard_sorted_tfrecords</div><BR><BR><div id='link'><a href='https://github.com/hanxiao/bert-as-service/commit/f0d581c071f14682c46f7917e11592c189382f53#diff-44ace16cb718aadd24b1c32a628113844418f650ac5fcc606d7a88c3fdb393f1L82' target='_blank'>Link</a></div><div id='project'> Project Name: hanxiao/bert-as-service</div><div id='commit'> Commit Name: f0d581c071f14682c46f7917e11592c189382f53</div><div id='time'> Time: 2018-12-17</div><div id='author'> Author: hanhxiao@tencent.com</div><div id='file'> File Name: server/bert_serving/server/__init__.py</div><div id='class'> Class Name: BertServer</div><div id='method'> Method Name: _run</div><BR>

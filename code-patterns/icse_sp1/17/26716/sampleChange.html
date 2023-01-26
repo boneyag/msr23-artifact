@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def calc_values_of_states(states, net, cuda=False):
+    mean_vals = []
+    for batch in np.array_split(states, 64):
+        states_v = Variable(<a id="change">torch.from_numpy(batch)</a>, volatile=True)
+        <a id="change">if cuda:
+            states_v = states_v.cuda()
+       </a> action_values_v = net.qvals(states_v)
+        best_action_values_v = action_values_v.max(1)[0]
+        <a id="change">mean_val = best_action_values_v.mean().data.cpu().numpy()[0]</a>
+        mean_vals.append(mean_val)
+    return np.mean(mean_vals)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def calc_values_of_states(states, net, device="cpu"):
+    mean_vals = []
+    for batch in np.array_split(states, 64):
+        states_v = <a id="change">torch</a>.tensor(<a id="change">batch</a>).to(device)
+        action_values_v = net.qvals(states_v)
+        best_action_values_v = action_values_v.max(1)[0]
+        mean_vals.append(<a id="change">best_action_values_v.mean().item()</a>)
+    return np.mean(mean_vals)
+
+</code></pre>

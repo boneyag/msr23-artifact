@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.protocol.send(message, self.socket)
+        &#47&#47 wait for response (blocks)
+        response = self.protocol.recv(self.socket)
+        <a id="change">if "obs_dict" not in response:
+            raise TensorForceError("Message without field &quotobs_dict&quot received!")
+       </a> self.last_observation = response["obs_dict"]  &#47&#47 cache last observation
+
+        return response["obs_dict"], response.get("is_terminal", False), response.get("reward", 0.0)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 TODO: what if more than one actions are passed?
+
+        &#47&#47 discretized -&gt; each action is an int
+        <a id="change">if self.discretize_actions:
+            &#47&#47 pull record from discretized_actions, which will look like: [A, Right, SpaceBar]
+            combination = self.discretized_actions[actions]
+            &#47&#47 -&gt; translate to {"axis_mappings": [(&quotA&quot, 1.0), (Right, 1.0)], "action_mappings": [(SpaceBar, True)]}
+            for key, value in combination:
+                &#47&#47 action mapping (True or False)
+                if isinstance(value, bool):
+                    action_mappings.append((key, value))
+                &#47&#47 axis mapping: always use 1.0 as value as UE4 already multiplies with the correct scaling factor
+                else:
+                    axis_mappings.append((key, value))
+            &#47&#47logging.debug("axis_mappings={} action_mappings={}".format(axis_mappings, action_mappings))
+        &#47&#47 non-discretized: each action is a dict of action- and axis-mappings defined in UE4 game&quots input settings
+        &#47&#47 re-translate incoming action names into keyboard keys for the server
+        elif actions:
+            try:
+                action_mappings, axis_mappings = self.translate_abstract_actions_to_keys(actions)
+            except KeyError as e:
+                raise TensorForceError("Action- or axis-mapping with name &quot{}&quot not defined in connected UE4 game!".format(e))
+
+        &#47&#47 message = {"cmd": "step", &quotdelta_time&quot: 0.33,
+        &#47&#47     &quotactions&quot: [(&quotX&quot, True), (&quotY&quot, False)],
+        &#47&#47     &quotaxes&quot: [(&quotLeft&quot: 1.0), (&quotUp&quot: -1.0)]
+        &#47&#47 }
+       </a> message = dict(cmd="step", delta_time=self.delta_time, num_ticks=self.num_ticks, actions=action_mappings, axes=axis_mappings)
+        self.protocol.send(message, self.socket)
+        &#47&#47 wait for response (blocks)
+        response = self.protocol.recv(self.socket)</code></pre>

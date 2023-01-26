@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        pairs_concat = [merge_lagged(data_left, data_right, w)
+                        for w in range(-_window, _window + 1)]
+
+        pairs = <a id="change">pandas</a>.concat(pairs_concat, axis=0).set_index(
+            <a id="change">[&quotindex_x&quot, &quotindex_y&quot]</a>
+        ).index
+
+        <a id="change">return pairs</a>
+
+
+class Random(BaseIndexAlgorithm):
+    Random(n, replace=True, random_state=None)</code></pre><h3>After Change</h3><pre><code class='java'>
+        data_right = pandas.DataFrame(
+            df_b[listify(right_on) + block_right_on], copy=False)
+        data_right.columns = blocking_keys
+        data_right[&quotindex_y&quot] = <a id="change">numpy.arange(len(df_b))</a>
+        data_right.dropna(axis=0, how=&quotany&quot,
+                          subset=blocking_keys,
+                          inplace=True)
+
+        &#47&#47 sorting_key_values is the terminology in Data Matching [Christen,
+        &#47&#47 2012]
+        if self.sorting_key_values is None:
+
+            self.sorting_key_values = self._get_sorting_key_values(
+                data_left[&quotsorting_key&quot].values,
+                data_right[&quotsorting_key&quot].values
+            )
+
+        sorting_key_factors = pandas.Series(
+            numpy.arange(len(self.sorting_key_values)),
+            index=self.sorting_key_values)
+
+        data_left[&quotsorting_key&quot] = data_left[
+            &quotsorting_key&quot].map(sorting_key_factors)
+        data_right[&quotsorting_key&quot] = data_right[
+            &quotsorting_key&quot].map(sorting_key_factors)
+
+        &#47&#47 Internal window size
+        _window = int((window - 1) / 2)
+
+        def merge_lagged(x, y, w):
+            Merge two dataframes with a lag on in the sorting key.
+
+            y = y.copy()
+            y[&quotsorting_key&quot] = y[&quotsorting_key&quot] + w
+
+            return x.merge(y, how=&quotinner&quot)
+
+        pairs_concat = [merge_lagged(data_left, data_right, w)
+                        for w in range(-_window, _window + 1)]
+
+        pairs_df = pandas.concat(pairs_concat, axis=0)
+
+        return pandas.MultiIndex(
+            levels=<a id="change">[df_a.index.values, df_b.index.values]</a>,
+            labels=[pairs_df[&quotindex_x&quot].values, pairs_df[&quotindex_y&quot].values],
+            verify_integrity=False
+        )</code></pre>

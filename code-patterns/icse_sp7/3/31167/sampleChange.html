@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        output_data = input_data.copy()  &#47&#47 Initial in case of error handling
+        try:
+            output_data = <a id="change">get_program(program).compute(input_data, config)</a>
+        except KeyError as e:
+            output_data = FailedOperation(
+                input_data=output_data.dict(),
+                success=False,</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Build the model and validate
+    input_data = model_wrapper(input_data, ResultInput)
+    error = _process_failure_and_return(input_data, return_dict, raise_error)
+    <a id="change">if error:
+        return error
+
+    &#47&#47 Grab the executor and build the input model
+   </a> executor = get_program(program)
+
+    &#47&#47 Build out local options
+    if local_options is None:
+        local_options = {}
+
+    input_engine_options = input_data.extras.pop("_qcengine_local_config", {})
+
+    local_options = {**local_options, **input_engine_options}
+    config = get_config(local_options=local_options)
+
+    &#47&#47 Run the program
+    with compute_wrapper(capture_output=False) as metadata:
+
+        output_data = input_data.copy()  &#47&#47 lgtm [py/multiple-definition]
+        <a id="change">output_data = executor.compute(input_data, config)</a>
+
+    return handle_output_metadata(output_data, metadata, raise_error=raise_error, return_dict=return_dict)
+
+</code></pre>

@@ -1,0 +1,25 @@
+<html><h3>4b8716fd4bd6f462a9db9eee958f2508576ec019,gluoncv/utils/nn/matcher.py,BipartiteMatcher,hybrid_forward,#BipartiteMatcher#Any#Any#,65
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def hybrid_forward(self, F, x):
+        match = F.contrib.bipartite_matching(x, threshold=self._threshold,
+                                             is_ascend=self._is_ascend)
+        <a id="change">return match[0]</a>
+
+
+class MaximumMatcher(gluon.HybridBlock):
+    A Matcher implementing maximum matching strategy.</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 otherwise positive/negative samples are confusing
+        &#47&#47 potential argmax and max
+        pargmax = x.argmax(axis=-1, keepdims=True)  &#47&#47 (B, num_anchor, 1)
+        <a id="change">maxs = x.max(axis=-2, keepdims=True)</a>  &#47&#47 (B, 1, num_gt)
+        <a id="change">pmax = F.pick(x, pargmax, axis=-1, keepdims=True)</a>   &#47&#47 (B, num_anchor, 1)
+        mask = F.broadcast_greater_equal(pmax + self._eps, maxs)  &#47&#47 (B, num_anchor, num_gt)
+        mask = F.pick(mask, pargmax, axis=-1, keepdims=True)  &#47&#47 (B, num_anchor, 1)
+        <a id="change">new_match = F.where(mask &gt; 0, pargmax, F.ones_like(pargmax) * -1)</a>
+        result = F.where(match[0] &lt; 0, new_match.squeeze(axis=-1), match[0])
+        return result
+
+</code></pre><img src="26015692.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/gluon-cv/commit/4b8716fd4bd6f462a9db9eee958f2508576ec019#diff-9905a459b0304d06f369899937a60dd1d349a4844bd8bdab28c8f413e018cdedL66' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-cv</div><div id='commit'> Commit Name: 4b8716fd4bd6f462a9db9eee958f2508576ec019</div><div id='time'> Time: 2018-06-15</div><div id='author'> Author: cheungchih@gmail.com</div><div id='file'> File Name: gluoncv/utils/nn/matcher.py</div><div id='class'> Class Name: BipartiteMatcher</div><div id='method'> Method Name: hybrid_forward</div><BR><BR><div id='link'><a href='https://github.com/raghakot/keras-vis/commit/e3c42a0b8371bd4944efd70111c2458c28b9eca3#diff-5b1da19233ea057742b10a84aa5ab00220cf543a42a3e1980a4d14eed33a296bL16' target='_blank'>Link</a></div><div id='project'> Project Name: raghakot/keras-vis</div><div id='commit'> Commit Name: e3c42a0b8371bd4944efd70111c2458c28b9eca3</div><div id='time'> Time: 2016-12-15</div><div id='author'> Author: ragha@outlook.com</div><div id='file'> File Name: visualization.py</div><div id='class'> Class Name: Saliency</div><div id='method'> Method Name: visualize</div><BR><BR><div id='link'><a href='https://github.com/chainer/chainercv/commit/90b78b1379b3423aa3b4b5d0de7313f88bda23ab#diff-e539469b343bde8b45aff790b5366af7a49bb68316dff39e4e7b53fcd9ff98a1L24' target='_blank'>Link</a></div><div id='project'> Project Name: chainer/chainercv</div><div id='commit'> Commit Name: 90b78b1379b3423aa3b4b5d0de7313f88bda23ab</div><div id='time'> Time: 2019-02-17</div><div id='author'> Author: yuyuniitani@gmail.com</div><div id='file'> File Name: chainercv/utils/mask/mask_to_bbox.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: mask_to_bbox</div><BR>

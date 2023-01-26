@@ -1,0 +1,36 @@
+<html><h3>a233fceb859593143dbc29226f483f29253976ae,fairseq/multiprocessing_trainer.py,MultiprocessingTrainer,_async_forward,#MultiprocessingTrainer#Any#Any#Any#,182
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.model.train()
+            self.optimizer.zero_grad()
+
+        <a id="change">if self._sample is None:
+            return 0, {}
+
+        &#47&#47 calculate loss and sample size
+       </a> self.loss, sample_size, logging_output = self.criterion(self.model, self._sample)
+
+        return sample_size, logging_output
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        sample_size, logging_output, oom = 0, {}, False
+        if self._sample is not None:
+            <a id="change">try:
+                &#47&#47 calculate loss and sample size
+                self.loss, sample_size, logging_output = self.criterion(self.model, self._sample)
+            except RuntimeError as e:
+                if not eval and &quotout of memory&quot in str(e):
+                    print(&quot| WARNING: ran out of memory on GPU &#47&#47{}, skipping batch&quot.format(device_id))
+                    oom = True
+                    self.loss = None
+                    if hasattr(torch.cuda, &quotempty_cache&quot):
+                        torch.cuda.empty_cache()
+                else:
+                    raise e
+
+       </a> return sample_size, logging_output, oom
+
+    def _async_backward_and_opt(self, rank, device_id, grad_denom):
+        oom = False</code></pre><img src="80899254.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 15</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/elbayadm/attn2d/commit/a233fceb859593143dbc29226f483f29253976ae#diff-36ec1cd879930255f947df92f12a0d19d01c01c5d90f4e16fde1c566ae4af15aL189' target='_blank'>Link</a></div><div id='project'> Project Name: elbayadm/attn2d</div><div id='commit'> Commit Name: a233fceb859593143dbc29226f483f29253976ae</div><div id='time'> Time: 2017-12-06</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/multiprocessing_trainer.py</div><div id='class'> Class Name: MultiprocessingTrainer</div><div id='method'> Method Name: _async_forward</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/a233fceb859593143dbc29226f483f29253976ae#diff-36ec1cd879930255f947df92f12a0d19d01c01c5d90f4e16fde1c566ae4af15aL197' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: a233fceb859593143dbc29226f483f29253976ae</div><div id='time'> Time: 2017-12-06</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/multiprocessing_trainer.py</div><div id='class'> Class Name: MultiprocessingTrainer</div><div id='method'> Method Name: _async_backward_and_opt</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/a233fceb859593143dbc29226f483f29253976ae#diff-36ec1cd879930255f947df92f12a0d19d01c01c5d90f4e16fde1c566ae4af15aL189' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: a233fceb859593143dbc29226f483f29253976ae</div><div id='time'> Time: 2017-12-06</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/multiprocessing_trainer.py</div><div id='class'> Class Name: MultiprocessingTrainer</div><div id='method'> Method Name: _async_forward</div><BR>

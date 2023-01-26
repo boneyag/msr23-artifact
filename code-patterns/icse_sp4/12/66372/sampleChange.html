@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    if param[&quotboosting_type&quot] == &quotdart&quot:
+        param[&quotdrop_rate&quot] = trial.suggest_loguniform(&quotdrop_rate&quot, 1e-8, 1.0)
+        <a id="change">param[&quotskip_drop&quot] = trial.suggest_loguniform(&quotskip_drop&quot, 1e-8, 1.0)</a>
+    if param[&quotboosting_type&quot] == &quotgoss&quot:
+        param[&quottop_rate&quot] = trial.suggest_uniform(&quottop_rate&quot, 0.0, 1.0)
+        param[&quotother_rate&quot] = trial.suggest_uniform(&quotother_rate&quot, 0.0, 1.0 - param[&quottop_rate&quot])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    dtrain = lgb.Dataset(train_x, label=train_y)
+    dtest = lgb.Dataset(test_x, label=test_y)
+
+    param = <a id="change">{
+        &quotobjective&quot: &quotbinary&quot,
+        &quotmetric&quot: &quotauc&quot,
+        &quotverbosity&quot: -1,
+        &quotboosting_type&quot: &quotgbdt&quot,
+        &quotlambda_l1&quot: trial.suggest_loguniform(&quotlambda_l1&quot, 1e-8, 10.0),
+        &quotlambda_l2&quot: trial.suggest_loguniform(&quotlambda_l2&quot, 1e-8, 10.0),
+        &quotnum_leaves&quot: trial.suggest_int(&quotnum_leaves&quot, 2, 256),
+        &quotfeature_fraction&quot: min(trial.suggest_uniform(&quotfeature_fraction&quot, 0.4, 1.0 + EPS), 1.0),
+        &quotbagging_fraction&quot: min(trial.suggest_uniform(&quotbagging_fraction&quot, 0.4, 1.0 + EPS), 1.0),
+        &quotbagging_freq&quot: trial.suggest_int(&quotbagging_freq&quot, 1, 7),
+        &quotmin_child_samples&quot: int(trial.suggest_uniform(&quotmin_child_samples&quot, 5, 100 + EPS)),
+    }</a>
+
+    &#47&#47 Add a callback for pruning.
+    pruning_callback = optuna.integration.LightGBMPruningCallback(trial, &quotauc&quot)
+    gbm = lgb.train(</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+class SumLazyTensor(LazyTensor):
+    def __init__(self, *lazy_tensors, **kwargs):
+        lazy_tensors = list(lazy_tensors)
+        <a id="change">for i, lazy_tensor in enumerate(lazy_tensors):
+            try:
+                lazy_tensors[i] = lazify(lazy_tensor)
+            except TypeError:
+                raise TypeError("All arguments of a SumLazyTensor should be LazyTensors or Tensors")
+       </a> super(SumLazyTensor, self).__init__(*lazy_tensors, **kwargs)
+
+        self.lazy_tensors = lazy_tensors
+</code></pre><h3>After Change</h3><pre><code class='java'>
+class SumLazyTensor(LazyTensor):
+    def __init__(self, *lazy_tensors, **kwargs):
+        try:
+            lazy_tensors = tuple(lazify(lt) <a id="change">for</a> lt in lazy_tensors)
+        except TypeError:
+            raise TypeError("All arguments of a SumLazyTensor should be LazyTensors or Tensors")
+        batch_shape = _mul_broadcast_shape(*[lt.shape for lt in lazy_tensors])
+        <a id="change">lazy_tensors = tuple(lt.expand(batch_shape) for lt in lazy_tensors)</a>
+        super(SumLazyTensor, self).__init__(*lazy_tensors, **kwargs)
+
+        self.lazy_tensors = lazy_tensors
+</code></pre>

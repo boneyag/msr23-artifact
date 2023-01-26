@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def call(self, x, mask=None):
+        &quot&quot&quotcomputes spectrorgram ** power.&quot&quot&quot
+        output = self._spectrogram_mono(<a id="change">x[:, 0:1, :]</a>)
+        if self.is_mono is False:
+            for ch_idx in range(1, self.n_ch):
+                output = K.concatenate((output, </code></pre><h3>After Change</h3><pre><code class='java'>
+    def call(self, x, mask=None):
+        &quot&quot&quotcomputes stft ** power.&quot&quot&quot
+        for fr_idx in range(self.n_frame):    
+            X_frame_power = K.sum(<a id="change">K.square(fft.rfft(
+                                        self.fft_window * x[:, :, fr_idx * self.n_hop :
+                                                           fr_idx * self.n_hop + self.n_fft]
+                                    ))</a>, axis=3, keepdims=True)
+            if fr_idx == 0:
+                output = X_frame_power
+            else:
+                output = T.concatenate([output, X_frame_power], axis=3)
+
+        if self.power_stft != 2.0:
+            <a id="change">output = K.pow(output, self.power_stft/2.0)</a>
+        if self.return_decibel_stft:
+            output = backend.amplitude_to_decibel(output)
+        return output
+</code></pre>

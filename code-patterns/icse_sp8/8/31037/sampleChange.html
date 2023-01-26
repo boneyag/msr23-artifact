@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Grab the file contents, which were encoded/decoded automatically
+        &#47&#47 into python&quots format
+        decoded_string = raw_bytes.decode(encoding_type)
+    <a id="change">return decoded_string.replace("\x00", "")</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    bom16_le = str(codecs.BOM_UTF16_LE)
+    bom16_be = str(codecs.BOM_UTF16_BE)
+    if str(raw_bytes).startswith(bom16_le):
+        <a id="change">decoded_string = raw_bytes[len(bom16_le):-1]</a>
+        <a id="change">decoded_string = decoded_string.replace("b&quot", "")</a>
+        <a id="change">decoded_string = decoded_string.replace("\\x00", "")</a>
+    elif str(raw_bytes).startswith(bom16_be):
+        decoded_string = raw_bytes[len(bom16_be):-1]
+        decoded_string = decoded_string.replace("b&quot", "")
+        decoded_string = decoded_string.replace("\\x00", "")
+    else:
+        try:
+            &#47&#47 try to use utf-8 to decode first
+            encoding_type = "utf-8"
+            &#47&#47 Grab the file contents, which were encoded/decoded automatically
+            &#47&#47 into python&quots format
+            decoded_string = raw_bytes.decode(encoding_type)
+        except UnicodeDecodeError:
+            encoding_detect = chardet.detect(
+                raw_bytes[:constants.MIN_ENCODING_DETECT])  &#47&#47 Detect the encoding
+            encoding_type = encoding_detect[&quotencoding&quot]
+            &#47&#47 Grab the file contents, which were encoded/decoded automatically
+            &#47&#47 into python&quots format
+            decoded_string = raw_bytes.decode(encoding_type)
+    <a id="change">return decoded_string</a>
+</code></pre>

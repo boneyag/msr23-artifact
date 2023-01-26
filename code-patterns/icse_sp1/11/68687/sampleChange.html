@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if num_updates is not None:
+        stats[&quotnum_updates&quot] = num_updates
+
+    <a id="change">if hasattr(save_checkpoint, &quotbest&quot):
+        stats[&quotbest&quot] = min(save_checkpoint.best, stats[&quotvalid_loss&quot])
+
+   </a> progress.print(stats)
+
+    return stats[&quotvalid_loss&quot]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    for sample in progress:
+        log_output = trainer.valid_step(sample)
+
+        <a id="change">for k, v in log_output.items():
+            if k in [&quotloss&quot, &quotnll_loss&quot, &quotsample_size&quot]:
+                continue
+            extra_meters[k].update(v)
+
+    &#47&#47 log validation stats
+   </a> stats = get_valid_stats(trainer)
+    for k, meter in extra_meters.items():
+        stats[k] = meter.avg
+    progress.print(stats)</code></pre>

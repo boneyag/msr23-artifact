@@ -1,0 +1,92 @@
+<html><h3>f5eb80d221fec8690e8cfb087256671545bb9a5a,examples/pytorch/jtnn/jtnn/jtnn_dec.py,DGLJTNNDecoder,decode,#DGLJTNNDecoder#Any#,239
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                pu, _ = stack[-2]
+                u_pu = mol_tree_graph.edge_id(u, pu)
+
+                <a id="change">mol_tree_graph_lg.pull(
+                    u_pu,
+                    dec_tree_edge_msg,
+                    dec_tree_edge_reduce,
+                    self.dec_tree_edge_update,
+                )</a>
+                mol_tree_graph.edata.update(mol_tree_graph_lg.ndata)
+                mol_tree_graph.pull(
+                    pu,
+                    dec_tree_node_msg,</code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 keeping dst_x 0 is fine as h on new edge doesn&quott depend on that.
+
+                &#47&#47 DGL doesn&quott dynamically maintain a line graph.
+                <a id="change">mol_tree_graph_lg</a> = line_graph(mol_tree_graph, backtracking=False, shared=True)
+
+                mol_tree_graph_lg.pull(
+                    uv,
+                    DGLF.copy_u(&quotm&quot, &quotm&quot),
+                    DGLF.sum(&quotm&quot, &quots&quot))
+                mol_tree_graph_lg.pull(
+                    uv,
+                    DGLF.copy_u(&quotrm&quot, &quotrm&quot),
+                    DGLF.sum(&quotrm&quot, &quotaccum_rm&quot))
+                mol_tree_graph_lg.apply_nodes(self.dec_tree_edge_update.update_zm)
+                mol_tree_graph.edata.update(mol_tree_graph_lg.ndata)
+                mol_tree_graph.pull(v, DGLF.copy_e(&quotm&quot, &quotm&quot), DGLF.sum(&quotm&quot, &quoth&quot))
+
+                h_v = mol_tree_graph.ndata[&quoth&quot][v:v+1]
+                q_input = torch.cat([h_v, mol_vec], 1)
+                q_score = torch.softmax(self.W_o(torch.relu(self.W(q_input))), -1)
+                _, sort_wid = torch.sort(q_score, 1, descending=True)
+                sort_wid = sort_wid.squeeze()
+
+                next_wid = None
+                for wid in sort_wid.tolist()[:5]:
+                    slots = self.vocab.get_slots(wid)
+                    cand_node_dict = create_node_dict(self.vocab.get_smiles(wid))
+                    if (have_slots(u_slots, slots) and can_assemble(mol_tree, u, cand_node_dict)):
+                        next_wid = wid
+                        next_slots = slots
+                        next_node_dict = cand_node_dict
+                        break
+
+                if next_wid is None:
+                    &#47&#47 Failed adding an actual children; v is a spurious node
+                    &#47&#47 and we mark it.
+                    mol_tree_graph.ndata[&quotfail&quot][v] = cuda(torch.tensor([1]))
+                    backtrack = True
+                else:
+                    next_wid = cuda(torch.tensor([next_wid]))
+                    mol_tree_graph.ndata[&quotwid&quot][v] = next_wid
+                    mol_tree_graph.ndata[&quotx&quot][v] = self.embedding(next_wid)
+                    mol_tree.nodes_dict[v] = next_node_dict
+                    all_nodes[v] = next_node_dict
+                    stack.append((v, next_slots))
+                    mol_tree_graph.add_edges(v, u)
+                    vu = new_edge_id
+                    new_edge_id += 1
+                    mol_tree_graph.edata[&quotdst_x&quot][uv] = mol_tree_graph.ndata[&quotx&quot][v]
+                    mol_tree_graph.edata[&quotsrc_x&quot][vu] = mol_tree_graph.ndata[&quotx&quot][v]
+                    mol_tree_graph.edata[&quotdst_x&quot][vu] = mol_tree_graph.ndata[&quotx&quot][u]
+
+                    &#47&#47 DGL doesn&quott dynamically maintain a line graph.
+                    mol_tree_graph_lg = line_graph(mol_tree_graph, backtracking=False, shared=True)
+                    mol_tree_graph_lg.apply_nodes(
+                        self.dec_tree_edge_update.update_r,
+                        uv
+                        )
+                    mol_tree_graph.edata.update(mol_tree_graph_lg.ndata)
+
+            if backtrack:
+                if len(stack) == 1:
+                    break   &#47&#47 At root, terminate
+
+                pu, _ = stack[-2]
+                u_pu = mol_tree_graph.edge_id(u, pu)
+
+                <a id="change">mol_tree_graph_lg.pull(u_pu, DGLF.copy_u(&quotm&quot, &quotm&quot), DGLF.sum(&quotm&quot, &quots&quot))</a>
+                <a id="change">mol_tree_graph_lg.pull(u_pu, DGLF.copy_u(&quotrm&quot, &quotrm&quot), DGLF.sum(&quotrm&quot, &quotaccum_rm&quot))</a>
+                <a id="change">mol_tree_graph_lg.apply_nodes(self.dec_tree_edge_update)</a>
+                mol_tree_graph.edata.update(mol_tree_graph_lg.ndata)
+                mol_tree_graph.pull(pu, DGLF.copy_e(&quotm&quot, &quotm&quot), DGLF.sum(&quotm&quot, &quoth&quot))
+                stack.pop()
+</code></pre><img src="231065029.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 16</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f5eb80d221fec8690e8cfb087256671545bb9a5a#diff-e564452d99da71c0f2bdf78ef89d156282721e0059b435f010093a6de2230e89L230' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f5eb80d221fec8690e8cfb087256671545bb9a5a</div><div id='time'> Time: 2020-08-11</div><div id='author'> Author: coin2028@hotmail.com</div><div id='file'> File Name: examples/pytorch/jtnn/jtnn/jtnn_dec.py</div><div id='class'> Class Name: DGLJTNNDecoder</div><div id='method'> Method Name: decode</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f5eb80d221fec8690e8cfb087256671545bb9a5a#diff-e564452d99da71c0f2bdf78ef89d156282721e0059b435f010093a6de2230e89L115' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f5eb80d221fec8690e8cfb087256671545bb9a5a</div><div id='time'> Time: 2020-08-11</div><div id='author'> Author: coin2028@hotmail.com</div><div id='file'> File Name: examples/pytorch/jtnn/jtnn/jtnn_dec.py</div><div id='class'> Class Name: DGLJTNNDecoder</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f5eb80d221fec8690e8cfb087256671545bb9a5a#diff-e564452d99da71c0f2bdf78ef89d156282721e0059b435f010093a6de2230e89L239' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f5eb80d221fec8690e8cfb087256671545bb9a5a</div><div id='time'> Time: 2020-08-11</div><div id='author'> Author: coin2028@hotmail.com</div><div id='file'> File Name: examples/pytorch/jtnn/jtnn/jtnn_dec.py</div><div id='class'> Class Name: DGLJTNNDecoder</div><div id='method'> Method Name: decode</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f5eb80d221fec8690e8cfb087256671545bb9a5a#diff-5a55a51ddf71b9a35f027dd8bc9c60431ad77e7cb258e559db6e09edba84c8a5L100' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f5eb80d221fec8690e8cfb087256671545bb9a5a</div><div id='time'> Time: 2020-08-11</div><div id='author'> Author: coin2028@hotmail.com</div><div id='file'> File Name: examples/pytorch/jtnn/jtnn/jtnn_enc.py</div><div id='class'> Class Name: DGLJTNNEncoder</div><div id='method'> Method Name: run</div><BR>

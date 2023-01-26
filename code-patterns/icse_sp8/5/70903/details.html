@@ -1,0 +1,68 @@
+<html><h3>0e3dc773bfe1cc74e3c72192c5dc6fbf63864d08,train.py,,,#,132
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    your_images_path = config.DATA.your_images_path
+    your_annos_path = config.DATA.your_annos_path
+    your_data = PoseInfo(your_images_path, your_annos_path, False)
+    <a id="change">your_imgs_file_list = your_data.get_image_list()</a>
+    your_objs_info_list = your_data.get_joint_list()
+    your_mask_list = your_data.get_mask()
+    if len(your_imgs_file_list) != len(your_objs_info_list):
+        raise Exception("number of customized images and annotations do not match")
+    else:
+        print("number of customized images {}".format(len(your_imgs_file_list)))
+
+    &#47&#47 choice dataset for training
+    &#47&#47 1. only coco training set
+    &#47&#47 imgs_file_list = train_imgs_file_list
+    &#47&#47 train_targets = list(zip(train_objs_info_list, train_mask_list))
+    &#47&#47 2. your customized data from "data/your_data" and coco training set
+    imgs_file_list = train_imgs_file_list + your_imgs_file_list
+    train_targets = list(zip(train_objs_info_list + your_objs_info_list, train_mask_list + your_mask_list))
+
+    &#47&#47 define data augmentation
+    def generator():
+        TF Dataset generartor.
+        assert len(imgs_file_list) == len(train_targets)
+        for _input, _target in zip(imgs_file_list, train_targets):
+            yield _input.encode(&quotutf-8&quot), cPickle.dumps(_target)
+
+    dataset = tf.data.Dataset().from_generator(generator, output_types=(tf.string, tf.string))
+    dataset = dataset.map(_map_fn, num_parallel_calls=8)
+    dataset = dataset.shuffle(buffer_size=2046)
+    dataset = dataset.repeat(n_epoch)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.prefetch(buffer_size=20)
+    iterator = dataset.make_one_shot_iterator()
+    one_element = iterator.get_next()
+
+    if config.TRAIN.train_mode == &quotplaceholder&quot:
+        &#47&#47&#47&#47 Train with placeholder can help your to check the data easily.
+        &#47&#47&#47&#47 define model architecture
+        x = tf.placeholder(tf.float32, [None, hin, win, 3], "image")
+        confs = tf.placeholder(tf.float32, [None, hout, wout, n_pos], "confidence_maps")
+        pafs = tf.placeholder(tf.float32, [None, hout, wout, n_pos * 2], "pafs")
+        &#47&#47 if the people does not have keypoints annotations, ignore the area
+        img_mask1 = tf.placeholder(tf.float32, [None, hout, wout, n_pos], &quotimg_mask1&quot)
+        img_mask2 = tf.placeholder(tf.float32, [None, hout, wout, n_pos * 2], &quotimg_mask2&quot)
+        num_images = <a id="change">np.shape(imgs_file_list)[0]</a>
+
+        cnn, b1_list, b2_list, net = model(x, n_pos, img_mask1, img_mask2, True, False)
+
+        &#47&#47&#47&#47 define loss</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47&#47&#47 2. if you have a folder with many folders: (which is common in industry)
+    folder_list = tl.files.load_folder_list(path=&quotyour_data&quot)
+    your_imgs_file_list, your_objs_info_list, your_mask_list = [], [], []
+    <a id="change">for folder in folder_list:
+        _imgs_file_list, _objs_info_list, _mask_list, _targets = \
+            get_pose_data_list(os.path.join(folder, &quotimages&quot), os.path.join(folder, &quotcoco.json&quot))
+        print(len(_imgs_file_list))
+        your_imgs_file_list.extend(_imgs_file_list)
+        your_objs_info_list.extend(your_objs_info_list)
+        your_mask_list.extend(your_mask_list)
+   </a> print("number of customized images found:", len(your_imgs_file_list))
+    exit()
+    &#47&#47&#47&#47 choice dataset for training
+    &#47&#47&#47&#47 1. only coco training set</code></pre><img src="327115529.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorlayer/openpose-plus/commit/0e3dc773bfe1cc74e3c72192c5dc6fbf63864d08#diff-ed183d67207df065a11e1289f19d34cc2abbc5448dea952683cfe9728c342b95L135' target='_blank'>Link</a></div><div id='project'> Project Name: tensorlayer/openpose-plus</div><div id='commit'> Commit Name: 0e3dc773bfe1cc74e3c72192c5dc6fbf63864d08</div><div id='time'> Time: 2018-08-28</div><div id='author'> Author: dhsig552@163.com</div><div id='file'> File Name: train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/tensorflow/ranking/commit/1271e900113a2730b8fec9db1e750b26db4b6af9#diff-66d76514e55e844e0e2ca7eccbc71de45a146170347f68589975ab36dddaf0a4L374' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/ranking</div><div id='commit'> Commit Name: 1271e900113a2730b8fec9db1e750b26db4b6af9</div><div id='time'> Time: 2019-09-18</div><div id='author'> Author: xuanhui@google.com</div><div id='file'> File Name: tensorflow_ranking/python/model.py</div><div id='class'> Class Name: _GroupwiseRankingModel</div><div id='method'> Method Name: _compute_logits_impl</div><BR><BR><div id='link'><a href='https://github.com/epfl-lts2/pygsp/commit/a3e0d7eeb19be28d721b40746aea962c87e234a0#diff-9e9b0efc66b5a430e8eb03021590565dc432a22a5103a361acf13f800687149eL139' target='_blank'>Link</a></div><div id='project'> Project Name: epfl-lts2/pygsp</div><div id='commit'> Commit Name: a3e0d7eeb19be28d721b40746aea962c87e234a0</div><div id='time'> Time: 2015-01-27</div><div id='author'> Author: basile.chatillon@epfl.ch</div><div id='file'> File Name: pygsp/graphs.py</div><div id='class'> Class Name: NNGraph</div><div id='method'> Method Name: __init__</div><BR>

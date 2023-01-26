@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def test_gumbel_softmax(self):
+        Tests the GumbelSoftmax ActionDistribution (tf-eager only).
+        with <a id="change">eager_mode()</a>:
+            batch_size = 1000
+            num_categories = 5
+            input_space = Box(-1.0, 1.0, shape=(batch_size, num_categories))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def test_gumbel_softmax(self):
+        Tests the GumbelSoftmax ActionDistribution (tf-eager only).
+        <a id="change">for fw, sess in framework_iterator(
+                frameworks=["tf", "eager"], session=True):
+            batch_size = 1000
+            num_categories = 5
+            input_space = Box(-1.0, 1.0, shape=(batch_size, num_categories))
+
+            &#47&#47 Batch of size=n and deterministic.
+            inputs = input_space.sample()
+            gumbel_softmax = GumbelSoftmax(inputs, {}, temperature=1.0)
+
+            expected = softmax(inputs)
+            &#47&#47 Sample n times, expect always mean value (deterministic draw).
+            out = gumbel_softmax.deterministic_sample()
+            check(out, expected)
+
+            &#47&#47 Batch of size=n and non-deterministic -&gt; expect roughly that
+            &#47&#47 the max-likelihood (argmax) ints are output (most of the time).
+            inputs = input_space.sample()
+            gumbel_softmax = GumbelSoftmax(inputs, {}, temperature=1.0)
+            expected_mean = np.mean(np.argmax(inputs, -1)).astype(np.float32)
+            outs = gumbel_softmax.sample()
+            if sess:
+                outs = sess.run(outs)
+            check(np.mean(np.argmax(outs, -1)), expected_mean, rtol=0.08)
+
+
+</a>if __name__ == "__main__":
+    import pytest
+    import sys
+    sys.exit(pytest.main(["-v", __file__]))</code></pre>

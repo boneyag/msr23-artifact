@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with self.temporary_workdir() as workdir:
+            prep_commands_specs = self._emit_targets(workdir)
+            &#47&#47 Make sure the emitted BUILD under .pants.d is not ignored.
+            config = {"GLOBAL": {"build_ignore": <a id="change">[]</a>, "pants_ignore": []}}
+            pants_run = self.run_pants_with_workdir(
+                [goal] + prep_commands_specs, workdir, config=config
+            )</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    @contextmanager
+    def _execute_pants(self, goal):
+        <a id="change">with temporary_dir(os.getcwd()) as buildroot, self.temporary_workdir(buildroot) as workdir:
+            prep_commands_specs = self._emit_targets(buildroot)
+            pants_run = self.run_pants_with_workdir([goal] + prep_commands_specs, workdir)
+            self.assert_success(pants_run)
+            yield buildroot
+
+   </a> def test_prep_command_in_compile(self):
+        with self._execute_pants("compile") as buildroot:
+            self._assert_goal_ran(buildroot, "compile")
+            self._assert_goal_did_not_run(buildroot, "test")</code></pre>

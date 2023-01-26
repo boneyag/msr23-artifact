@@ -1,0 +1,150 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    rng = check_random_state(random_state)
+
+    &#47&#47 Bounds
+    <a id="change">n_params = len(bounds)</a>
+    lb, ub = extract_bounds(bounds)
+
+    &#47&#47 Default GP
+    if base_estimator is None:
+        base_estimator = GaussianProcessRegressor(
+            kernel=(ConstantKernel(1.0, (0.01, 1000.0)) *
+                    Matern(length_scale=np.ones(n_params),
+                           length_scale_bounds=[(0.01, 100)] * n_params,
+                           nu=2.5)),
+            normalize_y=True, alpha=10e-6, random_state=random_state)
+
+    &#47&#47 First points
+    Xi = lb + (ub - lb) * rng.rand(n_start, n_params)
+    yi = [func(x) for x in Xi]
+    if np.ndim(yi) != 1:
+        raise ValueError(
+            "The function to be optimized should return a scalar")
+
+    &#47&#47 Bayesian optimization loop
+    models = []
+
+    for i in range(maxiter - n_start):
+        gp = clone(base_estimator)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            gp.fit(Xi, yi)
+
+        models.append(gp)
+
+        if search == "sampling":
+            X = lb + (ub - lb) * rng.rand(n_points, n_params)
+            values = _gaussian_acquisition(
+                X=X, model=gp,  y_opt=np.min(yi), method=acq,
+                xi=xi, kappa=kappa)
+            next_x = X[np.argmin(values)]
+
+        elif search == "lbfgs":
+            best = np.inf
+
+            for j in range(n_restarts_optimizer):
+                x0 = lb + (ub - lb) * rng.rand(n_params)
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    x, a, _ = fmin_l_bfgs_b(
+                        _acquisition, x0,
+                        args=(gp, np.min(yi), acq, xi, kappa),
+                        bounds=bounds, approx_grad=True, maxiter=10)
+
+                if a &lt; best:
+                    next_x, best = x, a
+
+        next_y = func(next_x)
+        Xi = np.vstack((Xi, next_x))
+        yi.append(next_y)
+
+    &#47&#47 Pack results
+    res = OptimizeResult()
+    best = np.argmin(yi)
+    <a id="change">res.x</a> = Xi[best]
+    res.fun = yi[best]
+    res.func_vals = np.array(yi)
+    <a id="change">res.x_iters</a> = Xi
+    res.models = models
+
+    return res</code></pre><h3>After Change</h3><pre><code class='java'>
+    rng = check_random_state(random_state)
+
+    &#47&#47 Bounds
+    <a id="change">space = Space(dimensions)</a>
+
+    &#47&#47 Default GP
+    if base_estimator is None:
+        base_estimator = GaussianProcessRegressor(
+            kernel=(ConstantKernel(1.0, (0.01, 1000.0)) *
+                    Matern(length_scale=np.ones(space.transformed_n_dims),
+                           length_scale_bounds=[(0.01, 100)] * space.transformed_n_dims,
+                           nu=2.5)),
+            normalize_y=True, alpha=10e-6, random_state=random_state)
+
+    &#47&#47 First points
+    Xi = <a id="change">space.rvs(n_samples=n_start, random_state=rng)</a>
+    yi = [func(x) for x in Xi]
+    if np.ndim(yi) != 1:
+        raise ValueError(
+            "The function to be optimized should return a scalar")
+
+    &#47&#47 Bayesian optimization loop
+    models = []
+
+    for i in range(maxiter - n_start):
+        gp = clone(base_estimator)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            gp.fit(space.transform(Xi), yi)
+
+        models.append(gp)
+
+        if search == "sampling":
+            X = space.transform(space.rvs(n_samples=n_points,
+                                          random_state=rng))
+            values = _gaussian_acquisition(
+                X=X, model=gp,  y_opt=np.min(yi), method=acq,
+                xi=xi, kappa=kappa)
+            next_x = X[np.argmin(values)]
+
+        elif search == "lbfgs":
+            best = np.inf
+
+            for j in range(n_restarts_optimizer):
+                x0 = space.transform(space.rvs(n_samples=1,
+                                               random_state=rng))[0]
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    x, a, _ = fmin_l_bfgs_b(
+                        _acquisition, x0,
+                        args=(gp, np.min(yi), acq, xi, kappa),
+                        bounds=space.transformed_bounds,
+                        approx_grad=True, maxiter=10)
+
+                if a &lt; best:
+                    next_x, best = x, a
+
+        next_x = space.inverse_transform(next_x.reshape((1, -1)))[0]
+        print(next_x)
+        next_y = func(next_x)
+        Xi = np.vstack((Xi, next_x))
+        yi.append(next_y)
+
+    &#47&#47 Pack results
+    res = OptimizeResult()
+    best = np.argmin(yi)
+    <a id="change">res.x</a> = Xi[best]
+    res.fun = yi[best]
+    res.func_vals = np.array(yi)
+    <a id="change">res.x_iters</a> = Xi
+    res.models = models
+
+    return res</code></pre>

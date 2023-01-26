@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        kernel = RBFKernel().initialize(log_lengthscale=math.log(lengthscale))
+        kernel.eval()
+        <a id="change">param</a> = <a id="change">Variable(
+            torch.Tensor(3, 3).fill_(math.log(lengthscale)),
+            requires_grad=True,
+        )</a>
+        diffs = <a id="change">Variable(a.expand(3, 3) - b.expand(3, 3).transpose(0, 1))</a>
+        actual_output = <a id="change">(-(diffs ** 2) / (param.exp()))</a>.exp()
+        actual_output.backward(torch.eye(3))
+        actual_param_grad = <a id="change">param</a>.grad.data.sum()
+
+        output = kernel(Variable(a), Variable(b))
+        output.backward(gradient=torch.eye(3))</code></pre><h3>After Change</h3><pre><code class='java'>
+        kernel = RBFKernel().initialize(log_lengthscale=math.log(lengthscale))
+        kernel.eval()
+
+        <a id="change">param</a> = <a id="change">math.log(lengthscale) * torch.ones(3, 3)</a>
+        <a id="change">param.requires_grad_()</a>
+        diffs = <a id="change">a.expand(3, 3) - b.expand(3, 3).transpose(0, 1)</a>
+        actual_output = <a id="change">(-0.5 * (diffs / param.exp()) ** 2)</a>.exp()
+        actual_output.backward(gradient=torch.eye(3))
+        actual_param_grad = <a id="change">param</a>.grad.sum()
+
+        output = kernel(a, b)
+        output.backward(gradient=torch.eye(3))</code></pre>

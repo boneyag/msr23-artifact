@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mat = mat.matmul(mat.transpose(-1, -2))
+        mat.requires_grad_(True)
+
+        <a id="change">eager_rhss = [torch.randn(5, 10), torch.randn(5, 1)]</a>
+        return CachedCGLazyTensor(NonLazyTensor(mat), eager_rhss)
+
+    def evaluate_lazy_tensor(self, lazy_tensor):
+        return lazy_tensor.base_lazy_tensor.tensor</code></pre><h3>After Change</h3><pre><code class='java'>
+        mat.requires_grad_(True)
+
+        lazy_tensor = NonLazyTensor(mat)
+        <a id="change">eager_rhs = torch.randn(5, 10).detach()</a>
+        with gpytorch.settings.num_trace_samples(1000):  &#47&#47 For inv_quad_log_det tests
+            <a id="change">solve, probe_vecs, probe_vec_norms, probe_vec_solves, tmats = CachedCGLazyTensor.precompute_terms(
+                lazy_tensor, eager_rhs.detach()
+            )</a>
+            eager_rhss = [<a id="change">eager_rhs.detach()</a>, eager_rhs[..., -2:-1].detach()]
+            solves = [solve.detach(), solve[..., -2:-1].detach()]
+
+        return CachedCGLazyTensor(</code></pre>

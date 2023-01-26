@@ -1,0 +1,58 @@
+<html><h3>b17e18b4224450aeb24e61d5545016dfe3f1b81a,descarteslabs/workflows/execution/arguments.py,,arguments_to_grafts,#,6
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 all of the checking/promoting of arguments itself.
+    grafts = {}
+    for name, param in arguments.items():
+        <a id="change">if graft_syntax.is_literal(param) or graft_syntax.is_graft(param):
+            graftable = param
+        else:
+            try:
+                graftable = graft_client.value_graft(param)
+            except TypeError:
+                try:
+                    graftable = proxify(param).graft
+                except NotImplementedError:
+                    raise TypeError(
+                        "Invalid type for parameter {!r}: {}. "
+                        "Must be a JSON-serializable value, Proxytype, "
+                        "or object that `proxify` can handle. "
+                        "Got: {}".format(name, type(param), param)
+                    )
+
+            &#47&#47 Turn value grafts of literals back into their literals, for concision and URL stability.
+            &#47&#47 (Basically passing in `Int._promote(1)` is the same as passing in `1`.)
+            return_expr = graftable[graftable["returns"]]
+            if graft_syntax.is_literal(return_expr) or graft_syntax.is_quoted_json(
+                return_expr
+            ):
+                graftable = return_expr
+
+       </a> grafts[name] = graftable
+
+    return grafts
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    graftables = {}
+    for name, arg in arguments.items():
+        &#47&#47 Check arguments don&quott themselves depend on params
+        <a id="change">if arg.params:
+            param_names = tuple(p._name for p in arg.params)
+            raise ValueError(
+                f"Arguments to a computation cannot depend on parameters, but the argument for {name!r} depends on "
+                f"the parameters {param_names}.\n"
+                f"Consider turning the object you&quotre passing in for {name!r} into a Function, "
+                f"by passing it into `wf.Function.from_object`. Then call that Function with the values you want set "
+                f"for those parameters {param_names}. Then pass the result of *that* into here as `{name}=`.\n\n"
+                f"Example:\n"
+                f"&#47&#47 assume `{name}` is a variable holding whatever you just passed in as `{name}=`"
+                f"{name}_function = wf.Function.from_object({name})\n"
+                f"{name}_value = {name}_function({&quot, &quot.join(f&quot&lt;value for {n!r}&gt;&quot for n in param_names)})\n"
+                f"wf.compute(..., {name}={name}_value)  &#47&#47 same form for .visualize or .inspect"
+            )
+
+       </a> graft = arg.graft
+
+        &#47&#47 Turn value grafts of literals back into their literals, for concision and URL stability.
+        &#47&#47 (Basically passing in `Int(1)` is the same as passing in `1`.)</code></pre><img src="225677702.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/descarteslabs/descarteslabs-python/commit/b17e18b4224450aeb24e61d5545016dfe3f1b81a#diff-9c683f5155c281c06b4771b336bb4625faaf70bfc480210e7b7480867a8b2c8bL37' target='_blank'>Link</a></div><div id='project'> Project Name: descarteslabs/descarteslabs-python</div><div id='commit'> Commit Name: b17e18b4224450aeb24e61d5545016dfe3f1b81a</div><div id='time'> Time: 2021-01-05</div><div id='author'> Author: gabe@descarteslabs.com</div><div id='file'> File Name: descarteslabs/workflows/execution/arguments.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: arguments_to_grafts</div><BR><BR><div id='link'><a href='https://github.com/deepmind/sonnet/commit/869b558268f198de90822e4ea17182dc74b78213#diff-85ffe3cabc97d4b2a1ac7591ac123a770f1a2f843251748870797c688e1e1af3L315' target='_blank'>Link</a></div><div id='project'> Project Name: deepmind/sonnet</div><div id='commit'> Commit Name: 869b558268f198de90822e4ea17182dc74b78213</div><div id='time'> Time: 2017-11-09</div><div id='author'> Author: noreply@google.com</div><div id='file'> File Name: sonnet/python/modules/conv.py</div><div id='class'> Class Name: Conv2D</div><div id='method'> Method Name: _build</div><BR><BR><div id='link'><a href='https://github.com/tryolabs/luminoth/commit/fbcbb710c465da13ed6705fb8d904fe2795b246a#diff-076aa6adcfc44b645a22dd472d7d5adb333033bb9f875a6b8fdd293893a39fc9L81' target='_blank'>Link</a></div><div id='project'> Project Name: tryolabs/luminoth</div><div id='commit'> Commit Name: fbcbb710c465da13ed6705fb8d904fe2795b246a</div><div id='time'> Time: 2018-02-08</div><div id='author'> Author: agustin@tryolabs.com</div><div id='file'> File Name: luminoth/models/base/truncated_base_network.py</div><div id='class'> Class Name: TruncatedBaseNetwork</div><div id='method'> Method Name: get_trainable_vars</div><BR>

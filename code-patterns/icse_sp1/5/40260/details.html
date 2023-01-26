@@ -1,0 +1,102 @@
+<html><h3>dbfc622fb82a3eb472941968a6327e8cc94a3c79,doc/examples/scripts/structure/md_analysis.py,,,#,31
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+ax.set_xlim(1, 20)
+ax.set_xlabel("Residue")
+ax.set_ylabel("RMSF (Angstrom)")
+<a id="change">ax.set_xticks(np.arange(1, 21))</a>
+ax.set_xticklabels(np.arange(1, 21))
+figure.tight_layout()
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+&#47&#47 coordinates belonging to the amino acids.
+xtc_file = xtc.XTCFile()
+xtc_file.read(traj_file_path, atom_i=np.where(protein_mask)[0])
+<a id="change">trajectory = xtc_file.get_structure(template)</a>
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Since the MD simulation used periodic boundaries, the protein might be
+&#47&#47 segmented over the box boundary.
+&#47&#47 For further analysis we need to reassemble the protein chain into a
+&#47&#47 whole molecule, without periodic boundaries.
+&#47&#47 in *Gromacs* we could have used ``gmx trjconv`` for this, but this
+&#47&#47 problem can be handled in *Biotite*, too.
+
+&#47&#47trajectory = struc.assemble_from_pcb(trajectory)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Now our trajectory is ready for some analysis!
+&#47&#47 At first we want to see if the simulation converged.
+&#47&#47 For this purpose we take the RMSD of a frame compared to the initial
+&#47&#47 model as measure. In order to calculate the RMSD we must
+&#47&#47 superimpose all models onto a reference, in this case we also choose
+&#47&#47 the initial structure. 
+
+trajectory, transform = struc.superimpose(<a id="change">trajectory[0]</a>, trajectory)
+rmsd = struc.rmsd(trajectory[0], trajectory)
+&#47&#47 Simulation was 1000 ps long
+SIM_TIME = 1000
+time = np.linspace(0, SIM_TIME, len(trajectory))
+
+figure = plt.figure(figsize=(6,3))
+ax = figure.add_subplot(111)
+ax.plot(time, rmsd, color=biotite.colors["dimorange"])
+ax.set_xlim(0, SIM_TIME)
+ax.set_ylim(0, 2)
+ax.set_xlabel("Time (ps)")
+ax.set_ylabel("RMSD (Å)")
+figure.tight_layout()
+
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 As we can see the simulation seems to converge already early in the
+&#47&#47 simulation.
+&#47&#47 After a about 200 ps the RMSD stays in a range of approx. 2 - 3 Å.
+&#47&#47 
+&#47&#47 In order to futher evaluate the unfolding of our enzyme in the
+&#47&#47 course of simulation, we calculate and plot the radius of gyration
+&#47&#47 (a measure for the protein radius).
+
+radius = struc.gyration_radius(trajectory)
+
+figure = plt.figure(figsize=(6,3))
+ax = figure.add_subplot(111)
+ax.plot(time, radius, color=biotite.colors["dimorange"])
+ax.set_xlim(0, 1000)
+ax.set_ylim(14.0, 14.5)
+ax.set_xlabel("Time (ps)")
+ax.set_ylabel("Radius of gyration (Å)")
+figure.tight_layout()
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 From this perspective, the protein seems really stable.
+&#47&#47 The radius does merely fluctuate in a range of approximately 0.3 Å
+&#47&#47 during the entire simulation.
+&#47&#47 
+&#47&#47 Let&quots have a look at single amino acids:
+&#47&#47 Which residues fluctuate most?
+&#47&#47 For answering this question we calculate the RMSF
+&#47&#47 (Root mean square fluctuation).
+&#47&#47 It is similar to the RMSD, but instead of averaging over the atoms
+&#47&#47 and looking at each time step, we average over the time and look at
+&#47&#47 each residue.
+&#47&#47 Usually the average model is taken as reference
+&#47&#47 (compared to the starting model for RMSD).
+&#47&#47 
+&#47&#47 Since side chain atoms fluctuate quite a lot, they are not suitable
+&#47&#47 for evaluation of the residue flexibility. Therefore, we consider only
+&#47&#47 CA atoms.
+
+&#47&#47 In all models, mask the CA atoms
+ca_trajectory = trajectory[:, trajectory.atom_name == "CA"]
+rmsf = struc.rmsf(struc.average(ca_trajectory), ca_trajectory)
+
+figure = plt.figure(figsize=(6,3))
+ax = figure.add_subplot(111)
+<a id="change">res_count = struc.get_residue_count(trajectory)</a>
+ax.plot(np.arange(1, res_count+1), rmsf, color=biotite.colors["dimorange"])
+ax.set_xlim(1, res_count)
+ax.set_ylim(0, 1.5)
+ax.set_xlabel("Residue")</code></pre><img src="192037715.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/biotite-dev/biotite/commit/dbfc622fb82a3eb472941968a6327e8cc94a3c79#diff-3010f15b76927ed882ff0117400a6d0edfb217e476a1288ac743753690bf49f5L31' target='_blank'>Link</a></div><div id='project'> Project Name: biotite-dev/biotite</div><div id='commit'> Commit Name: dbfc622fb82a3eb472941968a6327e8cc94a3c79</div><div id='time'> Time: 2019-03-05</div><div id='author'> Author: patrick.kunzm@gmail.com</div><div id='file'> File Name: doc/examples/scripts/structure/md_analysis.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/matplotlib/matplotlib/commit/8472fbbd16e292d50cdc05caa320854b2388a842#diff-0680f8d39441f209b641018044255dd0c54003866ab8d8975efc18fe372289a9L20' target='_blank'>Link</a></div><div id='project'> Project Name: matplotlib/matplotlib</div><div id='commit'> Commit Name: 8472fbbd16e292d50cdc05caa320854b2388a842</div><div id='time'> Time: 2020-04-14</div><div id='author'> Author: anntzer.lee@gmail.com</div><div id='file'> File Name: lib/matplotlib/tests/test_usetex.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_usetex</div><BR><BR><div id='link'><a href='https://github.com/matplotlib/matplotlib/commit/76d114f7416d21126d158792a345a714bf809889#diff-0680f8d39441f209b641018044255dd0c54003866ab8d8975efc18fe372289a9L20' target='_blank'>Link</a></div><div id='project'> Project Name: matplotlib/matplotlib</div><div id='commit'> Commit Name: 76d114f7416d21126d158792a345a714bf809889</div><div id='time'> Time: 2020-04-28</div><div id='author'> Author: quantum.analyst@gmail.com</div><div id='file'> File Name: lib/matplotlib/tests/test_usetex.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_usetex</div><BR>

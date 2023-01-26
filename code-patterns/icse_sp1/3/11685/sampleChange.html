@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    logger.info(f&quotRunning lab: spec_file {spec_file} spec_name {spec_name} in mode: {lab_mode}&quot)
+    &#47&#47 &quot@&quot is reserved for EVAL_MODES
+    os.environ[&quotlab_mode&quot] = lab_mode.split(&quot@&quot)[0]
+    <a id="change">if lab_mode in TRAIN_MODES:
+        run_new_mode(spec_file, spec_name, lab_mode)
+    else:
+        run_old_mode(spec_file, spec_name, lab_mode)
+
+
+</a>def main():
+    args = sys.argv[1:]
+    if len(args) &lt;= 1:  &#47&#47 run scheduled specs
+        job_file = args[0] if len(args) == 1 else &quotconfig/experiments.json&quot</code></pre><h3>After Change</h3><pre><code class='java'>
+        num_pro = spec[&quotmeta&quot][&quotparam_spec_process&quot]
+        &#47&#47 can&quott use Pool since it cannot spawn nested Process, which is needed for VecEnv and parallel sessions. So these will run and wait by chunks
+        workers = [mp.Process(target=run_train_mode, args=(spec, lab_mode)) for spec in param_specs]
+        <a id="change">for chunk_w in ps.chunk(workers, num_pro):
+            for w in chunk_w:
+                w.start()
+            for w in chunk_w:
+                w.join()
+
+
+</a>def main():
+    &quot&quot&quotMain method to run jobs from scheduler or from a spec directly&quot&quot&quot
+    args = sys.argv[1:]
+    if len(args) &lt;= 1:  &#47&#47 use scheduler</code></pre>

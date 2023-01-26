@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return reader
+
+    def _create_backend(self):
+        <a id="change">backend</a> = <a id="change">super(EncoderDecoderTask, self)._create_backend()</a>
+        if backend.name == &quotpytorch&quot:
+            import baseline.pytorch.seq2seq as seq2seq
+            self.config_params[&quotpreproc&quot][&quotshow_ex&quot] = baseline.pytorch.show_examples_pytorch
+            self.config_params[&quotpreproc&quot][&quottrim&quot] = True</code></pre><h3>After Change</h3><pre><code class='java'>
+        return reader
+
+    def _create_backend(self):
+        <a id="change">backend</a> = <a id="change">Backend()</a>
+        <a id="change">backend.name = self.config_params.get(&quotbackend&quot, &quottensorflow&quot)</a>
+        if backend.name == &quotpytorch&quot:
+            import baseline.pytorch.embeddings as embeddings
+            import baseline.pytorch.seq2seq as seq2seq
+            self.config_params[&quotpreproc&quot][&quotshow_ex&quot] = baseline.pytorch.show_examples_pytorch
+            self.config_params[&quotpreproc&quot][&quottrim&quot] = True
+        else:
+            &#47&#47 TODO: why not support DyNet trimming?
+            self.config_params[&quotpreproc&quot][&quottrim&quot] = False
+            if backend.name == &quotdynet&quot:
+                import _dynet
+                import _dynet
+                dy_params = _dynet.DynetParams()
+                dy_params.from_args()
+                dy_params.set_requested_gpus(1)
+                if &quotautobatchsz&quot in self.config_params[&quottrain&quot]:
+                    dy_params.set_autobatch(True)
+                    batched = False
+                else:
+                    batched = True
+                dy_params.init()
+                backend.params = {&quotpc&quot: _dynet.ParameterCollection(), &quotbatched&quot: batched}
+                import baseline.dy.embeddings as embeddings
+                import baseline.dy.seq2seq as seq2seq
+                self.config_params[&quotpreproc&quot][&quotshow_ex&quot] = baseline.dy.show_examples_dynet
+            else:
+                import baseline.tf.embeddings as embeddings
+                import baseline.tf.seq2seq as seq2seq
+                self.config_params[&quotpreproc&quot][&quotshow_ex&quot] = baseline.tf.create_show_examples_tf(self.primary_key)
+                from mead.tf.exporters import Seq2SeqTensorFlowExporter
+                backend.exporter = Seq2SeqTensorFlowExporter
+
+        <a id="change">backend.embeddings = embeddings</a>
+        backend.task = seq2seq
+        return backend
+
+    def initialize(self, embeddings):</code></pre>

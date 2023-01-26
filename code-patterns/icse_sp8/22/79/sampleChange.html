@@ -1,0 +1,83 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    base_kwargs = dict(algorithm_params[&quotbase_kwargs&quot], sampler=sampler)
+
+    M = value_fn_params[&quotlayer_size&quot]
+    <a id="change">qf1 = NNQFunction(
+        observation_shape=env.observation_space.shape,
+        action_shape=env.action_space.shape,
+        hidden_layer_sizes=(M, M),
+        name=&quotqf1&quot)</a>
+    qf2 = NNQFunction(
+        observation_shape=env.observation_space.shape,
+        action_shape=env.action_space.shape,
+        hidden_layer_sizes=(M, M),</code></pre><h3>After Change</h3><pre><code class='java'>
+    base_kwargs = dict(algorithm_params[&quotbase_kwargs&quot], sampler=sampler)
+
+    M = value_fn_params[&quotlayer_size&quot]
+    q_functions = <a id="change">tuple(
+        NNQFunction(
+            observation_shape=env.observation_space.shape,
+            action_shape=env.action_space.shape,
+            hidden_layer_sizes=(M, M),
+            name=&quotqf{}&quot.format(i))
+        for i in range(2)
+    )</a>
+    vf = NNVFunction(
+        observation_shape=env.observation_space.shape,
+        hidden_layer_sizes=(M, M))
+    initial_exploration_policy = UniformPolicy(
+        observation_shape=env.observation_space.shape,
+        action_shape=env.action_space.shape)
+
+    if policy_params[&quottype&quot] == &quotgaussian&quot:
+        policy = GaussianPolicy(
+            observation_shape=env.observation_space.shape,
+            action_shape=env.action_space.shape,
+            hidden_layer_sizes=(M, M),
+            reparameterize=policy_params[&quotreparameterize&quot],
+            reg=1e-3,
+        )
+    elif policy_params[&quottype&quot] == &quotlsp&quot:
+        if preprocessor_params:
+            preprocessor_fn = PREPROCESSOR_FUNCTIONS[
+                preprocessor_params.get(&quotfunction_name&quot)]
+            preprocessor = preprocessor_fn(
+                *preprocessor_params.get(&quotargs&quot, []),
+                **preprocessor_params.get(&quotkwargs&quot, {}))
+        else:
+            preprocessor = None
+
+        policy_s_t_layers = policy_params[&quots_t_layers&quot]
+        policy_s_t_units = policy_params[&quots_t_units&quot]
+        s_t_hidden_sizes = [policy_s_t_units] * policy_s_t_layers
+
+        bijector_config = {
+            &quotnum_coupling_layers&quot: policy_params[&quotcoupling_layers&quot],
+            &quottranslation_hidden_sizes&quot: s_t_hidden_sizes,
+            &quotscale_hidden_sizes&quot: s_t_hidden_sizes,
+        }
+
+        policy = LatentSpacePolicy(
+            observation_shape=env.observation_space.shape,
+            action_shape=env.action_space.shape,
+            squash=policy_params[&quotsquash&quot],
+            bijector_config=bijector_config,
+            reparameterize=policy_params[&quotreparameterize&quot],
+            q_function=<a id="change">q_functions[0]</a>,
+            observations_preprocessor=preprocessor)
+    elif policy_params[&quottype&quot] == &quotgmm&quot:
+        assert not policy_params[&quotreparameterize&quot], (
+            "reparameterize should be False when using a GMMPolicy")
+        policy = GMMPolicy(
+            observation_shape=env.observation_space.shape,
+            action_shape=env.action_space.shape,
+            K=policy_params[&quotK&quot],
+            hidden_layer_sizes=(M, M),
+            reparameterize=policy_params[&quotreparameterize&quot],
+            qf=<a id="change">q_functions[0]</a>,
+            reg=1e-3,
+        )
+    else:</code></pre>

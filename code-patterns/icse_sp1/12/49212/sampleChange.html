@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def apply(self, img, show=False):
+        _img = cv2.cvtColor(img.data, cv2.COLOR_BGR2GRAY)
+        <a id="change">if self.last_frame is None:
+            self.last_frame = _img
+            total_flow = 0
+        else:
+            curr_frame = _img
+            flow = cv2.calcOpticalFlowFarneback(
+                self.last_frame, curr_frame, 0.5, 3, 15, 3, 5, 1.2, 0)
+            flow = np.sqrt((flow**2).sum(2))
+
+            if show:
+                cv2.imshow(&quotframe&quot, flow.astype(&quotint8&quot))
+                cv2.waitKey(1)
+
+            self.last_frame = curr_frame
+            total_flow = flow.sum()
+
+       </a> return Note(img, self, {&quottotal_flow&quot: total_flow})
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def apply(self, video, show=False):
+
+        events = []
+        <a id="change">for i, f in enumerate(video):
+
+            img = f.data
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+            if i == 0:
+                last_frame = img
+                total_flow = 0
+
+            flow = cv2.calcOpticalFlowFarneback(
+                last_frame, img, 0.5, 3, 15, 3, 5, 1.2, 0)
+            flow = np.sqrt((flow ** 2).sum(2))
+
+            if show:
+                cv2.imshow(&quotframe&quot, flow.astype(&quotint8&quot))
+                cv2.waitKey(1)
+
+            last_frame = img
+            total_flow = flow.sum()
+
+            note = Note(video, self, {&quottotal_flow&quot: total_flow})
+            event = Event(onset=f.onset, duration=f.duration, notes=[note])
+            events.append(event)
+
+       </a> return events
+</code></pre>

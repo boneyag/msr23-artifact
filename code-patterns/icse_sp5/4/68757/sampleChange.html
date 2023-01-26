@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            Get(LintResults, LintRequest, lint_request) for lint_request in valid_requests
+        )
+
+    sorted_results = <a id="change">sorted(itertools.chain.from_iterable(results), key=lambda res: res.linter_name)</a>
+    if not sorted_results:
+        return Lint(exit_code=0)
+
+    linter_to_reports = defaultdict(list)</code></pre><h3>After Change</h3><pre><code class='java'>
+            for field_set in request.field_sets
+        )
+        &#47&#47 We consolidate all results for each linter into a single `LintResults`.
+        <a id="change">all_results = tuple(
+            LintResults(
+                itertools.chain.from_iterable(
+                    per_target_results.results for per_target_results in all_linter_results
+                ),
+                linter_name=linter_name,
+            )
+            for linter_name, all_linter_results in itertools.groupby(
+                all_per_target_results, key=lambda results: results.linter_name
+            )
+        )</a>
+    else:
+        all_results = await MultiGet(
+            Get(LintResults, LintRequest, lint_request) for lint_request in valid_requests
+        )
+
+    all_results = tuple(sorted(all_results, key=lambda results: results.linter_name))
+
+    reports = list(itertools.chain.from_iterable(results.reports for results in all_results))
+    if reports:
+        &#47&#47 TODO(&#47&#4710532): Tolerate when a linter has multiple reports.
+        linters_with_multiple_reports = [
+            results.linter_name for results in all_results if len(results.reports) &gt; 1
+        ]
+        if linters_with_multiple_reports:
+            if lint_subsystem.per_target_caching:
+                suggestion = "Try running without `--lint-per-target-caching` set."
+            else:
+                suggestion = (
+                    "The linters likely partitioned the input targets, such as grouping by Python "
+                    "interpreter compatibility. Try running on fewer targets or unset "
+                    "`--lint-reports-dir`."
+                )
+            raise InvalidLinterReportsError(
+                "Multiple reports would have been written for these linters: "
+                f"{linters_with_multiple_reports}. The option `--lint-reports-dir` only works if "
+                f"each linter has a single result. {suggestion}"
+            )
+        merged_reports = await Get(Digest, MergeDigests(report.digest for report in reports))
+        workspace.write_digest(merged_reports)
+        logger.info(f"Wrote lint result files to {lint_subsystem.reports_dir}.")
+
+    exit_code = 0
+    if all_results:
+        console.print_stderr("")
+    for results in all_results:
+        <a id="change">if results.skipped:
+            sigil = console.yellow("-")
+            status = "skipped"
+        elif results.exit_code == 0:
+            sigil = console.green("✓")
+            status = "succeeded"
+        else:
+            sigil = console.red("𐄂")
+            status = "failed"
+            exit_code = results.exit_code
+       </a> console.print_stderr(f"{sigil} {results.linter_name} {status}.")
+
+    return Lint(exit_code)
+</code></pre>

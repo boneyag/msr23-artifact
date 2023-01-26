@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def is_banned_globally(self, user_id: str) -&gt; (bool, Union[str, None]):
+        ban = self.redis.hget(RedisKeys.banned_users(), user_id)
+        &#47&#47 TODO: remove ban if passed, like rdbms implementation
+        <a id="change">return self._is_banned(ban)</a>
+
+    def is_banned_from_channel(self, channel_id: str, user_id: str) -&gt; (bool, Union[str, None]):
+        ban = self.redis.hget(RedisKeys.banned_users_channel(channel_id), user_id)
+        return self._is_banned(ban)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def is_banned_globally(self, user_id: str) -&gt; (bool, Union[str, None]):
+        ban = self.redis.hget(RedisKeys.banned_users(), user_id)
+        <a id="change">is_banned, time = self._is_banned(ban)</a>
+        <a id="change">if not is_banned:
+            return False, None
+
+       </a> <a id="change">now = datetime.utcnow()</a>
+        <a id="change">end = datetime.strptime(time, ConfigKeys.DEFAULT_DATE_FORMAT)</a>
+        <a id="change">if now &gt; end:
+            self.redis.hdel(RedisKeys.banned_users(), user_id)
+            return False, None
+       </a> return <a id="change">True</a>, <a id="change">time</a>
+
+    def is_banned_from_channel(self, channel_id: str, user_id: str) -&gt; (bool, Union[str, None]):
+        ban = self.redis.hget(RedisKeys.banned_users_channel(channel_id), user_id)
+        return self._is_banned(ban)</code></pre>

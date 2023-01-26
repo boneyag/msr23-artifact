@@ -1,0 +1,49 @@
+<html><h3>59bcf379c51da12beee63d4fc7913ee74c4f9e8d,onmt/modules/CopyGenerator.py,CopyGeneratorCriterion,__call__,#CopyGeneratorCriterion#,113
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 Regular prob (no unks and unks that can&quott be copied)
+        if not self.force_copy:
+            out = <a id="change">out + self.eps + tmp.mul(target.ne(0).float()) + \
+                  tmp.mul(align.eq(0).float()).mul(target.eq(0).float())</a>
+        else:
+            &#47&#47 Forced copy.
+            <a id="change">out</a> = <a id="change">out + self.eps + tmp.mul(align.eq(0).float())</a>
+
+        &#47&#47 Drop padding.
+        <a id="change">loss</a> = -out.log().mul(target.ne(self.pad).float()).sum()
+        return loss
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def __call__(self, scores, align, target):
+        &#47&#47 Compute unks in align and target for readability
+        <a id="change">align_unk</a> = <a id="change">align.eq(0).float()</a>
+        align_not_unk = align.ne(0).float()
+        target_unk = target.eq(0).float()
+        target_not_unk = target.ne(0).float()
+
+        &#47&#47 Copy probability of tokens in source
+        <a id="change">out</a> = scores.gather(1, align.view(-1, 1) + self.offset).view(-1)
+        &#47&#47 Set scores for unk to 0 and add eps
+        <a id="change">out</a> = out.mul(align_not_unk) + self.eps
+        &#47&#47 Get scores for tokens in target
+        tmp = scores.gather(1, target.view(-1, 1)).view(-1)
+
+        &#47&#47 Regular prob (no unks and unks that can&quott be copied)
+        if not self.force_copy:
+            &#47&#47 Add score for non-unks in target
+            out = out + tmp.mul(target_not_unk)
+            &#47&#47 Add score for when word is unk in both align and tgt
+            out = <a id="change">out + tmp.mul(align_unk).mul(target_unk)</a>
+        else:
+            &#47&#47 Forced copy. Add only probability for not-copied tokens
+            out = out + tmp.mul(align_unk)
+
+        &#47&#47 Drop padding.
+        <a id="change">loss</a> = -out.log().mul(target.ne(self.pad).float())
+        return loss
+
+</code></pre><img src="846508.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/59bcf379c51da12beee63d4fc7913ee74c4f9e8d#diff-2671d243fc184310be73822772f511227e6b44526e8beaa1113efaf6edf97899L113' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 59bcf379c51da12beee63d4fc7913ee74c4f9e8d</div><div id='time'> Time: 2018-02-06</div><div id='author'> Author: s.gehrmann@outlook.com</div><div id='file'> File Name: onmt/modules/CopyGenerator.py</div><div id='class'> Class Name: CopyGeneratorCriterion</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/59bcf379c51da12beee63d4fc7913ee74c4f9e8d#diff-2671d243fc184310be73822772f511227e6b44526e8beaa1113efaf6edf97899L113' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 59bcf379c51da12beee63d4fc7913ee74c4f9e8d</div><div id='time'> Time: 2018-02-06</div><div id='author'> Author: s.gehrmann@outlook.com</div><div id='file'> File Name: onmt/modules/CopyGenerator.py</div><div id='class'> Class Name: CopyGeneratorCriterion</div><div id='method'> Method Name: __call__</div><BR>

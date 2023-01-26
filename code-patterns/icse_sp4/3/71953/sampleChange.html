@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    loss = -torch.sum(m * log_ps_a, 1)  &#47&#47 Cross-entropy loss (minimises DKL(m||p(s_t, a_t)))
+    loss = weights * loss  &#47&#47 Importance weight losses before prioritised experience replay (done after for original/non-distributional version)
+    self.online_net.zero_grad()
+    <a id="change">loss.mean().backward()</a>  &#47&#47 Backpropagate minibatch loss
+    self.optimiser.step()
+    nn.utils.clip_grad_norm_(self.online_net.parameters(), self.norm_clip)  &#47&#47 Clip gradients by L2 norm
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    loss = -torch.sum(m * log_ps_a, 1)  &#47&#47 Cross-entropy loss (minimises DKL(m||p(s_t, a_t)))
+    self.online_net.zero_grad()
+    <a id="change">(weights * loss).mean().backward()</a>  &#47&#47 Backpropagate importance-weighted minibatch loss
+    self.optimiser.step()
+
+    mem.update_priorities(idxs, loss.detach())  &#47&#47 Update priorities of sampled transitions</code></pre>

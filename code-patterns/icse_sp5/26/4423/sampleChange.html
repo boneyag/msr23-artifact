@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    device = x.get_device()
+    nbatch = x.size(1)
+
+    <a id="change">plan = _setup_fft_plan(b_out, nbatch)</a>
+    wigner = _setup_wigner(b_out, nl=b_in, weighted=for_grad, device=device) &#47&#47 [beta, l * m * n] (2 * b_out, nspec)
+    cuda_kernel = _setup_so3ifft_cuda_kernel(b_in=b_in, b_out=b_out, nbatch=nbatch, real_output=True)
+
+    <a id="change">output</a> = <a id="change">torch.cuda.FloatTensor(nbatch, 2 * b_out, 2 * b_out, 2 * b_out, 2)</a>
+    cuda_kernel(x, wigner, output) &#47&#47 [batch, beta, m, n, complex]
+
+    <a id="change">plan(output, output, 1)</a> &#47&#47 [batch, beta, alpha, gamma, complex]
+    output = output[..., 0] &#47&#47 [batch, beta, alpha, gamma]
+    return output
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    wigner = _setup_wigner(b_out, nl=b_in, weighted=for_grad, like=x) &#47&#47 [beta, l * m * n] (2 * b_out, nspec)
+    cuda_kernel = _setup_so3ifft_cuda_kernel(b_in=b_in, b_out=b_out, nbatch=nbatch, real_output=True)
+
+    <a id="change">output</a> = <a id="change">x.new_empty((nbatch, 2 * b_out, 2 * b_out, 2 * b_out, 2))</a>
+    cuda_kernel(x, wigner, output) &#47&#47 [batch, beta, m, n, complex]
+
+    <a id="change">output = torch.ifft(output, 2) * output.size(-2) ** 2</a>  &#47&#47 [batch, beta, alpha, gamma, complex]
+    output = output[..., 0] &#47&#47 [batch, beta, alpha, gamma]
+    return output
+</code></pre>

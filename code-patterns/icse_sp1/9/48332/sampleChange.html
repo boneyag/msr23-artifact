@@ -1,0 +1,65 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        policy_loss = -torch.mean(q_values_tp0_min)
+
+        &#47&#47 critic loss (quantile regression)
+        actions_tp1 = <a id="change">self.target_actor(states_tp1).detach()</a>
+        actions_tp1 = <a id="change">self._add_noise_to_actions(actions_tp1)</a>
+        atoms_t = [
+            x(states_t, actions_t).squeeze_(dim=2).unsqueeze_(-1)
+            for x in self.critics
+        ]
+        atoms_tp1 = torch.cat([
+            x(states_tp1, actions_tp1).squeeze_(dim=2).unsqueeze_(-1)
+            for x in self.target_critics
+        ], dim=-1)
+        &#47&#47 B x num_heads x num_atoms x num_critics
+        &#47&#47 @TODO: smarter way to do this (other than reshaping)?
+        atoms_ids_tp1_min = atoms_tp1.mean(dim=-2).argmin(dim=-1).view(-1)
+        atoms_tp1 = atoms_tp1.view(-1, self.num_atoms, self._num_critics)
+        <a id="change">atoms_tp1 = \
+            atoms_tp1[range(len(atoms_tp1)), :, atoms_ids_tp1_min].\
+            view(-1, self._num_heads, self.num_atoms).detach()</a>
+
+        &#47&#47 B x num_heads x num_atoms
+        atoms_target_t = rewards_t + (1 - done_t) * gammas * atoms_tp1
+        value_loss = [</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 critic loss (quantile regression)
+        &#47&#47 [bs; action_size]
+        actions_tp1 = <a id="change">self.target_actor(states_tp1)</a>
+        actions_tp1 = <a id="change">self._add_noise_to_actions(actions_tp1).detach()</a>
+
+        &#47&#47 {num_critics} * [bs; num_heads; num_atoms]
+        &#47&#47 -&gt; many-heads view transform
+        &#47&#47 {num_critics} * [{bs * num_heads}; num_atoms]
+        atoms_t = [
+            x(states_t, actions_t).squeeze_(dim=2)
+            .view(-1, self.num_atoms)
+            for x in self.critics
+        ]
+
+        &#47&#47 [bs; num_heads; num_atoms; num_critics]
+        atoms_tp1 = torch.cat([
+            x(states_tp1, actions_tp1).squeeze_(dim=2).unsqueeze_(-1)
+            for x in self.target_critics
+        ], dim=-1)
+        &#47&#47 @TODO: smarter way to do this (other than reshaping)?
+        &#47&#47 [{bs * num_heads}; ]
+        atoms_ids_tp1_min = atoms_tp1.mean(dim=-2).argmin(dim=-1).view(-1)
+        &#47&#47 [bs; num_heads; num_atoms; num_critics] -&gt; many-heads view transform
+        &#47&#47 [{bs * num_heads}; num_atoms; num_critics] -&gt; min over all critics
+        &#47&#47 [{bs * num_heads}; num_atoms; 1] -&gt; target view transform
+        &#47&#47 [bs; num_heads; num_atoms]
+        atoms_tp1 = <a id="change">(
+            atoms_tp1
+            .view(-1, self.num_atoms, self._num_critics)[
+                range(len(atoms_ids_tp1_min)), :, atoms_ids_tp1_min]
+            .view(-1, self._num_heads, self.num_atoms)
+        )</a>
+
+        &#47&#47 [bs; num_heads; num_atoms] -&gt; many-heads view transform
+        &#47&#47 [{bs * num_heads}; num_atoms]
+        atoms_target_t = (</code></pre>

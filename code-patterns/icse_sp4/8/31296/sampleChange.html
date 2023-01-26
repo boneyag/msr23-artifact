@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 (2) True -&gt; item should be ignored in attention
+        tgt_mask = tgt_tgt_mask[0, :, :] == 0
+        memory_mask = tgt_src_mask[0, :, :] == 0
+        output = <a id="change">super</a>(DecoderPyTorch, self).forward(tgt, memory, tgt_mask, memory_mask)
+        <a id="change">return output.transpose(0, 1)</a>
+
+
+class MultiHeadedAttention(nn.Module):
+    def __init__(self, num_heads, dim_model):</code></pre><h3>After Change</h3><pre><code class='java'>
+        tgt_embed = tgt_embed.transpose(0, 1)
+        memory = memory.transpose(0, 1)
+
+        <a id="change">output = tgt_embed</a>
+
+        for mod in self.layers:
+            output = mod(
+                output,
+                memory,
+                tgt_mask=tgt_tgt_mask,
+                memory_mask=tgt_src_mask,
+            )
+
+        batch_size, tgt_seq_len, _ = <a id="change">output.shape</a>
+        probs_for_placeholders = torch.zeros(
+            batch_size, tgt_seq_len, 2, device=<a id="change">output.device</a>
+        )
+        <a id="change">probs = torch.cat((probs_for_placeholders, output), dim=2)</a>
+        <a id="change">return probs</a>
+
+
+class MultiHeadedAttention(nn.Module):
+    def __init__(self, num_heads, dim_model):</code></pre>

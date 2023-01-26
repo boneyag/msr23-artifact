@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        handler.send_response(HTTP_OK)
+        handler.write_content(response)
+
+    <a id="change">hass.http.register_path(
+        &quotGET&quot,
+        re.compile(r&quot/api/camera_proxy/(?P&lt;entity_id&gt;[a-zA-Z\._0-9]+)&quot),
+        _proxy_camera_image)</a>
+
+    def _proxy_camera_mjpeg_stream(handler, path_match, data):
+        Proxy the camera image as an mjpeg stream via the HA server.
+        entity_id = path_match.group(ATTR_ENTITY_ID)
+        camera = component.entities.get(entity_id)
+
+        if camera is None:
+            handler.send_response(HTTP_NOT_FOUND)
+            handler.end_headers()
+            return
+
+        try:
+            camera.is_streaming = True
+            camera.update_ha_state()
+            camera.mjpeg_stream(handler)
+
+        except (requests.RequestException, IOError):
+            camera.is_streaming = False
+            camera.update_ha_state()
+
+    <a id="change">hass.http.register_path(
+        &quotGET&quot,
+        re.compile(r&quot/api/camera_proxy_stream/(?P&lt;entity_id&gt;[a-zA-Z\._0-9]+)&quot),
+        _proxy_camera_mjpeg_stream)</a>
+
+    return True
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        logging.getLogger(__name__), DOMAIN, hass, SCAN_INTERVAL,
+        DISCOVERY_PLATFORMS)
+
+    <a id="change">hass.wsgi.register_view(CameraImageView(hass, component.entities))</a>
+    <a id="change">hass</a>.wsgi.register_view(CameraMjpegStream(hass, component.entities))
+
+    component.setup(config)
+</code></pre>

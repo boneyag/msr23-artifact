@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Pad
+    if end == &quotpad&quot:
+        if x.shape[axis] &lt; length:
+            <a id="change">npad = np.zeros([x.ndim, 2], dtype=np.int)</a>
+            npad[axis, 1] = length - x.shape[axis]
+            <a id="change">x = np.pad(x, pad_width=npad, mode=pad_mode,
+                       constant_values=pad_value)</a>
+        elif shift != 1 and (x.shape[axis] + shift - length) % shift != 0:
+            npad = np.zeros([x.ndim, 2], dtype=np.int)
+            npad[axis, 1] = shift - ((x.shape[axis] + shift - length) % shift)
+            x = np.pad(x, pad_width=npad, mode=pad_mode,</code></pre><h3>After Change</h3><pre><code class='java'>
+    axis = axis % x.ndim
+    elements = x.shape[axis]
+
+    <a id="change">if shift &lt;= 0:
+        raise ValueError(&quotCan not shift forward by less than 1 element.&quot)
+
+    &#47&#47 Pad
+   </a> if end == &quotpad&quot:
+        npad = np.zeros([x.ndim, 2], dtype=np.int)
+        pad_fn = functools.partial(
+            np.pad, pad_width=npad, mode=pad_mode, constant_values=pad_value
+        )
+        if elements &lt; length:
+            npad[axis, 1] = length - elements
+            <a id="change">x = pad_fn(x)</a>
+        elif not shift == 1 and not (elements + shift - length) % shift == 0:
+            npad[axis, 1] = shift - ((elements + shift - length) % shift)
+            <a id="change">x = pad_fn(x)</a>
+    elif end is None:
+        assert (elements + shift - length) % shift == 0, \
+            &quot{} = elements({}) + shift({}) - length({})) % shift({})&quot \
+            &quot&quot.format((elements + shift - length) % shift,</code></pre>

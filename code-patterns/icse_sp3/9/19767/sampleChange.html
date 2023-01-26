@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        diff = X - self.m
+        incr = (1-alpha) * diff
+        self.m += incr.mean(axis=0)
+        self.v += <a id="change">(diff * incr).mean(axis=0)</a>
+        self.v *= alpha
+
+        Xhat = _forward(self.ops, X, mu, var)
+
+        &#47&#47 Batch "renormalization"
+        if self.nr_upd &gt;= 7500:
+            Xhat *= var / <a id="change">(self.v+1e-08)</a>
+            <a id="change">Xhat += (mu - self.m) / (self.v+1e-08)</a>
+
+        y, backprop_rescale = self._begin_update_scale_shift(Xhat)
+
+        def finish_update(dy, sgd=None):</code></pre><h3>After Change</h3><pre><code class='java'>
+        X, backprop_child = self.child.begin_update(X, drop=0.)
+        N, mu, var = _get_moments(self.ops, X)
+        var += self.eps
+        self.r = min(self.rmax, max(<a id="change">1. / self.rmax</a>, var / self.v))
+        self.d = min(self.dmax, <a id="change">max(-self.dmax, (mu-self.m) / self.v)</a>)
+        self.nr_upd += 1
+
+        &#47&#47 I&quotm not sure this is the best thing to do --
+        &#47&#47 Should we consider a sample be the instance, or the batch?
+        &#47&#47 If we want the variance of the inputs it should be like:
+        &quot&quot&quot
+        diff = X - self.m
+        incr = (1-alpha) * diff
+        self.m += incr.mean(axis=0)
+        self.v += (diff * incr).mean(axis=0)
+        self.v *= alpha
+        &quot&quot&quot
+        self.m += self.alpha * (mu - self.m)
+        self.v += self.alpha * (var - self.v)
+        Xhat = _forward(self.ops, X, mu, var)
+        Xhat *= self.r
+        <a id="change">Xhat += self.d</a>
+
+        y, backprop_rescale = self._begin_update_scale_shift(Xhat)
+
+        def finish_update(dy, sgd=None):</code></pre>

@@ -1,0 +1,64 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return tf.no_op()
+
+    def tf_retrieve_timesteps(self, n):
+        <a id="change">num_timesteps = (self.memory_index - self.episode_indices[0] - 2) % self.capacity + 1</a>
+        n = tf.minimum(x=n, y=num_timesteps)
+
+        indices = tf.zeros(shape=(n,), dtype=tf.int32)
+        &#47&#47 Only compute once outside loop.
+        sum_priorities = tf.reduce_sum(input_tensor=self.priorities, axis=0)
+        <a id="change">loop_index = tf.get_variable(
+            name=&quotloop-index&quot,
+            dtype=tf.int32,
+            initializer=0,
+            trainable=False
+        )</a>
+
+        def cond(sum_priorities, priorities, indices, loop_index, n):
+            return tf.less(loop_index, n)
+
+        def sampling_fn(sum_priorities, priorities, indices, loop_index, n):
+            &#47&#47 3 cases:
+            &#47&#47 1. not_sampled_index &lt; len(self.observations):
+            &#47&#47 2. sum_priorities / self.capacity &lt; util.epsilon:
+            &#47&#47 3. all other cases
+
+            def true_fn():
+                &#47&#47 tf cond on
+                &#47&#47 1. not_sampled_index &lt; len(self.observations):
+                &#47&#47 -&gt; fetch not sampled index
+                &#47&#47 2. sum_priorities / self.capacity &lt; util.epsilon:
+                &#47&#47 -&gt; randomly sample
+                pass
+
+            def false_fn():
+                &#47&#47 Priority sampling loop.
+                pass
+
+            index = tf.cond(
+                pred=tf.logical_or(x=(self.no_priority_index &lt; n), y=(sum_priorities / self.capacity &lt; util.epsilon)),
+                true_fn=true_fn,
+                false_fn=false_fn
+            )
+
+        <a id="change">tf.while_loop(
+            cond=cond,
+            body=sampling_fn,
+            loop_vars=[sum_priorities, self.priorities, indices, loop_index, num_timesteps]
+        )</a>
+
+        &#47&#47 Save batch indices.
+        assignment = tf.assign(ref=self.batch_indices, value=indices)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        priority_indices = tf.while_loop(
+            cond=cond,
+            body=sampling_fn,
+            loop_vars=<a id="change">(indices, sample, sum_priorities)</a>
+        )[0]
+
+        priority_terminal = tf.gather(params=self.terminal_memory, indices=priority_indices)
+        priority_indices = tf.boolean_mask(tensor=indices, mask=tf.logical_not(x=priority_terminal))</code></pre>

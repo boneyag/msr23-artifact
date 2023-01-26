@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                v = self.v_function(self.past_states[i])
+                advantage = R - v
+                &#47&#47 Accumulate gradients of policy
+                log_prob = <a id="change">F.log(self.past_action_prob[i])</a>
+                (- log_prob * float(advantage.data)).backward()
+                &#47&#47 Accumulate gradients of value function
+                (advantage ** 2).backward()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            self.optimizer.zero_grads()
+
+            <a id="change">pi_loss = 0</a>
+            v_loss = 0
+            for i in reversed(xrange(self.t_start, self.t)):
+                R *= self.gamma
+                R += self.past_rewards[i]
+                v = self.v_function(self.past_states[i])
+                advantage = R - v
+                &#47&#47 Accumulate gradients of policy
+                log_prob = self.past_action_log_prob[i]
+                pi_loss += (- log_prob * float(advantage.data))
+                &#47&#47 Accumulate gradients of value function
+                v_loss += advantage ** 2
+            <a id="change">pi_loss.backward()</a>
+            v_loss.backward()
+
+            self.optimizer.update()
+</code></pre>

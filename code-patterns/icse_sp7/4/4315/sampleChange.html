@@ -1,0 +1,99 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  timestamp = time.time()
+  parameter_metadata = ParseJobFile(job_file)
+  io_modes = DATA_DIRECTION.values()
+  for (idx, job) in <a id="change">enumerate(fio_json_result[&quotjobs&quot])</a>:
+    job_name = job[&quotjobname&quot]
+    parameters = parameter_metadata[job_name]
+    parameters[&quotfio_job&quot] = job_name
+    if base_metadata:
+      parameters.update(base_metadata)
+    for mode in io_modes:
+      if job[mode][&quotio_bytes&quot]:
+        metric_name = &quot%s:%s&quot % (job_name, mode)
+        bw_metadata = {
+            &quotbw_min&quot: job[mode][&quotbw_min&quot],
+            &quotbw_max&quot: job[mode][&quotbw_max&quot],
+            &quotbw_dev&quot: job[mode][&quotbw_dev&quot],
+            &quotbw_agg&quot: job[mode][&quotbw_agg&quot],
+            &quotbw_mean&quot: job[mode][&quotbw_mean&quot]}
+        bw_metadata.update(parameters)
+        samples.append(
+            sample.Sample(&quot%s:bandwidth&quot % metric_name,
+                          job[mode][&quotbw&quot],
+                          &quotKB/s&quot, bw_metadata))
+
+        &#47&#47 There is one sample whose metric is &quot&lt;metric_name&gt;:latency&quot
+        &#47&#47 with all of the latency statistics in its metadata, and then
+        &#47&#47 a bunch of samples whose metrics are
+        &#47&#47 &quot&lt;metric_name&gt;:latency:min&quot through
+        &#47&#47 &quot&lt;metric_name&gt;:latency:p99.99&quot that hold the individual
+        &#47&#47 latency numbers as values. This is for historical reasons.
+        clat_section = job[mode][&quotclat&quot]
+        percentiles = clat_section[&quotpercentile&quot]
+        lat_statistics = [
+            (&quotmin&quot, clat_section[&quotmin&quot]),
+            (&quotmax&quot, clat_section[&quotmax&quot]),
+            (&quotmean&quot, clat_section[&quotmean&quot]),
+            (&quotstddev&quot, clat_section[&quotstddev&quot]),
+            (&quotp1&quot, percentiles[&quot1.000000&quot]),
+            (&quotp5&quot, percentiles[&quot5.000000&quot]),
+            (&quotp10&quot, percentiles[&quot10.000000&quot]),
+            (&quotp20&quot, percentiles[&quot20.000000&quot]),
+            (&quotp30&quot, percentiles[&quot30.000000&quot]),
+            (&quotp40&quot, percentiles[&quot40.000000&quot]),
+            (&quotp50&quot, percentiles[&quot50.000000&quot]),
+            (&quotp60&quot, percentiles[&quot60.000000&quot]),
+            (&quotp70&quot, percentiles[&quot70.000000&quot]),
+            (&quotp80&quot, percentiles[&quot80.000000&quot]),
+            (&quotp90&quot, percentiles[&quot90.000000&quot]),
+            (&quotp95&quot, percentiles[&quot95.000000&quot]),
+            (&quotp99&quot, percentiles[&quot99.000000&quot]),
+            (&quotp99.5&quot, percentiles[&quot99.500000&quot]),
+            (&quotp99.9&quot, percentiles[&quot99.900000&quot]),
+            (&quotp99.95&quot, percentiles[&quot99.950000&quot]),
+            (&quotp99.99&quot, percentiles[&quot99.990000&quot])]
+
+        lat_metadata = parameters.copy()
+        for name, val in lat_statistics:
+          lat_metadata[name] = val
+        samples.append(
+            sample.Sample(&quot%s:latency&quot % metric_name,
+                          job[mode][&quotclat&quot][&quotmean&quot],
+                          &quotusec&quot, lat_metadata, timestamp))
+
+        for stat_name, stat_val in lat_statistics:
+          samples.append(
+              sample.Sample(&quot%s:latency:%s&quot % (metric_name, stat_name),
+                            stat_val, &quotusec&quot, parameters, timestamp))
+
+        samples.append(
+            sample.Sample(&quot%s:iops&quot % metric_name,
+                          job[mode][&quotiops&quot], &quot&quot, parameters, timestamp))
+    if log_file_base and bin_vals:
+      &#47&#47 Parse histograms
+      hist_file_path = vm_util.PrependTempDir(
+          &quot%s_clat_hist.%s.log&quot % (log_file_base, str(idx + 1)))
+      samples += _ParseHistogram(
+          hist_file_path, <a id="change">bin_vals[idx]</a>, job_name, parameters)
+  return samples
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if log_file_base and bin_vals:
+      &#47&#47 Parse histograms
+      aggregates = collections.defaultdict(collections.Counter)
+      <a id="change">for _ in xrange(int(job[&quotjob options&quot][&quotnumjobs&quot])):
+        clat_hist_idx += 1
+        hist_file_path = vm_util.PrependTempDir(
+            &quot%s_clat_hist.%s.log&quot % (log_file_base, str(clat_hist_idx)))
+        hists = _ParseHistogram(hist_file_path, bin_vals[clat_hist_idx - 1])
+
+        for key in hists:
+          aggregates[key].update(hists[key])
+     </a> samples += _BuildHistogramSamples(aggregates, job_name, parameters)
+
+  return samples
+</code></pre>

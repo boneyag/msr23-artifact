@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        drift_input = drift_input[0]
+        if drift_input &lt; self._min_drift_data:
+            self._min_drift_data = drift_input
+        <a id="change">if drift_input &gt; self._max_drift_data:
+            self._max_drift_data = drift_input
+
+       </a> if self._min_drift_data != self._max_drift_data:
+            return (drift_input - self._min_drift_data) / \
+                (self._max_drift_data - self._min_drift_data)
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        self._k += 1
+        &#47&#47 Welford&quots algorithm update step
+        <a id="change">if self._k == 1:
+            self._pM = self._M = drift_input
+            self._pS = 0
+
+            return 0.0
+        else:
+            self._M = self._pM + (drift_input - self._pM) / self._k
+            self._S = self._pS + (drift_input - self._pM) * (drift_input - self._M)
+
+            &#47&#47 Save previously calculated values for the next iteration
+            self._pM = self._M
+            self._pS = self._S
+
+            sd = np.sqrt(self._S / (self._k - 1))
+
+            &#47&#47 Apply z-score normalization to drift input
+            norm_input = (drift_input - self._M) / sd
+
+            &#47&#47 Data with zero mean and unit variance -&gt; (empirical rule) 99.73% of the values lie
+            &#47&#47 between [mean - 3*sd, mean + 3*sd] (in a normal distribution): we assume this range
+            &#47&#47 for the norm variable.
+            &#47&#47 Hence, the values are assumed to be between [-3, 3] and we can apply the min-max norm
+            &#47&#47 to cope with ADWIN&quots requeriments
+            return (norm_input + 3) / 6
+
+   </a> def reset(self, instances_seen):
+        if self._use_background_learner and self.background_learner is not None:
+            self.estimator = self.background_learner.estimator
+            self.evaluator = self.background_learner.evaluator</code></pre>

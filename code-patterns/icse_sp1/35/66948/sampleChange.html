@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        For each of the batches, the target Q values (q_targets) are computed and a single training step is taken k times
+        Otherwise this function does nothing.
+        &quot&quot&quot
+        <a id="change">if util.get_lab_mode() in [&quotenjoy&quot, &quoteval&quot]:
+            self.body.entropies = []
+            self.body.log_probs = []
+            return np.nan
+       </a> clock = self.body.env.clock
+        tick = clock.get(clock.max_tick_unit)
+        self.to_train = (tick &gt; self.training_start_step and tick % self.training_frequency == 0)
+        if self.to_train == 1:
+            total_loss = torch.tensor(0.0, device=self.net.device)
+            for _ in range(self.training_epoch):
+                batch = self.sample()
+                for _ in range(self.training_batch_epoch):
+                    loss = self.calc_q_loss(batch)
+                    self.net.training_step(loss=loss, lr_clock=clock)
+                    total_loss += loss
+            loss = total_loss / (self.training_epoch * self.training_batch_epoch)
+            &#47&#47 reset
+            self.to_train = 0
+            <a id="change">self.body.entropies = []</a>
+            <a id="change">self.body.log_probs = []</a>
+            logger.debug(f&quotTrained {self.name} at epi: {clock.get("epi")}, total_t: {clock.get("total_t")}, t: {clock.get("t")}, total_reward so far: {self.body.memory.total_reward}, loss: {loss:.8f}&quot)
+            return loss.item()
+        else:
+            return np.nan</code></pre><h3>After Change</h3><pre><code class='java'>
+        For each of the batches, the target Q values (q_targets) are computed and a single training step is taken k times
+        Otherwise this function does nothing.
+        &quot&quot&quot
+        <a id="change">if util.get_lab_mode() in (&quotenjoy&quot, &quoteval&quot):
+            self.body.flush()
+            return np.nan
+       </a> clock = self.body.env.clock
+        tick = clock.get(clock.max_tick_unit)
+        self.to_train = (tick &gt; self.training_start_step and tick % self.training_frequency == 0)
+        if self.to_train == 1:
+            total_loss = torch.tensor(0.0, device=self.net.device)
+            for _ in range(self.training_epoch):
+                batch = self.sample()
+                for _ in range(self.training_batch_epoch):
+                    loss = self.calc_q_loss(batch)
+                    self.net.training_step(loss=loss, lr_clock=clock)
+                    total_loss += loss
+            loss = total_loss / (self.training_epoch * self.training_batch_epoch)
+            &#47&#47 reset
+            self.to_train = 0
+            <a id="change">self.body.flush()</a>
+            logger.debug(f&quotTrained {self.name} at epi: {clock.get("epi")}, total_t: {clock.get("total_t")}, t: {clock.get("t")}, total_reward so far: {self.body.memory.total_reward}, loss: {loss:.8f}&quot)
+            return loss.item()
+        else:
+            return np.nan</code></pre>

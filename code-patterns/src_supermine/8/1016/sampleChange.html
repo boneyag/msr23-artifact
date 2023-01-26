@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            await self.set_backend_config(backend, backend_config)
+
+        &#47&#47 -- Metric Registration -- &#47&#47
+        [metric_exporter] = <a id="change">retry_actor_failures(
+            master_actor.get_metric_exporter)</a>
+        self.metric_client = MetricClient(metric_exporter)
+        self.num_router_requests = self.metric_client.new_counter(
+            "num_router_requests",
+            description="Number of requests processed by the router.",</code></pre><h3>After Change</h3><pre><code class='java'>
+        serve.init(name=instance_name)
+        master_actor = serve.api._get_master_actor()
+
+        traffic_policies = <a id="change">ray.get(master_actor.get_traffic_policies.remote())</a>
+        for endpoint, traffic_policy in traffic_policies.items():
+            await self.set_traffic(endpoint, traffic_policy)
+
+        backend_dict = ray.get(master_actor.get_all_worker_handles.remote())
+        for backend_tag, replica_dict in backend_dict.items():
+            for replica_tag, worker in replica_dict.items():
+                await self.add_new_worker(backend_tag, replica_tag, worker)
+
+        backend_configs = ray.get(master_actor.get_backend_configs.remote())
+        for backend, backend_config in backend_configs.items():
+            await self.set_backend_config(backend, backend_config)
+
+        &#47&#47 -- Metric Registration -- &#47&#47
+        [metric_exporter] = <a id="change">ray.get(master_actor.get_metric_exporter.remote())</a>
+        self.metric_client = MetricClient(metric_exporter)
+        self.num_router_requests = self.metric_client.new_counter(
+            "num_router_requests",
+            description="Number of requests processed by the router.",</code></pre>

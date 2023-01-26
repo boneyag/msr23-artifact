@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        vec = tf.expand_dims(Xmu, 2) - tf.expand_dims(tf.transpose(Z), 0)  &#47&#47 NxDxM
+        chols = tf.cholesky(tf.expand_dims(tf.matrix_diag(lengthscales ** 2), 0) + Xcov)
+        Lvec = tf.matrix_triangular_solve(chols, vec)
+        <a id="change">q = tf.reduce_sum(Lvec ** 2, [1])</a>
+
+        chol_diags = tf.matrix_diag_part(chols)  &#47&#47 N x D
+        half_log_dets = (tf.reduce_sum(tf.log(chol_diags), 1)
+                         - tf.reduce_sum(tf.log(lengthscales)))  &#47&#47 N,</code></pre><h3>After Change</h3><pre><code class='java'>
+        exponent_mahalanobis = tf.exp(-0.5 * exponent_mahalanobis)  &#47&#47 NxM
+
+        sqrt_det_L = tf.reduce_prod(lengthscales)
+        sqrt_det_L_plus_Xcov = <a id="change">tf.exp(tf.reduce_sum(tf.log(tf.matrix_diag_part(chol_L_plus_Xcov)), axis=1))</a>
+        determinants = sqrt_det_L / sqrt_det_L_plus_Xcov  &#47&#47 N
+
+        return kern.variance * (determinants[:, None] * exponent_mahalanobis)
+</code></pre>

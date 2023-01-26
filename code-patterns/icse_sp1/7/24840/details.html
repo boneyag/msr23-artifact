@@ -1,0 +1,39 @@
+<html><h3>f625f9e060e258c903e44f2d28a6689a123842af,lore/io/connection.py,Connection,insert,#Connection#Any#Any#Any#,162
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def insert(self, table, dataframe, batch_size=10 ** 5):
+        if self._engine.dialect.name in [&quotpostgresql&quot, &quotredshift&quot]:
+            <a id="change">for batch in range(int(math.ceil(float(len(dataframe)) / batch_size))):
+                if sys.version_info[0] == 2:
+                    rows = io.BytesIO()
+                else:
+                    rows = io.StringIO()
+                slice = dataframe.iloc[batch * batch_size:(batch + 1) * batch_size]
+                slice.to_csv(rows, index=False, header=False, sep=&quot|&quot, na_rep=&quot\\N&quot, quoting=csv.QUOTE_NONE)
+                rows.seek(0)
+                self._connection.connection.cursor().copy_from(rows, table, null=&quot\\N&quot, sep=&quot|&quot, columns=dataframe.columns)
+                self._connection.connection.commit()
+                del rows
+                gc.collect()
+       </a> else:
+            dataframe.to_sql(
+                table,
+                self._connection,</code></pre><h3>After Change</h3><pre><code class='java'>
+                    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=&quot.csv.gz&quot)
+                    tmp.close()
+                    batch.to_csv(tmp.name, index=False, header=False, sep=&quot|&quot, na_rep=&quot\\N&quot, quoting=csv.QUOTE_NONE, compression=&quotgzip&quot)
+                    self._connection.connection.cursor().execute(&quotPUT file://%(path)s @~/staged;&quot % <a id="change">{&quotpath&quot: tmp.name}</a>)
+                    self._connection.connection.cursor().execute(
+                        &quotCOPY INTO %(table)s &quot
+                        &quotFROM @~/staged &quot
+                        &quotFILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = \&quot|\&quot SKIP_HEADER = 0 COMPRESSION = GZIP) &quot
+                        &quotPURGE = TRUE&quot % <a id="change">{
+                            &quottable&quot: table
+                        }</a>
+                    )
+                finally:
+                    os.remove(tmp.name)
+</code></pre><img src="130236098.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/instacart/lore/commit/f625f9e060e258c903e44f2d28a6689a123842af#diff-b34f8b7626f8af9944772aa862dca0e285937aaa773c6fbce628db09f6e53a69L162' target='_blank'>Link</a></div><div id='project'> Project Name: instacart/lore</div><div id='commit'> Commit Name: f625f9e060e258c903e44f2d28a6689a123842af</div><div id='time'> Time: 2018-10-10</div><div id='author'> Author: montanalow@users.noreply.github.com</div><div id='file'> File Name: lore/io/connection.py</div><div id='class'> Class Name: Connection</div><div id='method'> Method Name: insert</div><BR><BR><div id='link'><a href='https://github.com/Scitator/catalyst/commit/54ca2c098233300e63491dad6932220d01743c56#diff-852abc292fc9d5cca5f4f5630909a4cac4035ec384829c56297da380a6f0796bL176' target='_blank'>Link</a></div><div id='project'> Project Name: Scitator/catalyst</div><div id='commit'> Commit Name: 54ca2c098233300e63491dad6932220d01743c56</div><div id='time'> Time: 2019-06-06</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/core/sampler.py</div><div id='class'> Class Name: Sampler</div><div id='method'> Method Name: _run_trajectory_loop</div><BR><BR><div id='link'><a href='https://github.com/instacart/lore/commit/f625f9e060e258c903e44f2d28a6689a123842af#diff-b34f8b7626f8af9944772aa862dca0e285937aaa773c6fbce628db09f6e53a69L162' target='_blank'>Link</a></div><div id='project'> Project Name: instacart/lore</div><div id='commit'> Commit Name: f625f9e060e258c903e44f2d28a6689a123842af</div><div id='time'> Time: 2018-10-10</div><div id='author'> Author: montanalow@users.noreply.github.com</div><div id='file'> File Name: lore/io/connection.py</div><div id='class'> Class Name: Connection</div><div id='method'> Method Name: insert</div><BR>

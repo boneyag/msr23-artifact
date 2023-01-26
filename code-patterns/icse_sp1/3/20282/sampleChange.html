@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if self.vehicles[veh_id][&quottype&quot] == &quotrl&quot:
+                self.traci_connection.vehicle.setColor(veh_id, color_rl)
+            else:
+                <a id="change">self.traci_connection.vehicle.setColor(veh_id, color)</a>
+
+        self.traci_connection.simulationStep()
+
+        &#47&#47 TODO: Replace these traci calls with initial_state accesses</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+           &#47&#47 create the list of colors
+        colors = {}
+        <a id="change">key_index = 0</a>
+        color_choice = np.random.choice(len(COLORS))
+        for key in self.scenario.type_params.keys():
+            colors[key] = COLORS[(color_choice+key_index)%len(COLORS)]
+            key_index += 1
+
+        for veh_id in self.ids:
+            type_id, route_id, lane_index, lane_pos, speed, pos = self.initial_state[veh_id]
+
+            &#47&#47 clears controller acceleration queue
+            if not self.vehicles[veh_id][&quottype&quot] == &quotrl&quot:
+                self.vehicles[veh_id][&quotcontroller&quot].reset_delay(self)
+
+            self.traci_connection.vehicle.remove(veh_id)
+            self.traci_connection.vehicle.addFull(veh_id, route_id, typeID=str(type_id), departLane=str(lane_index),
+                                  departPos=str(lane_pos), departSpeed=str(speed))
+            <a id="change">self.traci_connection.vehicle.setColor(veh_id, colors[self.vehicles[veh_id][&quottype&quot]])</a>
+
+
+        self.traci_connection.simulationStep()
+</code></pre>

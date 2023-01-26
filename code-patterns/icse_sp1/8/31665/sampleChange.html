@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if projection.is_projected(G.graph["crs"]):
+            &#47&#47 if projected, use k-d tree for euclidean nearest-neighbor search
+            dist, pos = cKDTree(vertices).query(np.array([X, Y]).T, k=1)
+            ne = <a id="change">vertices.index[pos].tolist()</a>
+
+        else:
+            &#47&#47 if unprojected, use ball tree for haversine nearest-neighbor search
+            if BallTree is None:
+                raise ImportError("scikit-learn must be installed to search an unprojected graph")
+            &#47&#47 haversine requires lat, lng coords in radians
+            vertices_rad = np.deg2rad(vertices[["y", "x"]])
+            points_rad = np.deg2rad(np.array([Y, X]).T)
+            dist, pos = BallTree(vertices_rad, metric="haversine").query(points_rad, k=1)
+            ne = vertices.index[pos[:, 0]].tolist()
+
+    if return_dist:
+        return ne, dist
+    else:
+        <a id="change">return ne</a>
+
+
+def get_nearest_node(G, point, method="haversine", return_dist=False):
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+            vertices_rad = np.deg2rad(vertices[["y", "x"]])
+            points_rad = np.deg2rad(np.array([Y, X]).T)
+            dist, pos = BallTree(vertices_rad, metric="haversine").query(points_rad, k=1)
+            <a id="change">dist = dist[:, 0] * EARTH_RADIUS_M</a>  &#47&#47 convert radians -&gt; meters
+            ne = vertices.index[pos[:, 0]]
+
+    if return_dist:
+        <a id="change">return np.array(ne), np.array(dist)</a>
+    else:
+        return np.array(ne)
+
+</code></pre>

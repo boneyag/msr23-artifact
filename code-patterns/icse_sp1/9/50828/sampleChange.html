@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def score(self, X, y=None):
+        y_probas = []
+        <a id="change">y_target = []</a>
+
+        &#47&#47 We collect the predictions batch-wise and store them on the host
+        &#47&#47 side as this data can be quite big and the GPU might run into
+        &#47&#47 memory issues. We do not calculate F1 on the batches as this
+        &#47&#47 would introduce an error to the score.
+
+        ds = self.get_dataset(X)
+        target_iterator = self.get_iterator(ds, train=False)
+        pred_iterator = self.forward_iter(X)
+
+        for (_, y_true), y_pred in zip(target_iterator, pred_iterator):
+            y_pred_cls = skorch.utils.to_numpy(y_pred).argmax(-1)
+
+            y_probas.append(y_pred_cls)
+            y_target.append(skorch.utils.to_numpy(y_true))
+
+        y_probas = np.concatenate(y_probas)
+        <a id="change">y_target = np.concatenate(y_target)</a>
+
+        return f1_score(y_probas, y_target, average=&quotmicro&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        ds = self.get_dataset(X)
+        target_iterator = self.get_iterator(ds, train=False)
+
+        <a id="change">y_true = np.concatenate([skorch.utils.to_numpy(y) for _, y in target_iterator])</a>
+        y_pred = self.predict(X)
+
+        return f1_score(y_true, y_pred, average=&quotmicro&quot)
+</code></pre>

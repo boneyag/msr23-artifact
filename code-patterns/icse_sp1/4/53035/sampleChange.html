@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                -delta_num_replicas, backend_tag))
+            assert self._target_replicas[backend_tag] &gt;= delta_num_replicas
+
+            <a id="change">for _ in range(-delta_num_replicas):
+                replicas_to_stop = self._replicas[backend_tag].pop(
+                    states=[
+                        ReplicaState.SHOULD_START, ReplicaState.STARTING,
+                        ReplicaState.RUNNING
+                    ],
+                    max_replicas=-delta_num_replicas)
+
+                for replica in replicas_to_stop:
+                    replica.set_should_stop(graceful_shutdown_timeout_s)
+                    self._replicas[backend_tag].add(ReplicaState.SHOULD_STOP,
+                                                    replica)
+
+       </a> return True
+
+    def _scale_all_backends(self):
+        checkpoint_needed = False</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        elif delta_replicas &gt; 0:
+            &#47&#47 Don&quott ever exceed target_replicas.
+            stopping_replicas = <a id="change">self._replicas[backend_tag].count(states=[
+                ReplicaState.SHOULD_STOP,
+                ReplicaState.STOPPING,
+            ])</a>
+            <a id="change">to_add = max(delta_replicas - stopping_replicas, 0)</a>
+            if to_add &gt; 0:
+                logger.info(f"Adding {to_add} replicas "
+                            f"to backend &quot{backend_tag}&quot.")
+            for _ in range(to_add):</code></pre>

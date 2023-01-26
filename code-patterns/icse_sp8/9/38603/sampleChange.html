@@ -1,0 +1,84 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        self._set_clustering_algorithm(algorithm, **kwargs)
+
+        <a id="change">if isinstance(dataset, Dataset):
+
+            self.dataset = dataset
+
+            if global_mask is None:
+                global_mask = dataset.masker
+
+            if features is not None:
+                data = self.dataset.get_ids_by_features(features, threshold=feature_threshold, 
+                            get_image_data=True)
+            else:
+                data = self.dataset.get_image_data()
+
+            &#47&#47 if min_studies_per_voxel is not None:
+            &#47&#47     logger.info("Thresholding voxels based on number of studies.")
+            &#47&#47     sum_vox = data.sum(1)
+            &#47&#47     &#47&#47 Save the indices for later reconstruction
+            &#47&#47     active_vox = np.where(sum_vox &gt; min_studies_per_voxel)[0]  
+            &#47&#47     n_active_vox = active_vox.shape[0]
+
+            &#47&#47 if min_voxels_per_study is not None:
+            &#47&#47     logger.info("Thresholding studies based on number of voxels.")
+            &#47&#47     sum_studies = data.sum(0)
+            &#47&#47     active_studies = np.where(sum_studies &gt; min_voxels_per_study)[0]
+            &#47&#47     n_active_studies = active_studies.shape[0]
+
+            &#47&#47 if min_studies_per_voxel is not None:
+            &#47&#47     logger.info("Selecting voxels with more than %d studies." % min_studies_per_voxel)
+            &#47&#47     data = data[active_vox, :]
+
+            &#47&#47 if min_voxels_per_study is not None:
+            &#47&#47     logger.info("Selecting studies with more than %d voxels." % min_voxels_per_study)
+            &#47&#47     data = data[:, active_studies]
+
+            self.data = data
+
+        else:
+            self.data = dataset
+
+            if global_mask is None:
+                raise ValueError("If dataset is a numpy array, a valid global_mask (filename, " +
+                    "Mask instance, or nibabel image) must be passed.")
+
+       </a> if not isinstance(global_mask, Masker):
+            global_mask = Masker(global_mask)
+        
+        self.masker = global_mask</code></pre><h3>After Change</h3><pre><code class='java'>
+        else:
+            data = self.dataset.get_image_data()
+
+        <a id="change">if min_studies_per_voxel is not None:
+            logger.info("Thresholding voxels based on number of studies.")
+            sum_vox = data.sum(1)
+            &#47&#47 Save the indices for later reconstruction
+            active_vox = sum_vox &gt; min_studies_per_voxel
+            &#47&#47 n_active_vox = active_vox.shape[0]
+            av = self.masker.unmask(active_vox, output=&quotvector&quot)
+            self.masker.add(av)
+
+            &#47&#47 if min_voxels_per_study is not None:
+            &#47&#47     logger.info("Thresholding studies based on number of voxels.")
+            &#47&#47     sum_studies = data.sum(0)
+            &#47&#47     active_studies = np.where(sum_studies &gt; min_voxels_per_study)[0]
+            &#47&#47     n_active_studies = active_studies.shape[0]
+
+            &#47&#47 if min_studies_per_voxel is not None:
+            &#47&#47     logger.info("Selecting voxels with more than %d studies." % min_studies_per_voxel)
+            &#47&#47     data = data[active_vox, :]
+
+            &#47&#47 if min_voxels_per_study is not None:
+            &#47&#47     logger.info("Selecting studies with more than %d voxels." % min_voxels_per_study)
+            &#47&#47     data = data[:, active_studies]
+
+       </a> self.data = data
+
+        if distance_mask is not None:
+            self.masker.add(distance_mask)</code></pre>

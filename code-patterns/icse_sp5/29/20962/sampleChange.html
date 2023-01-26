@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return
+    if op.A_structure not in MATRIX_STRUCTURES_SOLVE:
+        return
+    <a id="change">return GpuCusolverSolve(A_structure=op.A_structure)</a>
+
+
+@register_inplace()
+@local_optimizer([GpuCusolverSolve], inplace=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+def local_gpu_solve(op, context_name, inputs, outputs):
+    if not cusolver_available:
+        return
+    <a id="change">if inputs[0].dtype not in [&quotfloat16&quot, &quotfloat32&quot]:
+        return
+   </a> if op.A_structure not in MATRIX_STRUCTURES_SOLVE:
+        return
+    <a id="change">op = GpuCusolverSolve(A_structure=op.A_structure)</a>
+    <a id="change">if inputs[0].dtype == &quotfloat16&quot:
+        return op(inputs[0].astype(&quotfloat32&quot),
+                  inputs[1].astype(&quotfloat32&quot)).astype(&quotfloat16&quot)
+   </a> <a id="change">return op</a>
+
+
+@register_inplace()
+@local_optimizer([GpuCusolverSolve], inplace=True)</code></pre>

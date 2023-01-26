@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tf.while_loop(
+            cond=cond,
+            body=sampling_fn,
+            loop_vars=<a id="change">[sum_priorities, self.priorities, indices, loop_index, num_timesteps]</a>
+        )
+
+        &#47&#47 Save batch indices.
+        assignment = tf.assign(ref=self.batch_indices, value=indices)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Vectorized sampling.
+        sum_priorities = tf.reduce_sum(input_tensor=self.priorities, axis=0)
+        sample = tf.random_uniform(shape=(num_priority_elements,),dtype=tf.float32)
+        <a id="change">indices = tf.constant(value=0, shape=(num_priority_elements,))</a>
+
+        def cond(loop_index, sample, priorities):
+            return tf.reduce_all(input_tensor=(sample &lt;= 0))
+
+        def sampling_fn(loop_index, sample, priorities):
+            priority = self.priorities[loop_index]
+            sample -= priority / priorities
+
+            return (tf.add(loop_index, 1), sample, priorities)
+
+        priority_indices = <a id="change">tf</a>.while_loop(
+            cond=cond,
+            body=<a id="change">sampling_fn</a>,
+            loop_vars=(indices, sample, sum_priorities)
+        )[0]
+
+        priority_terminal = tf.gather(params=self.terminal_memory, indices=priority_indices)
+        priority_indices = tf.boolean_mask(tensor=indices, mask=tf.logical_not(x=priority_terminal))
+
+        &#47&#47 Store how many elements we retrieved from the buffer for updating priorities.
+        assignment = tf.assign(ref=self.buffer_index, value=num_buffer_elems)
+
+        &#47&#47 Store indices from priority memory.
+        with tf.control_dependencies(control_inputs=(assignment,)):
+            <a id="change">assignment = tf.assign(ref=self.batch_indices, value=priority_indices)</a>
+
+        with tf.control_dependencies(control_inputs=(assignment,)):
+            return self.retrieve_indices(buffer_elements=num_buffer_elems, priority_indices=priority_indices)
+</code></pre>

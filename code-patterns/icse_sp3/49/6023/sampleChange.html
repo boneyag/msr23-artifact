@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if len(self.model_config.list_classes) is 1:
+            total_accuracy = accuracy_score(y_test, result_binary)
+            total_f1 = f1_score(y_test, result_binary)
+            total_loss = <a id="change">log_loss(y_test, result)</a>
+            total_roc_auc = roc_auc_score(y_test, result)
+        else:
+            for j in range(0, len(self.model_config.list_classes)):
+                accuracy = accuracy_score(y_test[:, j], result_binary[:, j])</code></pre><h3>After Change</h3><pre><code class='java'>
+        if len(self.model_config.list_classes) is 1:
+            total_accuracy = accuracy_score(y_test, result_binary)
+            total_f1 = f1_score(y_test, result_binary)
+            total_loss = <a id="change">log_loss(y_test, result, labels=[0,1])</a>
+            <a id="change">if len(np.unique(y_test)) == 1:
+                &#47&#47 roc_auc_score sklearn implementation is not working in this case, it needs more balanced batches
+                &#47&#47 a simple fix is to return the r2_score instead in this case (which is a regression score and not a loss)
+                total_roc_auc = r2_score(y_test, result)
+                if total_roc_auc &lt; 0:
+                    total_roc_auc = 0 
+            else:
+                total_roc_auc = roc_auc_score(y_test, result)
+       </a> else:
+            for j in range(0, len(self.model_config.list_classes)):
+                accuracy = accuracy_score(y_test[:, j], result_binary[:, j])
+                total_accuracy += accuracy
+                f1 = f1_score(y_test[:, j], result_binary[:, j], average=&quotmicro&quot)
+                total_f1 += f1
+                loss = log_loss(y_test[:, j], result[:, j], labels=<a id="change">[0,1]</a>)
+                total_loss += loss
+                <a id="change">if len(np.unique(y_test[:, j])) == 1:
+                    &#47&#47 roc_auc_score sklearn implementation is not working in this case, it needs more balanced batches
+                    &#47&#47 a simple fix is to return the r2_score instead in this case (which is a regression score and not a loss)
+                    roc_auc = r2_score(y_test[:, j], result[:, j])
+                    if roc_auc &lt; 0:
+                        roc_auc = 0 
+                else:
+                    roc_auc = roc_auc_score(y_test[:, j], result[:, j])
+               </a> total_roc_auc += roc_auc
+                print("\nClass:", self.model_config.list_classes[j])
+                print("\taccuracy at 0.5 =", accuracy)
+                print("\tf-1 at 0.5 =", f1)</code></pre>

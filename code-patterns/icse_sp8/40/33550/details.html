@@ -1,0 +1,118 @@
+<html><h3>0fb529227b2754e195ad9b65af236a528ebf7f20,src/skmultiflow/evaluation/evaluate_prequential.py,EvaluatePrequential,_train_and_test,#EvaluatePrequential#,212
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            X, y = self.stream.next_sample(self.pretrain_size)
+
+            for i in <a id="change">range(self.n_models)</a>:
+                if <a id="change">self._task_type != constants.REGRESSION and \
+                   self._task_type != constants.MULTI_TARGET_REGRESSION</a>:
+                    self.model[i].partial_fit(X=X, y=y, classes=self.stream.
+                                              target_values)
+                else:
+                    self.model[i].partial_fit(X=X, y=y)
+            self.global_sample_count += self.pretrain_size
+            first_run = False
+        else:
+            logging.info(&quotNo pre-training.&quot)
+
+        update_count = 0
+        logging.info(&quotEvaluating...&quot)
+        while ((self.global_sample_count &lt; self.max_samples) & (end_time - start_time &lt; self.max_time)
+               & (self.stream.has_more_samples())):
+            try:
+                X, y = self.stream.next_sample(self.batch_size)
+
+                if X is not None and y is not None:
+                    &#47&#47 Test
+                    prediction = [[] for _ in range(self.n_models)]
+                    for i in range(self.n_models):
+                        try:
+                            prediction[i].extend(self.model[i].predict(X))
+                        except TypeError:
+                            raise TypeError("Unexpected prediction value from {}"
+                                            .format(type(self.model[i]).__name__))
+                    self.global_sample_count += self.batch_size
+
+                    for j in <a id="change">range(self.n_models)</a>:
+                        for i in range(len(prediction[0])):
+                            <a id="change">if self._task_type == constants.CLASSIFICATION:
+                                self.mean_eval_measurements[j].add_result(y[i], prediction[j][i])
+                                self.current_eval_measurements[j].add_result(y[i], prediction[j][i])
+                            else:
+                                self.mean_eval_measurements[j].add_result(y[i], prediction[j][i])
+                                self.current_eval_measurements[j].add_result(y[i], prediction[j][i])
+                   </a> self._check_progress(logging, n_samples)
+
+                    &#47&#47 Train
+                    if first_run:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            return self.model
+
+    def _train_and_test(<a id="change">self</a>):
+         Method to control the prequential evaluation.
+
+        Returns
+        -------
+        BaseClassifier extension or list of BaseClassifier extensions
+            The trained classifiers.
+
+        Notes
+        -----
+        The classifier parameter should be an extension from the BaseClassifier. In
+        the future, when BaseRegressor is created, it could be an extension from that
+        class as well.
+
+        
+        logging.basicConfig(format=&quot%(message)s&quot, level=logging.INFO)
+        start_time = timer()
+        end_time = timer()
+        logging.info(&quotPrequential Evaluation&quot)
+        logging.info(&quotEvaluating %s target(s).&quot, str(self.stream.n_targets))
+
+        n_samples = self.stream.n_remaining_samples()
+        if n_samples == -1 or n_samples &gt; self.max_samples:
+            n_samples = self.max_samples
+
+        first_run = True
+        if self.pretrain_size &gt; 0:
+            logging.info(&quotPre-training on %s samples.&quot, str(self.pretrain_size))
+
+            X, y = self.stream.next_sample(self.pretrain_size)
+
+            for i in <a id="change">range(self.n_models)</a>:
+                if <a id="change">self._task_type == consta</a>nts.CLASSIFICATION:
+                    self.model[i].partial_fit(X=X, y=y, classes=self.stream.target_values)
+                elif <a id="change">self._task_type == consta</a>nts.MULTI_TARGET_CLASSIFICATION:
+                    <a id="change">self.model[i].partial_fit(X=X, y=y, classes=unique(self.stream.target_values))</a>
+                else:
+                    self.model[i].partial_fit(X=X, y=y)
+            self.global_sample_count += self.pretrain_size
+            first_run = False
+        else:
+            logging.info(&quotNo pre-training.&quot)
+
+        update_count = 0
+        logging.info(&quotEvaluating...&quot)
+        while ((self.global_sample_count &lt; self.max_samples) & (end_time - start_time &lt; self.max_time)
+               & (self.stream.has_more_samples())):
+            try:
+                X, y = self.stream.next_sample(self.batch_size)
+
+                if X is not None and y is not None:
+                    &#47&#47 Test
+                    prediction = [[] for _ in range(self.n_models)]
+                    for i in range(self.n_models):
+                        try:
+                            prediction[i].extend(self.model[i].predict(X))
+                        except TypeError:
+                            raise TypeError("Unexpected prediction value from {}"
+                                            .format(type(self.model[i]).__name__))
+                    self.global_sample_count += self.batch_size
+
+                    for j in <a id="change">range(self.n_models)</a>:
+                        for i in range(len(prediction[0])):
+                            self.mean_eval_measurements[j].add_result(y[i], prediction[j][i])
+                            self.current_eval_measurements[j].add_result(y[i], prediction[j][i])</code></pre><img src="164909940.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 29</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/scikit-multiflow/scikit-multiflow/commit/0fb529227b2754e195ad9b65af236a528ebf7f20#diff-28b3b58be213517b860fe747e48df94b1c9c33870bad6c2031c28d39d9ea11b9L212' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-multiflow/scikit-multiflow</div><div id='commit'> Commit Name: 0fb529227b2754e195ad9b65af236a528ebf7f20</div><div id='time'> Time: 2018-10-06</div><div id='author'> Author: jacob.montiel@gmail.com</div><div id='file'> File Name: src/skmultiflow/evaluation/evaluate_prequential.py</div><div id='class'> Class Name: EvaluatePrequential</div><div id='method'> Method Name: _train_and_test</div><BR><BR><div id='link'><a href='https://github.com/scikit-multiflow/scikit-multiflow/commit/56a6fb1d87f757e01096e1dfedd4339f4f9ad9f6#diff-28b3b58be213517b860fe747e48df94b1c9c33870bad6c2031c28d39d9ea11b9L212' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-multiflow/scikit-multiflow</div><div id='commit'> Commit Name: 56a6fb1d87f757e01096e1dfedd4339f4f9ad9f6</div><div id='time'> Time: 2018-10-08</div><div id='author'> Author: jacob.montiel@gmail.com</div><div id='file'> File Name: src/skmultiflow/evaluation/evaluate_prequential.py</div><div id='class'> Class Name: EvaluatePrequential</div><div id='method'> Method Name: _train_and_test</div><BR><BR><div id='link'><a href='https://github.com/scikit-multiflow/scikit-multiflow/commit/0fb529227b2754e195ad9b65af236a528ebf7f20#diff-28b3b58be213517b860fe747e48df94b1c9c33870bad6c2031c28d39d9ea11b9L212' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-multiflow/scikit-multiflow</div><div id='commit'> Commit Name: 0fb529227b2754e195ad9b65af236a528ebf7f20</div><div id='time'> Time: 2018-10-06</div><div id='author'> Author: jacob.montiel@gmail.com</div><div id='file'> File Name: src/skmultiflow/evaluation/evaluate_prequential.py</div><div id='class'> Class Name: EvaluatePrequential</div><div id='method'> Method Name: _train_and_test</div><BR><BR><div id='link'><a href='https://github.com/scikit-multiflow/scikit-multiflow/commit/0fb529227b2754e195ad9b65af236a528ebf7f20#diff-383c191f7784937585a32a3e79d8f4a3e2c98ee86261cb77baa147267a00d0e6L189' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-multiflow/scikit-multiflow</div><div id='commit'> Commit Name: 0fb529227b2754e195ad9b65af236a528ebf7f20</div><div id='time'> Time: 2018-10-06</div><div id='author'> Author: jacob.montiel@gmail.com</div><div id='file'> File Name: src/skmultiflow/evaluation/evaluate_holdout.py</div><div id='class'> Class Name: EvaluateHoldout</div><div id='method'> Method Name: _periodic_holdout</div><BR><BR><div id='link'><a href='https://github.com/scikit-multiflow/scikit-multiflow/commit/56a6fb1d87f757e01096e1dfedd4339f4f9ad9f6#diff-383c191f7784937585a32a3e79d8f4a3e2c98ee86261cb77baa147267a00d0e6L189' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-multiflow/scikit-multiflow</div><div id='commit'> Commit Name: 56a6fb1d87f757e01096e1dfedd4339f4f9ad9f6</div><div id='time'> Time: 2018-10-08</div><div id='author'> Author: jacob.montiel@gmail.com</div><div id='file'> File Name: src/skmultiflow/evaluation/evaluate_holdout.py</div><div id='class'> Class Name: EvaluateHoldout</div><div id='method'> Method Name: _periodic_holdout</div><BR>

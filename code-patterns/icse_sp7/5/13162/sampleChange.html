@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for account_response in s3.list_objects_v2(
+            Bucket=CLOUDTRAIL_BUCKET, Prefix=&quotAWSLogs/&quot, Delimiter=&quot/&quot).get(&quotCommonPrefixes&quot) or []:
+        account = account_response[&quotPrefix&quot].split(&quot/&quot)[1]
+        <a id="change">for region_response in s3.list_objects_v2(
+                Bucket=CLOUDTRAIL_BUCKET,
+                Prefix=f&quotAWSLogs/{account}/CloudTrail/&quot, Delimiter=&quot/&quot).get(&quotCommonPrefixes&quot) or []:
+            region = region_response[&quotPrefix&quot].split(&quot/&quot)[3]
+            date = start_ts.date()
+            while date &lt;= end_ts.date():
+                query = ADD_CLOUDTRAIL_PARTITION.format(
+                    account=sql_escape(account),
+                    region=sql_escape(region),
+                    year=date.year,
+                    month=date.month,
+                    day=date.day
+                )
+                partition_queries.append(query)
+                date += timedelta(days=1)
+
+    &#47&#47 Drop old Athena tables from previous runs.
+    &#47&#47 (They&quotre in the DB owned by the stack, so safe to do.)
+   </a> run_multiple_queries([DROP_CLOUDTRAIL, DROP_OBJECT_ACCESS_LOG, DROP_PACKAGE_HASHES])
+
+    &#47&#47 Create new Athena tables.
+    run_multiple_queries([CREATE_CLOUDTRAIL, CREATE_OBJECT_ACCESS_LOG, CREATE_PACKAGE_HASHES])</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 (They&quotre in the DB owned by the stack, so safe to do.)
+    run_multiple_queries([DROP_CLOUDTRAIL, DROP_OBJECT_ACCESS_LOG, DROP_PACKAGE_HASHES])
+
+    <a id="change">create_cloudtrail_query = CREATE_CLOUDTRAIL.format(
+        bucket=sql_escape(CLOUDTRAIL_BUCKET),
+        accounts=&quot,&quot.join(accounts),
+        regions=&quot,&quot.join(regions),
+        start_date=start_ts.date().strftime(&quot%Y/%m/%d&quot),
+        end_date=end_ts.date().strftime(&quot%Y/%m/%d&quot),
+    )</a>
+
+    &#47&#47 Create new Athena tables.
+    run_multiple_queries([create_cloudtrail_query, CREATE_OBJECT_ACCESS_LOG, CREATE_PACKAGE_HASHES])
+</code></pre>

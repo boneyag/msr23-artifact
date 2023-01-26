@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mat.requires_grad_(True)
+
+        eager_rhss = [torch.randn(5, 10), torch.randn(5, 1)]
+        <a id="change">return CachedCGLazyTensor(NonLazyTensor(mat), eager_rhss)</a>
+
+    def evaluate_lazy_tensor(self, lazy_tensor):
+        return lazy_tensor.base_lazy_tensor.tensor
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            solve, probe_vecs, probe_vec_norms, probe_vec_solves, tmats = CachedCGLazyTensor.precompute_terms(
+                lazy_tensor, eager_rhs.detach()
+            )
+            eager_rhss = [eager_rhs.detach(), <a id="change">eager_rhs[..., -2:-1].detach()</a>]
+            <a id="change">solves = [solve.detach(), solve[..., -2:-1].detach()]</a>
+
+        <a id="change">return CachedCGLazyTensor(
+            lazy_tensor, eager_rhss, solves, probe_vecs, probe_vec_norms, probe_vec_solves, tmats
+        )</a>
+
+    def evaluate_lazy_tensor(self, lazy_tensor):
+        return lazy_tensor.base_lazy_tensor.tensor
+</code></pre>

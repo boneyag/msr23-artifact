@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            target_class_ids = tensor.tile(target_class_ids, [1, 1, num_samples])
+            target_class_ids = target_class_ids.flatten()
+            target_sample_ids = tensor.arange(num_batch_samples)
+            class_probs = <a id="change">tensor.set_subtensor(
+                class_probs[(target_sample_ids, target_class_ids)], 0)</a>
+            <a id="change">sample = self.network.random.multinomial(pvals=class_probs)</a>
+            sample = sample.argmax(1)
+        sample = sample.reshape([num_time_steps, num_sequences, num_samples])
+        self.sample_logprobs = \
+            self._get_target_preact(layer_input, sample)</code></pre><h3>After Change</h3><pre><code class='java'>
+            class_probs = self.network.noise_probs[None, :]
+            sample = random.multinomial_wo_replacement(pvals=class_probs,
+                                                       n=num_samples)
+            sample = sample[<a id="change">0, :</a>]
+            &#47&#47 For some reason (maybe a rounding error) it may happen that the
+            &#47&#47 sample contains a very high or negative value.
+            sample = tensor.maximum(sample, 0)
+            <a id="change">sample = tensor.minimum(sample, num_classes - 1)</a>
+        self.shared_sample_logprobs = \
+            self._get_target_list_preact(layer_input, sample)
+        self.shared_sample = sample
+</code></pre>

@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 output. TensorFrames does not like that, so we strip out the parts that
+    &#47&#47 are not necessary for the computation at hand.
+    def _stripGraph(self, tf_graph):
+        input_graph_def = <a id="change">tf_graph.as_graph_def(add_shapes=True)</a>
+        sess = tf.Session(graph=tf_graph)
+        return utils.stripAndFreezeGraph(input_graph_def, sess, [self._getFinalOutputOpName()])
+
+    def _getOriginalOutputTensorName(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _stripGraph(self, tf_graph):
+        gdef = tfx.strip_and_freeze_until([self._getFinalOutputOpName()], tf_graph)
+        g = tf.Graph()
+        <a id="change">with g.as_default():
+            tf.import_graph_def(gdef, name=&quot&quot)
+       </a> return g
+
+    def _getOriginalOutputTensorName(self):
+        return self.USER_GRAPH_NAMESPACE + &quot/&quot + self.getOutputTensor().name</code></pre>

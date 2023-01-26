@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    @tf_function(tf)
+    def get_tf_exploration_action_op(self, action_dist, explore):
+        <a id="change">if explore:
+            action = tf.py_function(self.action_space.sample, [],
+                                    self.dtype_sample)
+            &#47&#47 Will be unnecessary, once we support batch/time-aware Spaces.
+            action = tf.expand_dims(tf.cast(action, dtype=self.dtype), 0)
+        else:
+            action = tf.cast(
+                action_dist.deterministic_sample(), dtype=self.dtype)
+
+        &#47&#47 TODO(sven): Move into (deterministic_)sample(logp=True|False)
+       </a> if isinstance(action, TupleActions):
+            batch_size = tf.shape(action[0][0])[0]
+        else:
+            batch_size = tf.shape(action)[0]</code></pre><h3>After Change</h3><pre><code class='java'>
+            return tf.cast(
+                action_dist.deterministic_sample(), dtype=self.dtype)
+
+        action = <a id="change">tf.cond(
+            pred=tf.constant(explore, dtype=tf.bool)
+            if isinstance(explore, bool) else explore,
+            true_fn=true_fn,
+            false_fn=false_fn)</a>
+
+        &#47&#47 TODO(sven): Move into (deterministic_)sample(logp=True|False)
+        if isinstance(action, TupleActions):
+            batch_size = tf.shape(action[0][0])[0]</code></pre>

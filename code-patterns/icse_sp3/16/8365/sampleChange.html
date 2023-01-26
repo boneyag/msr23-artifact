@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if self.params[&quotencoder_layers&quot] &lt; 2:
+      raise ValueError("GNMT encoder must have at least 2 layers")
+
+    <a id="change">cell_params = copy.deepcopy(self.params)</a>
+    <a id="change">cell_params["num_units"] = self.params[&quotencoder_cell_units&quot]</a>
+
+    with tf.variable_scope("Level1FW"):
+      self._encoder_l1_cell_fw = create_rnn_cell(
+        cell_type=self.params[&quotencoder_cell_type&quot],
+        cell_params=cell_params,
+        num_layers=1,
+        dp_input_keep_prob=1.0,
+        dp_output_keep_prob=1.0,
+        residual_connections=False,
+      )
+    with tf.variable_scope("Level1BW"):
+      self._encoder_l1_cell_bw = <a id="change">create_rnn_cell(
+        cell_type=self.params[&quotencoder_cell_type&quot],
+        cell_params=cell_params,
+        num_layers=1,
+        dp_input_keep_prob=1.0,
+        dp_output_keep_prob=1.0,
+        residual_connections=False,
+      )</a>
+
+    if self._mode == "train":
+      dp_input_keep_prob = self.params[&quotencoder_dp_input_keep_prob&quot]
+      dp_output_keep_prob = self.params[&quotencoder_dp_output_keep_prob&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+      dp_output_keep_prob = 1.0
+
+    with tf.variable_scope("UniDirLevel"):
+      self._encoder_cells = <a id="change">[single_cell(
+        cell_class=self.params[&quotcore_cell&quot],
+        cell_params=self.params.get(&quotcore_cell_params&quot, {}),
+        dp_input_keep_prob=dp_input_keep_prob,
+        dp_output_keep_prob=dp_output_keep_prob,
+        residual_connections=False) for _ in range(self.params[&quotencoder_layers&quot] - 1)]</a>
+
+      &#47&#47 add residual connections starting from the third layer
+      for idx, cell in enumerate(self._encoder_cells):
+        if idx &gt; 0:</code></pre>

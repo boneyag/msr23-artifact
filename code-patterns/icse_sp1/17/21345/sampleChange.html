@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+@ChainerConverter.register_handler("LogSoftmax")
+def _convert_log_softmax(converter: ChainerConverter, c_op: "chainer.functions.LogSoftmax"):
+    &#47&#47 TODO
+    <a id="change">raise NotImplementedError("[ChainerConverter] LogSoftmax is not supported")</a>
+
+
+&#47&#47 noinspection PyUnusedLocal
+@ChainerConverter.register_handler("LSTM")</code></pre><h3>After Change</h3><pre><code class='java'>
+
+@ChainerConverter.register_handler("LogSoftmax")
+def _convert_log_softmax(converter: ChainerConverter, c_op: "chainer.functions.LogSoftmax"):
+    <a id="change">x = converter.get_variable(c_op.inputs[0])</a>
+    axis = x.order.axes[1]
+
+    max_x, = Max(None, axis=axis)(x)
+    <a id="change">exp_delta_x, = Exp(None)(x - max_x)</a>
+    sum_exp_delta_x, = Sum(None, axis=axis)(exp_delta_x)
+    log_sum_delta_exp, = Log(None)(sum_exp_delta_x)
+
+    y = x - (log_sum_delta_exp + max_x)
+    converter.set_variable(<a id="change">c_op.outputs[0]()</a>, y)
+
+
+&#47&#47 noinspection PyUnusedLocal</code></pre>

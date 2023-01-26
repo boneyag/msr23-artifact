@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def test_conv_to_wider_layer():
+    a = <a id="change">Conv2D(20, kernel_size=(1, 1),
+               activation=&quotrelu&quot,
+               input_shape=(28, 28, 1),
+               padding=&quotsame&quot)</a>
+    b = Conv2D(30, kernel_size=(1, 1),
+               activation=&quotrelu&quot,
+               padding=&quotsame&quot)
+    model = Sequential([a, b])</code></pre><h3>After Change</h3><pre><code class='java'>
+    bn1 = model.layers[2]
+    new_conv1, [new_conv2], [new_bn1] = conv_to_wider_layer(conv1, [conv2], [bn1], 3)
+
+    new_input = <a id="change">Input(shape=get_int_tuple(model.inputs[0].shape[1:]))</a>
+    <a id="change">temp_tensor = new_conv1(new_input)</a>
+    temp_tensor = new_bn1(temp_tensor)
+    <a id="change">temp_tensor = Activation(&quotrelu&quot)(temp_tensor)</a>
+    temp_tensor = new_conv2(temp_tensor)
+    temp_tensor = copy_layer(model.layers[5])(temp_tensor)
+    temp_tensor = Activation(&quotrelu&quot)(temp_tensor)
+    model2 = <a id="change">Model(inputs=new_input, outputs=temp_tensor)</a>
+
+    random_input = get_conv_data()
+    output1 = model.predict_on_batch(random_input)
+    output2 = model2.predict_on_batch(random_input)</code></pre>

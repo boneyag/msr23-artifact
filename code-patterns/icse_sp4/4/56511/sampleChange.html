@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        outs = self.branches(x)
+
+        u = <a id="change">reduce(lambda y1, y2: y1 + y2, outs)</a>
+        s = self.global_pool(u)
+        z = self.fc1(s)
+        w = self.fc2(z)
+        w = w.reshape(batch, self.num_branches, self.out_channels, -1)
+        w = self.softmax(w)
+
+        w = list(w.chunk(self.num_branches, dim=1))
+        <a id="change">w = list(map(lambda y: y.reshape(batch, self.out_channels, 1, 1), w))</a>
+        v = list(map(lambda y1, y2: y1 * y2, outs, w))
+        v = reduce(lambda y1, y2: y1 + y2, v)
+        return v
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        w = w.unsqueeze(-1).unsqueeze(-1)
+
+        y = y * w
+        <a id="change">y = y.sum(dim=1)</a>
+        return y
+
+
+class SKNetBottleneck(nn.Module):</code></pre>

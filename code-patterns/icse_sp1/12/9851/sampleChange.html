@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for archive_path in imports:
+      for archive in imports[archive_path]:
+        jar_outdir = self.unpacked_jar_location(archive)
+        <a id="change">if archive.endswith(&quot.jar&quot):
+          jar_file = os.path.join(archive_path, archive)
+        elif archive.endswith(&quot.aar&quot):
+          unpacked_aar_destination = self.unpacked_aar_location(archive)
+          jar_file = os.path.join(unpacked_aar_destination, &quotclasses.jar&quot)
+
+          &#47&#47 Unpack .aar files.
+          if archive not in self._unpacked_archives:
+            ZIP.extract(os.path.join(archive_path, archive), unpacked_aar_destination)
+            self._unpacked_archives.update([archive])
+
+            &#47&#47 Create an .aar/classes.jar signature for self._unpacked_archives.
+            archive = os.path.join(archive, &quotclasses.jar&quot)
+        else:
+          raise self.UnexpectedArchiveType(&quotAndroid dependencies can be .aar or .jar &quot
+                                           &quotarchives (was: {})&quot.format(archive))
+        &#47&#47 Unpack the jar files.
+       </a> if archive not in self._unpacked_archives and os.path.isfile(jar_file):
+          ZIP.extract(jar_file, jar_outdir)
+          self._unpacked_archives.update([archive])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 unpack that jar as well.
+    for coordinate, aar_or_jar in jar_imports:
+      jar_outdir = self.unpacked_jar_location(coordinate)
+      <a id="change">if &quotjar&quot == coordinate.ext:
+        jar_file = aar_or_jar
+      elif &quotaar&quot == coordinate.ext:
+        unpacked_aar_destination = self.unpacked_aar_location(coordinate)
+        jar_file = os.path.join(unpacked_aar_destination, &quotclasses.jar&quot)
+
+        &#47&#47 Unpack .aar files.
+        if coordinate not in self._unpacked_archives:
+          ZIP.extract(aar_or_jar, unpacked_aar_destination)
+          self._unpacked_archives.add(aar_or_jar)
+
+          &#47&#47 Create an .aar/classes.jar signature for self._unpacked_archives.
+          coordinate = M2Coordinate(org=coordinate.org,
+                                    name=coordinate.name,
+                                    rev=coordinate.rev,
+                                    classifier=coordinate.classifier,
+                                    ext=&quotclasses.jar&quot)
+      else:
+        raise self.UnexpectedArchiveType(&quotAndroid dependencies can be .aar or .jar archives &quot
+                                         &quot(was: {} at {})&quot.format(coordinate, aar_or_jar))
+      &#47&#47 Unpack the jar files.
+     </a> if coordinate not in self._unpacked_archives and os.path.isfile(jar_file):
+        ZIP.extract(jar_file, jar_outdir)
+        self._unpacked_archives.add(aar_or_jar)
+</code></pre>

@@ -1,0 +1,109 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if not proceed:
+            return
+
+    <a id="change">with h5py.File(filepath, mode=&quotw&quot) as f:
+        f.attrs[&quotkeras_version&quot] = str(keras_version).encode(&quotutf8&quot)
+        f.attrs[&quotbackend&quot] = K.backend().encode(&quotutf8&quot)
+        f.attrs[&quotmodel_config&quot] = json.dumps({
+            &quotclass_name&quot: model.__class__.__name__,
+            &quotconfig&quot: model.get_config()
+        }, default=get_json_type).encode(&quotutf8&quot)
+
+        model_weights_group = f.create_group(&quotmodel_weights&quot)
+        if legacy_models.needs_legacy_support(model):
+            model_layers = legacy_models.legacy_sequential_layers(model)
+        else:
+            model_layers = model.layers
+        topology.save_weights_to_hdf5_group(model_weights_group, model_layers)
+
+        if include_optimizer and hasattr(model, &quotoptimizer&quot):
+            if isinstance(model.optimizer, optimizers.TFOptimizer):
+                warnings.warn(
+                    &quotTensorFlow optimizers do not &quot
+                    &quotmake it possible to access &quot
+                    &quotoptimizer attributes or optimizer state &quot
+                    &quotafter instantiation. &quot
+                    &quotAs a result, we cannot save the optimizer &quot
+                    &quotas part of the model save file.&quot
+                    &quotYou will have to compile your model again &quot
+                    &quotafter loading it. &quot
+                    &quotPrefer using a Keras optimizer instead &quot
+                    &quot(see keras.io/optimizers).&quot)
+            else:
+                f.attrs[&quottraining_config&quot] = json.dumps({
+                    &quotoptimizer_config&quot: {
+                        &quotclass_name&quot: model.optimizer.__class__.__name__,
+                        &quotconfig&quot: model.optimizer.get_config()
+                    },
+                    &quotloss&quot: model.loss,
+                    &quotmetrics&quot: model.metrics,
+                    &quotsample_weight_mode&quot: model.sample_weight_mode,
+                    &quotloss_weights&quot: model.loss_weights,
+                }, default=get_json_type).encode(&quotutf8&quot)
+
+                &#47&#47 Save optimizer weights.
+                symbolic_weights = getattr(model.optimizer, &quotweights&quot)
+                if symbolic_weights:
+                    optimizer_weights_group = f.create_group(&quotoptimizer_weights&quot)
+                    weight_values = K.batch_get_value(symbolic_weights)
+                    weight_names = []
+                    for i, (w, val) in enumerate(zip(symbolic_weights,
+                                                     weight_values)):
+                        &#47&#47 Default values of symbolic_weights is /variable
+                        &#47&#47 for Theano and CNTK
+                        if K.backend() == &quottheano&quot or K.backend() == &quotcntk&quot:
+                            if hasattr(w, &quotname&quot):
+                                if w.name.split(&quot/&quot)[-1] == &quotvariable&quot:
+                                    name = str(w.name) + &quot_&quot + str(i)
+                                else:
+                                    name = str(w.name)
+                            else:
+                                name = &quotparam_&quot + str(i)
+                        else:
+                            if hasattr(w, &quotname&quot) and w.name:
+                                name = str(w.name)
+                            else:
+                                name = &quotparam_&quot + str(i)
+                        weight_names.append(name.encode(&quotutf8&quot))
+                    optimizer_weights_group.attrs[&quotweight_names&quot] = weight_names
+                    for name, val in zip(weight_names, weight_values):
+                        param_dset = optimizer_weights_group.create_dataset(
+                            name,
+                            val.shape,
+                            dtype=val.dtype)
+                        if not val.shape:
+                            &#47&#47 scalar
+                            param_dset[()] = val
+                        else:
+                            param_dset[:] = val
+        f.flush()
+
+
+</a>def load_model(filepath, custom_objects=None, compile=True):
+    Loads a model saved via `save_model`.
+
+    &#47&#47 Arguments</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    from . import __version__ as keras_version
+
+    <a id="change">if not isinstance(filepath, h5py.File):
+        &#47&#47 If file exists and should not be overwritten.
+        if not overwrite and os.path.isfile(filepath):
+            proceed = ask_to_proceed_with_overwrite(filepath)
+            if not proceed:
+                return
+
+        f = h5py.File(filepath, mode=&quotw&quot)
+        opened_new_file = True
+    else:
+        f = filepath
+        opened_new_file = False
+
+   </a> try:
+        f.attrs[&quotkeras_version&quot] = str(keras_version).encode(&quotutf8&quot)
+        f.attrs[&quotbackend&quot] = K.backend().encode(&quotutf8&quot)
+        f.attrs[&quotmodel_config&quot] = json.dumps({</code></pre>

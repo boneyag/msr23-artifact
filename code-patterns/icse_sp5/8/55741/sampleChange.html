@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+with tf.name_scope(&quotloss&quot):
+    loss = tf.reduce_mean(tf.reduce_sum(tf.square(ys - prediction),
+                                        reduction_indices=[1]))
+    <a id="change">tf.scalar_summary(&quotloss&quot, loss)</a>
+
+with tf.name_scope(&quottrain&quot):
+    train_step = tf.train.GradientDescentOptimizer(0.1).minimize(loss)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+with tf.name_scope(&quotloss&quot):
+    loss = tf.reduce_mean(tf.reduce_sum(tf.square(ys - prediction),
+                                        reduction_indices=[1]))
+    <a id="change">if int((tf.__version__).split(&quot.&quot)[1]) &lt; 12:    &#47&#47 tensorflow version &lt; 0.12
+        tf.scalar_summary(&quotloss&quot, loss)
+    else:   &#47&#47 tensorflow version &gt;= 0.12
+        tf.summary.scalar(&quotloss&quot, loss)
+
+</a>with tf.name_scope(&quottrain&quot):
+    train_step = tf.train.GradientDescentOptimizer(0.1).minimize(loss)
+
+sess = tf.Session()
+if int((tf.__version__).split(&quot.&quot)[1]) &lt; 12:  &#47&#47 tensorflow version &lt; 0.12
+    merged = tf.merge_all_summaries()
+else:   &#47&#47 tensorflow version &gt;= 0.12
+    merged = tf.summary.merge_all()
+
+&#47&#47 tf.train.SummaryWriter soon be deprecated, use following
+if int((tf.__version__).split(&quot.&quot)[1]) &lt; 12:  &#47&#47 tensorflow version &lt; 0.12
+    writer = <a id="change">tf</a>.train.SummaryWriter(&quotlogs/&quot, sess.graph)
+else: &#47&#47 tensorflow version &gt;= 0.12
+    writer = tf.summary.FileWriter("logs/", sess.graph)
+</code></pre>

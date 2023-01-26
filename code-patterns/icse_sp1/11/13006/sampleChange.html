@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def get_output_shape(self, inputs_shape, filters_shape,
+                         subsample, border_mode, filter_dilation):
+        <a id="change">dil_filters = ((filters_shape[2] - 1) * filter_dilation[0] + 1,
+                       (filters_shape[3] - 1) * filter_dilation[1] + 1)</a>
+        if border_mode == "valid":
+            border_mode = (0, 0)
+        if border_mode == "half":
+            <a id="change">border_mode = (dil_filters[0] // 2,
+                           dil_filters[1] // 2)</a>
+        if border_mode == "full":
+            border_mode = (dil_filters[0] - 1,
+                           <a id="change">dil_filters[1]</a> - 1)
+        batch_size = inputs_shape[0]
+        num_filters = filters_shape[0]
+        return ((batch_size, num_filters,) +</code></pre><h3>After Change</h3><pre><code class='java'>
+class BaseTestConv(object):
+    def get_output_shape(self, inputs_shape, filters_shape,
+                         subsample, border_mode, filter_dilation):
+        <a id="change">dil_filters = tuple((s - 1) * d + 1 for s, d in zip(filters_shape[2:],
+                                                            filter_dilation))</a>
+        if border_mode == "valid":
+            border_mode = (0,) * (len(inputs_shape) - 2)
+        if border_mode == "half":
+            <a id="change">border_mode = tuple(d // 2 for d in dil_filters)</a>
+        if border_mode == "full":
+            border_mode = tuple(d - 1 for d in dil_filters)
+        batch_size = inputs_shape[0]
+        num_filters = filters_shape[0]</code></pre>

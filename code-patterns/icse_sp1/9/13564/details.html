@@ -1,0 +1,48 @@
+<html><h3>16474aee0c575e615c78d32f2a170c3d7f8f0082,autokeras/graph.py,Graph,produce_model,#Graph#,75
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        output_id = self.node_to_id[self.model.outputs[0]]
+
+        id_to_tensor = {input_id: input_tensor}
+        <a id="change">q = Queue()</a>
+        q.put(input_id)
+        while not q.empty():
+            u = <a id="change">q.get()</a>
+            <a id="change">for v, edge_id in self.adj_list[u]:
+                layer = self.edge_list[edge_id]
+                if edge_id in self.old_edge_ids:
+                    copied_layer = copy_layer(layer, get_int_tuple(id_to_tensor[u].shape))
+                    temp_tensor = copied_layer(id_to_tensor[u])
+                else:
+                    temp_tensor = layer(id_to_tensor[u])
+                id_to_tensor[v] = temp_tensor
+                q.put(v)
+       </a> return Model(input_tensor, id_to_tensor[output_id])
+
+    def to_conv_wider_model(self, pre_layer, n_add):
+        output_id = self.node_to_id[pre_layer.output]</code></pre><h3>After Change</h3><pre><code class='java'>
+        output_id = self.node_to_id[self.model.outputs[0]]
+
+        id_to_tensor = {input_id: input_tensor}
+        <a id="change">for v in self._topological_order():
+            for u, edge_id in self.reverse_adj_list[v]:
+                layer = self.edge_list[edge_id]
+
+                if isinstance(layer, WeightedAdd):
+                    edge_input_tensor = list(map(lambda x: id_to_tensor[x], self.edge_id_to_input_ids[edge_id]))
+                else:
+                    edge_input_tensor = id_to_tensor[u]
+
+                if edge_id in self.old_edge_ids:
+                    new_layer = copy_layer(layer)
+                else:
+                    new_layer = layer
+
+                temp_tensor = new_layer(edge_input_tensor)
+                id_to_tensor[v] = temp_tensor
+       </a> return Model(input_tensor, id_to_tensor[output_id])
+
+    def to_conv_wider_model(self, pre_layer, n_add):
+        output_id = self.node_to_id[pre_layer.output]</code></pre><img src="84113547.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/keras-team/autokeras/commit/16474aee0c575e615c78d32f2a170c3d7f8f0082#diff-c5c31de724f6d82045a7f0cc212b41d3e5c7c6b858cd144a19ac734502da62cfL76' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/autokeras</div><div id='commit'> Commit Name: 16474aee0c575e615c78d32f2a170c3d7f8f0082</div><div id='time'> Time: 2017-12-30</div><div id='author'> Author: jhfjhfj1@gmail.com</div><div id='file'> File Name: autokeras/graph.py</div><div id='class'> Class Name: Graph</div><div id='method'> Method Name: produce_model</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/benchmarks/commit/449e900ef018a775f2827dd3e591900c761004ab#diff-a06bba6d267ebf9e1e8255dc66a78b5c66aa2a7bcdff936c4590d9ebc4af098dL112' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/benchmarks</div><div id='commit'> Commit Name: 449e900ef018a775f2827dd3e591900c761004ab</div><div id='time'> Time: 2020-06-16</div><div id='author'> Author: 53017143+sganeshb@users.noreply.github.com</div><div id='file'> File Name: perfzero/lib/benchmark.py</div><div id='class'> Class Name: BenchmarkRunner</div><div id='method'> Method Name: run_benchmark</div><BR>

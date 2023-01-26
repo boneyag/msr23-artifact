@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self._blockDims = blockDims
+
+        &#47&#47 Create internal operators
+        <a id="change">self.opInputShapeReader</a> = OpShapeReader( parent=self )
+        <a id="change">self.opLabelArray</a> = OpBlockedSparseLabelArray( parent=self )
+
+        &#47&#47 Set up label cache shape input
+        <a id="change">self</a>.opInputShapeReader.Input.connect( <a id="change">self.InputImage</a> )
+        &#47&#47 Note: &quotshape&quot is a (poorly named) INPUT SLOT here
+        <a id="change">self.opLabelArray.shape.connect( self.opInputShapeReader.OutputShape )</a>
+
+        &#47&#47 Set up other label cache inputs
+        self.opLabelArray.Input.connect( self.LabelInput )
+        self.opLabelArray.eraser.connect(self.LabelEraserValue)                
+        self.opLabelArray.deleteLabel.connect(self.LabelDelete)
+        
+        &#47&#47 Connect our internal outputs to our external outputs
+        self.LabelImage.connect( self.opLabelArray.Output )
+        self.NonzeroLabelBlocks.connect( self.opLabelArray.nonzeroBlocks )
+        self.MaxLabelValue.connect( <a id="change">self.opLabelArray.maxLabel</a> )
+        
+    def setupOutputs(self):
+        self.setupInputMeta()</code></pre><h3>After Change</h3><pre><code class='java'>
+    LabelNames = OutputSlot()
+    LabelColors = OutputSlot()
+    
+    def __init__(<a id="change">self</a>, blockDims = None, *args, **kwargs):
+        
+        Instantiate all internal operators and connect them together.
+        
+        super(OpLabelingSingleLane, self).__init__( *args, **kwargs )
+
+        &#47&#47 Configuration options
+        if blockDims is None:
+            blockDims = { &quott&quot : 1, &quotx&quot : 32, &quoty&quot : 32, &quotz&quot : 32, &quotc&quot : 1 } 
+        assert isinstance(blockDims, dict)
+        self._blockDims = blockDims
+
+        &#47&#47 Create internal operator
+        self.opLabelArray = OpCompressedUserLabelArray( parent=self )
+        self.opLabelArray.Input.connect( self.LabelInput )
+        self.opLabelArray.eraser.connect(self.LabelEraserValue)
+        self.opLabelArray.deleteLabel.connect(self.LabelDelete)
+        
+        &#47&#47 Connect our internal outputs to our external outputs
+        self.LabelImage.connect( self.opLabelArray.Output )
+        self.NonzeroLabelBlocks.connect( self.opLabelArray.nonzeroBlocks )
+        
+        <a id="change">self.LabelNames.setValue([])</a>
+        <a id="change">self</a>.LabelColors.setValue([])
+        
+    def setupOutputs(self):
+        self.LabelNames.meta.dtype = object</code></pre>

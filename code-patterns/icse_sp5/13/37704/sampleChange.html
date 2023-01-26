@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                       self.project,
+                                       self.dataset),
+                             &quotidents.csv&quot)
+        <a id="change">db, cursor = db_tools.getRawConnection()</a>
+        if db_tools.isMysql():
+            query = &quotLOAD DATA LOCAL INFILE \&quot&quot + filename + &quot\&quot &quot
+            query += &quotINTO TABLE &quot + &quotinstances&quot + &quot &quot
+            query += &quotCHARACTER SET UTF8 &quot
+            query += &quotFIELDS TERMINATED BY \&quot,\&quot &quot
+            query += &quotOPTIONALLY ENCLOSED BY \&quot"\&quot &quot
+            query += &quotIGNORE 1 LINES &quot
+            query += &quotSET dataset_id = &quot + str(self.dataset_id) + &quot,&quot
+            query += &quotrow_number = NULL&quot
+            query += &quot;&quot
+            cursor.execute(query)
+            query = &quotSET @pos = 0;&quot
+            cursor.execute(query)
+            query = &quotUPDATE instances SET row_number = &quot
+            query += &quot( SELECT @pos := @pos + 1 ) WHERE dataset_id = &quot + \
+                str(self.dataset_id)
+            query += &quot;&quot
+            cursor.execute(query)
+        elif db_tools.isPostgresql():
+            timestamps = False
+            with open(filename, &quotr&quot) as f:
+                reader = csv.reader(f)
+                header = next(reader)
+                if len(header) == 3:
+                    timestamps = True
+            query = &quotCREATE TEMPORARY TABLE instances_import(&quot
+            query += &quotuser_instance_id integer, &quot
+            query += &quotident varchar(200), &quot
+            query += &quottimestamp timestamp DEFAULT null,&quot
+            query += &quotdataset_id integer DEFAULT &quot + str(self.dataset_id) + &quot,&quot
+            query += &quotrow_number serial PRIMARY KEY&quot
+            query += &quot);&quot
+            cursor.execute(query)
+            with open(filename, &quotr&quot) as f:
+                if timestamps:
+                    query = &quotCOPY instances_import(user_instance_id,ident,timestamp) &quot
+                else:
+                    query = &quotCOPY instances_import(user_instance_id,ident) &quot
+                query += &quotFROM STDIN &quot
+                query += &quotWITH CSV HEADER DELIMITER AS \&quot,\&quot ;&quot
+                cursor.copy_expert(sql=query, file=f)
+            query = &quotINSERT INTO instances(user_instance_id,ident,timestamp,dataset_id,row_number) &quot
+            query += &quotSELECT user_instance_id, ident, timestamp, dataset_id, row_number &quot
+            query += &quotFROM instances_import;&quot
+            cursor.execute(query)
+        <a id="change">db_tools.closeRawConnection(db, cursor)</a>
+
+    def loadGroundTruth(self, logger):
+        annotations_file = path.join(dir_exp_tools.getDatasetDirectory(
+                                            self.project,</code></pre><h3>After Change</h3><pre><code class='java'>
+                                       self.project,
+                                       self.dataset),
+                             &quotidents.csv&quot)
+        <a id="change">cursor = self.session.connection().connection.cursor()</a>
+        if db_tools.isMysql():
+            query = &quotLOAD DATA LOCAL INFILE \&quot&quot + filename + &quot\&quot &quot
+            query += &quotINTO TABLE &quot + &quotinstances&quot + &quot &quot
+            query += &quotCHARACTER SET UTF8 &quot</code></pre>

@@ -1,0 +1,30 @@
+<html><h3>090944e816fd3ff8e861fba4452851e0a901491d,scripts/language_model/large_word_language_model.py,,train,#,193
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            with autograd.record():
+                for j, (X, y, m, s, h) in enumerate(zip(data, target, mask, sample, hiddens)):
+                    output, h, new_target = model(X, y, h, s)
+                    <a id="change">output = output.reshape((-3, -1))</a>
+                    new_target = new_target.reshape((-1,))
+                    l = loss(output, new_target) * m.reshape((-1,))
+                    Ls.append(<a id="change">l/args.batch_size</a>)
+                    hiddens[j] = h
+
+            autograd.backward(Ls)</code></pre><h3>After Change</h3><pre><code class='java'>
+            for _, batch in enumerate(zip(data, target, mask, sample, hiddens)):
+                parallel.put(batch)
+
+            <a id="change">for _ in range(len(data)):
+                hidden, ls = parallel.get()
+                &#47&#47 hidden states are ordered by context id
+                index = context.index(hidden[0].context)
+                hiddens[index] = hidden
+                Ls.append(ls)
+
+            &#47&#47 prefetch the next batch of data
+           </a> try:
+                data, target, mask, sample = next(train_data_iter)
+            except StopIteration:
+                has_next = False</code></pre><img src="9341581.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/gluon-nlp/commit/090944e816fd3ff8e861fba4452851e0a901491d#diff-59b02a6c93ce259ca9f15da4ffd377f740dad7eac8c7796153ecef8254460a3fL226' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-nlp</div><div id='commit'> Commit Name: 090944e816fd3ff8e861fba4452851e0a901491d</div><div id='time'> Time: 2019-01-28</div><div id='author'> Author: linhaibin.eric@gmail.com</div><div id='file'> File Name: scripts/language_model/large_word_language_model.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/dmlc/gluon-cv/commit/ee602b6f68f0bdd19f449a86955697f8f0a2d54c#diff-c3f3262beb83a68fced6fa61c99a0759b0bcb2121f78b3182958b7fa90240b95L70' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-cv</div><div id='commit'> Commit Name: ee602b6f68f0bdd19f449a86955697f8f0a2d54c</div><div id='time'> Time: 2019-09-21</div><div id='author'> Author: yizhu59@gmail.com</div><div id='file'> File Name: gluoncv/data/transforms/video.py</div><div id='class'> Class Name: VideoNormalize</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/chainer/chainercv/commit/d37d08d9b2a806b3345fba41711c0d517b92a65c#diff-bf7d79234d2c93f45b9614f63aa2897fdb74c66a38b384c95f78412bc17e369fL215' target='_blank'>Link</a></div><div id='project'> Project Name: chainer/chainercv</div><div id='commit'> Commit Name: d37d08d9b2a806b3345fba41711c0d517b92a65c</div><div id='time'> Time: 2017-06-15</div><div id='author'> Author: yuyuniitani@gmail.com</div><div id='file'> File Name: chainercv/links/model/vgg/vgg16.py</div><div id='class'> Class Name: VGG16Layers</div><div id='method'> Method Name: predict</div><BR>

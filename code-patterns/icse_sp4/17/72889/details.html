@@ -1,0 +1,284 @@
+<html><h3>d6938cfd6ae5dc6c7dfe7fbd8dbee1eabbffdca2,cellprofiler/modules/enhanceorsuppressfeatures.py,EnhanceOrSuppressFeatures,create_settings,#EnhanceOrSuppressFeatures#,44
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    variable_revision_number = 5
+
+    def create_settings(self):
+        <a id="change">self.image_name = cps.ImageNameSubscriber(
+                &quotSelect the input image&quot,
+                cps.NONE, doc=
+            Select the image with features to be enhanced or suppressed.)</a>
+
+        <a id="change">self.filtered_image_name = cps.ImageNameProvider(
+                &quotName the output image&quot,
+                &quotFilteredBlue&quot, doc=
+            Enter a name for the feature-enhanced or suppressed image.)</a>
+
+        self.method = cps.Choice(
+                &quotSelect the operation&quot,
+                [ENHANCE, SUPPRESS], doc=
+            Select whether you want to enhance or suppress the features you designated.
+            &lt;ul&gt;
+            &lt;li&gt;&lt;i&gt;%(ENHANCE)s:&lt;/i&gt; Produce an image whose intensity is largely
+            composed of the features of interest.&lt;/li&gt;
+            &lt;li &lt;i&gt;%(SUPPRESS)s:&lt;/i&gt; Produce an image with the features largely
+            removed.&lt;/li&gt;
+            &lt;/ul&gt; % globals())
+
+        self.enhance_method = cps.Choice(
+                &quotFeature type&quot,
+                [E_SPECKLES, E_NEURITES, E_DARK_HOLES, E_CIRCLES, E_TEXTURE, E_DIC], doc=
+            &lt;i&gt;(Used only if %(ENHANCE)s is selected)&lt;/i&gt;&lt;br&gt;
+            This module can enhance three kinds of image intensity features:
+            &lt;ul&gt;
+            &lt;li&gt;&lt;i&gt;%(E_SPECKLES)s:&lt;/i&gt; A speckle is an area of enhanced intensity
+            relative to its immediate neighborhood. The module enhances
+            speckles using a white tophat filter, which is the image minus the
+            morphological grayscale opening of the image. The opening operation
+            first suppresses the speckles by applying a grayscale erosion to reduce everything
+            within a given radius to the lowest value within that radius, then uses
+            a grayscale dilation to restore objects larger than the radius to an
+            approximation of their former shape. The white tophat filter enhances
+            speckles by subtracting the effects of opening from the original image.
+            &lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_NEURITES)s:&lt;/i&gt; Neurites are taken to be long, thin features
+            of enhanced intensity. Choose this option to enhance the intensity
+            of the neurites using the %(N_GRADIENT)s or %(N_TUBENESS)s methods
+            described below.&lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_DARK_HOLES)s:&lt;/i&gt; The module uses morphological reconstruction
+            (the rolling-ball algorithm) to identify dark holes within brighter
+            areas, or brighter ring shapes. The image is inverted so that the dark holes turn into
+            bright peaks. The image is successively eroded and the eroded image
+            is reconstructed at each step, resulting in an image which is
+            missing the peaks. Finally, the reconstructed image is subtracted
+            from the previous reconstructed image. This leaves circular bright
+            spots with a radius equal to the number of iterations performed.
+            &lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_CIRCLES)s:&lt;/i&gt; The module calculates the circular Hough transform of
+            the image at the diameter given by the feature size. The Hough transform
+            will have the highest intensity at points that are centered within a ring
+            of high intensity pixels where the ring diameter is the feature size. You
+            may want to use the &lt;b&gt;EnhanceEdges&lt;/b&gt; module to find the edges of your
+            circular object and then process the output by enhancing circles. You can
+            use &lt;b&gt;IdentifyPrimaryObjects&lt;/b&gt; to find the circle centers and then use
+            these centers as seeds in &lt;b&gt;IdentifySecondaryObjects&lt;/b&gt; to find whole,
+            circular objects using a watershed.&lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_TEXTURE)s:&lt;/i&gt; &lt;b&gt;EnanceOrSuppressFeatures&lt;/b&gt; produces an image
+            whose intensity is the variance among nearby pixels. This method weights
+            pixel contributions by distance using a Gaussian to calculate the weighting.
+            You can use this method to separate foreground from background if the foreground
+            is textured and the background is not.
+            &lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_DIC)s:&lt;/i&gt; This method recovers the optical density of a DIC image by
+            integrating in a direction perpendicular to the shear direction of the image.
+            &lt;/li&gt;
+            &lt;/ul&gt;
+            In addition, this module enables you to suppress certain features (such as speckles)
+            by specifying the feature size. % globals())
+
+        self.object_size = cps.Integer(
+                &quotFeature size&quot, 10, 2, doc=
+            &lt;i&gt;(Used only if circles, speckles or neurites are selected, or if suppressing features)&lt;/i&gt;&lt;br&gt;
+            Enter the diameter of the largest speckle, the width of the circle
+            or the width of the neurites to be enhanced or suppressed, which
+            will be used to calculate an adequate filter size. %(HELP_ON_MEASURING_DISTANCES)s % globals())
+
+        self.hole_size = cps.IntegerRange(
+                &quotRange of hole sizes&quot, value=(1, 10), minval=1, doc=
+            &lt;i&gt;(Used only if %(E_DARK_HOLES)s is selected)&lt;/i&gt;&lt;br&gt;
+            The range of hole sizes to be enhanced. The algorithm will
+            identify only holes whose diameters fall between these two
+            values. % globals())
+
+        self.smoothing = cps.Float(
+                &quotSmoothing scale&quot, value=2.0, minval=0, doc=
+            &lt;i&gt;(Used only for the %(E_TEXTURE)s, %(E_DIC)s or %(E_NEURITES)s methods)&lt;/i&gt;&lt;br&gt;
+            &lt;ul&gt;
+            &lt;li&gt;&lt;i&gt;%(E_TEXTURE)s&lt;/i&gt;: This is the scale of the texture features, roughly
+            in pixels. The algorithm uses the smoothing value entered as
+            the sigma of the Gaussian used to weight nearby pixels by distance
+            in the variance calculation.&lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_DIC)s:&lt;/i&gt; Specifies the amount of smoothing of the image in the direction parallel to the
+            shear axis of the image. The line integration method will leave
+            streaks in the image without smoothing as it encounters noisy
+            pixels during the course of the integration. The smoothing takes
+            contributions from nearby pixels which decreases the noise but
+            smooths the resulting image. &lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_DIC)s:&lt;/i&gt; Increase the smoothing to
+            eliminate streakiness and decrease the smoothing to sharpen
+            the image.&lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_NEURITES)s:&lt;/i&gt; The &lt;i&gt;%(N_TUBENESS)s&lt;/i&gt; option uses this scale
+            as the sigma of the Gaussian used to smooth the image prior to
+            gradient detection.&lt;/li&gt;
+            &lt;/ul&gt;
+            &lt;img src="memory:%(PROTIP_AVOID_ICON)s"&gt;&nbsp;
+            Smoothing can be turned off by entering a value of zero, but this
+            is not recommended. % globals())
+
+        self.angle = cps.Float(
+                &quotShear angle&quot, value=0, doc=
+            &lt;i&gt;(Used only for the %(E_DIC)s method)&lt;/i&gt;&lt;br&gt;
+            The shear angle is the direction of constant value for the
+            shadows and highlights in a DIC image. The gradients in a DIC
+            image run in the direction perpendicular to the shear angle.
+            For example, if the shadows run diagonally from lower left
+            to upper right and the highlights appear above the shadows,
+            the shear angle is 45&deg;. If the shadows appear on top,
+            the shear angle is 180&deg; + 45&deg; = 225&deg;.
+             % globals())
+
+        self.decay = cps.Float(
+                &quotDecay&quot, value=0.95, minval=0.1, maxval=1, doc=
+                &lt;i&gt;(Used only for the %(E_DIC)s method)&lt;/i&gt;&lt;br&gt;
+                The decay setting applies an exponential decay during the process
+                of integration by multiplying the accumulated sum by the decay
+                at each step. This lets the integration recover from accumulated
+                error during the course of the integration, but it also results
+                in diminished intensities in the middle of large objects.
+                Set the decay to a large value, on the order of 1 - 1/diameter
+                of your objects if the intensities decrease toward the middle.
+                Set the decay to a small value if there appears to be a bias
+                in the integration direction. % globals())
+
+        <a id="change">self.neurite_choice</a> = cps.Choice(
+                "Enhancement method",
+                [N_TUBENESS, N_GRADIENT], doc=
+            &lt;i&gt;(Used only for the %(E_NEURITES)s method)&lt;/i&gt;&lt;br&gt;</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    variable_revision_number = 6
+
+    def create_settings(<a id="change">self</a>):
+        <a id="change">super(EnhanceOrSuppressFeatures, self).create_settings()</a>
+
+        self.method = cellprofiler.setting.Choice(
+                &quotSelect the operation&quot,
+                [ENHANCE, SUPPRESS], doc=
+            Select whether you want to enhance or suppress the features you designated.
+            &lt;ul&gt;
+            &lt;li&gt;&lt;i&gt;%(ENHANCE)s:&lt;/i&gt; Produce an image whose intensity is largely
+            composed of the features of interest.&lt;/li&gt;
+            &lt;li &lt;i&gt;%(SUPPRESS)s:&lt;/i&gt; Produce an image with the features largely
+            removed.&lt;/li&gt;
+            &lt;/ul&gt; % globals())
+
+        self.enhance_method = cellprofiler.setting.Choice(
+                &quotFeature type&quot,
+                [E_SPECKLES, E_NEURITES, E_DARK_HOLES, E_CIRCLES, E_TEXTURE, E_DIC], doc=
+            &lt;i&gt;(Used only if %(ENHANCE)s is selected)&lt;/i&gt;&lt;br&gt;
+            This module can enhance three kinds of image intensity features:
+            &lt;ul&gt;
+            &lt;li&gt;&lt;i&gt;%(E_SPECKLES)s:&lt;/i&gt; A speckle is an area of enhanced intensity
+            relative to its immediate neighborhood. The module enhances
+            speckles using a white tophat filter, which is the image minus the
+            morphological grayscale opening of the image. The opening operation
+            first suppresses the speckles by applying a grayscale erosion to reduce everything
+            within a given radius to the lowest value within that radius, then uses
+            a grayscale dilation to restore objects larger than the radius to an
+            approximation of their former shape. The white tophat filter enhances
+            speckles by subtracting the effects of opening from the original image.
+            &lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_NEURITES)s:&lt;/i&gt; Neurites are taken to be long, thin features
+            of enhanced intensity. Choose this option to enhance the intensity
+            of the neurites using the %(N_GRADIENT)s or %(N_TUBENESS)s methods
+            described below.&lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_DARK_HOLES)s:&lt;/i&gt; The module uses morphological reconstruction
+            (the rolling-ball algorithm) to identify dark holes within brighter
+            areas, or brighter ring shapes. The image is inverted so that the dark holes turn into
+            bright peaks. The image is successively eroded and the eroded image
+            is reconstructed at each step, resulting in an image which is
+            missing the peaks. Finally, the reconstructed image is subtracted
+            from the previous reconstructed image. This leaves circular bright
+            spots with a radius equal to the number of iterations performed.
+            &lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_CIRCLES)s:&lt;/i&gt; The module calculates the circular Hough transform of
+            the image at the diameter given by the feature size. The Hough transform
+            will have the highest intensity at points that are centered within a ring
+            of high intensity pixels where the ring diameter is the feature size. You
+            may want to use the &lt;b&gt;EnhanceEdges&lt;/b&gt; module to find the edges of your
+            circular object and then process the output by enhancing circles. You can
+            use &lt;b&gt;IdentifyPrimaryObjects&lt;/b&gt; to find the circle centers and then use
+            these centers as seeds in &lt;b&gt;IdentifySecondaryObjects&lt;/b&gt; to find whole,
+            circular objects using a watershed.&lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_TEXTURE)s:&lt;/i&gt; &lt;b&gt;EnanceOrSuppressFeatures&lt;/b&gt; produces an image
+            whose intensity is the variance among nearby pixels. This method weights
+            pixel contributions by distance using a Gaussian to calculate the weighting.
+            You can use this method to separate foreground from background if the foreground
+            is textured and the background is not.
+            &lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_DIC)s:&lt;/i&gt; This method recovers the optical density of a DIC image by
+            integrating in a direction perpendicular to the shear direction of the image.
+            &lt;/li&gt;
+            &lt;/ul&gt;
+            In addition, this module enables you to suppress certain features (such as speckles)
+            by specifying the feature size. % globals())
+
+        self.object_size = cellprofiler.setting.Integer(
+                &quotFeature size&quot, 10, 2, doc=
+            &lt;i&gt;(Used only if circles, speckles or neurites are selected, or if suppressing features)&lt;/i&gt;&lt;br&gt;
+            Enter the diameter of the largest speckle, the width of the circle
+            or the width of the neurites to be enhanced or suppressed, which
+            will be used to calculate an adequate filter size. %(HELP_ON_MEASURING_DISTANCES)s % globals())
+
+        self.hole_size = cellprofiler.setting.IntegerRange(
+                &quotRange of hole sizes&quot, value=(1, 10), minval=1, doc=
+            &lt;i&gt;(Used only if %(E_DARK_HOLES)s is selected)&lt;/i&gt;&lt;br&gt;
+            The range of hole sizes to be enhanced. The algorithm will
+            identify only holes whose diameters fall between these two
+            values. % globals())
+
+        self.smoothing = cellprofiler.setting.Float(
+                &quotSmoothing scale&quot, value=2.0, minval=0, doc=
+            &lt;i&gt;(Used only for the %(E_TEXTURE)s, %(E_DIC)s or %(E_NEURITES)s methods)&lt;/i&gt;&lt;br&gt;
+            &lt;ul&gt;
+            &lt;li&gt;&lt;i&gt;%(E_TEXTURE)s&lt;/i&gt;: This is the scale of the texture features, roughly
+            in pixels. The algorithm uses the smoothing value entered as
+            the sigma of the Gaussian used to weight nearby pixels by distance
+            in the variance calculation.&lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_DIC)s:&lt;/i&gt; Specifies the amount of smoothing of the image in the direction parallel to the
+            shear axis of the image. The line integration method will leave
+            streaks in the image without smoothing as it encounters noisy
+            pixels during the course of the integration. The smoothing takes
+            contributions from nearby pixels which decreases the noise but
+            smooths the resulting image. &lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_DIC)s:&lt;/i&gt; Increase the smoothing to
+            eliminate streakiness and decrease the smoothing to sharpen
+            the image.&lt;/li&gt;
+            &lt;li&gt;&lt;i&gt;%(E_NEURITES)s:&lt;/i&gt; The &lt;i&gt;%(N_TUBENESS)s&lt;/i&gt; option uses this scale
+            as the sigma of the Gaussian used to smooth the image prior to
+            gradient detection.&lt;/li&gt;
+            &lt;/ul&gt;
+            &lt;img src="memory:%(PROTIP_AVOID_ICON)s"&gt;&nbsp;
+            Smoothing can be turned off by entering a value of zero, but this
+            is not recommended. % globals())
+
+        self.angle = cellprofiler.setting.Float(
+                &quotShear angle&quot, value=0, doc=
+            &lt;i&gt;(Used only for the %(E_DIC)s method)&lt;/i&gt;&lt;br&gt;
+            The shear angle is the direction of constant value for the
+            shadows and highlights in a DIC image. The gradients in a DIC
+            image run in the direction perpendicular to the shear angle.
+            For example, if the shadows run diagonally from lower left
+            to upper right and the highlights appear above the shadows,
+            the shear angle is 45&deg;. If the shadows appear on top,
+            the shear angle is 180&deg; + 45&deg; = 225&deg;.
+             % globals())
+
+        self.decay = cellprofiler.setting.Float(
+                &quotDecay&quot, value=0.95, minval=0.1, maxval=1, doc=
+                &lt;i&gt;(Used only for the %(E_DIC)s method)&lt;/i&gt;&lt;br&gt;
+                The decay setting applies an exponential decay during the process
+                of integration by multiplying the accumulated sum by the decay
+                at each step. This lets the integration recover from accumulated
+                error during the course of the integration, but it also results
+                in diminished intensities in the middle of large objects.
+                Set the decay to a large value, on the order of 1 - 1/diameter
+                of your objects if the intensities decrease toward the middle.
+                Set the decay to a small value if there appears to be a bias
+                in the integration direction. % globals())
+
+        <a id="change">self.neurite_choice</a> = cellprofiler.setting.Choice(
+                "Enhancement method",
+                [N_TUBENESS, N_GRADIENT], doc=
+            &lt;i&gt;(Used only for the %(E_NEURITES)s method)&lt;/i&gt;&lt;br&gt;</code></pre><img src="333447135.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/CellProfiler/CellProfiler/commit/d6938cfd6ae5dc6c7dfe7fbd8dbee1eabbffdca2#diff-28e08600539018b7cb702e77dfda7c00c667c02e001e8ec94bd2a88030a2739eL44' target='_blank'>Link</a></div><div id='project'> Project Name: CellProfiler/CellProfiler</div><div id='commit'> Commit Name: d6938cfd6ae5dc6c7dfe7fbd8dbee1eabbffdca2</div><div id='time'> Time: 2017-01-06</div><div id='author'> Author: mcquin@users.noreply.github.com</div><div id='file'> File Name: cellprofiler/modules/enhanceorsuppressfeatures.py</div><div id='class'> Class Name: EnhanceOrSuppressFeatures</div><div id='method'> Method Name: create_settings</div><BR><BR><div id='link'><a href='https://github.com/CellProfiler/CellProfiler/commit/d6938cfd6ae5dc6c7dfe7fbd8dbee1eabbffdca2#diff-28e08600539018b7cb702e77dfda7c00c667c02e001e8ec94bd2a88030a2739eL44' target='_blank'>Link</a></div><div id='project'> Project Name: CellProfiler/CellProfiler</div><div id='commit'> Commit Name: d6938cfd6ae5dc6c7dfe7fbd8dbee1eabbffdca2</div><div id='time'> Time: 2017-01-06</div><div id='author'> Author: mcquin@users.noreply.github.com</div><div id='file'> File Name: cellprofiler/modules/enhanceorsuppressfeatures.py</div><div id='class'> Class Name: EnhanceOrSuppressFeatures</div><div id='method'> Method Name: create_settings</div><BR><BR><div id='link'><a href='https://github.com/CellProfiler/CellProfiler/commit/54a7bad6a5344926ebbaf030ca0c2a95dbb2c240#diff-9efc9a1930a8cb1fffefbb226f14a59fac34263ee0824283b829b4ec180360eeL20' target='_blank'>Link</a></div><div id='project'> Project Name: CellProfiler/CellProfiler</div><div id='commit'> Commit Name: 54a7bad6a5344926ebbaf030ca0c2a95dbb2c240</div><div id='time'> Time: 2016-09-28</div><div id='author'> Author: allen.goodman@icloud.com</div><div id='file'> File Name: cellprofiler/modules/tophattransform.py</div><div id='class'> Class Name: TopHatTransform</div><div id='method'> Method Name: create_settings</div><BR><BR><div id='link'><a href='https://github.com/CellProfiler/CellProfiler/commit/e68cfc099e2dc2506f3e668cdfbfe0053b4a68e9#diff-2f3e3275b14f340a36173a99e195b45ac09c79834081b0dfb81debc216b9d7cbL84' target='_blank'>Link</a></div><div id='project'> Project Name: CellProfiler/CellProfiler</div><div id='commit'> Commit Name: e68cfc099e2dc2506f3e668cdfbfe0053b4a68e9</div><div id='time'> Time: 2018-01-12</div><div id='author'> Author: mcquin@users.noreply.github.com</div><div id='file'> File Name: cellprofiler/modules/plugins/imagetemplate.py</div><div id='class'> Class Name: ImageTemplate</div><div id='method'> Method Name: create_settings</div><BR>

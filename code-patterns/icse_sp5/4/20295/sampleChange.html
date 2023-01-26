@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  if not table:
+    table = google.datalab.bigquery.Table(name)
+
+  <a id="change">if cell_body:
+    schema = google.datalab.utils.commands.parse_config(cell_body, None, False)
+    jsonschema.validate(schema, table_schema_schema)
+    schema = google.datalab.bigquery.Schema(schema[&quotschema&quot])
+    table.create(schema=schema)
+  elif table.exists():
+    if args[&quotmode&quot] == &quotcreate&quot:
+      raise Exception(&quot%s already exists; use --append or --overwrite&quot % name)
+  else:
+    raise Exception(&quotTable does not exist, and no schema specified in cell; cannot load&quot)
+
+ </a> csv_options = google.datalab.bigquery.CSVOptions(delimiter=args[&quotdelimiter&quot],
+                                                   skip_leading_rows=args[&quotskip&quot],
+                                                   allow_jagged_rows=not args[&quotstrict&quot],
+                                                   quote=args[&quotquote&quot])</code></pre><h3>After Change</h3><pre><code class='java'>
+  if args[&quotmode&quot] == &quotcreate&quot:
+    if table.exists():
+      raise Exception(&quottable %s already exists; use "append" or "overwrite" as mode.&quot % name)
+    <a id="change">if not cell_body or &quotschema&quot not in cell_body:
+      raise Exception(&quotTable does not exist, and no schema specified in cell; cannot load.&quot)
+
+   </a> env = google.datalab.utils.commands.notebook_environment()
+    config = google.datalab.utils.commands.parse_config(cell_body, env, False)
+    schema = config[&quotschema&quot]
+    &#47&#47 schema can be an instance of google.datalab.bigquery.Schema.
+    &#47&#47 For example, user can run "my_schema = bq.Schema.from_data(df)" in a previous cell and
+    &#47&#47 specify "schema: $my_schema" in cell input.
+    if not isinstance(schema, google.datalab.bigquery.Schema):
+      jsonschema.validate(config, table_schema_schema)
+      schema = <a id="change">google.datalab.bigquery.Schema(schema)</a>
+    table.create(schema=schema)
+  elif not table.exists():
+    raise Exception(&quottable %s does not exist; use "create" as mode.&quot % name)
+</code></pre>

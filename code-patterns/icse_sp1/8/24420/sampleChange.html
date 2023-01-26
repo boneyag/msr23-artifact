@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            raise TypeError("Layer must be of type str or int")
+
+        return <a id="change">model_outputs[layer_index].detach().cpu().numpy()</a>
+
+    def set_learning_phase(self, train):
+        
+        Set the learning phase for the backend framework.</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Apply defences
+        x_ = self._apply_processing(x)
+        <a id="change">x_ = self._apply_defences_predict(x_)</a>
+
+        &#47&#47 Get index of the extracted layer
+        if isinstance(layer, six.string_types):
+            if layer not in self._layer_names:
+                raise ValueError("Layer name %s not supported" % layer)
+            layer_index = self._layer_names.index(layer)
+
+        elif isinstance(layer, (int, np.integer)):
+            layer_index = layer
+
+        else:
+            raise TypeError("Layer must be of type str or int")
+
+        &#47&#47 Run prediction with batch processing
+        results = []
+        num_batch = int(np.ceil(<a id="change">len(x_)</a> / float(batch_size)))
+        <a id="change">for m in range(num_batch):
+            &#47&#47 Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, x_.shape[0])
+
+            &#47&#47 Run prediction for the current batch
+            layer_output = self._model(torch.from_numpy(x_[begin:end]).to(self._device).float())[layer_index]
+            results.append(layer_output.detach().cpu().numpy())
+
+       </a> results = np.vstack(results)
+
+        return results
+</code></pre>

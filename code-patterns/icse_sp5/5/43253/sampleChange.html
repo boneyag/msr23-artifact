@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    log.info("Batch %d/%d: %s", batch_num, n_val_batches, description)
+                    task_info[&quotlast_log&quot] = time.time()
+                if &quotlabels&quot in batch:
+                    <a id="change">n_examples += batch[&quotlabels&quot].size()[0]</a>
+                elif &quottargs&quot in batch:
+                    <a id="change">n_examples += batch[&quottargs&quot][&quotwords&quot].nelement()</a>
+            assert batch_num == n_val_batches
+
+            &#47&#47 Get task validation metrics and store in all_val_metrics
+            task_metrics = task.get_metrics(reset=True)
+            for name, value in task_metrics.items():
+                all_val_metrics["%s_%s" % (task.name, name)] = value
+            all_val_metrics["%s_loss" % task.name] /= batch_num  &#47&#47 n_val_batches
+            all_val_metrics["micro_avg"] += \
+                all_val_metrics[task.val_metric] * n_examples
+            all_val_metrics["macro_avg"] += \
+                all_val_metrics[task.val_metric]
+            n_examples_overall += n_examples
+
+            &#47&#47 Reset training progress
+            task_info[&quotn_batches_since_val&quot] = 0
+            task_info[&quotloss&quot] = 0
+
+        <a id="change">all_val_metrics[&quotmicro_avg&quot]</a> /= n_examples_overall
+        all_val_metrics[&quotmacro_avg&quot] /= len(tasks)
+
+        &#47&#47 Track per task patience</code></pre><h3>After Change</h3><pre><code class='java'>
+                out = self._forward(batch, task=task, for_training=False)
+                loss = out["loss"]
+                all_val_metrics["%s_loss" % task.name] += loss.data.cpu().numpy()
+                n_examples += <a id="change">out["n_exs"]</a>
+
+                &#47&#47 log
+                if time.time() - task_info[&quotlast_log&quot] &gt; self._log_interval:
+                    task_metrics = task.get_metrics()</code></pre>

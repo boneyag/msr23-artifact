@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            encoder_output = []
+
+            for i, n_filters in enumerate(<a id="change">[64, 128, 256, 512]</a>):
+                net = self.downsampling_block(dim, net, n_filters, &quotdownsampling-&quot+str(i), b_norm, **kwargs)
+                encoder_output.append(net)
+
+            for i, n_filters in enumerate([256, 128, 64]):
+                net = self.upsampling_block(dim, net, n_filters, &quotupsampling-&quot+str(i), b_norm, **kwargs)
+                net = tf.add(net, encoder_output[-2-i])
+
+            net = self.upsampling_block(dim, net, 64, &quotupsampling-3&quot, b_norm, **kwargs)
+
+            layout = &quotcna&quot if b_norm else &quotca&quot
+            layout_transpose = &quottna&quot if b_norm else &quotta&quot
+
+            net = conv_block(dim, net, 32, 3, layout_transpose, &quotoutput_conv_1&quot, 2, **kwargs)
+            net = <a id="change">conv_block(dim, net, 32, 3, layout, &quotoutput_conv_2&quot, **kwargs)</a>
+            net = conv_block(dim, net, n_classes, 2, &quott&quot, &quotoutput_conv_3&quot, 2, **kwargs)
+
+        logits = tf.identity(net, &quotpredictions&quot)
+        tf.nn.softmax(logits, name=&quotpredicted_prob&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            layout = &quottnacnat&quot if enable_batch_norm else &quottacat&quot
+
+            net = <a id="change">conv_block(dim, net, [32, 32, n_classes], [3, 3, 2], layout, &quotoutput-conv&quot, 
+                             strides=[2, 1, 2], **kwargs)</a>
+
+        logits = tf.identity(net, &quotpredictions&quot)
+        tf.nn.softmax(logits, name=&quotpredicted_prob&quot)
+</code></pre>

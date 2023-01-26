@@ -1,0 +1,66 @@
+<html><h3>c27dbde9ccec2920f3825538aff07e8533e086ba,catalyst/rl/offpolicy/algorithms/dqn.py,DQN,_quantile_loss,#DQN#Any#Any#Any#Any#Any#,115
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self, states_t, actions_t, rewards_t, states_tp1, done_t
+    ):
+
+        <a id="change">gammas = (self._gammas**self._n_step)[None, :, None]</a>
+        &#47&#47 1 x num_heads x 1
+
+        <a id="change">done_t = done_t[:, None, :]</a>  &#47&#47 B x 1 x 1
+        <a id="change">rewards_t = rewards_t[:, None, :]</a>  &#47&#47 B x 1 x 1
+        actions_t = actions_t[:, None, None, :]  &#47&#47 B x 1 x 1 x 1
+        indices_t = actions_t.repeat(1, self._num_heads, 1, self.num_atoms)
+        &#47&#47 B x num_heads x 1 x num_atoms
+
+        &#47&#47 critic loss (quantile regression)
+
+        atoms_t = <a id="change">self</a>.critic(states_t).gather(-2, indices_t).squeeze(-2)
+        &#47&#47 B x num_heads x num_atoms
+
+        all_atoms_tp1 = self.target_critic(states_tp1).detach()</code></pre><h3>After Change</h3><pre><code class='java'>
+        return value_loss
+
+    def _quantile_loss(
+        <a id="change">self</a>, states_t, actions_t, rewards_t, states_tp1, done_t
+    ):
+        <a id="change">gammas, done_t, rewards_t = self._process_components(done_t, rewards_t)</a>
+
+        actions_t = actions_t[:, None, None, :]  &#47&#47 B x 1 x 1 x 1
+        &#47&#47 B x num_heads x 1 x num_atoms
+        indices_t = actions_t.repeat(1, self._num_heads, 1, self.num_atoms)
+        &#47&#47 B x num_heads x num_actions x num_atoms
+        <a id="change">q_atoms_t = self.critic(states_t)</a>
+        &#47&#47 B x num_heads x num_atoms
+        atoms_t = q_atoms_t.gather(-2, indices_t).squeeze(-2)
+
+        &#47&#47 B x num_heads x num_actions x num_atoms
+        q_atoms_tp1 = self.target_critic(states_tp1).detach()
+        &#47&#47 B x num_heads x num_actions
+        q_values_tp1 = q_atoms_tp1.mean(dim=-1)
+        &#47&#47 B x num_heads x 1
+        actions_tp1 = torch.argmax(q_values_tp1, dim=-1, keepdim=True)
+        &#47&#47 B x num_heads x 1 x num_atoms
+        indices_tp1 = actions_tp1.unsqueeze(-1).repeat(1, 1, 1, self.num_atoms)
+        &#47&#47 B x num_heads x num_atoms
+        atoms_tp1 = q_atoms_tp1.gather(-2, indices_tp1).squeeze(-2)
+
+        atoms_target_t = rewards_t + (1 - done_t) * gammas * atoms_tp1
+        value_loss = utils.quantile_loss(
+            atoms_t.view(-1, self.num_atoms),
+            atoms_target_t.view(-1, self.num_atoms),
+            self.tau, self.num_atoms,
+            self.critic_criterion
+        )
+
+        <a id="change">if self.entropy_regularization is not None:
+            q_values_t = torch.mean(q_atoms_t, dim=-1)
+            value_loss -= \
+                self.entropy_regularization * self._compute_entropy(q_values_t)
+
+       </a> return value_loss
+
+    def update_step(self, value_loss, critic_update=True):
+        &#47&#47 critic update</code></pre><img src="78397262.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 27</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/Scitator/catalyst/commit/c27dbde9ccec2920f3825538aff07e8533e086ba#diff-74dc86de78a0451867038185ca255cd987ac4b63e10eb008535d16a1b141a2d2L116' target='_blank'>Link</a></div><div id='project'> Project Name: Scitator/catalyst</div><div id='commit'> Commit Name: c27dbde9ccec2920f3825538aff07e8533e086ba</div><div id='time'> Time: 2019-07-24</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/offpolicy/algorithms/dqn.py</div><div id='class'> Class Name: DQN</div><div id='method'> Method Name: _quantile_loss</div><BR><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/c27dbde9ccec2920f3825538aff07e8533e086ba#diff-74dc86de78a0451867038185ca255cd987ac4b63e10eb008535d16a1b141a2d2L74' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: c27dbde9ccec2920f3825538aff07e8533e086ba</div><div id='time'> Time: 2019-07-24</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/offpolicy/algorithms/dqn.py</div><div id='class'> Class Name: DQN</div><div id='method'> Method Name: _categorical_loss</div><BR><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/c27dbde9ccec2920f3825538aff07e8533e086ba#diff-74dc86de78a0451867038185ca255cd987ac4b63e10eb008535d16a1b141a2d2L116' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: c27dbde9ccec2920f3825538aff07e8533e086ba</div><div id='time'> Time: 2019-07-24</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/offpolicy/algorithms/dqn.py</div><div id='class'> Class Name: DQN</div><div id='method'> Method Name: _quantile_loss</div><BR>

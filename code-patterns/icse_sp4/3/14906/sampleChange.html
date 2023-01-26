@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            in_channels = init_block_channels
+            for i, channels_per_stage in enumerate(channels):
+                &#47&#47stage = Sequential()
+                <a id="change">self.features.append(partial(
+                    F.max_pooling_2d,
+                    ksize=3,
+                    stride=2))</a>
+                for j, out_channels in enumerate(channels_per_stage):
+                    expand_channels = out_channels // 2
+                    squeeze_channels = out_channels // 8
+                    self.features.append(FireUnit(</code></pre><h3>After Change</h3><pre><code class='java'>
+                    out_channels=init_block_channels,
+                    ksize=init_block_kernel_size))
+                in_channels = init_block_channels
+                <a id="change">for i, channels_per_stage in enumerate(channels):
+                    stage = SimpleSequential()
+                    with stage.init_scope():
+                        setattr(stage, "pool{}".format(i + 1), partial(
+                            F.max_pooling_2d,
+                            ksize=3,
+                            stride=2))
+                        for j, out_channels in enumerate(channels_per_stage):
+                            expand_channels = out_channels // 2
+                            squeeze_channels = out_channels // 8
+                            setattr(stage, "unit{}".format(j + 1), FireUnit(
+                                in_channels=in_channels,
+                                squeeze_channels=squeeze_channels,
+                                expand1x1_channels=expand_channels,
+                                expand3x3_channels=expand_channels,
+                                residual=((residuals is not None) and (residuals[i][j] == 1))))
+                            in_channels = out_channels
+                    setattr(self.features, "stage{}".format(i + 1), stage)
+               </a> setattr(self.features, &quotdropout&quot, partial(
+                    F.dropout,
+                    ratio=0.5))
+</code></pre>

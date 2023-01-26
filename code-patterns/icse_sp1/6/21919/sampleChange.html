@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if value.dtype.base_dtype != dtype.base_dtype:
+          cast_input_dict[key] = tf.cast(value, dtype)
+          continue
+    if <a id="change">type(value)</a> == dict:
+      cast_input_dict[key] = cast_types(input_dict[key], dtype)
+      continue
+    cast_input_dict[key] = input_dict[key]</code></pre><h3>After Change</h3><pre><code class='java'>
+      cast_input_dict[key] = cast_types(input_dict[key], dtype)
+      continue
+    if isinstance(value, list):
+      <a id="change">cur_list = []</a>
+      <a id="change">for nest_value in value:
+        if isinstance(nest_value, tf.Tensor):
+          if nest_value.dtype == tf.float16 or nest_value.dtype == tf.float32:
+            if nest_value.dtype.base_dtype != dtype.base_dtype:
+              cur_list.append(tf.cast(nest_value, dtype))
+              continue
+        cur_list.append(nest_value)
+     </a> cast_input_dict[key] = cur_list
+      continue
+    cast_input_dict[key] = input_dict[key]
+  return cast_input_dict</code></pre>

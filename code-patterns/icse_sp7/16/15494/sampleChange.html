@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    elif len(v_gpu.shape) &gt;= 3:
+        raise ValueError(&quotinput array cannot have greater than 2-dimensions&quot)
+
+    <a id="change">use_double = int(v_gpu.dtype in [np.float64, np.complex128])</a>
+    <a id="change">use_complex = int(v_gpu.dtype in [np.complex64, np.complex128])</a>
+
+    &#47&#47 Initialize output matrix:
+    d_gpu = misc.zeros((v_gpu.size, v_gpu.size), v_gpu.dtype, allocator=alloc)
+
+    &#47&#47 Get block/grid sizes:
+    dev = misc.get_current_device()
+    block_dim, grid_dim = misc.select_block_grid_sizes(dev, d_gpu.shape)
+
+    <a id="change">diag = _get_diag_kernel(use_double, use_complex)</a>
+    diag(v_gpu, d_gpu, <a id="change">np.uint32(v_gpu.size)</a>,
+         block=block_dim,
+         grid=grid_dim)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    N = len(v_gpu)
+    if N &lt;= 0:
+        raise ValueError(&quotN must be greater than 0&quot)
+    d_gpu = misc.zeros((N, N), <a id="change">v_gpu.dtype</a>, allocator=alloc)
+
+    func = _get_diag_kernel(v_gpu.dtype)
+    <a id="change">func(d_gpu, v_gpu, N, slice=slice(0, N))</a>
+    return d_gpu
+
+@context_dependent_memoize
+def _get_eye_kernel(dtype):</code></pre>

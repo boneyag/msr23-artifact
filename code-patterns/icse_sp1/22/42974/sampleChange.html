@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    reduced_feat = _gen_send_reduce(call_type, graph,
+            message_func, reduce_func, (var_u, var_v, var_eid), recv_nodes)
+    &#47&#47 generate apply schedule
+    <a id="change">if apply_func:
+        &#47&#47 To avoid writing reduced features back to node frame and reading
+        &#47&#47 it again for apply phase. Instead, we first read the the node
+        &#47&#47 features and "merge" it with the reduced features.
+        v_nf = ir.READ_ROW(var_nf, var_recv_nodes)
+        v_nf = ir.UPDATE_DICT(v_nf, reduced_feat)
+        def _afunc_wrapper(node_data):
+            nb = NodeBatch(graph, recv_nodes, node_data)
+            return apply_func(nb)
+        afunc = var.FUNC(_afunc_wrapper)
+        applied_feat = ir.NODE_UDF(afunc, v_nf)
+        final_feat = ir.UPDATE_DICT(reduced_feat, applied_feat)
+    else:
+        final_feat = reduced_feat
+   </a> ir.WRITE_ROW_(var_nf, var_recv_nodes, final_feat)
+
+def _gen_send_reduce(
+        call_type,</code></pre><h3>After Change</h3><pre><code class='java'>
+    var_eid = var.IDX(eid)
+    var_recv_nodes = var.IDX(recv_nodes, name=&quotrecv_nodes&quot)
+    &#47&#47 generate send and reduce schedule
+    <a id="change">reduced_feat</a> = _gen_send_reduce(call_type, graph,
+            message_func, reduce_func, (var_u, var_v, var_eid), recv_nodes)
+    &#47&#47 generate apply schedule
+    <a id="change">final_feat = _apply_with_accum(graph, var_recv_nodes, var_nf, reduced_feat, apply_func)</a>
+    ir.WRITE_ROW_(var_nf, var_recv_nodes, final_feat)
+
+def schedule_update_all(graph, message_func, reduce_func, apply_func):
+    get send and recv schedule</code></pre>

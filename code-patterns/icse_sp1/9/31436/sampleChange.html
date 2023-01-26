@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  samples = []
+  with open(path, &quotr&quot) as file:
+    for line in file:
+      <a id="change">try:
+        raw_dict = json.loads(line)
+        labels = raw_dict.pop(&quotlabels&quot)
+        metadata = dict()
+        &#47&#47 labels is a comma-seprated list of key, value pairs
+        for pair in labels.split(&quot,&quot):
+          &#47&#47 Need to strip leading and trailing &quot|&quot from each pair
+          key, _, value = pair[1:-1].partition(&quot:&quot)
+          metadata[key] = value
+        raw_dict[&quotmetadata&quot] = metadata
+        samples.append(raw_dict)
+      except Exception as e:
+        logging.info(&quotException processing sample %s&quot, line)
+        logging.info(&quotException was: %s&quot, e)
+        raise e
+
+  &#47&#47 We can&quott use a SampleCollector because SampleCollector.AddSamples depends on
+  &#47&#47 having a benchmark and a benchmark_spec.
+ </a> publishers = SampleCollector._PublishersFromFlags()
+  for publisher in publishers:
+    publisher.PublishSamples(samples)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    samples = [json.loads(s) for s in file if s]
+  for sample in samples:
+    &#47&#47 Chop &quot|&quot at the beginning and end of labels and split labels by &quot|,|&quot
+    <a id="change">fields = sample.pop(&quotlabels&quot)[1:-1].split(&quot|,|&quot)</a>
+    &#47&#47 Turn the fields into [[key, value], ...]
+    key_values = [field.split(&quot:&quot, 1) for field in fields]
+    sample[&quotmetadata&quot] = {k: v <a id="change">for</a> k, v in key_values}
+
+  &#47&#47 We can&quott use a SampleCollector because SampleCollector.AddSamples depends on
+  &#47&#47 having a benchmark and a benchmark_spec.</code></pre>

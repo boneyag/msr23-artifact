@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      total_loss += loss
+
+    total_loss /= (cnt + 1)
+    <a id="change">deco_print("Validation loss: {:.4f}".format(total_loss), offset=4)</a>
+    dict_to_log = self._model.maybe_evaluate(
+      inputs_per_batch,
+      outputs_per_batch,
+    )</code></pre><h3>After Change</h3><pre><code class='java'>
+      self._model, run_context.session, compute_loss=True,
+    )
+
+    <a id="change">if not self._model.on_horovod or self._model._hvd.rank() == 0:
+      deco_print("Validation loss: {:.4f}".format(total_loss), offset=4)
+
+      dict_to_log = self._model.maybe_evaluate(
+        inputs_per_batch,
+        outputs_per_batch,
+      )
+      dict_to_log[&quoteval_loss&quot] = total_loss
+
+      &#47&#47 saving the best validation model
+      if total_loss &lt; self._best_eval_loss:
+        self._best_eval_loss = total_loss
+        self._eval_saver.save(
+          run_context.session,
+          os.path.join(self._model.params[&quotlogdir&quot], &quotbest_models&quot,
+                       &quotval_loss={:.4f}-step&quot.format(total_loss)),
+          global_step=step + 1,
+        )
+
+      &#47&#47 optionally logging to tensorboard any values
+      &#47&#47 returned from maybe_print_logs
+      if dict_to_log:
+        log_summaries_from_dict(
+          dict_to_log,
+          self._model.params[&quotlogdir&quot],
+          step,
+        )</a>
+</code></pre>

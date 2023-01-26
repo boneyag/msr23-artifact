@@ -1,0 +1,82 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    :return: the loss
+    
+    prediction = tf.cast(prediction, tf.float32)
+    <a id="change">one_hot</a> = labels_to_one_hot(ground_truth, <a id="change">tf.shape(prediction)</a>)
+    n_classes = prediction.shape[1].value
+
+    if weight_map is not None:
+        weight_map_nclasses = tf.reshape(
+            tf.tile(weight_map, [n_classes]), prediction.get_shape())
+        ref_vol = tf.sparse_reduce_sum(
+            weight_map_nclasses * one_hot, reduction_axes=[0])
+
+        intersect = tf.sparse_reduce_sum(
+            weight_map_nclasses * one_hot * prediction, reduction_axes=[0])
+        seg_vol = tf.reduce_sum(
+            tf.multiply(weight_map_nclasses, prediction), 0)
+    else:
+        <a id="change">ref_vol</a> = tf.sparse_reduce_sum(one_hot, reduction_axes=[0])
+        intersect = tf.sparse_reduce_sum(one_hot * prediction,
+                                         reduction_axes=[0])
+        seg_vol = tf.reduce_sum(prediction, 0)
+    if type_weight == &quotSquare&quot:
+        <a id="change">weights</a> = tf.reciprocal(tf.square(ref_vol))
+    elif type_weight == &quotSimple&quot:
+        <a id="change">weights</a> = tf.reciprocal(ref_vol)
+    elif type_weight == &quotUniform&quot:
+        weights = tf.ones_like(ref_vol)
+    else:
+        raise ValueError("The variable type_weight \"{}\""
+                         "is not defined.".format(type_weight))
+    new_weights = tf.where(tf.is_inf(weights), tf.zeros_like(weights), weights)
+    <a id="change">weights</a> = tf.where(tf.is_inf(weights), tf.ones_like(weights) *
+                       tf.reduce_max(new_weights), weights)
+    generalised_dice_numerator = \
+        2 * tf.reduce_sum(tf.multiply(weights, intersect))
+    <a id="change">generalised_dice_denominator</a> = \
+        tf.reduce_sum(tf.multiply(weights, seg_vol + ref_vol))
+    generalised_dice_score = \
+        generalised_dice_numerator / generalised_dice_denominator</code></pre><h3>After Change</h3><pre><code class='java'>
+    :return: the loss
+    
+    prediction = tf.cast(prediction, tf.float32)
+    <a id="change">one_hot</a> = labels_to_one_hot(ground_truth, <a id="change">tf.shape(prediction)[-1]</a>)
+    n_classes = prediction.shape[1].value
+
+    if weight_map is not None:
+        weight_map_nclasses = tf.reshape(
+            tf.tile(weight_map, [n_classes]), prediction.get_shape())
+        ref_vol = tf.sparse_reduce_sum(
+            weight_map_nclasses * one_hot, reduction_axes=[0])
+
+        intersect = tf.sparse_reduce_sum(
+            weight_map_nclasses * one_hot * prediction, reduction_axes=[0])
+        seg_vol = tf.reduce_sum(
+            tf.multiply(weight_map_nclasses, prediction), 0)
+    else:
+        <a id="change">ref_vol</a> = tf.sparse_reduce_sum(one_hot, reduction_axes=[0])
+        intersect = tf.sparse_reduce_sum(one_hot * prediction,
+                                         reduction_axes=[0])
+        seg_vol = tf.reduce_sum(prediction, 0)
+    if type_weight == &quotSquare&quot:
+        <a id="change">weights</a> = tf.reciprocal(tf.square(ref_vol))
+    elif type_weight == &quotSimple&quot:
+        <a id="change">weights</a> = tf.reciprocal(ref_vol)
+    elif type_weight == &quotUniform&quot:
+        weights = tf.ones_like(ref_vol)
+    else:
+        raise ValueError("The variable type_weight \"{}\""
+                         "is not defined.".format(type_weight))
+    new_weights = tf.where(tf.is_inf(weights), tf.zeros_like(weights), weights)
+    <a id="change">weights</a> = tf.where(tf.is_inf(weights), tf.ones_like(weights) *
+                       tf.reduce_max(new_weights), weights)
+    generalised_dice_numerator = \
+        2 * tf.reduce_sum(tf.multiply(weights, intersect))
+    <a id="change">generalised_dice_denominator</a> = \
+        tf.reduce_sum(tf.multiply(weights, seg_vol + ref_vol))
+    generalised_dice_score = \
+        generalised_dice_numerator / generalised_dice_denominator</code></pre>

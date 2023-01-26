@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def get_learning_rate(self, global_step, batch_size):
+    boundaries = [160000, 200000]
+    <a id="change">learning_rates = [1e-3, 1e-4, 1e-5]</a>
+    return tf.train.piecewise_constant(global_step, boundaries, learning_rates)
+
+  def _collect_backbone_vars(self):
+    backbone_vars = tf.get_collection(</code></pre><h3>After Change</h3><pre><code class='java'>
+    return cnn.top_layer
+
+  def get_learning_rate(self, global_step, batch_size):
+    <a id="change">rescaled_lr = self.get_scaled_base_learning_rate(batch_size)</a>
+    &#47&#47 Defined in MLPerf reference model
+    boundaries = [160000, 200000]
+    boundaries = [b * self.base_lr_batch_size // batch_size for b in boundaries]
+    decays = [1, 0.1, 0.01]
+    <a id="change">learning_rates = [rescaled_lr * d for d in decays]</a>
+    <a id="change">lr = tf.train.piecewise_constant(global_step, boundaries, learning_rates)</a>
+    warmup_steps = int(118287 / batch_size * 5)
+    <a id="change">warmup_lr = (
+        rescaled_lr * tf.cast(global_step, tf.float32) / tf.cast(
+            warmup_steps, tf.float32))</a>
+    return tf.cond(global_step &lt; warmup_steps, lambda: warmup_lr, lambda: lr)
+
+  def get_scaled_base_learning_rate(self, batch_size):
+    Calculates base learning rate for creating lr schedule.</code></pre>

@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      nsteps = self.config.nsteps or 5
+      d_loss, g_loss = self.gan.loss.sample
+      d_grads = self.step(0, nsteps, d_grads, d_grads, g_grads, d_loss, g_loss, self.gan.d_vars(), self.gan.g_vars())
+      g_grads = self.step(0, nsteps, g_grads, g_grads, d_grads, g_loss, d_loss, self.gan.g_vars(), <a id="change">self.gan.d_vars()</a>)
+      return [d_grads, g_grads]
+
+  def hvp1(self, grads, x_params, y_params, vs):</code></pre><h3>After Change</h3><pre><code class='java'>
+      lr = self.config.learn_rate or 1e-4
+      d_grads = self.step(0, nsteps, d_grads, d_grads, g_grads, d_loss, g_loss, d_params, g_params)
+      g_grads = self.step(0, nsteps, g_grads, g_grads, d_grads, g_loss, d_loss, g_params, d_params)
+      <a id="change">if self.config.final_hvp:
+          hvp = self.hvp_function()
+          d_grads2 = hvp(g_loss, g_params, d_params, [lr * _g for _g in g_grads])
+          g_grads2 = hvp(d_loss, d_params, g_params, [lr * _d for _d in d_grads])
+          d_grads = normalize(d_grads2, d_grads, self.config.normalize)
+          g_grads = normalize(g_grads2, g_grads, self.config.normalize)
+     </a> return [d_grads, g_grads]
+
+  def hvp_function(self):
+      hvp = self.hvp</code></pre>

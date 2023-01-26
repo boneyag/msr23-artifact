@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if len(freeze.shape) == 1:
+        out = _E_cond(poly, freeze, dist, cache, **kws)
+    else:
+        <a id="change">out = polynomials.concatenate([
+            _E_cond(poly, freeze_, dist, cache, **kws)[numpy.newaxis]
+            for freeze_ in freeze
+        ])</a>
+    if out.isconstant():
+        out = out.tonumpy()
+    return out
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    unfrozen = poly(**{
+        ("q%d" % idx): 1 for idx, keep in enumerate(freeze) if keep})
+    frozen = poly(**{
+        ("q%d" % idx): 1 <a id="change">for</a> idx, keep in enumerate(freeze) if not keep})
+
+    &#47&#47 if no unfrozen, poly will return numpy.ndarray instead of numpoly.ndpoly
+    if not isinstance(unfrozen, polynomials.ndpoly):
+        return polynomials.sum(frozen, 0)
+
+    &#47&#47 Remove frozen coefficients, such that poly == sum(frozen*unfrozen) holds
+    for key in unfrozen.keys:
+        unfrozen[key] = unfrozen[key] != 0
+
+    return <a id="change">polynomials.sum(frozen*E(unfrozen, dist), 0)</a>
+</code></pre>

@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            sys.stdout.flush()
+
+        if rank == 0:
+            <a id="change">model.load_state_dict(torch.load(best_model_path))</a>
+        return model, best_metric
+
+    def _run_epoch(
+        self,</code></pre><h3>After Change</h3><pre><code class='java'>
+                    if cuda_utils.CUDA_ENABLED:
+                        for key, state in model_state.items():
+                            model_state[key] = state.cpu()
+                    <a id="change">best_model_state = model_state</a>
+
+            if self.config.early_stop_after &gt; 0 and (
+                epoch - last_best_epoch == self.config.early_stop_after
+            ):
+                print(
+                    f"Rank {rank} worker: Eval metric hasn&quott changed for "
+                    + f"{self.config.early_stop_after} epochs. Stopping now."
+                )
+                break
+            sys.stdout.flush()
+
+        if rank == 0:
+            if cuda_utils.CUDA_ENABLED:
+                <a id="change">for key, state in best_model_state.items():
+                    best_model_state[key] = state.cuda()
+           </a> model.load_state_dict(best_model_state)
+        return model, best_metric
+
+    def _run_epoch(</code></pre>

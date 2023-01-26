@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+              &#47&#47 The checker is already on sys.path, eg: embedded in pants.pex.
+              working_set = WorkingSet(entries=sys.path)
+              for dist in working_set.resolve([Requirement.parse(self._CHECKER_REQ)]):
+                <a id="change">for req in dist.requires():
+                  builder.add_requirement(req)
+               </a> builder.add_distribution(dist)
+              builder.add_requirement(self._CHECKER_REQ)
+            except DistributionNotFound:
+              &#47&#47 We need to resolve the checker from a local or remote distribution repo.</code></pre><h3>After Change</h3><pre><code class='java'>
+    if not os.path.exists(pex_path):
+      with self.context.new_workunit(name=&quotbuild-checker&quot):
+        with safe_concurrent_creation(pex_path) as chroot:
+          pex_builder = <a id="change">PexBuilderWrapper(
+            PEXBuilder(path=chroot, interpreter=interpreter),
+            PythonRepos.global_instance(),
+            PythonSetup.global_instance(), self.context.log)</a>
+
+          &#47&#47 Constraining is required to guard against the case where the user
+          &#47&#47 has a pexrc file set.
+          pex_builder.add_interpreter_constraint(str(interpreter.identity.requirement))</code></pre>

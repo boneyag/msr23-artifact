@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    assert ray.is_initialized(), "Please call ray.init before async_api.init"
+
+    &#47&#47 Noop when handler is set.
+    <a id="change">if handler is not None:
+        return
+
+   </a> loop = asyncio.get_event_loop()
+    if loop.is_running():
+        if loop._thread_id != threading.get_ident():
+            &#47&#47 If the loop is runing outside current thread, we actually need
+            &#47&#47 to do this to make sure the context is initialized.
+            asyncio.run_coroutine_threadsafe(_async_init(), loop=loop)
+        else:
+            <a id="change">async_init_done = asyncio.get_event_loop().create_task(
+                _async_init())</a>
+            &#47&#47 Block until the async init finishes.
+            async_init_done.done()
+    else:
+        asyncio.get_event_loop().run_until_complete(_async_init())</code></pre><h3>After Change</h3><pre><code class='java'>
+    assert ray.is_initialized(), "Please call ray.init before async_api.init"
+
+    global handler
+    <a id="change">if handler is None:
+        worker = ray.worker.global_worker
+        loop = asyncio.get_event_loop()
+        handler = PlasmaEventHandler(loop, worker)
+        worker.core_worker.set_plasma_added_callback(handler)
+        logger.debug("AsyncPlasma Connection Created!")
+
+
+</a>def as_future(object_id):
+    Turn an object_id into a Future object.
+
+    Args:</code></pre>

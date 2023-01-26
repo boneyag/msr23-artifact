@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                          zc.round().long()], 2)
+
+    &#47&#47 gather image values at coordinates
+    <a id="change">mapped_vals = torch.stack([th_gather_nd(input[i], coords[i])
+                    for i in range(input.size(0))], 0)</a>
+
+    return mapped_vals.view_as(input)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    coords[:,1] = torch.clamp(coords[:,1], 0, input.size(2)-1).round()
+    coords[:,2] = torch.clamp(coords[:,2], 0, input.size(3)-1).round()
+
+    stride = <a id="change">torch.LongTensor(input.stride())[1:].float()</a>
+    <a id="change">idx = coords.mv(stride)</a>
+
+    input_flat = th_flatten(input)
+
+    mapped_vals = input_flat[idx.long()]</code></pre>

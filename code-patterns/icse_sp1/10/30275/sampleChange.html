@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.clear()
+            self.add_nodes(num_nodes)
+
+        <a id="change">if nx_graph.number_of_edges() == 0:
+            if self.is_readonly():
+                raise Exception("can&quott create an empty immutable graph")
+            return
+
+        &#47&#47 nx_graph.edges(data=True) returns src, dst, attr_dict
+       </a> has_edge_id = &quotid&quot in next(iter(nx_graph.edges(data=True)))[-1]
+        if has_edge_id:
+            num_edges = nx_graph.number_of_edges()
+            src = np.zeros((num_edges,), dtype=np.int64)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 the original graph is already directed and we do not want to do it.
+            nx_graph = nx_graph.to_directed()
+
+    <a id="change">is_multigraph = isinstance(nx_graph, nx.MultiDiGraph)</a>
+    num_nodes = nx_graph.number_of_nodes()
+
+    &#47&#47 nx_graph.edges(data=True) returns src, dst, attr_dict
+    has_edge_id = &quotid&quot in next(iter(nx_graph.edges(data=True)))[-1]
+    if has_edge_id:
+        num_edges = nx_graph.number_of_edges()
+        src = np.zeros((num_edges,), dtype=np.int64)
+        dst = np.zeros((num_edges,), dtype=np.int64)
+        for u, v, attr in nx_graph.edges(data=True):
+            eid = attr[&quotid&quot]
+            src[eid] = u
+            dst[eid] = v
+    else:
+        src = []
+        dst = []
+        for e in nx_graph.edges:
+            src.append(e[0])
+            dst.append(e[1])
+    num_nodes = nx_graph.number_of_nodes()
+    &#47&#47 We store edge Ids as an edge attribute.
+    src = utils.toindex(src)
+    dst = utils.toindex(dst)
+    <a id="change">return from_coo(num_nodes, src, dst, is_multigraph, readonly)</a>
+
+def from_scipy_sparse_matrix(adj, readonly):
+    Convert from scipy sparse matrix.
+</code></pre>

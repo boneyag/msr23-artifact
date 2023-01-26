@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 There should only be one pidfile, but in case there are many, we kill them all here.
+    for pidfile, pid, port in info:
+      with open(pidfile, &quotr&quot) as infile:
+        <a id="change">pidstr = infile.read()</a>
+      try:
+        os.unlink(pidfile)
+        <a id="change">pid = int(pidstr)</a>
+        os.kill(pid, signal.SIGKILL)
+        print(&quotKilled server with {pid} at http://localhost:{port}&quot.format(pid=pid, port=port),
+              file=sys.stderr)
+      except (ValueError, OSError):</code></pre><h3>After Change</h3><pre><code class='java'>
+  def execute(self):
+    server = ReportingServerManager(self.context, self.get_options())
+
+    <a id="change">if not server.is_alive():
+      logger.info(&quotNo server found.&quot)
+      return
+
+   </a> pid = server.pid
+
+    try:
+      logger.info(<a id="change">&quotKilling server with {pid} at http://localhost:{port}&quot
+                  .format(pid=pid, port=server.socket)</a>)
+      server.terminate()
+    except ReportingServerManager.NonResponsiveProcess:
+      logger.info(&quotFailed to kill server with pid {pid}!&quot.format(pid=pid))</code></pre>

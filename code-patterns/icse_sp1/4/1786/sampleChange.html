@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if not isinstance(x.type, GpuArrayType):
+            raise TypeError(x)
+        return Apply(self, [x],
+                     <a id="change">[tensor.TensorType(dtype=x.dtype,
+                                        broadcastable=x.broadcastable)()]</a>)
+
+    def perform(self, node, inp, out):
+        x, = inp</code></pre><h3>After Change</h3><pre><code class='java'>
+    def make_node(self, x):
+        if not isinstance(x.type, GpuArrayType):
+            raise TypeError(x)
+        out_var = <a id="change">tensor.TensorType(dtype=x.dtype,
+                                    broadcastable=x.broadcastable)()</a>
+        &#47&#47 Keep the special comparison if there is one.
+        values_eq_approx = getattr(x.tag, &quotvalues_eq_approx&quot, None)
+        if values_eq_approx:
+            out_var.tag.values_eq_approx = values_eq_approx
+        return Apply(self, [x], <a id="change">[out_var]</a>)
+
+    def perform(self, node, inp, out):
+        x, = inp</code></pre>

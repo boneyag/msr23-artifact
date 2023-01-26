@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if self.spot_early_termination:  &#47&#47 VM already marked as preemptedor
+      return
+    if not self.is_failed_run:  &#47&#47 GCE only detects interruption in failed run.
+      <a id="change">return</a>
+    logging.info(&quotFailed run detected for %s&quot, self.name)
+    &#47&#47 https://cloud.google.com/compute/docs/instances/preemptible&#47&#47preemption-process
+    &#47&#47 Compute Engine sends a preemption notice to the instance in the form of
+    &#47&#47 an ACPI G2 Soft Off signal.</code></pre><h3>After Change</h3><pre><code class='java'>
+      return
+    if self.spot_early_termination:  &#47&#47 VM already marked as preemptedor
+      return
+    <a id="change">vm_without_zone = copy.copy(self)</a>
+    vm_without_zone.zone = None
+    <a id="change">gcloud_command</a> = util.GcloudCommand(vm_without_zone, &quotcompute&quot,
+                                        &quotoperations&quot, &quotlist&quot)
+    gcloud_command.flags[&quotfilter&quot] = f&quottargetLink.scope():{self.name}&quot
+    <a id="change">gcloud_command.flags[&quotzones&quot] = self.zone</a>
+    stdout, _, _ = <a id="change">gcloud_command.Issue(suppress_warning=True)</a>
+    self.spot_early_termination = any(
+        operation[&quotoperationType&quot] == &quotcompute.instances.preempted&quot
+        for operation in json.loads(stdout))
+    if self.spot_early_termination:</code></pre>

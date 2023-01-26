@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 ExecutionGraph nodes move from `pending_submission` to `in_flight` to `satisfied_promises`.
+    pending_submission = {}
+    in_flight = {}
+    <a id="change">satisfied_promises = set()</a>
+
+    def submit_satisfied_pending():
+      for promise, plan in pending_submission.items():
+        if plan.promises.issubset(satisfied_promises):</code></pre><h3>After Change</h3><pre><code class='java'>
+    for step_batch in self._scheduler.schedule(build_request):
+      if not step_batch:
+        &#47&#47 A batch should only be empty if all dependency work is currently blocked/running.
+        <a id="change">if not in_flight and not pending_submission:
+          raise Exception(&quotScheduler provided an empty batch while no work is in progress!&quot)
+     </a> else:
+        &#47&#47 Submit and wait for work for as long as we&quotre able to keep the pool saturated.
+        pending_submission.update(step_batch)
+        while submit_until(self._pool_size) &gt; 0:</code></pre>

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        AZZA = self.ZA.T[:, None, :, None] * self.ZA[None, :, None, :]
+        AZZA = AZZA + AZZA.swapaxes(1, 2)
+        target_S += (dL_dpsi2[:, :, :, None] * self.ZA[None, :, None, :] * self.ZA[None, None, :, :]).sum(1).sum(1)
+        <a id="change">dpsi2_dmu = (dL_dpsi2[:, :, :, None] * np.tensordot(mu, AZZA, (-1, 0))).sum(1).sum(1)</a>
+        target_mu += dpsi2_dmu
+
+    def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
+        self._psi_computations(Z, mu, S)</code></pre><h3>After Change</h3><pre><code class='java'>
+                         &quotextra_compile_args&quot: [&quot-fopenmp -O3&quot],  &#47&#47-march=native&quot],
+                         &quotextra_link_args&quot   : [&quot-lgomp&quot]}
+
+        N,M,Q = <a id="change">mu.shape[0]</a>,Z.shape[0],<a id="change">mu.shape[1]</a>
+        weave.inline(code, support_code=support_code, libraries=[&quotgomp&quot],
+                     arg_names=[&quotN&quot,&quotM&quot,&quotQ&quot,&quotmu&quot,&quotAZZA&quot,&quotAZZA_2&quot,&quottarget_mu&quot,&quottarget_S&quot,&quotdL_dpsi2&quot],
+                     type_converters=weave.converters.blitz,**weave_options)
+</code></pre>

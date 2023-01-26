@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        adj_data (numpy.ndarray):
+        y_grad (numpy.ndarray):
+    
+    <a id="change">atom = chainer.Variable(atom_data)</a>
+    update.reset_state()
+    <a id="change">y = update(atom, adj_data)</a>
+    <a id="change">y.grad = y_grad</a>
+    <a id="change">y.backward()</a>
+
+    def f():
+        update.reset_state()
+        return update(atom_data, adj_data).data,
+
+    <a id="change">gx, = gradient_check.numerical_grad(f, (atom.data, ), (y.grad, ))</a>
+    numpy.testing.assert_allclose(
+        cuda.to_cpu(gx), cuda.to_cpu(atom.grad), atol=1e-3, rtol=1e-3)
+    return gx
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        update.reset_state()
+        return update(atom_data, adj_data)
+
+    <a id="change">gradient_check.check_backward(
+        f, (atom_data), y_grad, atol=1e-1, rtol=1e-1)</a>
+
+
+def test_backward_cpu(update, data):
+    atom_data, adj_data, y_grad = data</code></pre>

@@ -1,0 +1,41 @@
+<html><h3>96c5ae2cdd2f6d9c369472b2d1977c02d12c652e,foreman/data_refinery_foreman/foreman/main.py,,retry_lost_processor_jobs,#,210
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def retry_lost_processor_jobs() -&gt; None:
+    Retry processor jobs who never even got started for too long.
+    minimum_creation_time = timezone.now() - MAX_QUEUE_TIME
+    lost_jobs = <a id="change">ProcessorJob.objects.filter(
+        success=None,
+        retried=False,
+        start_time=None,
+        end_time=None,
+        created_at__lt=minimum_creation_time
+        &#47&#47 TEMPORARY for Jackie&quots grant
+    ).exclude(pipeline_applied=ProcessorPipeline.NONE.value)</a>
+
+    handle_processor_jobs(lost_jobs)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    nomad_port = get_env_variable("NOMAD_PORT", "4646")
+    nomad_client = nomad.Nomad(nomad_host, port=int(nomad_port), timeout=5)
+    lost_jobs = []
+    <a id="change">for job in potentially_lost_jobs:
+        try:
+            job_status = nomad_client.job.get_job(job.nomad_job_id)["Status"]
+            &#47&#47 If the job is still pending, then it makes sense that it hasn&quott started.
+            if job_status is not "pending":
+                &#47&#47 However if it&quots not pending, then it may have
+                &#47&#47 started since our original query.
+                job.refresh_from_db()
+                if job.start_time is None:
+                    &#47&#47 Nope, this job is lost.
+                    lost_jobs.append(job)
+        except URLNotFoundNomadException:
+            lost_jobs.append(job)
+
+   </a> handle_processor_jobs(lost_jobs)
+
+
+def monitor_jobs():</code></pre><img src="22667281.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/AlexsLemonade/refinebio/commit/96c5ae2cdd2f6d9c369472b2d1977c02d12c652e#diff-bdf086a4de90fb9d8db6a2b28adb2faab09e415c9c9601063f66acd5aaced55aL213' target='_blank'>Link</a></div><div id='project'> Project Name: AlexsLemonade/refinebio</div><div id='commit'> Commit Name: 96c5ae2cdd2f6d9c369472b2d1977c02d12c652e</div><div id='time'> Time: 2018-06-14</div><div id='author'> Author: kurt.wheeler91@gmail.com</div><div id='file'> File Name: foreman/data_refinery_foreman/foreman/main.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: retry_lost_processor_jobs</div><BR><BR><div id='link'><a href='https://github.com/AlexsLemonade/refinebio/commit/8bc46bda10949ec121c784fa0dd70deea12438f9#diff-f1e9761c8c8ca9348dc517d2b206b90c73dd617425571a42dc4065c134528405L38' target='_blank'>Link</a></div><div id='project'> Project Name: AlexsLemonade/refinebio</div><div id='commit'> Commit Name: 8bc46bda10949ec121c784fa0dd70deea12438f9</div><div id='time'> Time: 2019-08-22</div><div id='author'> Author: arielsvn@gmail.com</div><div id='file'> File Name: foreman/data_refinery_foreman/foreman/management/commands/rerun_salmon_old_samples.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: update_salmon_versions</div><BR><BR><div id='link'><a href='https://github.com/MTG/freesound/commit/f96a9c451ebc69e761baa633a33472e974a014d5#diff-6b070a300f0e440e2b6e3ae75cd4a54300517cbc9bdbb9a08584f10c026abaa1L192' target='_blank'>Link</a></div><div id='project'> Project Name: MTG/freesound</div><div id='commit'> Commit Name: f96a9c451ebc69e761baa633a33472e974a014d5</div><div id='time'> Time: 2019-07-24</div><div id='author'> Author: frederic.font@upf.edu</div><div id='file'> File Name: accounts/models.py</div><div id='class'> Class Name: Profile</div><div id='method'> Method Name: get_enabled_email_types</div><BR>

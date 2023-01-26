@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 lazy import
+        import torch
+        import torch.nn as nn
+        <a id="change">if self._old_pytorch():  &#47&#47 pragma: no cover
+            from torch.autograd import Variable
+
+       </a> input_shape = image.shape
+        image, dpdx = self._process_input(image)
+        target = np.array([label])
+        target = torch.from_numpy(target).long().to(self.device)
+
+        images = image[np.newaxis]
+        images = torch.from_numpy(images).to(self.device)
+
+        <a id="change">if self._old_pytorch():  &#47&#47 pragma: no cover
+            target = Variable(target)
+            images = Variable(images, requires_grad=True)
+        else:
+            images.requires_grad_()
+
+       </a> predictions = self._model(images)
+        ce = nn.CrossEntropyLoss()
+        loss = ce(predictions, target)
+        loss.backward()
+        <a id="change">grad</a> = images.grad
+
+        if self._old_pytorch():  &#47&#47 pragma: no cover
+            predictions = predictions.data
+        predictions = predictions.to("cpu")
+
+        <a id="change">if not self._old_pytorch():
+            predictions = predictions.detach()
+       </a> predictions = predictions.numpy()
+        predictions = np.squeeze(predictions, axis=0)
+        assert predictions.ndim == 1
+        assert predictions.shape == (self.num_classes(),)
+
+        <a id="change">if self._old_pytorch():  &#47&#47 pragma: no cover
+            grad = grad.data
+       </a> <a id="change">grad = grad.to("cpu")</a>
+        if not self._old_pytorch():
+            grad = grad.detach()
+        <a id="change">grad = grad.numpy()</a>
+        grad = np.squeeze(grad, axis=0)
+        grad = self._process_gradient(dpdx, grad)
+        assert grad.shape == input_shape
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        images = image[np.newaxis]
+        images = torch.from_numpy(images).to(self.device)
+        <a id="change">images.requires_grad_()</a>
+
+        predictions = self._model(images)
+        ce = nn.CrossEntropyLoss()
+        loss = ce(predictions, target)</code></pre>

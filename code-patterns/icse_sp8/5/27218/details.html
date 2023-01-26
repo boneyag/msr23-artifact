@@ -1,0 +1,46 @@
+<html><h3>a4c4a4f2d33081806397784f96b113d5b3b32c9a,tensorforce/core/memories/prioritized_replay.py,PrioritizedReplay,tf_retrieve_timesteps,#PrioritizedReplay#Any#,149
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tf.while_loop(
+            cond=cond,
+            body=sampling_fn,
+            loop_vars=<a id="change">[sum_priorities, self.priorities, indices, loop_index, num_timesteps]</a>
+        )
+
+        &#47&#47 Save batch indices.
+        assignment = tf.assign(ref=self.batch_indices, value=indices)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Vectorized sampling.
+        sum_priorities = tf.reduce_sum(input_tensor=self.priorities, axis=0)
+        sample = tf.random_uniform(shape=(num_priority_elements,),dtype=tf.float32)
+        <a id="change">indices = tf.constant(value=0, shape=(num_priority_elements,))</a>
+
+        def cond(loop_index, sample, priorities):
+            return tf.reduce_all(input_tensor=(sample &lt;= 0))
+
+        def sampling_fn(loop_index, sample, priorities):
+            priority = self.priorities[loop_index]
+            sample -= priority / priorities
+
+            return (tf.add(loop_index, 1), sample, priorities)
+
+        priority_indices = <a id="change">tf</a>.while_loop(
+            cond=cond,
+            body=<a id="change">sampling_fn</a>,
+            loop_vars=(indices, sample, sum_priorities)
+        )[0]
+
+        priority_terminal = tf.gather(params=self.terminal_memory, indices=priority_indices)
+        priority_indices = tf.boolean_mask(tensor=indices, mask=tf.logical_not(x=priority_terminal))
+
+        &#47&#47 Store how many elements we retrieved from the buffer for updating priorities.
+        assignment = tf.assign(ref=self.buffer_index, value=num_buffer_elems)
+
+        &#47&#47 Store indices from priority memory.
+        with tf.control_dependencies(control_inputs=(assignment,)):
+            <a id="change">assignment = tf.assign(ref=self.batch_indices, value=priority_indices)</a>
+
+        with tf.control_dependencies(control_inputs=(assignment,)):
+            return self.retrieve_indices(buffer_elements=num_buffer_elems, priority_indices=priority_indices)
+</code></pre><img src="138867750.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/a4c4a4f2d33081806397784f96b113d5b3b32c9a#diff-2b5b02ad8a19e118893115b1958029b9857004526b6d0bd276f8e35a876dbeedL149' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: a4c4a4f2d33081806397784f96b113d5b3b32c9a</div><div id='time'> Time: 2018-02-08</div><div id='author'> Author: mi.schaarschmidt@gmail.com</div><div id='file'> File Name: tensorforce/core/memories/prioritized_replay.py</div><div id='class'> Class Name: PrioritizedReplay</div><div id='method'> Method Name: tf_retrieve_timesteps</div><BR><BR><div id='link'><a href='https://github.com/google/tf_mesh_renderer/commit/8aaabd6dfcd2f4ae5618ef08657bbba82e8bd69f#diff-e3cc529c7fbe8a91d7438479da642457aea30a56ce5b2d295bf09296c08026d1L106' target='_blank'>Link</a></div><div id='project'> Project Name: google/tf_mesh_renderer</div><div id='commit'> Commit Name: 8aaabd6dfcd2f4ae5618ef08657bbba82e8bd69f</div><div id='time'> Time: 2019-05-28</div><div id='author'> Author: david.erler@gmail.com</div><div id='file'> File Name: mesh_renderer/rasterize_triangles.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: rasterize_clip_space</div><BR><BR><div id='link'><a href='https://github.com/XifengGuo/CapsNet-Keras/commit/5cb43a9498315a16412cba20a59e6e76f9721b7b#diff-70158145f8c3017473e154d3e9318cd7ebab5469186eddb6bcbe943621b770a0L94' target='_blank'>Link</a></div><div id='project'> Project Name: XifengGuo/CapsNet-Keras</div><div id='commit'> Commit Name: 5cb43a9498315a16412cba20a59e6e76f9721b7b</div><div id='time'> Time: 2017-10-31</div><div id='author'> Author: guoxifeng1990@163.com</div><div id='file'> File Name: capsulelayers.py</div><div id='class'> Class Name: CapsuleLayer</div><div id='method'> Method Name: call</div><BR>

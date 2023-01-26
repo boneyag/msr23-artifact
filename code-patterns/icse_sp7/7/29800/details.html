@@ -1,0 +1,32 @@
+<html><h3>42dc18f2a13441eefdfceed905843a3d19b27072,pyro/distributions/one_two_matching.py,OneTwoMatching,log_partition_function,#OneTwoMatching#,101
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        finfo = torch.finfo(self.logits.dtype)
+        shift = self.logits.data.max(1, True).values
+        shift.clamp_(min=finfo.min, max=finfo.max)
+        p = <a id="change">(</a>self.logits - shift).exp().clamp(min=finfo.tiny ** 0.5)
+        d = <a id="change">2 / p.sum(0)</a>
+        for _ in range(self.bp_iters):
+            s = 1 / (p @ d)
+            d = 2 / (s @ p)
+        b = s[:, None] * d * p
+
+        &#47&#47 Evaluate the Bethe free energy, adapting [4] Eqn 4 to one-two
+        &#47&#47 matchings.
+        <a id="change">b = b.clamp(min=finfo.tiny ** 0.5)</a>
+        b_ = (1 - b).clamp(min=finfo.tiny ** 0.5)
+        internal_energy = -(b * p.log()).sum()
+        &#47&#47 Let h be the entropy of matching each destin to one source.
+        z = b / 2</code></pre><h3>After Change</h3><pre><code class='java'>
+        shift = self.logits.max(1, True).values
+        shift.data.clamp_(min=finfo.min, max=finfo.max)
+        logits = self.logits - shift
+        d = <a id="change">logits.logsumexp(0)</a> - math.log(2)
+        for _ in range(self.bp_iters):
+            <a id="change">s = (logits - d).logsumexp(-1, True)</a>
+            d = (logits - s).logsumexp(0) - math.log(2)
+        b = (logits - (d + s)).exp()
+
+        def log(x):</code></pre><img src="149423337.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/uber/pyro/commit/42dc18f2a13441eefdfceed905843a3d19b27072#diff-c4ccfea6e4be46280bb110e2c2bf7eed06f3657afdf86be60ada09504652f354L111' target='_blank'>Link</a></div><div id='project'> Project Name: uber/pyro</div><div id='commit'> Commit Name: 42dc18f2a13441eefdfceed905843a3d19b27072</div><div id='time'> Time: 2020-12-07</div><div id='author'> Author: fritz.obermeyer@gmail.com</div><div id='file'> File Name: pyro/distributions/one_two_matching.py</div><div id='class'> Class Name: OneTwoMatching</div><div id='method'> Method Name: log_partition_function</div><BR><BR><div id='link'><a href='https://github.com/uber/pyro/commit/42dc18f2a13441eefdfceed905843a3d19b27072#diff-70a3257a7421e045a80b6f4e5b247b7ead811c58779677b5db3752f3165adf10L110' target='_blank'>Link</a></div><div id='project'> Project Name: uber/pyro</div><div id='commit'> Commit Name: 42dc18f2a13441eefdfceed905843a3d19b27072</div><div id='time'> Time: 2020-12-07</div><div id='author'> Author: fritz.obermeyer@gmail.com</div><div id='file'> File Name: pyro/distributions/one_one_matching.py</div><div id='class'> Class Name: OneOneMatching</div><div id='method'> Method Name: log_partition_function</div><BR><BR><div id='link'><a href='https://github.com/PIQuIL/QuCumber/commit/58452e89ae8ba91c20907314f95d75aff52ce30e#diff-13be35f5fed386c03ff304a02ac0c1cca856b274341013453c1cdeb23d0fccf7L207' target='_blank'>Link</a></div><div id='project'> Project Name: PIQuIL/QuCumber</div><div id='commit'> Commit Name: 58452e89ae8ba91c20907314f95d75aff52ce30e</div><div id='time'> Time: 2018-08-03</div><div id='author'> Author: emerali@users.noreply.github.com</div><div id='file'> File Name: qucumber/binary_rbm.py</div><div id='class'> Class Name: BinaryRBM</div><div id='method'> Method Name: compute_partition_function</div><BR>

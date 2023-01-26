@@ -1,0 +1,125 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        ValueError: in case of invalid argument for `weights`,
+            or invalid input shape.
+    
+    if <a id="change">weights not in {&quotimagenet&quot, None}</a>:
+        raise ValueError(&quotThe `weights` argument should be either &quot
+                         &quot`None` (random initialization) or `imagenet` &quot
+                         &quot(pre-training on ImageNet).&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+        ValueError: in case of invalid argument for `weights`,
+            or invalid input shape.
+    
+    if <a id="change">not (weights in {&quotimagenet&quot, None} or os.path.exists(weights))</a>:
+        raise ValueError(&quotThe `weights` argument should be either &quot
+                         &quot`None` (random initialization), `imagenet` &quot
+                         &quot(pre-training on ImageNet), &quot
+                         &quotor the path to the weights file to be loaded.&quot)
+
+    if weights == &quotimagenet&quot and include_top and classes != 1000:
+        raise ValueError(&quotIf using `weights` as imagenet with `include_top`&quot
+                         &quot as true, `classes` should be 1000&quot)
+
+    &#47&#47 Determine proper input shape
+    input_shape = _obtain_input_shape(input_shape,
+                                      default_size=224,
+                                      min_size=197,
+                                      data_format=K.image_data_format(),
+                                      require_flatten=include_top,
+                                      weights=weights)
+
+    if input_tensor is None:
+        img_input = Input(shape=input_shape)
+    else:
+        if not K.is_keras_tensor(input_tensor):
+            img_input = Input(tensor=input_tensor, shape=input_shape)
+        else:
+            img_input = input_tensor
+    if K.image_data_format() == &quotchannels_last&quot:
+        bn_axis = 3
+    else:
+        bn_axis = 1
+
+    x = Conv2D(
+        64, (7, 7), strides=(2, 2), padding=&quotsame&quot, name=&quotconv1&quot)(img_input)
+    x = BatchNormalization(axis=bn_axis, name=&quotbn_conv1&quot)(x)
+    x = Activation(&quotrelu&quot)(x)
+    x = MaxPooling2D((3, 3), strides=(2, 2))(x)
+
+    x = conv_block(x, 3, [64, 64, 256], stage=2, block=&quota&quot, strides=(1, 1))
+    x = identity_block(x, 3, [64, 64, 256], stage=2, block=&quotb&quot)
+    x = identity_block(x, 3, [64, 64, 256], stage=2, block=&quotc&quot)
+
+    x = conv_block(x, 3, [128, 128, 512], stage=3, block=&quota&quot)
+    x = identity_block(x, 3, [128, 128, 512], stage=3, block=&quotb&quot)
+    x = identity_block(x, 3, [128, 128, 512], stage=3, block=&quotc&quot)
+    x = identity_block(x, 3, [128, 128, 512], stage=3, block=&quotd&quot)
+
+    x = conv_block(x, 3, [256, 256, 1024], stage=4, block=&quota&quot)
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block=&quotb&quot)
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block=&quotc&quot)
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block=&quotd&quot)
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block=&quote&quot)
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block=&quotf&quot)
+
+    x = conv_block(x, 3, [512, 512, 2048], stage=5, block=&quota&quot)
+    x = identity_block(x, 3, [512, 512, 2048], stage=5, block=&quotb&quot)
+    x = identity_block(x, 3, [512, 512, 2048], stage=5, block=&quotc&quot)
+
+    x = AveragePooling2D((7, 7), name=&quotavg_pool&quot)(x)
+
+    if include_top:
+        x = Flatten()(x)
+        x = Dense(classes, activation=&quotsoftmax&quot, name=&quotfc1000&quot)(x)
+    else:
+        if pooling == &quotavg&quot:
+            x = GlobalAveragePooling2D()(x)
+        elif pooling == &quotmax&quot:
+            x = GlobalMaxPooling2D()(x)
+
+    &#47&#47 Ensure that the model takes into account
+    &#47&#47 any potential predecessors of `input_tensor`.
+    if input_tensor is not None:
+        inputs = get_source_inputs(input_tensor)
+    else:
+        inputs = img_input
+    &#47&#47 Create model.
+    model = Model(inputs, x, name=&quotresnet50&quot)
+
+    &#47&#47 load weights
+    if weights == &quotimagenet&quot:
+        if include_top:
+            weights_path = get_file(&quotresnet50_weights_tf_dim_ordering_tf_kernels.h5&quot,
+                                    WEIGHTS_PATH,
+                                    cache_subdir=&quotmodels&quot,
+                                    md5_hash=&quota7b3fe01876f51b976af0dea6bc144eb&quot)
+        else:
+            weights_path = get_file(&quotresnet50_weights_tf_dim_ordering_tf_kernels_notop.h5&quot,
+                                    WEIGHTS_PATH_NO_TOP,
+                                    cache_subdir=&quotmodels&quot,
+                                    md5_hash=&quota268eb855778b3df3c7506639542a6af&quot)
+        model.load_weights(weights_path)
+        if K.backend() == &quottheano&quot:
+            layer_utils.convert_all_kernels_in_model(model)
+            if include_top:
+                maxpool = model.get_layer(name=&quotavg_pool&quot)
+                shape = maxpool.output_shape[1:]
+                dense = model.get_layer(name=&quotfc1000&quot)
+                layer_utils.convert_dense_weights_data_format(dense, shape, &quotchannels_first&quot)
+
+        if K.image_data_format() == &quotchannels_first&quot and K.backend() == &quottensorflow&quot:
+            warnings.warn(&quotYou are using the TensorFlow backend, yet you &quot
+                          &quotare using the Theano &quot
+                          &quotimage data format convention &quot
+                          &quot(`image_data_format="channels_first"`). &quot
+                          &quotFor best performance, set &quot
+                          &quot`image_data_format="channels_last"` in &quot
+                          &quotyour Keras config &quot
+                          &quotat ~/.keras/keras.json.&quot)
+    elif <a id="change">weights is not None</a>:
+        <a id="change">model.load_weights(weights)</a>
+
+    return model
+</code></pre>

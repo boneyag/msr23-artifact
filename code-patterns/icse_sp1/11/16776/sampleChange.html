@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        embedding = self.get_initial_embedding(F, tokens)
+
+        contextual_embeddings, additional_outputs = self.encoder(embedding, valid_length)
+        <a id="change">outputs.append(contextual_embeddings)</a>
+        if self._output_all_encodings:
+            contextual_embeddings = contextual_embeddings[-1]
+
+        if self.use_pooler:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def hybrid_forward(self, F, tokens, valid_length):
+        embedding = self.get_initial_embedding(F, tokens)
+        <a id="change">if self._layout != self._compute_layout:
+            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(embedding, 0, 1),
+                                                                     valid_length)
+            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+        else:
+            contextual_embeddings, additional_outputs = self.encoder(embedding, valid_length)
+       </a> if self.use_pooler:
+            if isinstance(contextual_embeddings, list):
+                pooled_out = self.apply_pooling(contextual_embeddings[-1])
+            else:
+                pooled_out = self.apply_pooling(contextual_embeddings)
+            return contextual_embeddings, pooled_out
+        else:
+            <a id="change">return contextual_embeddings</a>
+
+    def get_initial_embedding(self, F, inputs):
+        Get the initial token embeddings that considers the token type and positional embeddings
+</code></pre>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def choose_action(self, curr_state, phase=RunPhase.TRAIN):
+        assert not self.env.discrete_controls, &quotDDPG works only for continuous control problems&quot
+        &#47&#47 convert to batch so we can run it through the network
+        observation = np.expand_dims(np.array(<a id="change">curr_state[&quotobservation&quot]</a>), 0)
+        result = self.actor_network.online_network.predict(observation)
+        action_values = result[0].squeeze()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def choose_action(self, curr_state, phase=RunPhase.TRAIN):
+        assert not self.env.discrete_controls, &quotDDPG works only for continuous control problems&quot
+        result = self.actor_network.online_network.predict(<a id="change">self.tf_input_state(curr_state)</a>)
+        action_values = result[0].squeeze()
+
+        if phase == RunPhase.TRAIN:
+            action = self.exploration_policy.get_action(action_values)
+        else:
+            action = action_values
+
+        action = np.clip(action, self.env.action_space_low, self.env.action_space_high)
+
+        &#47&#47 get q value
+        action_batch = np.expand_dims(action, 0)
+        if type(action) != np.ndarray:
+            action_batch = np.array([[action]])
+        inputs = <a id="change">self.tf_input_state(curr_state)</a>
+        inputs[&quotaction&quot] = action_batch
+        q_value = self.critic_network.online_network.predict(inputs)[0]
+        self.q_values.add_sample(q_value)
+        action_info = {"action_value": q_value}</code></pre>

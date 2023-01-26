@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def test_zinb_0_gate(total_count, probs):
+    &#47&#47 if gate is 0 ZINB is NegativeBinomial
+    zinb_ = ZeroInflatedNegativeBinomial(
+        torch.zeros(1), total_count=torch.tensor(total_count), probs=<a id="change">torch.tensor(probs)</a>
+    )
+    neg_bin = NegativeBinomial(torch.tensor(total_count), probs=torch.tensor(probs))
+    s = neg_bin.sample((20,))
+    zinb_prob = <a id="change">zinb_.log_prob(s)</a>
+    neg_bin_prob = neg_bin.log_prob(s)
+    assert_close(zinb_prob, neg_bin_prob)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_zinb_0_gate(total_count, probs):
+    &#47&#47 if gate is 0 ZINB is NegativeBinomial
+    zinb1 = ZeroInflatedNegativeBinomial(
+        total_count=torch.tensor(total_count), gate=torch.zeros(1), probs=<a id="change">torch.tensor(probs)</a>
+    )
+    <a id="change">zinb2 = ZeroInflatedNegativeBinomial(
+        total_count=torch.tensor(total_count), gate_logits=torch.tensor(-99.9), probs=torch.tensor(probs)
+    )</a>
+    neg_bin = NegativeBinomial(torch.tensor(total_count), probs=torch.tensor(probs))
+    s = neg_bin.sample((20,))
+    zinb1_prob = <a id="change">zinb1.log_prob(s)</a>
+    <a id="change">zinb2_prob = zinb2.log_prob(s)</a>
+    neg_bin_prob = neg_bin.log_prob(s)
+    assert_close(zinb1_prob, neg_bin_prob)
+    assert_close(zinb2_prob, neg_bin_prob)
+</code></pre>

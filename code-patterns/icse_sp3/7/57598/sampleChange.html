@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if incremental_state is None or len(incremental_state) == 0:
+            return
+        prev_hiddens, prev_cells, input_feed = self.get_cached_state(incremental_state)
+        <a id="change">cached_state = (prev_hiddens, prev_cells, [input_feed])</a>
+        new_state = [self.reorder_state(state, new_order) for state in cached_state]
+        prev_hiddens_tensor = torch.stack(<a id="change">new_state[0]</a>)
+        prev_cells_tensor = torch.stack(new_state[1])
+        cached_state_new = torch.jit.annotate(
+            Dict[str, Optional[Tensor]],
+            {"prev_hiddens": prev_hiddens_tensor, "prev_cells": prev_cells_tensor, "input_feed": <a id="change">new_state</a>[2][0]})
+        self.set_incremental_state(incremental_state, &quotcached_state&quot, cached_state_new),
+        return
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        if incremental_state is None or len(incremental_state) == 0:
+            return
+        prev_hiddens, prev_cells, input_feed = self.get_cached_state(incremental_state)
+        <a id="change">prev_hiddens = [p.index_select(0, new_order) for p in prev_hiddens]</a>
+        prev_cells = [p.index_select(0, new_order) for p in prev_cells]
+        if input_feed is not None:
+            input_feed = input_feed.index_select(0, new_order)
+        cached_state_new = torch.jit.annotate(</code></pre>

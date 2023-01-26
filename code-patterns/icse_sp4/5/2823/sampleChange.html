@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        num_random_features, dim)
+    attention_block_output = fast_attention.favor_attention(
+        query, key, value, kernel_transformation, False, projection_matrix)
+    <a id="change">self.assertListEqual(attention_block_output.get_shape().as_list(),
+                         [batch_size, length, num_heads, dim])</a>
+
+  def test_fast_attention(self):
+    hidden_size = 64
+    num_heads = 4</code></pre><h3>After Change</h3><pre><code class='java'>
+    attention_block_output = fast_attention.favor_attention(
+        query, key, value, kernel_transformation, False, projection_matrix)
+
+    <a id="change">query = tf.multiply(query, 1.0 / math.sqrt(float(dim)))</a>
+    attention_scores = <a id="change">tf.einsum("BXHD,BYHD-&gt;BXYH", query, key)</a>
+    <a id="change">attention_scores = tf.nn.softmax(attention_scores, axis=2)</a>
+    exact_attention_block_output = tf.einsum("BXYH,BYHD-&gt;BXHD",
+                                             attention_scores, value)
+    max_error = 2.0
+    error = tf.math.abs(</code></pre>

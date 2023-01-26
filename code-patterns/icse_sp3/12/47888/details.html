@@ -1,0 +1,36 @@
+<html><h3>b3dab0288ddcd165e2ba6f95061b5f3d7bf82a1a,GPflow/vgp.py,VGP,build_predict,#VGP#Any#Any#,122
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        f_mean = tf.matmul(Kx, self.q_alpha) + self.mean_function(Xnew)
+
+        &#47&#47 predictive var
+        <a id="change">f_var = []</a>
+        <a id="change">for d in range(self.num_latent):
+            b = self.q_lambda[:, d]
+            A = K + tf.diag(1./tf.square(b))
+            L = tf.cholesky(A)
+            LiKx = tf.matrix_triangular_solve(L, tf.transpose(Kx), lower=True)
+            if full_cov:
+                f_var.append(self.kern.K(Xnew) -
+                             tf.matmul(tf.transpose(LiKx), LiKx))
+            else:
+                f_var.append(self.kern.Kdiag(Xnew) -
+                             tf.reduce_sum(tf.square(LiKx), 0))
+       </a> f_var = tf.pack(f_var)
+        return f_mean, tf.transpose(f_var)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        f_mean = tf.matmul(tf.transpose(Kx), self.q_alpha) + self.mean_function(Xnew)
+
+        &#47&#47 predictive var
+        <a id="change">A = K + tf.batch_matrix_diag(tf.transpose(1./tf.square(self.q_lambda)))</a>
+        L = tf.batch_cholesky(A)
+        <a id="change">Kx_tiled = tf.tile(tf.expand_dims(Kx, 0), [self.num_latent, 1, 1])</a>
+        <a id="change">LiKx = tf.batch_matrix_triangular_solve(L, Kx_tiled)</a>
+        if full_cov:
+            <a id="change">f_var = self.kern.K(Xnew) - tf.batch_matmul(LiKx, LiKx, adj_x=True)</a>
+        else:
+            f_var = self.kern.Kdiag(Xnew) - tf.reduce_sum(tf.square(LiKx), 1)
+        return f_mean, tf.transpose(f_var)
+</code></pre><img src="222478659.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/b3dab0288ddcd165e2ba6f95061b5f3d7bf82a1a#diff-6810dd530ccfc1a1d46a84f631d760e9d053867cd5892abdd2926f294e4b55efL131' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: b3dab0288ddcd165e2ba6f95061b5f3d7bf82a1a</div><div id='time'> Time: 2016-08-10</div><div id='author'> Author: james.hensman@gmail.com</div><div id='file'> File Name: GPflow/vgp.py</div><div id='class'> Class Name: VGP</div><div id='method'> Method Name: build_predict</div><BR><BR><div id='link'><a href='https://github.com/scikit-learn-contrib/DESlib/commit/f7a04171e58eb43dfe5b18d06c76481cdf1c5da9#diff-d5c2402c42649d54d77c173a2fa2add152bb925bb42b798814c7d3e89e7576efL85' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-learn-contrib/DESlib</div><div id='commit'> Commit Name: f7a04171e58eb43dfe5b18d06c76481cdf1c5da9</div><div id='time'> Time: 2018-03-29</div><div id='author'> Author: rafaelmenelau@gmail.com</div><div id='file'> File Name: deslib/dcs/lca.py</div><div id='class'> Class Name: LCA</div><div id='method'> Method Name: estimate_competence</div><BR><BR><div id='link'><a href='https://github.com/dmlc/gluon-cv/commit/ecfc31e21d0c30b1f543aacb8619582b60a1bef7#diff-5493eaf8ad06dd980acf15704a23177ef41e6f43fa32909ae37a1b94042e3755L30' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-cv</div><div id='commit'> Commit Name: ecfc31e21d0c30b1f543aacb8619582b60a1bef7</div><div id='time'> Time: 2019-08-29</div><div id='author'> Author: spanev@nvidia.com</div><div id='file'> File Name: gluoncv/model_zoo/mask_rcnn/rcnn_target.py</div><div id='class'> Class Name: MaskTargetGenerator</div><div id='method'> Method Name: hybrid_forward</div><BR>

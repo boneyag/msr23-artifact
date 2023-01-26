@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if num_rows &lt; num_cols:
+            eye = torch.eye(num_rows, dtype=self.dtype, device=self.device)
+            if batch_mode:
+                <a id="change">eye = eye.unsqueeze(0).expand(batch_size, num_rows, num_rows)</a>
+                return self.transpose(1, 2).matmul(eye).transpose(1, 2).contiguous()
+            else:
+                return self.t().matmul(eye).t().contiguous()
+        else:
+            eye = torch.eye(num_cols, dtype=self.dtype, device=self.device)
+            if batch_mode:
+                <a id="change">eye = eye.unsqueeze(0).expand(batch_size, num_cols, num_cols)</a>
+            return self.matmul(eye)
+
+    def evaluate_kernel(self):
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+        if num_rows &lt; num_cols:
+            eye = torch.eye(num_rows, dtype=self.dtype, device=self.device)
+            eye = eye.expand(*self.batch_shape, num_rows, num_rows)
+            return <a id="change">self</a>.transpose(-1, -2).matmul(eye).transpose(-1, -2).contiguous()
+        else:
+            eye = torch.eye(num_cols, dtype=self.dtype, device=self.device)
+            eye = eye.expand(*self.batch_shape, num_cols, num_cols)</code></pre>

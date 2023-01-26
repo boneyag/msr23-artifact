@@ -1,0 +1,103 @@
+<html><h3>0ad7e3a3f558ea70ea895f7501868d641cff90f6,scipy/special/setup.py,,configuration,#Any#Any#,16
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    cfg.setdefault(&quotlibraries&quot, []).extend(
+        [&quotsc_amos&quot, &quotsc_cephes&quot, &quotsc_mach&quot, &quotsc_cdf&quot, &quotsc_specfun&quot]
+    )
+    cfg.setdefault(&quotdefine_macros&quot, <a id="change">[]</a>).extend(define_macros)
+    config.add_extension(&quotcython_special&quot,
+                         depends=cython_special_dep,
+                         sources=cython_special_src,</code></pre><h3>After Change</h3><pre><code class='java'>
+    config = Configuration(&quotspecial&quot, parent_package, top_path)
+
+    if uses_blas64():
+        lapack_opt = <a id="change">get_system_info(&quotlapack_ilp64_opt&quot)</a>
+    else:
+        lapack_opt = get_system_info(&quotlapack_opt&quot)
+
+    define_macros = []
+    if sys.platform == &quotwin32&quot:
+        &#47&#47 define_macros.append((&quotNOINFINITIES&quot,None))
+        &#47&#47 define_macros.append((&quotNONANS&quot,None))
+        define_macros.append((&quot_USE_MATH_DEFINES&quot,None))
+
+    curdir = os.path.abspath(os.path.dirname(__file__))
+    python_inc_dirs = get_python_inc()
+    plat_specific_python_inc_dirs = get_python_inc(plat_specific=1)
+    inc_dirs = [get_numpy_include_dirs(), python_inc_dirs]
+    if python_inc_dirs != plat_specific_python_inc_dirs:
+        inc_dirs.append(plat_specific_python_inc_dirs)
+    inc_dirs.append(join(dirname(dirname(__file__)), &quot_lib&quot))
+    inc_dirs.append(join(dirname(dirname(__file__)), &quot_build_utils&quot, &quotsrc&quot))
+
+    &#47&#47 C libraries
+    cephes_src = [join(&quotcephes&quot,&quot*.c&quot)]
+    cephes_hdr = [join(&quotcephes&quot, &quot*.h&quot)]
+    config.add_library(&quotsc_cephes&quot,sources=cephes_src,
+                       include_dirs=[curdir] + inc_dirs,
+                       depends=(cephes_hdr + [&quot*.h&quot]),
+                       macros=define_macros)
+
+    &#47&#47 Fortran/C++ libraries
+    mach_src = [join(&quotmach&quot,&quot*.f&quot)]
+    amos_src = [join(&quotamos&quot,&quot*.f&quot)]
+    cdf_src = [join(&quotcdflib&quot,&quot*.f&quot)]
+    specfun_src = [join(&quotspecfun&quot,&quot*.f&quot)]
+    config.add_library(&quotsc_mach&quot,sources=mach_src,
+                       config_fc={&quotnoopt&quot:(__file__,1)})
+    config.add_library(&quotsc_amos&quot,sources=amos_src)
+    config.add_library(&quotsc_cdf&quot,sources=cdf_src)
+    config.add_library(&quotsc_specfun&quot,sources=specfun_src)
+
+    &#47&#47 Extension specfun
+    config.add_extension(&quotspecfun&quot,
+                         sources=[&quotspecfun.pyf&quot],
+                         f2py_options=[&quot--no-wrap-functions&quot],
+                         depends=specfun_src,
+                         define_macros=[],
+                         libraries=[&quotsc_specfun&quot])
+
+    &#47&#47 Extension _ufuncs
+    headers = [&quot*.h&quot, join(&quotcephes&quot, &quot*.h&quot)]
+    ufuncs_src = [&quot_ufuncs.c&quot, &quotsf_error.c&quot, &quot_logit.c.src&quot,
+                  "amos_wrappers.c", "cdf_wrappers.c", "specfun_wrappers.c"]
+    ufuncs_dep = (
+        headers
+        + ufuncs_src
+        + amos_src
+        + cephes_src
+        + mach_src
+        + cdf_src
+        + specfun_src
+    )
+    cfg = combine_dict(lapack_opt,
+                       include_dirs=[curdir] + inc_dirs + [numpy.get_include()],
+                       libraries=[&quotsc_amos&quot, &quotsc_cephes&quot, &quotsc_mach&quot,
+                                  &quotsc_cdf&quot, &quotsc_specfun&quot],
+                       define_macros=define_macros)
+    config.add_extension(&quot_ufuncs&quot,
+                         depends=ufuncs_dep,
+                         sources=ufuncs_src,
+                         extra_info=get_info("npymath"),
+                         **cfg)
+
+    &#47&#47 Extension _ufuncs_cxx
+    ufuncs_cxx_src = [&quot_ufuncs_cxx.cxx&quot, &quotsf_error.c&quot,
+                      &quot_faddeeva.cxx&quot, &quotFaddeeva.cc&quot,
+                      &quot_wright.cxx&quot, &quotwright.cc&quot]
+    ufuncs_cxx_dep = (headers + ufuncs_cxx_src + cephes_src
+                      + [&quot*.hh&quot])
+    config.add_extension(&quot_ufuncs_cxx&quot,
+                         sources=ufuncs_cxx_src,
+                         depends=ufuncs_cxx_dep,
+                         include_dirs=[curdir] + inc_dirs,
+                         define_macros=define_macros,
+                         extra_info=get_info("npymath"))
+
+    <a id="change">cfg = combine_dict(lapack_opt, include_dirs=inc_dirs)</a>
+    config.add_extension(&quot_ellip_harm_2&quot,
+                         sources=[&quot_ellip_harm_2.c&quot, &quotsf_error.c&quot,],
+                         **cfg)
+</code></pre><img src="69091614.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/0ad7e3a3f558ea70ea895f7501868d641cff90f6#diff-732f5854392df61da474e836751e69940c4c39a8906e4becceed23cb4f0c90c6L22' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: 0ad7e3a3f558ea70ea895f7501868d641cff90f6</div><div id='time'> Time: 2020-05-13</div><div id='author'> Author: pav@iki.fi</div><div id='file'> File Name: scipy/special/setup.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: configuration</div><BR><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/bab178f3003adaad353879d3fd891e4c5a5e5e7f#diff-732f5854392df61da474e836751e69940c4c39a8906e4becceed23cb4f0c90c6L101' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: bab178f3003adaad353879d3fd891e4c5a5e5e7f</div><div id='time'> Time: 2014-11-23</div><div id='author'> Author: pav@iki.fi</div><div id='file'> File Name: scipy/special/setup.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: configuration</div><BR><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/b285550bb05edea1c85789f93c42dbb5676fc284#diff-732f5854392df61da474e836751e69940c4c39a8906e4becceed23cb4f0c90c6L25' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: b285550bb05edea1c85789f93c42dbb5676fc284</div><div id='time'> Time: 2016-10-27</div><div id='author'> Author: person142@users.noreply.github.com</div><div id='file'> File Name: scipy/special/setup.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: configuration</div><BR>

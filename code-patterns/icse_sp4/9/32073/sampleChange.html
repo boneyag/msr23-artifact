@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 if num_gpus &gt; 1:
+    &#47&#47     model = apply_gradient_allreduce(model)
+
+    <a id="change">if c.noam_schedule:
+        scheduler_gen = NoamLR(optimizer_gen,
+                               warmup_steps=c.warmup_steps_gen,
+                               last_epoch=args.restore_step - 1)
+        scheduler_disc = NoamLR(optimizer_disc,
+                                warmup_steps=c.warmup_steps_gen,
+                                last_epoch=args.restore_step - 1)
+    else:
+        scheduler_gen, scheduler_disc = None, None
+
+   </a> num_params = count_parameters(model_gen)
+    print(" &gt; Generator has {} parameters".format(num_params), flush=True)
+    num_params = count_parameters(model_disc)
+    print(" &gt; Discriminator has {} parameters".format(num_params), flush=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 schedulers
+    scheduler_gen = getattr(torch.optim.lr_scheduler, c.lr_scheduler_gen)
+    scheduler_disc = getattr(torch.optim.lr_scheduler, c.lr_scheduler_disc)
+    <a id="change">scheduler_gen = scheduler_gen(optimizer_gen, **c.lr_scheduler_gen_params)</a>
+    scheduler_disc = scheduler_disc(optimizer_disc, **c.lr_scheduler_disc_params)
+
+    &#47&#47 setup criterion
+    criterion_gen = GeneratorLoss(c)
+    criterion_disc = DiscriminatorLoss(c)
+
+    if args.restore_path:
+        checkpoint = torch.load(args.restore_path, map_location=&quotcpu&quot)
+        try:
+            print(" &gt; Restoring Generator Model...")
+            model_gen.load_state_dict(checkpoint[&quotmodel&quot])
+            print(" &gt; Restoring Generator Optimizer...")
+            optimizer_gen.load_state_dict(checkpoint[&quotoptimizer&quot])
+            print(" &gt; Restoring Discriminator Model...")
+            model_disc.load_state_dict(checkpoint[&quotmodel_disc&quot])
+            print(" &gt; Restoring Discriminator Optimizer...")
+            optimizer_disc.load_state_dict(checkpoint[&quotoptimizer_disc&quot])
+            <a id="change">if &quotscheduler&quot in checkpoint:
+                print(" &gt; Restoring Generator LR Scheduler...")
+                scheduler_gen.load_state_dict(checkpoint[&quotscheduler&quot])
+                &#47&#47 NOTE: Not sure if necessary
+                scheduler_gen.optimizer = optimizer_gen
+           </a> if &quotscheduler_disc&quot in checkpoint:
+                print(" &gt; Restoring Discriminator LR Scheduler...")
+                scheduler_disc.load_state_dict(checkpoint[&quotscheduler_disc&quot])
+                scheduler_disc.optimizer = optimizer_disc</code></pre>

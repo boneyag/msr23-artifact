@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    with model._graph.as_default():
+        model.set_random_seed(7)
+        py_seq_1 = [random.random() for _ in range(10)]
+        np_seq_1 = <a id="change">np.random.random_sample((10,))</a>
+        tf_seq_1 = model._session.run(tf.random.uniform([10]))
+
+    &#47&#47 We need reproducibility across script runs; making a new graph with new ops is what essentially happens
+    model._reset_graph()</code></pre><h3>After Change</h3><pre><code class='java'>
+    py_seq_1, np_seq_1, tf_seq_1 = get_random_sequences()
+    model._reset_graph()
+    model._reset_session()
+    <a id="change">py_seq_2</a>, np_seq_2, tf_seq_2 = get_random_sequences()
+    assert np.all(py_seq_1 == py_seq_2)
+    assert np.all(np_seq_1 == np_seq_2)
+    assert np.all(tf_seq_1 == tf_seq_2)</code></pre>

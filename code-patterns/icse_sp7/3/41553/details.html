@@ -1,0 +1,24 @@
+<html><h3>0ec2952c74b588529f5be74f93f14f3769787c71,pyemma/coordinates/data/util/traj_info_backends.py,SqliteDB,_clean,#SqliteDB#Any#,322
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        stmnt = "DELETE FROM traj_info WHERE hash in (%s)" % sql_compatible_ids
+        cur = self._database.execute(stmnt)
+        <a id="change">self._database.commit()</a>
+        assert cur.rowcount == len(ids), "deleted not as many rows(%s) as desired(%s)" %(cur.rowcount, len(ids))
+
+        &#47&#47 iterate over all LRU databases and delete those ids, we&quotve just deleted from the main db.
+        age_by_hash.sort(key=itemgetter(2))</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Do this within the same execution block of the main database, because we do not want the entry to be deleted,
+            &#47&#47 in case of a subsequent failure.
+            age_by_hash.sort(key=itemgetter(2))
+            <a id="change">for db, values in itertools.groupby(age_by_hash, key=itemgetter(2)):
+                values = tuple(v[0] for v in values)
+                with sqlite3.connect(db, timeout=self.lru_timeout) as conn:
+                        stmnt = "DELETE FROM usage WHERE hash IN (%s)" \
+                                % SqliteDB._format_tuple_for_sql(values)
+                        curr = conn.execute(stmnt)
+                        assert curr.rowcount == len(values), curr.rowcount</a>
+</code></pre><img src="195115533.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/markovmodel/PyEMMA/commit/0ec2952c74b588529f5be74f93f14f3769787c71#diff-95d7fc877aaeadc2ca892f50175421ff4a5e7bcb8226818562b9237124296968L322' target='_blank'>Link</a></div><div id='project'> Project Name: markovmodel/PyEMMA</div><div id='commit'> Commit Name: 0ec2952c74b588529f5be74f93f14f3769787c71</div><div id='time'> Time: 2017-06-19</div><div id='author'> Author: m.scherer@fu-berlin.de</div><div id='file'> File Name: pyemma/coordinates/data/util/traj_info_backends.py</div><div id='class'> Class Name: SqliteDB</div><div id='method'> Method Name: _clean</div><BR><BR><div id='link'><a href='https://github.com/home-assistant/home-assistant/commit/490ef6afad92cc8ade7872b26fb9d33fd2bc25ee#diff-7105b6f35bb64c7412293121a7834fb8304a2b31c832a89b80d63ce907d3f873L36' target='_blank'>Link</a></div><div id='project'> Project Name: home-assistant/home-assistant</div><div id='commit'> Commit Name: 490ef6afad92cc8ade7872b26fb9d33fd2bc25ee</div><div id='time'> Time: 2017-02-07</div><div id='author'> Author: kellerza@gmail.com</div><div id='file'> File Name: tests/components/recorder/test_init.py</div><div id='class'> Class Name: TestRecorder</div><div id='method'> Method Name: _add_test_states</div><BR><BR><div id='link'><a href='https://github.com/HazyResearch/fonduer/commit/506a594e8e5fd755bc02ea2c5fe6437b8b682057#diff-f817361e2988957213e8255fe3a72dcf24ab84551a127a50588212c99a1073d1L87' target='_blank'>Link</a></div><div id='project'> Project Name: HazyResearch/fonduer</div><div id='commit'> Commit Name: 506a594e8e5fd755bc02ea2c5fe6437b8b682057</div><div id='time'> Time: 2018-08-14</div><div id='author'> Author: lwhsiao@stanford.edu</div><div id='file'> File Name: fonduer/utils/udf.py</div><div id='class'> Class Name: UDFRunner</div><div id='method'> Method Name: apply_mt</div><BR>

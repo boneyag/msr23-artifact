@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_relu_(self):
+        x1 = torch.randn((4, 5), dtype=torch.float32) * 10
+        x2 = x1.clone().to_mkldnn()
+        <a id="change">self.assertEqual(torch.relu_(x1), torch.relu_(x2).to_dense())</a>
+
+    @unittest.skipIf(IS_WINDOWS, "Limit support for bf16 path")
+    def _test_relu_bf16_base(self, name):
+        x = torch.randn((4, 5), dtype=torch.float32) * 10</code></pre><h3>After Change</h3><pre><code class='java'>
+    def test_relu_(self):
+        x = torch.randn((4, 5), dtype=torch.float32) * 10
+        x1 = x.clone().requires_grad_()
+        <a id="change">x2 = x.clone().to_mkldnn().requires_grad_()</a>
+        y1 = torch.relu_(x1.clone())
+        <a id="change">y2 = torch.relu_(x2.clone()).to_dense()</a>
+        loss1 = y1.sum()
+        <a id="change">loss2 = y2.sum()</a>
+        loss1.backward()
+        <a id="change">loss2.backward()</a>
+        self.assertEqual(y1, y2)
+        self.assertEqual(x1.grad, x2.grad.to_dense())
+
+    @unittest.skipIf(IS_WINDOWS, "Limit support for bf16 path")</code></pre>

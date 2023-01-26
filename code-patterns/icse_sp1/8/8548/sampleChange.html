@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.rank = rank
+
+    def _eval_corr_matrix(self):
+        <a id="change">corr_factor = self.task_noise_corr_factor.squeeze(0)</a>
+        corr_diag = self.task_noise_corr_diag.squeeze(0)
+        <a id="change">M = corr_factor.matmul(corr_factor.transpose(-1, -2))</a>
+        <a id="change">idx = torch.arange(M.shape[-1], dtype=torch.long, device=M.device)</a>
+        <a id="change">M[..., idx, idx] += corr_diag</a>
+        sem_inv = 1 / torch.diagonal(M, dim1=-2, dim2=-1).sqrt().unsqueeze(-1)
+        return M * sem_inv.matmul(sem_inv.transpose(-1, -2))
+
+    def _shaped_noise_covar(self, base_shape, *params):</code></pre><h3>After Change</h3><pre><code class='java'>
+        tnc = self.task_noise_corr
+        fac_diag = torch.ones(*tnc.shape[:-1], self.num_tasks, device=tnc.device, dtype=tnc.dtype)
+        Cfac = torch.diag_embed(fac_diag)
+        Cfac[..., <a id="change">self.tidcs[0]</a>, self.tidcs[1]] = self.task_noise_corr
+        &#47&#47 squared rows must sum to one for this to be a correlation matrix
+        C = Cfac / Cfac.pow(2).sum(dim=-1, keepdim=True).sqrt()
+        return C @ C.transpose(-1, -2)</code></pre>

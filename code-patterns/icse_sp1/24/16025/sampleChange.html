@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 prepare calculation
+        kj = 2j*pi*self.freq_data.fftfreq()/self.c
+        numchannels = self.freq_data.numchannels
+        <a id="change">e = zeros((numchannels), &quotD&quot)</a>
+        r0 = self.r0
+        rm = self.rm
+        <a id="change">h = zeros((1, self.grid.size), &quotd&quot)</a>
+        &#47&#47 function
+        beamfunc = self.get_beamfunc()
+        if self.r_diag:
+            adiv = 1.0/(numchannels*numchannels-numchannels)
+            scalefunc = lambda h : adiv*multiply(h, (sign(h)+1-1e-35)/2)
+        else:
+            adiv = 1.0/(numchannels*numchannels)
+            scalefunc = lambda h : adiv*h
+        for i in self.freq_data.indices:
+            if not fr[i]:
+                csm = array(self.freq_data.csm[i][newaxis], dtype=&quotcomplex128&quot)
+                kji = kj[i, newaxis]
+                <a id="change">beamfunc(csm, e, h, r0, rm, kji)</a>
+                <a id="change">ac[i]</a> = <a id="change">scalefunc(h)</a>
+                fr[i] = True
+    
+    def synthetic( self, f, num=0):
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+        This method only returns values through the *ac* and *fr* parameters
+        
+        kj = 2j*pi*self.freq_data.fftfreq()/self.c
+        <a id="change">steerVecFormulation = self.steerVecTranslation()</a>
+        normFactor = self.signalLossNormalize()
+        for i in self.freq_data.indices:
+            if not fr[i]:
+                csm = array(self.freq_data.csm[i][newaxis], dtype=&quotcomplex128&quot)
+                kji = kj[i, newaxis]
+                <a id="change">beamformerOutput = beamformerFreq(False, steerVecFormulation, self.r_diag, normFactor, (self.r0, self.rm, kji, csm))</a>
+                <a id="change">if self.r_diag:  &#47&#47 set (unphysical) negative output values to 0
+                    indNegSign = sign(beamformerOutput) &lt; 0
+                    beamformerOutput[indNegSign] = 0.0
+               </a> <a id="change">ac[i]</a> = beamformerOutput
+                fr[i] = True
+    
+    def synthetic( self, f, num=0):</code></pre>

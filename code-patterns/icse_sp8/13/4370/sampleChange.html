@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def step(self, action_space):
+        reward_proj = []
+        state_proj = []
+        <a id="change">done_proj = []</a>
+        for e, env in enumerate(self.envs):
+            action = action_space.get(e=e)
+            reward, state, done = env.step(action)
+            reward_proj.append(reward)
+            state_proj.append(state)
+            <a id="change">done_proj.append(done)</a>
+        reward_space = self.aeb_space.add(&quotreward&quot, reward_proj)
+        state_space = self.aeb_space.add(&quotstate&quot, state_proj)
+        done_space = self.aeb_space.add(&quotdone&quot, done_proj)
+        return reward_space, state_space, done_space</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def step(self, action_space):
+        reward_v = self.aeb_space.data_spaces[&quotreward&quot].init_data_v()
+        <a id="change">state_v = self.aeb_space.data_spaces[&quotstate&quot].init_data_v()</a>
+        done_v = self.aeb_space.data_spaces[&quotdone&quot].init_data_v()
+        for env in self.envs:
+            e = env.e
+            action_e = action_space.get(e=e)
+            reward_e, state_e, done_e = env.step(action_e)
+            reward_v[e, 0:len(reward_e)] = reward_e
+            <a id="change">state_v[e, 0:len(state_e)] = state_e</a>
+            done_v[e, 0:len(done_e)] = done_e
+        reward_space = self.aeb_space.add(&quotreward&quot, reward_v)
+        state_space = self.aeb_space.add(&quotstate&quot, state_v)
+        done_space = self.aeb_space.add(&quotdone&quot, done_v)</code></pre>

@@ -1,0 +1,165 @@
+<html><h3>83c8b3a4f321c4a924d344df275ddc403d3ca835,scipy/stats/_binned_statistic.py,,binned_statistic_dd,#Any#Any#Any#Any#Any#Any#,338
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    try:
+        &#47&#47 `values` is an ND-array.
+        <a id="change">Vdim</a>, Vlen = values.shape
+    except (AttributeError, ValueError):
+        &#47&#47 Sample is a sequence of 1D arrays.
+        values = np.atleast_2d(values)</code></pre><h3>After Change</h3><pre><code class='java'>
+        sample = np.atleast_2d(sample).T
+        Dlen, Ndim = sample.shape
+
+    initVdim = <a id="change">np.ndim(values)</a>
+    values = np.atleast_2d(values)
+    Vdim, Vlen = values.shape
+
+    &#47&#47 Make sure `values` match `sample`
+    if(statistic is not &quotcount&quot and Vlen != Dlen):
+        raise AttributeError(&quotThe number of `values` elements must match the &quot
+                             &quotlength of each `sample` dimension.&quot)
+
+    nbin = np.empty(Ndim, int)    &#47&#47 Number of bins in each dimension
+    edges = Ndim * [None]         &#47&#47 Bin edges for each dim (will be 2D array)
+    dedges = Ndim * [None]        &#47&#47 Spacing between edges (will be 2D array)
+
+    try:
+        M = len(bins)
+        if M != Ndim:
+            raise AttributeError(&quotThe dimension of bins must be equal &quot
+                                 &quotto the dimension of the sample x.&quot)
+    except TypeError:
+        bins = Ndim * [bins]
+
+    &#47&#47 Select range for each dimension
+    &#47&#47 Used only if number of bins is given.
+    if range is None:
+        smin = np.atleast_1d(np.array(sample.min(axis=0), float))
+        smax = np.atleast_1d(np.array(sample.max(axis=0), float))
+    else:
+        smin = np.zeros(Ndim)
+        smax = np.zeros(Ndim)
+        for i in xrange(Ndim):
+            smin[i], smax[i] = range[i]
+
+    &#47&#47 Make sure the bins have a finite width.
+    for i in xrange(len(smin)):
+        if smin[i] == smax[i]:
+            smin[i] = smin[i] - .5
+            smax[i] = smax[i] + .5
+
+    &#47&#47 Create edge arrays
+    for i in xrange(Ndim):
+        if np.isscalar(bins[i]):
+            nbin[i] = bins[i] + 2  &#47&#47 +2 for outlier bins
+            edges[i] = np.linspace(smin[i], smax[i], nbin[i] - 1)
+        else:
+            edges[i] = np.asarray(bins[i], float)
+            nbin[i] = len(edges[i]) + 1  &#47&#47 +1 for outlier bins
+        dedges[i] = np.diff(edges[i])
+
+    nbin = np.asarray(nbin)
+
+    &#47&#47 Compute the bin number each sample falls into, in each dimension
+    sampBin = {}
+    for i in xrange(Ndim):
+        sampBin[i] = np.digitize(sample[:, i], edges[i])
+
+    &#47&#47 Using `digitize`, values that fall on an edge are put in the right bin.
+    &#47&#47 For the rightmost bin, we want values equal to the right
+    &#47&#47 edge to be counted in the last bin, and not as an outlier.
+    for i in xrange(Ndim):
+        &#47&#47 Find the rounding precision
+        decimal = int(-np.log10(dedges[i].min())) + 6
+        &#47&#47 Find which points are on the rightmost edge.
+        on_edge = np.where(np.around(sample[:, i], decimal) ==
+                           np.around(edges[i][-1], decimal))[0]
+        &#47&#47 Shift these points one bin to the left.
+        sampBin[i][on_edge] -= 1
+
+    &#47&#47 Compute the sample indices in the flattened statistic matrix.
+    ni = nbin.argsort()
+    &#47&#47 `binnumbers` is which bin (in linearized `Ndim` space) each sample goes
+    binnumbers = np.zeros(Dlen, int)
+    for i in xrange(0, Ndim - 1):
+        binnumbers += sampBin[ni[i]] * nbin[ni[i + 1:]].prod()
+    binnumbers += sampBin[ni[-1]]
+
+    result = np.empty([Vdim, nbin.prod()], float)
+
+    if statistic == &quotmean&quot:
+        result.fill(np.nan)
+        flatcount = np.bincount(binnumbers, None)
+        a = flatcount.nonzero()
+        for vv in xrange(Vdim):
+            flatsum = np.bincount(binnumbers, values[vv])
+            result[vv, a] = flatsum[a] / flatcount[a]
+    elif statistic == &quotstd&quot:
+        result.fill(0)
+        flatcount = np.bincount(binnumbers, None)
+        a = flatcount.nonzero()
+        for vv in xrange(Vdim):
+            flatsum = np.bincount(binnumbers, values[vv])
+            flatsum2 = np.bincount(binnumbers, values[vv] ** 2)
+            result[vv, a] = np.sqrt(flatsum2[a] / flatcount[a] -
+                                    (flatsum[a] / flatcount[a]) ** 2)
+    elif statistic == &quotcount&quot:
+        result.fill(0)
+        flatcount = np.bincount(binnumbers, None)
+        a = np.arange(len(flatcount))
+        result[:, a] = flatcount[np.newaxis, :]
+    elif statistic == &quotsum&quot:
+        result.fill(0)
+        for vv in xrange(Vdim):
+            flatsum = np.bincount(binnumbers, values[vv])
+            a = np.arange(len(flatsum))
+            result[vv, a] = flatsum
+    elif statistic == &quotmedian&quot:
+        result.fill(np.nan)
+        for i in np.unique(binnumbers):
+            for vv in xrange(Vdim):
+                result[vv, i] = np.median(values[vv, binnumbers == i])
+    elif callable(statistic):
+        with warnings.catch_warnings():
+            &#47&#47 Numpy generates a warnings for mean/std/... with empty list
+            warnings.filterwarnings(&quotignore&quot, category=RuntimeWarning)
+            old = np.seterr(invalid=&quotignore&quot)
+            try:
+                null = statistic([])
+            except:
+                null = np.nan
+            np.seterr(**old)
+        result.fill(null)
+        for i in np.unique(binnumbers):
+            for vv in xrange(Vdim):
+                result[vv, i] = statistic(values[vv, binnumbers == i])
+
+    &#47&#47 Shape into a proper matrix
+    result = result.reshape(np.append(Vdim, np.sort(nbin)))
+
+    for i in xrange(nbin.size):
+        j = ni.argsort()[i]
+        &#47&#47 Accomodate the extra `Vdim` dimension-zero with `+1`
+        result = result.swapaxes(i+1, j+1)
+        ni[i], ni[j] = ni[j], ni[i]
+
+    &#47&#47 Remove outliers (indices 0 and -1 for each dimension).
+    core = [slice(None)] + Ndim * [slice(1, -1)]
+    result = result[core]
+
+    &#47&#47 Unravel binnumbers into an ndarray, each row the bins for each dimension
+    if(expand_binnumbers and Ndim &gt; 1):
+        binnumbers = np.asarray(np.unravel_index(binnumbers, nbin))
+
+    if np.any(result.shape[1:] != nbin - 2):
+        raise RuntimeError(&quotInternal Shape Error&quot)
+
+    &#47&#47 Remove excess dimension-zero if `values` was 1-D
+    <a id="change">if(initVdim == 1):
+        result = result.reshape(*(nbin-2))
+
+   </a> return BinnedStatisticddResult(result, edges, binnumbers)
+</code></pre><img src="96425199.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/83c8b3a4f321c4a924d344df275ddc403d3ca835#diff-8fe8b5a806547c7e8c6f3fe46ddca5ae8c7737f5598ee8b83d655363de018ef6L443' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: 83c8b3a4f321c4a924d344df275ddc403d3ca835</div><div id='time'> Time: 2015-11-24</div><div id='author'> Author: lkelley@cfa.harvard.edu</div><div id='file'> File Name: scipy/stats/_binned_statistic.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: binned_statistic_dd</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/8b3543fca9d811c638bb72d78601c8564f5465fd#diff-82a00d696c1b61a9c41c63929d18083634ee4ac8574ea066c576f47bf0ea7b96L132' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: 8b3543fca9d811c638bb72d78601c8564f5465fd</div><div id='time'> Time: 2016-04-03</div><div id='author'> Author: EderSantana@users.noreply.github.com</div><div id='file'> File Name: keras/backend/theano_backend.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: batch_dot</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/deb653f8dc9b396ba99d5c66e0658fb056f37a38#diff-13c55aa1259c269ad31500e53e718eee07dd40f3d9c4a242d51b8336bdf4f230L64' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: deb653f8dc9b396ba99d5c66e0658fb056f37a38</div><div id='time'> Time: 2018-11-22</div><div id='author'> Author: ly979@nyu.edu</div><div id='file'> File Name: python/dgl/function/message.py</div><div id='class'> Class Name: SrcMulEdgeMessageFunction</div><div id='method'> Method Name: __call__</div><BR>

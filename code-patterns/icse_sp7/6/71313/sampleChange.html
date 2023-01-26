@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    ica.fit(raw)
+    raw_new = ica.apply(raw.copy())
+    &#47&#47 not a no-op
+    <a id="change">if max_pca_components == 8:  &#47&#47 XXX this fails: or n_pca_components == 8:
+        assert not np.allclose(raw.get_data(), raw_new.get_data())
+        return
+    &#47&#47 XXX this case should warn?
+   </a> if max_pca_components == 10:
+        assert ica.max_pca_components_ == 10
+        &#47&#47 XXX setting n_components to something safe prevents the blowup, maybe
+        &#47&#47 we don&quott need max_pca_components as float? For example setting the</code></pre><h3>After Change</h3><pre><code class='java'>
+        ctx = pytest.warns(RuntimeWarning, match=&quot.*unstable.*integer &lt;= 9&quot)
+        bad = True  &#47&#47 pinv will fail
+    elif n_components == 0.9999 and n_pca_components == 8:
+        ctx = <a id="change">pytest.raises(RuntimeError, match=&quotrequires 9 PCA values.*but&quot)</a>
+        bad = &quotexit&quot
+    else:
+        bad = False  &#47&#47 pinv will not fail
+        ctx = nullcontext()
+    <a id="change">with ctx:
+        ica.fit(raw)
+   </a> assert ica._max_pca_components is None
+    if bad == &quotexit&quot:
+        return
+    raw_new = ica.apply(raw.copy())</code></pre>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                self.global_timestep = self.agent.timestep
+                self.global_episode = self.agent.episode
+
+                <a id="change">if terminal is not None:
+                    &#47&#47 Callback plus experiment termination check
+                    if (
+                        callback_timestep_frequency is not None and
+                        (self.episode_timestep[parallel] % callback_timestep_frequency) == 0 and
+                        not callback(self, parallel)
+                    ):
+                        return
+
+               </a> if terminal is True:
+                    &#47&#47 Update experiment statistics
+                    self.episode_rewards.append(self.episode_reward[parallel])
+                    self.episode_timesteps.append(self.episode_timestep[parallel])</code></pre><h3>After Change</h3><pre><code class='java'>
+                no_environment_ready = False
+                states, terminal, reward = observation
+
+                <a id="change">if terminal is None:
+                    &#47&#47 Retrieve actions from agent
+                    actions = self.agent.act(
+                        states=states, deterministic=deterministic, parallel=parallel
+                    )
+                    self.episode_timestep[parallel] += 1
+
+                    &#47&#47 Execute actions in environment
+                    environment.start_execute(actions=actions)
+                    continue
+
+                &#47&#47 Terminate episode if too long
+               </a> if max_episode_timesteps is not None and \
+                        self.episode_timestep[parallel] &gt;= max_episode_timesteps:
+                    terminal = True
+</code></pre>

@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    cov = e_params.T @ e_params / ntime / (ntime - 1)
+    assert_allclose(cov, res.cov.values)
+
+    <a id="change">d = dir(res)</a>
+    <a id="change">for key in d:
+        if not key.startswith(&quot_&quot):
+            val = getattr(res, key)
+            if callable(val):
+                val()
+
+
+</a>def test_unknown_cov_type(data):
+    with pytest.raises(ValueError):
+        FamaMacBeth(data.y, data.x).fit(cov_type=&quotunknown&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_fama_macbeth(data):
+    <a id="change">res</a> = FamaMacBeth(data.y, data.x).fit(debiased=True)
+    y = PanelData(data.y)
+    x = PanelData(data.x)
+    missing = y.isnull | x.isnull
+    y.drop(missing)
+    x.drop(missing)
+    y = y.dataframe
+    x = x.dataframe
+    times = y.index.levels[1]
+    params = []
+    for t in times:
+        _y = y.xs(t, level=1)
+        _x = x.xs(t, level=1)
+        if _x.shape[0] &lt; _x.shape[1]:
+            continue
+        _x = _x.loc[_y.index]
+        params.append(lstsq(_x.values, _y.values)[0])
+    params = np.array(params).squeeze()
+    all_params = params
+    params = params.mean(0)
+    assert_allclose(params.squeeze(), res.params)
+    e_params = all_params - params[None, :]
+    ntime = e_params.shape[0]
+    cov = e_params.T @ e_params / ntime / (ntime - 1)
+    assert_allclose(cov, res.cov.values)
+    <a id="change">access_attributes(res)</a>
+
+
+def test_unknown_cov_type(data):
+    with pytest.raises(ValueError):</code></pre>

@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      else:
+        for j in range(len(self.atom_types)):
+          cond = tf.equal(Nbrs_Z, self.atom_types[j])
+          sym.append(tf.reduce_sum(<a id="change">tf.where(cond, rsf, rsf_zeros)</a>, 2))
+
+    layer = tf.stack(sym)
+    layer = tf.transpose(layer, [1, 2, 0])  &#47&#47 (l, B, N) -&gt; (B, N, l)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Compute the distances and radial symmetry functions.
+    D = self.distance_tensor(X, Nbrs, self.boxsize, B, N, M, d)
+    R = self.distance_matrix(D)
+    R = <a id="change">tf.reshape(R, [1] + R.shape.as_list())</a>
+    rsf = self.radial_symmetry_function(R, rc, rs, re)
+
+    if not self.atom_types:
+      cond = tf.to_float(tf.not_equal(Nbrs_Z, 0.0))
+      cond = tf.reshape(cond, R.shape)
+      <a id="change">layer = tf.reduce_sum(cond * rsf, 3)</a>
+    else:
+      sym = []
+      for j in range(len(self.atom_types)):
+        cond = tf.to_float(tf.equal(Nbrs_Z, self.atom_types[j]))</code></pre>

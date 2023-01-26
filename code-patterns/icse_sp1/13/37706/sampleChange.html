@@ -1,0 +1,92 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                header = next(reader)
+                if len(header) == 3:
+                    families = True
+            <a id="change">db, cursor = db_tools.getRawConnection()</a>
+
+            if db_tools.isMysql():
+                query = &quotCREATE TEMPORARY TABLE labels_import(&quot
+                query += &quotinstance_id integer, &quot
+                query += &quotannotations_id integer DEFAULT &quot + \
+                    str(self.annotations_id) + &quot, &quot
+                query += &quotuser_instance_id integer, &quot
+                query += &quotlabel varchar(200), &quot
+                query += &quotfamily varchar(200) DEFAULT \&quotother\&quot, &quot
+                query += &quotiteration integer DEFAULT 0, &quot
+                query += &quotmethod varchar(200) DEFAULT \&quotinit\&quot&quot
+                query += &quot);&quot
+                cursor.execute(query)
+
+                query = &quotLOAD DATA LOCAL INFILE \&quot&quot + filename + &quot\&quot &quot
+                query += &quotINTO TABLE &quot + &quotlabels_import&quot + &quot &quot
+                query += &quotFIELDS TERMINATED BY \&quot,\&quot &quot
+                query += &quotIGNORE 1 LINES &quot
+                if families:
+                    query += &quot(user_instance_id, label, family) &quot
+                else:
+                    query += &quot(user_instance_id, label) &quot
+                query += &quot;&quot
+                cursor.execute(query)
+
+                query = &quotUPDATE labels_import l &quot
+                query += &quotJOIN instances i &quot
+                query += &quotON i.user_instance_id = l.user_instance_id &quot
+                query += &quotAND i.dataset_id = &quot + str(self.dataset_id) + &quot &quot
+                query += &quotSET l.instance_id = i.id;&quot
+                cursor.execute(query)
+
+                query = &quotINSERT INTO annotations(instance_id,annotations_id,label,family,iteration,method) &quot
+                query += &quotSELECT instance_id,annotations_id,label,family,iteration,method &quot
+                query += &quotFROM labels_import;&quot
+                cursor.execute(query)
+
+            elif db_tools.isPostgresql():
+                query = &quotCREATE TEMPORARY TABLE labels_import(&quot
+                query += &quotinstance_id integer, &quot
+                query += &quotannotations_id integer DEFAULT &quot + \
+                    str(self.annotations_id) + &quot, &quot
+                query += &quotuser_instance_id integer, &quot
+                query += &quotlabel labels_enum, &quot
+                query += &quotfamily varchar(200) DEFAULT \&quotother\&quot, &quot
+                query += &quotiteration integer DEFAULT 0, &quot
+                query += &quotmethod varchar(200) DEFAULT \&quotinit\&quot&quot
+                query += &quot);&quot
+                cursor.execute(query)
+
+                with open(filename, &quotr&quot) as f:
+                    if families:
+                        query = &quotCOPY labels_import(user_instance_id,label,family) &quot
+                    else:
+                        query = &quotCOPY labels_import(user_instance_id,label) &quot
+                    query += &quotFROM STDIN &quot
+                    query += &quotWITH CSV HEADER DELIMITER AS \&quot,\&quot ;&quot
+                    cursor.copy_expert(sql=query, file=f)
+
+                query = &quotUPDATE labels_import AS l &quot
+                query += &quotSET instance_id = i.id &quot
+                query += &quotFROM instances AS i &quot
+                query += &quotWHERE i.user_instance_id = l.user_instance_id &quot
+                query += &quotAND i.dataset_id = &quot + str(self.dataset_id) + &quot;&quot
+                cursor.execute(query)
+
+                query = &quotINSERT INTO annotations(instance_id,annotations_id,label,family,iteration,method) &quot
+                query += &quotSELECT instance_id,annotations_id,label,family,iteration,method &quot
+                query += &quotFROM labels_import;&quot
+                cursor.execute(query)
+
+            <a id="change">db_tools.closeRawConnection(db, cursor)</a>
+            self.session.commit()
+
+    def _create(self):
+        experiment_id, oldest_parent = experiment_db_tools.addExperiment(self.session,</code></pre><h3>After Change</h3><pre><code class='java'>
+                header = next(reader)
+                if len(header) == 3:
+                    families = True
+            <a id="change">cursor = self.session.connection().connection.cursor()</a>
+
+            if db_tools.isMysql():
+                query = &quotCREATE TEMPORARY TABLE labels_import(&quot
+                query += &quotinstance_id integer, &quot</code></pre>

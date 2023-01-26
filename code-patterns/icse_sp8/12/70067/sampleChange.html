@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  training_data = args[&quottraining_data&quot]
+  if isinstance(training_data, dict):
+    <a id="change">if &quotcsv&quot in training_data:
+      cmd_args.append(&quot--csv=&quot + _abs_path(training_data[&quotcsv&quot]))
+    elif &quotbigquery_table&quot in training_data:
+      cmd_args.extend([&quot--bigquery&quot, training_data[&quotbigquery_table&quot]])
+    elif &quotbigquery_sql&quot in training_data:
+        &#47&#47 see https://cloud.google.com/bigquery/querying-data&#47&#47temporary_and_permanent_tables
+        print(&quotCreating temporary table that will be deleted in 24 hours&quot)
+        r = bq.Query(training_data[&quotbigquery_sql&quot]).execute().result()
+        cmd_args.extend([&quot--bigquery&quot, r.full_name])
+    else:
+      raise ValueError(&quotInvalid training_data dict. &quot
+                       &quotRequires either "csv", or "bigquery_talbe", or &quot
+                       &quot"bigquery_sql".&quot)
+ </a> elif isinstance(training_data, google.datalab.ml.CsvDataSet):
+    for file_name in training_data.input_files:
+      cmd_args.append(&quot--csv=&quot + _abs_path(file_name))
+  elif isinstance(training_data, google.datalab.ml.BigQueryDataSet):</code></pre><h3>After Change</h3><pre><code class='java'>
+    cmd_args.extend([&quot--project-id&quot, google.datalab.Context.default().project_id])
+
+  training_data = get_dataset_from_arg(args[&quottraining_data&quot])
+  <a id="change">data_names = (&quottrain&quot, &quoteval&quot)</a>
+  <a id="change">for name in data_names:
+    cmd_args_copy = list(cmd_args)
+    if isinstance(getattr(training_data, name), datalab_ml.CsvDataSet):
+      for file_name in getattr(training_data, name).input_files:
+        cmd_args_copy.append(&quot--csv=&quot + _abs_path(file_name))
+    elif isinstance(getattr(training_data, name), datalab_ml.BigQueryDataSet):
+      cmd_args_copy.extend([&quot--bigquery&quot, getattr(training_data, name).table])
+    else:
+      raise ValueError(&quotUnexpected training data type. Only csv or bigquery are supported.&quot)
+
+    cmd_args_copy.extend([&quot--prefix&quot, name])
+    try:
+      tmpdir = None
+      if args[&quotpackage&quot]:
+        tmpdir = tempfile.mkdtemp()
+        code_path = os.path.join(tmpdir, &quotpackage&quot)
+        _archive.extract_archive(args[&quotpackage&quot], code_path)
+      else:
+        code_path = MLTOOLBOX_CODE_PATH
+      _shell_process.run_and_monitor(cmd_args_copy, os.getpid(), cwd=code_path)
+    finally:
+      if tmpdir:
+        shutil.rmtree(tmpdir)
+
+
+</a>def _train(args, cell):
+  if args[&quotcloud_config&quot] and not args[&quotcloud&quot]:
+    raise ValueError(&quot"cloud_config" is provided but no "--cloud". &quot
+                     &quotDo you want local run or cloud run?&quot)</code></pre>

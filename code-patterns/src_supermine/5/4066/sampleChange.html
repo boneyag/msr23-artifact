@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        learning_rate = tf.cast(self.learning_rate, update.dtype.base_dtype)
+        momentum = tf.cast(self.momentum, update.dtype.base_dtype)
+
+        <a id="change">accumulated_momentum.assign((momentum * accumulated_momentum) + update)</a>
+        if self.use_nesterov:
+          parameter.assign_sub(learning_rate * update +
+                               learning_rate * momentum * accumulated_momentum)
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+        optimizer_utils.check_same_dtype(update, parameter)
+        lr = tf.cast(self.learning_rate, update.dtype.base_dtype)
+        mu = tf.cast(self.momentum, update.dtype.base_dtype)
+        <a id="change">if isinstance(update, tf.IndexedSlices):
+          update, indices = optimizer_utils.deduplicate_indexed_slices(
+              update.values, update.indices)
+          sparse_momentum_update = (mu * momentum.gather_nd(indices)) + update
+          momentum.scatter_nd_update(indices, sparse_momentum_update)
+          if self.use_nesterov:
+            parameter.scatter_nd_sub(
+                indices, (lr * update) + (lr * mu * sparse_momentum_update))
+          else:
+            parameter.scatter_nd_sub(indices, lr * sparse_momentum_update)
+        else:
+          momentum.assign((mu * momentum) + update)
+          if self.use_nesterov:
+            parameter.assign_sub((lr * update) + (lr * mu * momentum))
+          else:
+            parameter.assign_sub(lr * momentum)
+
+
+</a>class FastMomentum(base.Module):
+  SGD with Momentum module.
+
+  def __init__(self, learning_rate, momentum, use_nesterov=False, name=None):</code></pre>

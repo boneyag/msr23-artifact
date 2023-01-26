@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def test_bundle_add(self):
+    self.create_dir(&quotsrc/java/org/archimedes/volume/config/stone&quot)
+    <a id="change">self.create_file(&quotsrc/java/org/archimedes/volume/config/stone/dense.xml&quot)</a>
+    <a id="change">self.create_dir(&quotsrc/java/org/archimedes/volume/config&quot)</a>
+    self.create_file(&quotsrc/java/org/archimedes/volume/config/metal/dense.xml&quot)
+    <a id="change">self.add_to_build_file(&quotsrc/java/org/archimedes/volume/BUILD&quot, dedent(&quot&quot&quot
+      jvm_binary(name=&quotunused&quot)
+    &quot&quot&quot))</a>
+    <a id="change">self.add_to_build_file(&quotsrc/java/org/archimedes/volume/BUILD&quot, dedent(&quot&quot&quot
+      jvm_app(name=&quotvolume&quot,
+        dependencies=[&quot:unused&quot],
+        bundles=[
+          bundle(relative_to=&quotconfig&quot, fileset=[&quotconfig/stone/dense.xml&quot, &quotconfig/metal/dense.xml&quot])
+        ]
+      )
+    &quot&quot&quot))</a>
+    <a id="change">app = self.target(&quotsrc/java/org/archimedes/volume&quot)</a>
+    <a id="change">for k in app.bundles[0].filemap.keys():
+      if k.endswith(&quotarchimedes/volume/config/stone/dense.xml&quot):
+        stonexml_key = k
+   </a> self.assertEquals(app.bundles[0].filemap[stonexml_key],
+                      &quotstone/dense.xml&quot)
+
+  def test_multiple_bundles(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+    with self.assertRaises(DirectoryReMapper.BaseNotExistsError):
+      DirectoryReMapper("dummy/src/java/org/archimedes/crown/missing", "dummy")
+
+  def test_bundle_add(<a id="change">self</a>):
+    <a id="change">spec_path = &quotsrc/java/org/archimedes/volume&quot</a>
+    <a id="change">stone_dense = self.create_file(os.path.join(spec_path, &quotconfig/stone/dense.xml&quot))</a>
+    metal_dense = self.create_file(os.path.join(spec_path, &quotconfig/metal/dense.xml&quot))
+    <a id="change">unused = self.make_target(Address(spec_path, &quotunused&quot).spec, JvmBinary)</a>
+
+    bundle = <a id="change">self.create_bundle(spec_path,
+                                relative_to=&quotconfig&quot,
+                                fileset=[&quotconfig/stone/dense.xml&quot, &quotconfig/metal/dense.xml&quot])</a>
+    <a id="change">app = self.make_target(spec_path, JvmApp, dependencies=[unused], bundles=[bundle])</a>
+
+    self.assertEqual(1, len(app.bundles))
+    self.assertEqual({stone_dense: &quotstone/dense.xml&quot, metal_dense: &quotmetal/dense.xml&quot},
+                     app.bundles[0].filemap)</code></pre>

@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if scope == GLOBAL_NET_SCOPE:   &#47&#47 get global network
+            with tf.variable_scope(scope):
+                <a id="change">self.s = tf.placeholder(tf.float32, [None, N_S], &quotS&quot)</a>
+                <a id="change">self._build_net()</a>
+                <a id="change">self.a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/actor&quot)</a>
+                <a id="change">self.c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/critic&quot)</a>
+        else:   &#47&#47 local net, calculate losses
+            with tf.variable_scope(scope):
+                self.s = tf.placeholder(tf.float32, [None, N_S], &quotS&quot)
+                self.a_his = tf.placeholder(tf.int32, [None, ], &quotA&quot)
+                self.v_target = tf.placeholder(tf.float32, [None, 1], &quotVtarget&quot)
+
+                self.a_prob, self.v = self._build_net()
+
+                td = tf.subtract(self.v_target, self.v, name=&quotTD_error&quot)
+                with tf.name_scope(&quotc_loss&quot):
+                    self.c_loss = tf.reduce_mean(tf.square(td))
+
+                with tf.name_scope(&quota_loss&quot):
+                    log_prob = tf.reduce_sum(tf.log(self.a_prob) * tf.one_hot(self.a_his, N_A, dtype=tf.float32), axis=1, keep_dims=True)
+                    exp_v = log_prob * td
+                    entropy = tf.stop_gradient(-tf.reduce_sum(self.a_prob * tf.log(self.a_prob),
+                                                              axis=1, keep_dims=True))  &#47&#47 encourage exploration
+                    self.exp_v = ENTROPY_BETA * entropy + exp_v
+                    self.a_loss = tf.reduce_mean(-self.exp_v)
+
+                with tf.name_scope(&quotlocal_grad&quot):
+                    <a id="change">self.a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/actor&quot)</a>
+                    <a id="change">self.c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/critic&quot)</a>
+                    <a id="change">self.a_grads</a> = tf.gradients(self.a_loss, self.a_params)
+                    <a id="change">self.c_grads</a> = tf.gradients(self.c_loss, self.c_params)
+
+            with tf.name_scope(&quotsync&quot):
+                with tf.name_scope(&quotpull&quot):
+                    <a id="change">self.pull_a_params_op</a> = [l_p.assign(g_p) for l_p, g_p in zip(self.a_params, globalAC.a_params)]
+                    <a id="change">self.pull_c_params_op</a> = [l_p.assign(g_p) for l_p, g_p in zip(self.c_params, globalAC.c_params)]
+                with tf.name_scope(&quotpush&quot):
+                    <a id="change">self.update_a_op</a> = OPT_A.apply_gradients(zip(self.a_grads, globalAC.a_params))
+                    <a id="change">self.update_c_op</a> = OPT_C.apply_gradients(zip(self.c_grads, globalAC.c_params))
+
+    def _build_net(self):
+        w_init = tf.random_normal_initializer(0., .1)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if scope == GLOBAL_NET_SCOPE:   &#47&#47 get global network
+            with tf.variable_scope(scope):
+                <a id="change">self.s = tf.placeholder(tf.float32, [None, N_S], &quotS&quot)</a>
+                <a id="change">self.a_params, self.c_params = self._build_net(scope)[-2:]</a>
+        else:   &#47&#47 local net, calculate losses
+            with tf.variable_scope(scope):
+                self.s = tf.placeholder(tf.float32, [None, N_S], &quotS&quot)
+                self.a_his = tf.placeholder(tf.int32, [None, ], &quotA&quot)
+                self.v_target = tf.placeholder(tf.float32, [None, 1], &quotVtarget&quot)
+
+                self.a_prob, self.v, self.a_params, <a id="change">self.c_params</a> = self._build_net(scope)
+
+                td = tf.subtract(self.v_target, self.v, name=&quotTD_error&quot)
+                with tf.name_scope(&quotc_loss&quot):</code></pre>

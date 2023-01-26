@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            ModelTrainer(self.model, self.x_train, self.y_train, self.x_test, self.y_test, self.verbose).train_model()
+            _, optimal_accuracy = self.model.evaluate(self.x_test,self.y_test,verbose=self.verbose)
+            models = self._remove_duplicate(net_transfromer(self.model))
+            <a id="change">for index in range(0,len(models)):
+                models[index].compile(loss=categorical_crossentropy,
+                  optimizer=Adadelta(),
+                  metrics=[&quotaccuracy&quot])
+                ModelTrainer(models[index], self.x_train, self.y_train, self.x_test, self.y_test, self.verbose).train_model()
+                _, accuracy = models[index].evaluate(self.x_test, self.y_test, self.verbose)
+                if accuracy &gt; optimal_accuracy:
+                    optimal_accuracy = accuracy
+                    optimal_index = index
+                    self.model = models[index]
+       </a> return self.model if self.optimal_index is not None else None
+
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        new_models = self._remove_duplicate(net_transformer(self.model))
+        self.history_models += new_models
+
+        accuracy_list = <a id="change">[]</a>
+        for model in new_models:
+            model.compile(loss=categorical_crossentropy,
+                          optimizer=Adadelta(),
+                          metrics=[&quotaccuracy&quot])
+            ModelTrainer(model, self.x_train, self.y_train, self.x_test, self.y_test,
+                         self.verbose).train_model()
+            _, accuracy = model.evaluate(self.x_test, self.y_test, self.verbose)
+            accuracy_list.append(accuracy)
+
+        <a id="change">max_index = np.argmax(np.array(accuracy_list))[0]</a>
+        max_accuracy = accuracy_list[max_index]
+
+        <a id="change">if max_accuracy &gt; optimal_accuracy:
+            return new_models[max_index]
+
+       </a> return None
+</code></pre>

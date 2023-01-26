@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def _send_message_wait_for_reply(self, message):
+        waiter = self.WAITING_FOR_REPLY(message.header[&quotmsgid&quot])
+        self._state = waiter
+        <a id="change">self.send_message(message)</a>
+        def have_reply_or_disconnected():
+            return self._state != waiter or waiter.reply is not None
+        self._loop_until(have_reply_or_disconnected)
+        return waiter.reply</code></pre><h3>After Change</h3><pre><code class='java'>
+        send_result = []
+        def message_sent(future):
+            send_result.append(future)
+        <a id="change">self</a>._loop.add_future(<a id="change">self.send_message(message)</a>, message_sent)
+
+        def have_send_result_or_disconnected():
+            return len(send_result) &gt; 0 or self._state != waiter</code></pre>

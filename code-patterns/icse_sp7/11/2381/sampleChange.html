@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if epoch_batches is None:
+      batcher.reset()
+
+    <a id="change">return np.mean(train_loss), global_step</a>
+
+
+  def train_epoch_tfr(self, sess, sum_writer=None, epoch_batches=None):
+     Execute one training epoch, using TFRecords data. </code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 initialize training loss
+    train_loss = []
+    <a id="change">batch_sizes = []</a>
+    global_step = 0
+
+    &#47&#47 setup feed dict
+    fd = self.set_mode(&quottrain&quot)
+
+    &#47&#47 get first batch
+    Xb, Yb, NAb, Nb = batcher.next()
+
+    batch_num = 0
+    while Xb is not None and (epoch_batches is None or batch_num &lt; epoch_batches):
+      &#47&#47 update feed dict
+      fd[self.inputs_ph] = Xb
+      fd[self.targets_ph] = Yb
+
+      if no_steps:
+        run_returns = sess.run([self.merged_summary, self.loss_train] + \
+                                self.update_ops, feed_dict=fd)
+        summary, loss_batch = run_returns[:2]
+      else:
+        run_ops = [self.merged_summary, self.loss_train, self.global_step, self.step_op]
+        run_ops += self.update_ops
+        summary, loss_batch, global_step = sess.run(run_ops, feed_dict=fd)[:3]
+
+      &#47&#47 add summary
+      if sum_writer is not None:
+        sum_writer.add_summary(summary, global_step)
+
+      &#47&#47 accumulate loss
+      train_loss.append(loss_batch)
+      <a id="change">batch_sizes.append(Nb)</a>
+
+      &#47&#47 next batch
+      Xb, Yb, NAb, Nb = batcher.next()
+      batch_num += 1
+
+    &#47&#47 reset training batcher if epoch considered all of the data
+    if epoch_batches is None:
+      batcher.reset()
+
+    <a id="change">avg_loss = np.average(train_loss, weights=batch_sizes)</a>
+
+    <a id="change">return avg_loss, global_step</a>
+
+
+  def train_epoch_tfr(self, sess, sum_writer=None, epoch_batches=None):
+     Execute one training epoch, using TFRecords data. </code></pre>

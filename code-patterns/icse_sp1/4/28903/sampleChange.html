@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            optimizer.zero_grad()
+            imag_policy_logits_v = net_imag_policy(obs_v)
+            imag_policy_loss_v = -F.log_softmax(imag_policy_logits_v) * probs_v
+            <a id="change">imag_policy_loss_v = imag_policy_loss_v.sum(dim=1).mean()</a>
+            imag_policy_loss_v.backward()
+            optimizer.step()
+            tb_tracker.track("imag_policy_loss", imag_policy_loss_v, step_idx)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        for mb_obs, mb_probs, mb_actions in iterate_batches(envs, net, cuda=args.cuda):
+            obs_v = Variable(torch.from_numpy(mb_obs))
+            probs_v = Variable(torch.from_numpy(mb_probs))
+            <a id="change">actions_t = torch.LongTensor(mb_actions.tolist())</a>
+            if args.cuda:
+                obs_v = obs_v.cuda()
+                probs_v = probs_v.cuda()
+                actions_t = actions_t.cuda()</code></pre>

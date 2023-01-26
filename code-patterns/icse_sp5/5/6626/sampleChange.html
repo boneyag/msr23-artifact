@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 valid_length for attention, shape = (batch_size, seq_length)
+            attn_valid_len = F.broadcast_add(F.reshape(valid_length, shape=(-1, 1)),
+                                             F.reshape(zeros, shape=(1, -1)))
+            <a id="change">attn_valid_len = F.cast(attn_valid_len, dtype=&quotint32&quot)</a>
+            if states is None:
+                states = [attn_valid_len]
+            else:
+                states.append(attn_valid_len)</code></pre><h3>After Change</h3><pre><code class='java'>
+            ones = F.ones_like(steps)
+            mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
+                                      F.reshape(valid_length, shape=(-1, 1)))
+            <a id="change">mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
+                                   F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))</a>
+            if states is None:
+                states = [mask]
+            else:
+                states.append(mask)</code></pre>

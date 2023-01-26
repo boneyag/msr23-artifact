@@ -1,0 +1,157 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            gt.reset()
+            gt.set_def_unique(False)
+
+            <a id="change">for epoch in gt.timed_for(range(self._n_epochs + 1),
+                                      save_itrs=True):
+                logger.push_prefix(&quotEpoch &#47&#47%d | &quot % epoch)
+
+                num_steps = int(np.ceil(self._epoch_length/self._control_interval))
+                for t in range(num_steps):
+                    iteration = t + epoch * self._epoch_length
+
+                    action, _ = policy.get_action(observation)
+
+                    for i in range(self._control_interval):
+                        next_ob, reward, terminal, info = env.step(action)
+
+                        path_length += 1
+                        path_return += reward
+
+                        if terminal or path_length &gt;= self._max_path_length:
+                            break
+
+                    self._pool.add_sample(
+                        observation,
+                        action,
+                        reward,
+                        terminal,
+                        next_ob,
+                    )
+
+                    if terminal or path_length &gt;= self._max_path_length:
+                        observation = env.reset()
+                        policy.reset()
+                        path_length = 0
+                        max_path_return = max(max_path_return, path_return)
+                        last_path_return = path_return
+
+                        path_return = 0
+                        n_episodes += 1
+
+                    else:
+                        observation = next_ob
+                    gt.stamp(&quotsample&quot)
+
+                    if self._pool.size &gt;= self._min_pool_size:
+                        for i in range(self._n_train_repeat):
+                            batch = self._pool.random_batch(self._batch_size)
+                            self._do_training(iteration, batch)
+
+                    gt.stamp(&quottrain&quot)
+
+                self._evaluate(epoch)
+
+                params = self.get_snapshot(epoch)
+                logger.save_itr_params(epoch, params)
+                times_itrs = gt.get_times().stamps.itrs
+
+                eval_time = times_itrs[&quoteval&quot][-1] if epoch &gt; 1 else 0
+                total_time = gt.get_times().total
+                logger.record_tabular(&quottime-train&quot, times_itrs[&quottrain&quot][-1])
+                logger.record_tabular(&quottime-eval&quot, eval_time)
+                logger.record_tabular(&quottime-sample&quot, times_itrs[&quotsample&quot][-1])
+                logger.record_tabular(&quottime-total&quot, total_time)
+                logger.record_tabular(&quotepoch&quot, epoch)
+                logger.record_tabular(&quotepisodes&quot, n_episodes)
+                logger.record_tabular(&quotmax-path-return&quot, max_path_return)
+                logger.record_tabular(&quotlast-path-return&quot, last_path_return)
+                logger.record_tabular(&quotpool-size&quot, self._pool.size)
+
+                logger.dump_tabular(with_prefix=False)
+                logger.pop_prefix()
+
+                gt.stamp(&quoteval&quot)
+
+           </a> env.terminate()
+
+    def _evaluate(self, epoch):
+        Perform evaluation for the current policy.</code></pre><h3>After Change</h3><pre><code class='java'>
+            gt.reset()
+            gt.set_def_unique(False)
+
+            <a id="change">for epoch in gt.timed_for(range(self._n_epochs + 1),
+                                      save_itrs=True):
+                logger.push_prefix(&quotEpoch &#47&#47%d | &quot % epoch)
+
+                num_steps = int(np.ceil(self._epoch_length/self._control_interval))
+                for t in range(num_steps):
+                    iteration = t + epoch * self._epoch_length
+
+                    action, _ = policy.get_action(observation)
+
+                    for i in range(self._control_interval):
+                        next_ob, reward, terminal, info = env.step(action)
+
+                        path_length += 1
+                        path_return += reward
+
+                        if terminal or path_length &gt;= self._max_path_length:
+                            break
+
+                    self._pool.add_sample(
+                        observation,
+                        action,
+                        reward,
+                        terminal,
+                        next_ob,
+                    )
+
+                    if terminal or path_length &gt;= self._max_path_length:
+                        observation = env.reset()
+                        policy.reset()
+                        path_length = 0
+                        max_path_return = max(max_path_return, path_return)
+                        last_path_return = path_return
+
+                        path_return = 0
+                        n_episodes += 1
+
+                    else:
+                        observation = next_ob
+                    gt.stamp(&quotsample&quot)
+
+                    for i in range(self._n_train_repeat):
+                        self._do_training(
+                            itr=t + epoch * self._epoch_length,
+                            batch=self.sampler.random_batch())
+                    gt.stamp(&quottrain&quot)
+
+                self._evaluate(epoch)
+
+                params = self.get_snapshot(epoch)
+                logger.save_itr_params(epoch, params)
+                times_itrs = gt.get_times().stamps.itrs
+
+                eval_time = times_itrs[&quoteval&quot][-1] if epoch &gt; 1 else 0
+                total_time = gt.get_times().total
+                logger.record_tabular(&quottime-train&quot, times_itrs[&quottrain&quot][-1])
+                logger.record_tabular(&quottime-eval&quot, eval_time)
+                logger.record_tabular(&quottime-sample&quot, times_itrs[&quotsample&quot][-1])
+                logger.record_tabular(&quottime-total&quot, total_time)
+                logger.record_tabular(&quotepoch&quot, epoch)
+
+                self.sampler.log_diagnostics()
+
+                logger.dump_tabular(with_prefix=False)
+                logger.pop_prefix()
+
+                gt.stamp(&quoteval&quot)
+
+           </a> self.sampler.terminate()
+
+    def _evaluate(self, epoch):
+        Perform evaluation for the current policy.</code></pre>

@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+    def setupOutputs(self):
+        &#47&#47 We can&quott do anything unless all input slots are the same length
+        <a id="change">if len(self.FileNames) == len(self.InvertFlags) == len(self.GrayConvertFlags):
+            &#47&#47 Ensure the proper number of outputs
+            self.OutputImages.resize(len(self.FileNames))
+    
+            &#47&#47 Rebuild the list of provider slots from scratch
+            self.providerSlots = []
+
+            &#47&#47 FIXME: MultiInputSlot-to-MultiInputSlot clones don&quott work, so we have to set the value manually...
+            self.multiReader.FileNames.resize( len(self.FileNames) )
+            for i in range(0, len(self.FileNames)):
+                self.multiReader.FileNames[i].setValue(self.FileNames[i].value)
+    
+            for i in range(len(self.FileNames)):
+                
+                &#47&#47 By default, our output is the raw multi-reader output
+                providerSlot = self.multiReader.Outputs[i]
+    
+                &#47&#47 If the user wants to invert the image,
+                &#47&#47  insert an intermediate inversion operator on this subslot
+                if self.InvertFlags[i].value:
+                    inverter = OpGrayscaleInverter(graph=self.graph)
+                    inverter.input.connect(providerSlot)
+                    providerSlot = inverter.output
+                
+                &#47&#47 If the user wants to convert to grayscale,
+                &#47&#47  insert an intermediate rgb-to-grayscale operator on this subslot
+                if self.GrayConvertFlags[i].value:
+                    converter = OpRgbToGrayscale(graph=self.graph)
+                    converter.input.connect(providerSlot)
+                    providerSlot = converter.output
+                
+                &#47&#47 Remember which operator is providing the output on this subslot
+                self.providerSlots.append(providerSlot)
+    
+                &#47&#47 Copy the metadata from the provider we ended up with
+                self.OutputImages[i].meta.dtype = providerSlot.meta.dtype
+                self.OutputImages[i].meta.shape = providerSlot.meta.shape
+                self.OutputImages[i].meta.axistags = copy.copy(providerSlot.meta.axistags)
+
+   </a> def getSubOutSlot(self, slots, indexes, key, result):
+        &#47&#47 Request the output from the appropriate internal operator output.
+        req = self.providerSlots[indexes[0]][key].writeInto(result)
+        res = req.wait()</code></pre><h3>After Change</h3><pre><code class='java'>
+            
+            &#47&#47 If we should find the data in the project file, use a dataset reader
+            if datasetInProject:
+                <a id="change">reader = OpProjectDatasetReader(graph=self.graph)</a>
+                <a id="change">reader.ProjectFile.setValue(self.ProjectFile.value)</a>
+                reader.InternalPath.setValue(datasetInfo.internalPath)
+                providerSlot = <a id="change">reader.OutputImage</a>
+            else:
+                &#47&#47 Use a normal (filesystem) reader
+                reader = OpInputDataReader(graph=self.graph)
+                reader.FilePath.setValue(datasetInfo.filePath)</code></pre>

@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            collapsed_size = util.prod(util.shape(log_prob)[1:])
+            log_prob = tf.reshape(tensor=log_prob, shape=(-1, collapsed_size))
+            log_probs.append(log_prob)
+        <a id="change">log_prob = tf.reduce_mean(input_tensor=tf.concat(values=log_probs, axis=1), axis=1)</a>
+        <a id="change">return -log_prob * reward</a>
+
+    def tf_predict_q(self, states, internals, actions, reward, update):
+        q_value = self.critic.apply(dict(states=states, actions=actions), internals=internals, update=update)
+        return reward + self.discount * q_value</code></pre><h3>After Change</h3><pre><code class='java'>
+    def tf_loss_per_instance(self, states, internals, actions, terminal, reward, next_states, next_internals, update, reference=None):
+        q = self.critic.apply(dict(states=states, actions=actions), internals=internals, update=update)
+
+        <a id="change">return -q</a>
+
+    def tf_predict_target_q(self, states, internals, terminal, actions, reward, update):
+        q_value = self.target_critic.apply(dict(states=states, actions=actions), internals=internals, update=update)
+        return reward + (1. - tf.cast(terminal, dtype=tf.float32)) * self.discount * q_value</code></pre>

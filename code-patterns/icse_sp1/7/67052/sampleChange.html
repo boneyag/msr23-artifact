@@ -1,0 +1,97 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+	xml = requests.get("http://clerk.house.gov/xml/lists/MemberData.xml")
+	root=lxml.etree.fromstring(xml.content)
+
+	<a id="change">yaml_moc_ids = []</a>
+	for moc in y:
+		try:
+			term = moc["terms"][-1]
+		except IndexError:
+			print("Member has no terms", moc)
+			continue
+
+		if term["type"] != "rep": continue
+
+		if today &lt; parse_date(term["start"]) or today &gt; parse_date(term["end"]):
+			print("Member&quots last listed term is not current", moc, term["start"])
+			continue
+
+		yaml_moc_ids.append(moc[&quotid&quot][&quotbioguide&quot])
+
+		if "class" in term: del term["class"]
+
+		ssdd = "%s%02d" % (term["state"], term["district"])
+
+		query_str = "./members/member/[statedistrict=&quot%s&quot]" % ssdd
+		&#47&#47 TODO: Follow up
+		query_str = query_str.replace("AS00", "AQ00")
+		&#47&#47print(query_str)
+
+		mi = root.findall(query_str)[0].find(&quotmember-info&quot)
+
+		if (mi.find(&quotbioguideID&quot).text != moc[&quotid&quot][&quotbioguide&quot]):
+			print("Warning: Bioguide ID did not match for %s%02d" % (term["state"], term["district"]))
+
+		firstname = mi.find(&quotfirstname&quot).text
+		middlename = mi.find(&quotmiddlename&quot).text &#47&#47could be empty
+		lastname = mi.find(&quotlastname&quot).text
+		listname = mi.find(&quotnamelist&quot).text
+		officialname = mi.find(&quotofficial-name&quot).text
+		formalname = mi.find(&quotformal-name&quot).text
+
+		office_room = mi.find(&quotoffice-room&quot).text
+		office_building = mi.find(&quotoffice-building&quot).text
+
+		office_building_full = office_building.replace("RHOB", "Rayburn HOB")
+		office_building_full = office_building_full.replace("CHOB", "Cannon HOB")
+		office_building_full = office_building_full.replace("LHOB", "Longworth HOB")
+
+		office_zip = mi.find(&quotoffice-zip&quot).text
+		office_zip_suffix = mi.find(&quotoffice-zip-suffix&quot).text
+
+		office = "{} {}".format(office_room, office_building_full.replace("HOB", "House Office Building"))
+		address = "{} {}; Washington DC {}-{}".format(office_room, office_building_full, office_zip, office_zip_suffix)
+
+		phone = mi.find(&quotphone&quot).text
+		phone_parsed = re.sub("^\((\d\d\d)\) ", lambda m : m.group(1) + "-", phone) &#47&#47 replace (XXX) area code with XXX- for compatibility w/ existing format
+
+		moc["name"]["list"] = listname
+		moc["name"]["official_full"] = officialname
+		moc["name"]["formal"] = formalname
+
+		moc["name"]["first"] = firstname
+		if (middlename):
+			moc["name"]["middle"] = middlename
+		else:
+			if ("middle" in moc["name"]):
+				del moc["name"]["middle"]
+		moc["name"]["last"] = lastname
+
+		term["address"] = address
+		term["office"] = office
+		term["phone"] = phone_parsed
+
+	save_data(y, "legislators-current.yaml")
+
+	&#47&#47Check for Members in Clerk XML not in the yaml
+	<a id="change">for xmlMember in root.findall(&quot./members/member&quot):
+		bioguideID = xmlMember.find(&quotmember-info/bioguideID&quot).text
+		if bioguideID is None:
+			&#47&#47vanancy
+			continue
+		if bioguideID not in yaml_moc_ids: 
+			print("Warning: " + bioguideID + " not found in legislators-current.yaml")
+
+</a>if __name__ == &quot__main__&quot:
+  run()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+		&#47&#47TODO: follow up, why no official name?
+		if mi.find(&quotofficial-name&quot) is None:
+			<a id="change">print("Warning: No official-name tag for %s" % ssdd)</a>
+			officialname = None
+		else:
+			officialname = mi.find(&quotofficial-name&quot).text
+</code></pre>

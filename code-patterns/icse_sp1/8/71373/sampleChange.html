@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return d_real, d_fake
+
+    def discriminator_loss(self, d_real, d_fake):
+        <a id="change">dc_real_loss = torch.nn.BCELoss(reduction=&quotmean&quot)(
+            d_real, torch.ones(d_real.size()))</a>
+        <a id="change">dc_fake_loss = torch.nn.BCELoss(reduction=&quotmean&quot)(
+            d_fake, torch.zeros(d_fake.size()))</a>
+        dc_gen_loss = torch.nn.BCELoss(reduction=&quotmean&quot)(
+            d_fake, torch.ones(d_fake.size()))
+        <a id="change">return dc_real_loss + dc_fake_loss + dc_gen_loss</a>
+
+    def loss(self, d_real, d_fake, *args):
+        args = list(args)
+        args[0] = self.decoder(args[0])</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def discriminator_loss(self, real, fake):
+        real_loss = -torch.log(real).mean()
+        <a id="change">fake_loss = -torch.log((1 - fake).clamp(min=1e-8)).mean()</a>
+        <a id="change">return real_loss + fake_loss</a>
+
+    def loss(self, z, pos_edge_index, neg_adj_mask):
+        recon_loss = self.reconstruction_loss(z, pos_edge_index, neg_adj_mask)
+        d_loss = self.discriminator_loss(*self.discriminate(z))</code></pre>

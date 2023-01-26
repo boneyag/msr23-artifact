@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        output_shape = self.compute_output_shape(input_shape)
+        self.v_thresh = k.variable(self._v_thresh)
+        self.mem = k.variable(self.init_membrane_potential(output_shape))
+        <a id="change">self.time</a> = <a id="change">k.variable(self.dt)
+    </a>    &#47&#47 To save memory and computations, allocate only where needed:
+        if self.tau_refrac &gt; 0:
+            self.refrac_until = k.zeros(output_shape)
+        if any({&quotspiketrains&quot, &quotspikerates&quot, &quotcorrelation&quot, &quotspikecounts&quot,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        output_shape = self.compute_output_shape(input_shape)
+        if self.v_thresh is None:
+            self.v_thresh = <a id="change">tf.Variable(self._v_thresh, name=&quotv_thresh&quot,
+                                        trainable=False)</a>
+        if self.mem is None:
+            self.mem = tf.Variable(self.init_membrane_potential(output_shape),
+                                   name=&quotv_mem&quot, trainable=False)
+        if self.time is None:
+            <a id="change">self.time</a> = <a id="change">tf.Variable(self.dt, name=&quotdt&quot, trainable=False)</a>
+        &#47&#47 To save memory and computations, allocate only where needed:
+        if self.tau_refrac &gt; 0 and self.refrac_until is None:
+            self.refrac_until = tf.Variable(
+                tf.zeros(output_shape), name=&quotrefrac_until&quot, trainable=False)</code></pre>

@@ -1,0 +1,119 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+states = librosa.sequence.viterbi_discriminative(full_p, transition)
+
+&#47&#47 sphinx_gallery_thumbnail_number = 5
+<a id="change">plt.figure(figsize=(12, 6))</a>
+ax = plt.subplot(2,1,1)
+librosa.display.specshow(librosa.amplitude_to_db(S_full, ref=np.max),
+                         y_axis=&quotlog&quot, x_axis=&quottime&quot, sr=sr)
+plt.xlabel(&quot&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Plot the spectrum
+<a id="change">fig</a>, <a id="change">ax</a> = plt.subplots()
+img = librosa.display.specshow(librosa.amplitude_to_db(S_full, ref=np.max),
+                               y_axis=&quotlog&quot, x_axis=&quottime&quot, sr=sr, ax=ax)
+fig.colorbar(img, ax=ax);
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 As you can see, there are periods of silence and
+&#47&#47 non-silence throughout this recording.
+&#47&#47
+
+&#47&#47 As a first step, we can plot the root-mean-square (RMS) curve
+rms = librosa.feature.rms(y=y)[0]
+
+times = librosa.frames_to_time(np.arange(len(rms)))
+
+fig, ax = plt.subplots()
+ax.plot(times, rms)
+ax.axhline(0.02, color=&quotr&quot, alpha=0.5)
+ax.set(xlabel=&quotTime&quot, ylabel=&quotRMS&quot);
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 The red line at 0.02 indicates a reasonable threshold for silence detection.
+&#47&#47 However, the RMS curve occasionally dips below the threshold momentarily,
+&#47&#47 and we would prefer the detector to not count these brief dips as silence.
+&#47&#47 This is where the Viterbi algorithm comes in handy!
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 As a first step, we will convert the raw RMS score
+&#47&#47 into a likelihood (probability) by logistic mapping
+&#47&#47
+&#47&#47   :math:`P[V=1 | x] = \frac{\exp(x - \tau)}{1 + \exp(x - \tau)}`
+&#47&#47
+&#47&#47 where :math:`x` denotes the RMS value and :math:`\tau=0.02` is our threshold.
+&#47&#47 The variable :math:`V` indicates whether the signal is non-silent (1) or silent (0).
+&#47&#47
+&#47&#47 We&quotll normalize the RMS by its standard deviation to expand the
+&#47&#47 range of the probability vector
+
+r_normalized = (rms - 0.02) / np.std(rms)
+p = np.exp(r_normalized) / (1 + np.exp(r_normalized))
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 We can plot the probability curve over time:
+
+fig, ax = plt.subplots()
+ax.plot(times, p, label=&quotP[V=1|x]&quot)
+ax.axhline(0.5, color=&quotr&quot, alpha=0.5, label=&quotDescision threshold&quot)
+ax.set(xlabel=&quotTime&quot)
+ax.legend();
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 which looks much like the first plot, but with the decision threshold
+&#47&#47 shifted to 0.5.  A simple silence detector would classify each frame
+&#47&#47 independently of its neighbors, which would result in the following plot:
+
+
+plt.figure(figsize=(12, 6))
+fig, ax = plt.subplots(nrows=2, sharex=True)
+librosa.display.specshow(librosa.amplitude_to_db(S_full, ref=np.max),
+                         y_axis=&quotlog&quot, x_axis=&quottime&quot, sr=sr, ax=<a id="change">ax[0]</a>)
+<a id="change">ax[0].label_outer()</a>
+<a id="change">ax</a>[<a id="change">1</a>].step(times, p&gt;=0.5, label=&quotNon-silent&quot)
+<a id="change">ax</a>[<a id="change">1</a>].set(ylim=[0, 1.05])
+ax[1].legend()
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 We can do better using the Viterbi algorithm.
+&#47&#47 We&quotll use state 0 to indicate silent, and 1 to indicate non-silent.
+&#47&#47 We&quotll assume that a silent frame is equally likely to be followed
+&#47&#47 by silence or non-silence, but that non-silence is slightly
+&#47&#47 more likely to be followed by non-silence.
+&#47&#47 This is accomplished by building a self-loop transition matrix,
+&#47&#47 where `transition[i, j]` is the probability of moving from state
+&#47&#47 `i` to state `j` in the next frame.
+
+transition = librosa.sequence.transition_loop(2, [0.5, 0.6])
+print(transition)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Our `p` variable only indicates the probability of non-silence,
+&#47&#47 so we need to also compute the probability of silence as its complement.
+
+full_p = np.vstack([1 - p, p])
+print(full_p)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Now, we&quotre ready to decode!
+&#47&#47 We&quotll use `viterbi_discriminative` here, since the inputs are
+&#47&#47 state likelihoods conditional on data (in our case, data is rms).
+
+states = librosa.sequence.viterbi_discriminative(full_p, transition)
+
+&#47&#47 sphinx_gallery_thumbnail_number = 5
+<a id="change">fig</a>, <a id="change">ax</a> = plt.subplots(nrows=2, sharex=True)
+librosa.display.specshow(librosa.amplitude_to_db(S_full, ref=np.max),
+                         y_axis=&quotlog&quot, x_axis=&quottime&quot, sr=sr, ax=<a id="change">ax[0]</a>)
+<a id="change">ax[0].label_outer()</a>
+ax[1].step(times, p&gt;=0.5, label=&quotFrame-wise&quot)
+<a id="change">ax</a>[<a id="change">1</a>].step(times, states, linestyle=&quot--&quot, color=&quotorange&quot, label=&quotViterbi&quot)
+ax[1].set(ylim=[0, 1.05])
+<a id="change">ax</a>[<a id="change">1</a>].legend()
+
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47</code></pre>

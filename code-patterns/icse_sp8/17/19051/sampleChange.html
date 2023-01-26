@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        output1 = self.sess.run(outputs[:-1], feed_dict={input_var: self.obs})
+        with tf.Session(graph=tf.Graph()) as sess:
+            input_var = tf.placeholder(tf.float32, shape=(None, 5))
+            model_pickled = <a id="change">pickle.loads(pickle.dumps(model))</a>
+            outputs = model_pickled.build(input_var)
+            output2 = sess.run(outputs[:-1], feed_dict={input_var: self.obs})
+            assert np.array_equal(output1, output2)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        outputs = model.build(input_var)
+
+        &#47&#47 get output bias
+        <a id="change">with tf.variable_scope(&quotGaussianMLPModel&quot, reuse=True):
+            bias = tf.get_variable(&quotdist_params/mean_network/output/bias&quot)
+        &#47&#47 assign it to all ones
+       </a> <a id="change">self.sess.run(tf.assign(bias, tf.ones_like(bias)))</a>
+
+        output1 = self.sess.run(outputs[:-1], feed_dict={input_var: self.obs})
+
+        h = pickle.dumps(model)</code></pre>

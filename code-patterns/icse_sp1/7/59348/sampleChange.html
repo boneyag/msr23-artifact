@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self._check_connected()
+        profile_table_keys = self._keys(gcs_utils.TablePrefix_PROFILE_string +
+                                        "*")
+        <a id="change">batch_identifiers_binary = [
+            key[len(gcs_utils.TablePrefix_PROFILE_string):]
+            for key in profile_table_keys
+        ]</a>
+
+        result = defaultdict(list)
+        <a id="change">for batch_id in batch_identifiers_binary:
+            profile_data = self._profile_table(binary_to_object_id(batch_id))
+            &#47&#47 Note that if keys are being evicted from Redis, then it is
+            &#47&#47 possible that the batch will be evicted before we get it.
+            if len(profile_data) &gt; 0:
+                component_id = profile_data[0]["component_id"]
+                result[component_id].extend(profile_data)
+
+       </a> return dict(result)
+
+    def _seconds_to_microseconds(self, time_in_seconds):
+        A helper function for converting seconds to microseconds.</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            for event in profile.profile_events:
+                try:
+                    <a id="change">extra_data = json.loads(event.extra_data)</a>
+                except ValueError:
+                    extra_data = {}
+                <a id="change">profile_event = {
+                    "event_type": event.event_type,
+                    "component_id": component_id,
+                    "node_ip_address": node_ip_address,
+                    "component_type": component_type,
+                    "start_time": event.start_time,
+                    "end_time": event.end_time,
+                    "extra_data": extra_data
+                }</a>
+
+                result[component_id].append(profile_event)
+
+        return dict(result)</code></pre>

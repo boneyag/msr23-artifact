@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                    &#47&#47 do not use += because autograd does not support it
+                    loss = loss + self.triplet_loss_(fX[anchor, :],
+                                                     <a id="change">fX[positive, :]</a>,
+                                                     fX[negative, :])
+                    n_comparisons = n_comparisons + 1
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        loss = 0.
+        n_comparisons = 0
+
+        <a id="change">distance = self.metric_(fX)</a>
+
+        &#47&#47 consider every embedding as anchor
+        for anchor, y_anchor in enumerate(y):
+
+            &#47&#47 consider every other embedding with the same label as positive
+            for positive, y_positive in enumerate(y):
+
+                &#47&#47 if same embedding or different labels, skip
+                if (anchor == positive) or (y_anchor != y_positive):
+                    continue
+
+                for negative, y_negative in enumerate(y):
+
+                    &#47&#47 if same label, skip
+                    if y_negative == y_positive:
+                        continue
+
+                    loss_ = distance[anchor, positive] - \
+                            distance[anchor, negative] + \
+                            self.margin * self.metric_max_
+
+                    if self.clamp == &quotpositive&quot:
+                        <a id="change">loss_ = ag_np.maximum(loss_, 0.)</a>
+
+                    elif self.clamp == &quotsigmoid&quot:
+                        loss_ = 1. / (1. + ag_np.exp(-loss_))
+
+                    &#47&#47 do not use += because autograd does not support it
+                    <a id="change">loss = loss + loss_</a>
+
+                    n_comparisons = n_comparisons + 1
+
+        return loss / n_comparisons</code></pre>

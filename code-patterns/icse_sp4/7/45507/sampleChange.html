@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def execute(self):
+    self.context.products.safe_create_data(&quotgo_remote_lib_src&quot, lambda: defaultdict(str))
+
+    <a id="change">with self.invalidated(self.context.targets(self.is_remote_lib)) as invalidation_check:
+      for vt in invalidation_check.all_vts:
+        import_id = self.global_import_id(vt.target)
+        dest_dir = os.path.join(vt.results_dir, import_id)
+
+        if not vt.valid:
+          rev = vt.target.payload.get_field_value(&quotrev&quot)
+          zip_url = vt.target.payload.get_field_value(&quotzip_url&quot).format(id=import_id, rev=rev)
+          if not zip_url:
+            raise TaskError(&quotNo zip url specified for go_remote_library {id}&quot
+                            .format(id=import_id))
+          self._download_zip(zip_url, dest_dir)
+
+        self.context.products.get_data(&quotgo_remote_lib_src&quot)[vt.target] = dest_dir
+
+ </a> def _download_zip(self, zip_url, dest_dir):
+    Downloads a zip file at the given URL into the given directory.
+
+    :param str zip_url: Full URL pointing to zip file.</code></pre><h3>After Change</h3><pre><code class='java'>
+  def execute(self):
+    self.context.products.safe_create_data(&quotgo_remote_lib_src&quot, lambda: defaultdict(str))
+    undeclared_deps = self._transitive_download_remote_libs(self.context.targets(self.is_remote_lib))
+    <a id="change">if undeclared_deps:
+      self._log_undeclared_deps(undeclared_deps)
+      raise TaskError(&quotFailed to resolve transitive Go remote dependencies.&quot)
+
+ </a> def _log_undeclared_deps(self, undeclared_deps):
+    for import_id, deps in undeclared_deps.items():
+      self.context.log.error(&quot{import_id} has remote dependencies which require local declaration:&quot
+                             .format(import_id=import_id))</code></pre>

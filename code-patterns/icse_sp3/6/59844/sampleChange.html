@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            F.cross_entropy(logit, target, reduction="sum")
+
+            predictions = torch.max(logit, 1)[1].view(target.size())
+            <a id="change">corrects += (predictions.data == target.data).sum()</a>
+
+        <a id="change">return 100.0 * corrects / len(data_iter.dataset)</a>
+
+    def fit(self, X, y, sample_weight=None):
+        start = time() if self.verbose &gt; 0 else None
+        train_iter, dev_iter = self.__preprocess(X, y, sample_weight)</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.__model.eval()
+
+        preds = []
+        <a id="change">targets = []</a>
+
+        for batch in data_iter:
+            feature, target = batch.text, batch.label
+
+            feature.data.t_()
+            target.data.sub_(1)
+
+            if self.cuda and torch.cuda.is_available():
+                feature, target = feature.cuda(), target.cuda()
+
+            logit = self.__model(feature)
+
+            F.cross_entropy(logit, target, reduction="sum")
+
+            preds += <a id="change">torch.max(logit, 1)[1].view(target.size()).data.tolist()</a>
+            <a id="change">targets += target.data.tolist()</a>
+
+        <a id="change">return self.scoring(targets, preds)</a>
+
+    def fit(self, X, y, sample_weight=None):
+        start = time() if self.verbose &gt; 0 else None
+        train_iter, dev_iter = self.__preprocess(X, y, sample_weight)</code></pre>

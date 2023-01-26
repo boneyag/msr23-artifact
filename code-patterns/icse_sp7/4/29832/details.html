@@ -1,0 +1,217 @@
+<html><h3>0f5249b8e9e9fd837ab8f3ae529fa2e05df7a292,sos/sos_executor.py,Base_Executor,run,#Base_Executor#Any#Any#Any#,755
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for p, _, _ in procs + pool:
+            p[1].put(None)
+            p[0].join()
+        <a id="change">prog.close()</a>
+        if exec_error.errors:
+            failed_steps, pending_steps = dag.pending()
+            if failed_steps:
+                sections = [self.workflow.section_by_id(x._step_uuid).step_name() for x in failed_steps]</code></pre><h3>After Change</h3><pre><code class='java'>
+        procs = []
+        &#47&#47 process pools
+        pool = []
+        <a id="change">try:
+            prog = ProgressBar(desc=self.workflow.name, total=dag.num_nodes(), disable=dag.num_nodes() &lt;= 1 or env.verbosity != 1)
+            exec_error = ExecuteError(self.workflow.name)
+            while True:
+                &#47&#47 step 1: check existing jobs and see if they are completed
+                for idx, proc in enumerate(procs):
+                    if proc is None:
+                        continue
+
+                    [p, q, runnable] = proc
+                    if not q.poll():
+                        continue
+
+                    res = q.recv()
+                    &#47&#47 the step is waiting for external tasks
+                    if isinstance(res, str):
+                        if res.startswith(&quottask&quot):
+                            env.logger.debug(&quotReceive {}&quot.format(res))
+                            runnable._host = Host(res.split(&quot &quot)[1])
+                            runnable._pending_tasks = res.split(&quot &quot)[2:]
+                            for task in runnable._pending_tasks:
+                                runnable._host.submit_task(task)
+                            runnable._status = &quottask_pending&quot
+                            continue
+                        else:
+                            raise RuntimeError(&quotUnexpected value from step {}&quot.format(res))
+
+                    &#47&#47 if we does get the result,
+                    &#47&#47 we send the process to pool
+                    pool.append(procs[idx])
+                    procs[idx] = None
+
+                    if isinstance(res, (UnknownTarget, RemovedTarget)):
+                        runnable._status = None
+                        target = res.target
+                        if dag.regenerate_target(target):
+                            &#47&#47runnable._depends_targets.append(target)
+                            &#47&#47dag._all_dependent_files[target].append(runnable)
+                            dag.build(self.workflow.auxiliary_sections)
+                            &#47&#47
+                            cycle = dag.circular_dependencies()
+                            if cycle:
+                                raise RuntimeError(&quotCircular dependency detected {} after regeneration. It is likely a later step produces input of a previous step.&quot.format(cycle))
+
+                        else:
+                            if self.resolve_dangling_targets(dag, [target]) == 0:
+                                raise RuntimeError(&quotFailed to regenerate or resolve {}{}.&quot
+                                    .format(target, dag.steps_depending_on(target, self.workflow)))
+                            runnable._depends_targets.append(target)
+                            dag._all_dependent_files[target].append(runnable)
+                            dag.build(self.workflow.auxiliary_sections)
+                            &#47&#47
+                            cycle = dag.circular_dependencies()
+                            if cycle:
+                                raise RuntimeError(&quotCircular dependency detected {}. It is likely a later step produces input of a previous step.&quot.format(cycle))
+                        self.save_dag(dag)
+                    elif isinstance(res, UnavailableLock):
+                        runnable._status = &quotsignature_pending&quot
+                        runnable._signature = (res.output, res.sig_file)
+                        section = self.workflow.section_by_id(runnable._step_uuid)
+                        env.logger.info(&quotWaiting on another process for step {}&quot.format(section.step_name()))
+                    &#47&#47 if the job is failed
+                    elif isinstance(res, Exception):
+                        runnable._status = &quotfailed&quot
+                        exec_error.append(runnable._node_id, res)
+                        prog.update(1)
+                    else:
+                        &#47&#47
+                        svar = {}
+                        for k, v in res.items():
+                            if k == &quot__shared__&quot:
+                                svar = v
+                                env.sos_dict.update(v)
+                            else:
+                                env.sos_dict.set(k, v)
+                        &#47&#47
+                        &#47&#47 set context to the next logic step.
+                        for edge in dag.out_edges(runnable):
+                            node = edge[1]
+                            &#47&#47 if node is the logical next step...
+                            if node._node_index is not None and runnable._node_index is not None:
+                                &#47&#47and node._node_index == runnable._node_index + 1:
+                                node._context.update(env.sos_dict.clone_selected_vars(
+                                    node._context[&quot__signature_vars__&quot] | node._context[&quot__environ_vars__&quot] \
+                                    | {&quot_input&quot, &quot__step_output__&quot, &quot__default_output__&quot, &quot__args__&quot}))
+                            node._context.update(svar)
+                            node._context[&quot__completed__&quot].append(res[&quot__step_name__&quot])
+                        dag.update_step(runnable, env.sos_dict[&quot__step_input__&quot],
+                            env.sos_dict[&quot__step_output__&quot],
+                            env.sos_dict[&quot__step_depends__&quot],
+                            env.sos_dict[&quot__step_local_input__&quot],
+                            env.sos_dict[&quot__step_local_output__&quot])
+                        runnable._status = &quotcompleted&quot
+                        prog.update(1)
+
+                &#47&#47 remove None
+                procs = [x for x in procs if x is not None]
+
+                &#47&#47 step 2: check is some jobs are done
+                for proc in procs:
+                    &#47&#47 if a job is pending, check if it is done.
+                    if proc[2]._status == &quottask_pending&quot:
+                        res = proc[2]._host.check_status(proc[2]._pending_tasks)
+                        if any(x in  (&quotpending&quot, &quotrunning&quot, &quotcompleted-old&quot, &quotfailed-old&quot, &quotfailed-missing-output&quot, &quotfailed-old-missing-output&quot) for x in res):
+                            continue
+                        elif all(x == &quotcompleted&quot for x in res):
+                            env.logger.debug(&quotPut results for {}&quot.format(&quot &quot.join(proc[2]._pending_tasks)))
+                            res = runnable._host.retrieve_results(proc[2]._pending_tasks)
+                            proc[1].send(res)
+                            proc[2]._status == &quotrunning&quot
+                        else:
+                            raise RuntimeError(&quotJob returned with status {}&quot.format(res))
+
+                &#47&#47 step 3: check if there is room and need for another job
+                while True:
+                    num_running = len([x for x in procs if x[2]._status != &quottask_pending&quot])
+                    if num_running &gt;= env.max_jobs:
+                        break
+                    &#47&#47 find any step that can be executed and run it, and update the DAT
+                    &#47&#47 with status.
+                    runnable = dag.find_executable()
+                    if runnable is None:
+                        &#47&#47 no runnable
+                        &#47&#47dag.show_nodes()
+                        break
+                    &#47&#47 find the section from runnable
+                    section = self.workflow.section_by_id(runnable._step_uuid)
+                    &#47&#47 execute section with specified input
+                    runnable._status = &quotrunning&quot
+                    q = mp.Pipe()
+
+                    &#47&#47 if pool is empty, create a new process
+                    if not pool:
+                        worker_queue = mp.Queue()
+                        worker = StepWorker(queue=worker_queue, config=self.config, args=self.args)
+                        worker.start()
+                    else:
+                        &#47&#47 get worker, q and runnable is not needed any more
+                        p, _, _ = pool.pop(0)
+                        worker = p[0]
+                        worker_queue = p[1]
+
+                    &#47&#47 workflow shared variables
+                    shared = {x: env.sos_dict[x] for x in self.shared if x in env.sos_dict and pickleable(env.sos_dict[x], x)}
+                    if &quotshared&quot in section.options:
+                        if isinstance(section.options[&quotshared&quot], str):
+                            svars = [section.options[&quotshared&quot]]
+                        elif isinstance(section.options[&quotshared&quot], dict):
+                            svars = section.options[&quotshared&quot].keys()
+                        elif isinstance(section.options[&quotshared&quot], Sequence):
+                            svars = []
+                            for x in section.options[&quotshared&quot]:
+                                if isinstance(x, str):
+                                    svars.append(x)
+                                elif isinstance(x, dict):
+                                    svars.extend(x.keys())
+                                else:
+                                    raise ValueError(&quotUnacceptable value for parameter shared: {}&quot.format(section.options[&quotshared&quot]))
+                        else:
+                            raise ValueError(&quotUnacceptable value for parameter shared: {}&quot.format(section.options[&quotshared&quot]))
+                        shared.update({x: env.sos_dict[x] for x in svars if x in env.sos_dict and pickleable(env.sos_dict[x], x)})
+                    if &quot__workflow_sig__&quot in env.sos_dict:
+                        runnable._context[&quot__workflow_sig__&quot] = env.sos_dict[&quot__workflow_sig__&quot]
+                    worker_queue.put((section, runnable._context, shared, env.sig_mode, env.verbosity, q[1]))
+                    procs.append( [[worker, worker_queue], q[0], runnable])
+                &#47&#47
+                num_running = len([x for x in procs if x[2]._status != &quottask_pending&quot])
+
+                env.logger.trace(&quotPROC {}&quot.format(&quot, &quot.join([x[2]._status for x in procs])))
+                if not procs:
+                    break
+                &#47&#47elif not env.__wait__ and num_running == 0:
+                &#47&#47    &#47&#47 if all jobs are pending, let us check if all jbos have been submitted.
+                &#47&#47    pending_tasks = []
+                &#47&#47    running_tasks = []
+                &#47&#47    for n in [x[2] for x in procs if x[2]._status == &quottask_pending&quot]:
+                &#47&#47        p, r = n._host._task_engine.get_tasks()
+                &#47&#47        pending_tasks.extend(p)
+                &#47&#47        running_tasks.extend(r)
+                &#47&#47    if not pending_tasks:
+                &#47&#47        env.logger.info(&quotSoS exists with {} running tasks&quot.format(len(running_tasks)))
+                &#47&#47        for task in running_tasks:
+                &#47&#47            env.logger.info(task)
+                &#47&#47        break
+                else:
+                    time.sleep(0.1)
+            &#47&#47 close all processes
+        except:
+            for p, _, _ in procs + pool:
+                p[0].terminate()
+            raise
+        finally:
+            for p, _, _ in procs + pool:
+                p[1].put(None)
+                p[0].terminate()
+                p[0].join()
+            prog.close()
+       </a> if exec_error.errors:
+            failed_steps, pending_steps = dag.pending()
+            if failed_steps:
+                sections = [self.workflow.section_by_id(x._step_uuid).step_name() for x in failed_steps]</code></pre><img src="149482632.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/0f5249b8e9e9fd837ab8f3ae529fa2e05df7a292#diff-3c8965f89d3066959899f679e40b3cfa58d5d66b9b385afa9b4aa84165522c30L783' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: 0f5249b8e9e9fd837ab8f3ae529fa2e05df7a292</div><div id='time'> Time: 2017-03-02</div><div id='author'> Author: ben.bog@gmail.com</div><div id='file'> File Name: sos/sos_executor.py</div><div id='class'> Class Name: Base_Executor</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/markovmodel/PyEMMA/commit/44bd049613c2e0fb70d971f2c35775841cbf2ef6#diff-e04eb213caaee3ab5be3d8bfc705bcdef73a08abd95d5062982450b9a4b35deeL333' target='_blank'>Link</a></div><div id='project'> Project Name: markovmodel/PyEMMA</div><div id='commit'> Commit Name: 44bd049613c2e0fb70d971f2c35775841cbf2ef6</div><div id='time'> Time: 2016-07-28</div><div id='author'> Author: m.scherer@fu-berlin.de</div><div id='file'> File Name: pyemma/coordinates/data/feature_reader.py</div><div id='class'> Class Name: FeatureReaderIterator</div><div id='method'> Method Name: _next_chunk</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/3b3a06ad8402079c2d18718349d5f0f212ac7b81#diff-4aa76b4a0ea1ffc186a8da2742450386ab2f75e24e6cb9fba4e21e8eb2b78509L158' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 3b3a06ad8402079c2d18718349d5f0f212ac7b81</div><div id='time'> Time: 2020-12-11</div><div id='author'> Author: nfrey213@gmail.com</div><div id='file'> File Name: deepchem/feat/base_classes.py</div><div id='class'> Class Name: ComplexFeaturizer</div><div id='method'> Method Name: featurize</div><BR>

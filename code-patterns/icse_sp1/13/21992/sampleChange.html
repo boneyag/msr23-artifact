@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      for j in range(self.meta_batch_size):
+        self.learner.select_task()
+        inputs = self.learner.get_batch()
+        feed_dict = <a id="change">{}</a>
+        feed_dict[<a id="change">self._global_step</a>] = i
+        for k in range(len(inputs)):
+          feed_dict[<a id="change">self</a>._input_placeholders[k]] = inputs[k]
+          feed_dict[self._meta_placeholders[k]] = inputs[k]
+        <a id="change">self._session.run(self._add_gradients, feed_dict=feed_dict)</a>
+      self._session.run(self._meta_train_op)
+
+      &#47&#47 Do checkpointing.
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if &quot_model_dir_is_temp&quot in dir(self) and self._model_dir_is_temp:
+      shutil.rmtree(self.model_dir)
+
+  def fit(<a id="change">self</a>,
+          steps,
+          max_checkpoints_to_keep=5,
+          checkpoint_interval=600,
+          restore=False):
+    Perform meta-learning to train the model.
+
+    Parameters
+    ----------
+    steps: int
+      the number of steps of meta-learning to perform
+    max_checkpoints_to_keep: int
+      the maximum number of checkpoint files to keep.  When this number is reached, older
+      files are deleted.
+    checkpoint_interval: float
+      the time interval at which to save checkpoints, measured in seconds
+    restore: bool
+      if True, restore the model from the most recent checkpoint before training
+      it further
+    
+    if restore:
+      self.restore()
+    manager = tf.train.CheckpointManager(self._checkpoint, self.model_dir,
+                                         max_checkpoints_to_keep)
+    checkpoint_time = time.time()
+
+    &#47&#47 Main optimization loop.
+
+    learner = self.learner
+    <a id="change">variables = learner.variables</a>
+    for i in range(steps):
+      for j in range(self.meta_batch_size):
+        learner.select_task()
+        meta_loss, meta_gradients = self._compute_meta_loss(
+            learner.get_batch(), learner.get_batch(), variables)
+        if j == 0:
+          summed_gradients = meta_gradients
+        else:
+          <a id="change">summed_gradients = [
+              s + g for s, g in zip(summed_gradients, meta_gradients)
+          ]</a>
+      <a id="change">self._tf_optimizer.apply_gradients(zip(summed_gradients, variables))</a>
+
+      &#47&#47 Do checkpointing.
+
+      if i == steps - 1 or time.time() &gt;= checkpoint_time + checkpoint_interval:</code></pre>

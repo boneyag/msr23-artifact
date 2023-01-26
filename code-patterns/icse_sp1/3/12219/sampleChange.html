@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                "Can&quott run an actor the server doesn&quott have a handle for")
+        arglist, kwargs = self._convert_args(task.args, task.kwargs)
+        output = getattr(actor_handle, task.name).remote(*arglist, **kwargs)
+        <a id="change">self.object_refs[task.client_id][output.binary()]</a> = output
+        return ray_client_pb2.ClientTaskTicket(return_id=output.binary())
+
+    def _schedule_actor(self, task: ray_client_pb2.ClientTask,</code></pre><h3>After Change</h3><pre><code class='java'>
+        method = getattr(actor_handle, task.name)
+        opts = decode_options(task.options)
+        if opts is not None:
+            <a id="change">method = method.options(**opts)</a>
+        output = method.remote(*arglist, **kwargs)
+        ids = self.unify_and_track_outputs(output, task.client_id)
+        return ray_client_pb2.ClientTaskTicket(return_ids=ids)
+</code></pre>

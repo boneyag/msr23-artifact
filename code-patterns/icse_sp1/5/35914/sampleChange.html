@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+&#47&#47%%
+&#47&#47 Compare to the true (empirical) accuracies
+<a id="change">Y = np.array([d.y for d in data])</a>
+accs_emp = lf_empirical_accuracies(L, Y)
+accs_est = label_model.get_accuracies()
+print(f"Avg. LF accuracy estimation error: {np.mean(np.abs(accs_emp - accs_est))}")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+tfs = generate_resampling_tfs(list(range(d, d + n_noise_dim)))
+policy = RandomAugmentationPolicy(len(tfs), sequence_length=1)
+tf_applier = PandasTFApplier(tfs, policy, k=1, keep_original=True)
+<a id="change">data_augmented = tf_applier.apply(data)</a>
+
+
+&#47&#47%%
+&#47&#47 Generate a set of m LFs that each fire based on a single feature
+m = 10
+abstain_rate = 0.0
+lfs = generate_single_feature_lfs(m, abstain_rate=abstain_rate)
+
+&#47&#47%%
+&#47&#47 Apply the labeling functions to the data
+lf_applier = PandasLFApplier(lfs)
+L = lf_applier.apply(data_augmented)
+
+&#47&#47%%
+&#47&#47 Run the LabelModel to estimate the LF accuracies
+label_model = LabelModel()
+label_model.train_model(L)
+
+&#47&#47%%
+&#47&#47 Compare to the true (empirical) accuracies
+Y = <a id="change">data_augmented</a>.y.values.astype(int)
+accs_emp = lf_empirical_accuracies(L, Y)
+accs_est = label_model.get_accuracies()
+print(f"Avg. LF accuracy estimation error: {np.mean(np.abs(accs_emp - accs_est))}")</code></pre>

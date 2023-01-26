@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        save_checkpoint(self.net.module, self.args, False)
+
+    def validation(self, epoch):
+        <a id="change">total_inter</a>, total_union, total_correct, total_label = 0, 0, 0, 0
+        tbar = tqdm(self.eval_data)
+        for i, (data, target) in enumerate(tbar):
+            outputs = self.evaluator(data, target)
+            for (correct, labeled, inter, union) in outputs:
+                total_correct += correct
+                total_label += labeled
+                total_inter += inter
+                total_union += union
+            <a id="change">pixAcc = 1.0 * total_correct / (np.spacing(1) + total_label)</a>
+            IoU = 1.0 * total_inter / (np.spacing(1) + total_union)
+            mIoU = IoU.mean()
+            tbar.set_description(&quotEpoch %d, validation pixAcc: %.3f, mIoU: %.3f&quot%\
+                (epoch, pixAcc, mIoU))</code></pre><h3>After Change</h3><pre><code class='java'>
+        tbar = tqdm(self.eval_data)
+        for i, (data, target) in enumerate(tbar):
+            outputs = self.evaluator(data.astype(args.dtype, copy=False))
+            <a id="change">outputs = [x[0] for x in outputs]</a>
+            targets = mx.gluon.utils.split_and_load(target, <a id="change">args.ctx</a>)
+            self.metric.update(targets, outputs)
+            pixAcc, mIoU = self.metric.get()
+            tbar.set_description(&quotEpoch %d, validation pixAcc: %.3f, mIoU: %.3f&quot%\</code></pre>

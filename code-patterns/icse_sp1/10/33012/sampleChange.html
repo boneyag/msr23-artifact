@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            test_train_covar = delazify(test_train_covar)
+            train_test_covar = test_train_covar.transpose(-1, -2)
+            covar_correction_rhs = <a id="change">train_train_covar.inv_matmul(train_test_covar).mul(-1)</a>
+            if torch.is_tensor(test_test_covar):
+                return lazify(test_test_covar + test_train_covar @ covar_correction_rhs)
+            else:
+                return test_test_covar + MatmulLazyTensor(test_train_covar, covar_correction_rhs)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 For efficiency
+            if torch.is_tensor(test_test_covar):
+                &#47&#47 We can use addmm in the 2d case
+                <a id="change">if test_test_covar.dim() == 2:
+                    return lazify(torch.addmm(1, test_test_covar, -1, test_train_covar, covar_correction_rhs))
+                else:
+                    return lazify(test_test_covar + test_train_covar @ covar_correction_rhs.mul(-1))
+            &#47&#47 In other cases - we&quotll use the standard infrastructure
+           </a> else:
+                return test_test_covar + MatmulLazyTensor(test_train_covar, covar_correction_rhs.mul(-1))
+
+        precomputed_cache = self.covar_cache</code></pre>

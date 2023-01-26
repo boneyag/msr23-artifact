@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    (self.key, input_depth, output_depth))
+    assert num_layers &gt;= 4
+    &#47&#47 TODO(annahuang): determine the num of dilations based on crop length.
+    <a id="change">dilation_rates = [2**i for i in range(7)]</a>
+    assert &quotnum_dilation_blocks&quot in kwargs
+    assert &quotdilate_time_only&quot in kwargs
+    num_dilation_blocks = kwargs[&quotnum_dilation_blocks&quot]
+    dilate_time_only = kwargs[&quotdilate_time_only&quot]
+    self.layers = []
+
+    def _add(**kwargs):
+      self.layers.append(kwargs)
+
+    _add(filters=[3, 3, input_depth, num_filters])
+    for _ in range(num_dilation_blocks):
+      <a id="change">for dilation_rate in dilation_rates:
+        if dilate_time_only:
+          layer_dilation_rates = [dilation_rate, 1]
+        else:
+          layer_dilation_rates = dilation_rate
+        tf.logging.info(&quotlayer_dilation_rates %r&quot % layer_dilation_rates)
+        _add(filters=[3, 3, num_filters, num_filters],
+             dilation_rate=layer_dilation_rates)
+   </a> _add(filters=[2, 2, num_filters, num_filters])
+    _add(
+        filters=[2, 2, num_filters, output_depth], activation=lib_util.identity)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    max_time_dilation_level = (
+        compute_max_dilation_level(kwargs[&quotcrop_piece_len&quot]))
+    <a id="change">max_pitch_dilation_level = (
+        compute_max_dilation_level(num_pitches))</a>
+    <a id="change">max_dilation_level = max(max_time_dilation_level, max_pitch_dilation_level)</a>
+    if kwargs[&quotrepeat_last_dilation_level&quot]:
+      tf.logging.info(&quotIncreasing max dilation level from %s to %s&quot
+                      % (max_dilation_level, max_dilation_level + 1))
+      max_dilation_level += 1</code></pre>

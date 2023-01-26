@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if self.rank == min_rank:
+                    self._destroy_store(key)
+                self._p2p_comm_cache[key] = None
+            <a id="change">for key in list(self._p2p_comm_cache.keys()):
+                del self._p2p_comm_cache[key]
+           </a> self._p2p_comm_cache = None
+
+        super(NCCLGroup, self).destroy_group()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def destroy_group(self):
+        Destroy the group and release NCCL communicators.
+        <a id="change">if len(self._dev_comm_map.keys()) &gt; 0:
+
+            &#47&#47 TODO(Hao): check this barrier call
+            &#47&#47 self.barrier()
+
+            &#47&#47 Destroy the communicators and streams.
+            for comm_key, comms in self._dev_comm_map.items():
+                for c in comms:
+                    c.destroy()
+                self._dev_comm_map[comm_key] = None
+
+       </a> if self.rank == 0:
+            for comm_key in self._dev_comm_map:
+                assert not self._dev_comm_map[comm_key]
+                group_key = self._generate_group_key(comm_key)</code></pre>

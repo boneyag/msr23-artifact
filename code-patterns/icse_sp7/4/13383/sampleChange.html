@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        dataset_encoded = lambda: itertools.chain.from_iterable(
+            map(lambda xy: self.text_to_tokens_mask(*xy), dataset()))
+        shape_def = self.feed_shape_type_def()
+        <a id="change">if not callable(Y) and self.config.chunk_long_sequences and train:
+            dataset_encoded_list = list(dataset_encoded())  &#47&#47 come up with a more principled way to do this .
+            self.config.dataset_size = len(dataset_encoded_list)
+       </a> return Dataset.from_generator(lambda: self.wrap_tqdm(dataset_encoded(), train), *shape_def)
+
+    def _dataset_without_targets(self, Xs, train):
+        if not callable(Xs):</code></pre><h3>After Change</h3><pre><code class='java'>
+        shape_def = self.feed_shape_type_def()
+        if not callable(Y) and train:
+            dataset_encoded_list = list(dataset_encoded())
+            counter = <a id="change">Counter()</a>
+            for doc, target_arr in dataset_encoded_list:
+                counter.update(target_arr[doc[&quotmask&quot].astype(np.bool)])
+            <a id="change">class_counts = {
+                self.label_encoder.inverse_transform([target])[0]: count 
+                for target, count in counter.items()
+            }</a>
+            self.config.class_weights = compute_class_weights(self.config.class_weights, class_counts=class_counts)
+            self.config.dataset_size = len(dataset_encoded_list)
+        return Dataset.from_generator(lambda: self.wrap_tqdm(dataset_encoded(), train), *shape_def)
+</code></pre>

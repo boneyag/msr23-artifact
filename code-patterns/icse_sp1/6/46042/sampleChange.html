@@ -1,0 +1,87 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+adv_crafter = DeepFool(classifier)
+print(&quot\nCraft attack on training examples&quot)
+x_train_adv = adv_crafter.generate(x_train)
+<a id="change">print(&quot\nCraft attack test examples&quot)</a>
+x_test_adv = adv_crafter.generate(x_test)
+
+&#47&#47 Evaluate the classifier on the adversarial samples
+preds = np.argmax(classifier.predict(x_test_adv), axis=1)</code></pre><h3>After Change</h3><pre><code class='java'>
+from art.utils import load_dataset
+
+&#47&#47 Configure a logger to capture ART outputs; these are printed in console and the level of detail is set to INFO
+<a id="change">logger = logging.getLogger()</a>
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter(&quot[%(levelname)s] %(message)s&quot)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+&#47&#47 Read CIFAR10 dataset
+(x_train, y_train), (x_test, y_test), min_, max_ = load_dataset(str(&quotcifar10&quot))
+x_train, y_train = x_train[:5000], y_train[:5000]
+x_test, y_test = x_test[:500], y_test[:500]
+im_shape = x_train[0].shape
+
+&#47&#47 Create Keras convolutional neural network - basic architecture from Keras examples
+&#47&#47 Source here: https://github.com/keras-team/keras/blob/master/examples/cifar10_cnn.py
+k.set_learning_phase(1)
+model = Sequential()
+model.add(Conv2D(32, (3, 3), padding=&quotsame&quot, input_shape=x_train.shape[1:]))
+model.add(Activation(&quotrelu&quot))
+model.add(Conv2D(32, (3, 3)))
+model.add(Activation(&quotrelu&quot))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+
+model.add(Conv2D(64, (3, 3), padding=&quotsame&quot))
+model.add(Activation(&quotrelu&quot))
+model.add(Conv2D(64, (3, 3)))
+model.add(Activation(&quotrelu&quot))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+
+model.add(Flatten())
+model.add(Dense(512))
+model.add(Activation(&quotrelu&quot))
+model.add(Dropout(0.5))
+model.add(Dense(10))
+model.add(Activation(&quotsoftmax&quot))
+
+model.compile(loss=&quotcategorical_crossentropy&quot, optimizer=&quotadam&quot, metrics=[&quotaccuracy&quot])
+
+&#47&#47 Create classifier wrapper
+classifier = KerasClassifier((min_, max_), model=model)
+classifier.fit(x_train, y_train, nb_epochs=10, batch_size=128)
+
+&#47&#47 Craft adversarial samples with DeepFool
+logger.info(&quotCreate DeepFool attack&quot)
+adv_crafter = DeepFool(classifier)
+logger.info(&quotCraft attack on training examples&quot)
+x_train_adv = adv_crafter.generate(x_train)
+logger.info(&quotCraft attack test examples&quot)
+x_test_adv = adv_crafter.generate(x_test)
+
+&#47&#47 Evaluate the classifier on the adversarial samples
+preds = np.argmax(classifier.predict(x_test_adv), axis=1)
+acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
+logger.info(&quotClassifier before adversarial training&quot)
+logger.info(&quotAccuracy on adversarial samples: %.2f%%&quot, (acc * 100))
+
+&#47&#47 Data augmentation: expand the training set with the adversarial samples
+x_train = np.append(x_train, x_train_adv, axis=0)
+y_train = np.append(y_train, y_train, axis=0)
+
+&#47&#47 Retrain the CNN on the extended dataset
+model.compile(loss=&quotcategorical_crossentropy&quot, optimizer=&quotadam&quot, metrics=[&quotaccuracy&quot])
+classifier.fit(x_train, y_train, nb_epochs=10, batch_size=128)
+
+&#47&#47 Evaluate the adversarially trained classifier on the test set
+preds = np.argmax(classifier.predict(x_test_adv), axis=1)
+acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
+<a id="change">logger.info(&quotClassifier with adversarial training&quot)</a>
+logger.info(&quotAccuracy on adversarial samples: %.2f%%&quot, (acc * 100))
+</code></pre>

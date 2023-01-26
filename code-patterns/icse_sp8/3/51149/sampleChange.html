@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      &#47&#47 Explicitly kill any running pantsd instances for the current buildroot.
+      print(&quot\nkill-pantsd&quot)
+      self.assert_success(self.run_pants_with_workdir([&quotkill-pantsd&quot], workdir, pantsd_config))
+      <a id="change">try:
+        &#47&#47 Start pantsd implicitly via a throwaway invocation.
+        print(&quothelp&quot)
+        self.assert_success(self.run_pants_with_workdir([&quothelp&quot], workdir, pantsd_config))
+        checker.await_pantsd()
+
+        print(&quotlist 3rdparty:&quot)
+        self.assert_success(self.run_pants_with_workdir([&quotlist&quot, &quot3rdparty:&quot],
+                                                        workdir,
+                                                        pantsd_config))
+        checker.assert_running()
+
+        print(&quotlist :&quot)
+        self.assert_success(self.run_pants_with_workdir([&quotlist&quot, &quot:&quot],
+                                                        workdir,
+                                                        pantsd_config))
+        checker.assert_running()
+
+        print(&quotlist ::&quot)
+        self.assert_success(self.run_pants_with_workdir([&quotlist&quot, &quot::&quot],
+                                                        workdir,
+                                                        pantsd_config))
+        checker.assert_running()
+
+        &#47&#47 And again using the cached BuildGraph.
+        print(&quotlist ::&quot)
+        self.assert_success(self.run_pants_with_workdir([&quotlist&quot, &quot::&quot],
+                                                        workdir,
+                                                        pantsd_config))
+        checker.assert_running()
+      finally:
+        try:
+          for line in read_pantsd_log(workdir):
+            print(line)
+        finally:
+          &#47&#47 Explicitly kill pantsd (from a pantsd-launched runner).
+          print(&quotkill-pantsd&quot)
+          self.assert_success(self.run_pants_with_workdir([&quotkill-pantsd&quot], workdir, pantsd_config))
+          checker.assert_stopped()
+
+      &#47&#47 Assert there were no warnings or errors thrown in the pantsd log.
+     </a> for line in read_pantsd_log(workdir):
+        &#47&#47 Ignore deprecation warning emissions.
+        if &quotDeprecationWarning&quot in line:
+          continue</code></pre><h3>After Change</h3><pre><code class='java'>
+      pantsd_run([&quotlist&quot, &quot3rdparty:&quot])
+      checker.await_pantsd()
+
+      <a id="change">pantsd_run([&quotlist&quot, &quot:&quot])</a>
+      checker.assert_running()
+
+      pantsd_run([&quotlist&quot, &quot::&quot])
+      checker.assert_running()</code></pre>

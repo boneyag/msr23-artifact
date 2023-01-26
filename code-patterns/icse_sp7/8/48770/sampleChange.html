@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    USE_MEMCACHED_SAFE_CACHE_KEY = True
+
+    def configure_cache_backend(self, value):
+        <a id="change">if value is None:
+            &#47&#47 DEFAULT_CACHE_ALIAS doesn&quott exist in Django&lt;=1.2
+            try:
+                from django.core.cache import DEFAULT_CACHE_ALIAS as default_cache_alias
+            except ImportError:
+                default_cache_alias = &quotdefault&quot
+
+            caches = getattr(settings, &quotCACHES&quot, None)
+            if caches is None:
+                &#47&#47 Support Django&lt;=1.2 there is no default `CACHES` setting
+                try:
+                    from django.core.cache.backends.dummy import DummyCache
+                except ImportError:
+                    dummy_cache = &quotdummy://&quot
+                else:
+                    dummy_cache = &quotdjango.core.cache.backends.dummy.DummyCache&quot
+                return dummy_cache
+
+            if default_cache_alias in caches:
+                value = default_cache_alias
+            else:
+                raise ValueError("The default cache alias &quot%s&quot is not available in CACHES" % default_cache_alias)
+
+       </a> return value
+
+    def configure_default_file_storage(self, value):
+        if value is None:</code></pre><h3>After Change</h3><pre><code class='java'>
+    USE_MEMCACHED_SAFE_CACHE_KEY = True
+
+    def configure_cache_backend(self, value):
+        <a id="change">if value is None:
+            from django.core.cache import DEFAULT_CACHE_ALIAS
+            return DEFAULT_CACHE_ALIAS
+
+       </a> <a id="change">if value not in settings.CACHES:
+            raise ImproperlyConfigured("{0} is not present in settings.CACHES".format(value))
+
+       </a> return value
+
+    def configure_default_file_storage(self, value):
+        if value is None:</code></pre>

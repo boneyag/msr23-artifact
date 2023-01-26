@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        placement_group=pg,
+        placement_group_bundle_index=num_nodes * bundle_per_node - 1).remote()
+    &#47&#47 Destroy some nodes to fail placement group creation.
+    <a id="change">nodes_to_kill = get_other_nodes(cluster, exclude_head=True)</a>
+    for node_to_kill in nodes_to_kill:
+        cluster.remove_node(node_to_kill)
+
+    &#47&#47 Wait on the placement group now. It should be unready
+    &#47&#47 because normal actor takes resources that are required
+    &#47&#47 for one of bundle creation.
+    ready, unready = ray.wait([pg.ready()], timeout=0)
+    assert len(ready) == 0
+    assert len(unready) == 1
+
+    &#47&#47 Add a node back to schedule placement group.
+    <a id="change">for _ in range(len(nodes_to_kill)):
+        nodes.append(
+            cluster.add_node(num_cpus=bundle_cpu_size * bundle_per_node))
+    &#47&#47 Wait on the placement group creation.
+   </a> ready, unready = ray.wait([pg.ready()])
+    assert len(ready) == 1
+    assert len(unready) == 0
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        return True
+
+    &#47&#47 Schedule tasks to fail initial placement group creation.
+    tasks = [<a id="change">bothering_task.remote()</a> for _ in range(2)]
+    &#47&#47 Create an actor that will fail bundle scheduling.
+    &#47&#47 It is important to use pack strategy to make test less flaky.
+    pg = ray.util.placement_group(</code></pre>

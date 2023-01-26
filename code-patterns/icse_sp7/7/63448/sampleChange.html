@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 respect to each input dimension should be taken into account,
+        &#47&#47 but we ignore the differences and assume that the curvature is
+        &#47&#47 uniform with respect to all the input dimensions.
+        directions /= xp.sqrt(<a id="change">xp</a>.square(directions).sum())
+
+        &#47&#47 Small elements in the direction vector leads to instability on
+        &#47&#47 gradients comparison.
+        &#47&#47 In order to avoid that, absolute values are capped at
+        &#47&#47 0.1 / sqrt(N) at minimum, where N is the number of elements.
+        &#47&#47 Other elements are scaled uniformly so that the total L2 norm
+        &#47&#47 will remain 1.
+        min_d = <a id="change">0.1 / math.sqrt(size)</a>
+        is_small = min_d &gt; xp.abs(directions)
+        is_large = xp.logical_not(is_small)
+        n_small = is_small.sum()
+        sq_large = xp.square(directions[is_large]).sum()
+        scale = xp.sqrt((1 - <a id="change">n_small</a> * min_d ** 2) / sq_large)
+
+        &#47&#47 Cap small elements.
+        directions[is_small] = xp.sign(directions[is_small]) * min_d</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Small elements in the direction vector leads to instability on
+        &#47&#47 gradients comparison. In order to avoid that, make absolute values
+        &#47&#47 at least 0.1 / sqrt(size).
+        sq_directions = <a id="change">xp.square(directions)</a>
+        sq_norm = sq_directions.sum()
+        return xp.copysign(
+            &#47&#47 Weighted quadratic mean of
+            &#47&#47 abs(directions / norm) and xp.full(size, 1 / xp.sqrt(size)),
+            &#47&#47 where norm = xp.sqrt(sq_norm)
+            xp.sqrt(
+                <a id="change">(0.99 / sq_norm)</a> * sq_directions
+                + 0.01 / size),
+            directions)
+</code></pre>

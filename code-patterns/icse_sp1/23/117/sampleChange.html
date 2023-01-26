@@ -1,0 +1,110 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        rot_vec = self.rotations.regularize(rot_vec)
+        translation = tangent_vec[:, dim_rotations:]
+        angle = np.linalg.norm(rot_vec, axis=1)
+        <a id="change">if angle.ndim == 1:
+            angle = np.expand_dims(angle, axis=1)
+
+       </a> mask_close_pi = np.isclose(angle, np.pi)
+        mask_close_pi = np.squeeze(mask_close_pi, axis=1)
+        rot_vec[mask_close_pi] = rotations.regularize(
+                                       rot_vec[mask_close_pi])
+
+        skew_mat = so_group.skew_matrix_from_vector(rot_vec)
+        sq_skew_mat = np.matmul(skew_mat, skew_mat)
+
+        mask_0 = np.equal(angle, 0)
+        mask_close_0 = np.isclose(angle, 0) & ~mask_0
+
+        mask_0 = np.squeeze(mask_0, axis=1)
+        mask_close_0 = np.squeeze(mask_close_0, axis=1)
+
+        mask_else = ~mask_0 & ~mask_close_0
+
+        <a id="change">coef_1</a> = np.zeros_like(angle)
+        coef_2 = np.zeros_like(angle)
+
+        coef_1[mask_0] = 1. / 2.
+        coef_2[mask_0] = 1. / 6.
+
+        <a id="change">coef_1[mask_close_0]</a> = (1. / 2. - angle[mask_close_0] ** 2 / 24.
+                                + angle[mask_close_0] ** 4 / 720.
+                                - angle[mask_close_0] ** 6 / 40320.)
+        coef_2[mask_close_0] = (1. / 6. - angle[mask_close_0] ** 2 / 120.
+                                + angle[mask_close_0] ** 4 / 5040.
+                                - angle[mask_close_0] ** 6 / 362880.)
+
+        <a id="change">coef_1[mask_else]</a> = ((1. - np.cos(angle[mask_else]))
+                             / angle[mask_else] ** 2)
+        coef_2[mask_else] = ((angle[mask_else] - np.sin(angle[mask_else]))
+                             / angle[mask_else] ** 3)
+
+        n_tangent_vecs, _ = tangent_vec.shape
+        group_exp_translation = np.zeros((n_tangent_vecs, self.n))
+        for i in range(n_tangent_vecs):
+            translation_i = translation[i]
+            term_1_i = coef_1[i] * np.dot(translation_i,
+                                          np.transpose(skew_mat[i]))
+            term_2_i = coef_2[i] * np.dot(translation_i,
+                                          np.transpose(sq_skew_mat[i]))
+
+            <a id="change">group_exp_translation[i]</a> = translation_i + term_1_i + term_2_i
+
+        group_exp = np.zeros_like(tangent_vec)
+        group_exp[:, :dim_rotations] = rot_vec</code></pre><h3>After Change</h3><pre><code class='java'>
+        rot_vec = self.rotations.regularize(rot_vec)
+        translation = tangent_vec[:, dim_rotations:]
+
+        <a id="change">angle</a> = np.linalg.norm(rot_vec, axis=1)
+        <a id="change">angle = vectorization_utils.expand_dims(angle, to_ndim=2, axis=1)</a>
+
+        mask_close_pi = np.isclose(angle, np.pi)
+        mask_close_pi = np.squeeze(mask_close_pi, axis=1)
+        rot_vec[mask_close_pi] = rotations.regularize(
+                                       rot_vec[mask_close_pi])
+
+        skew_mat = so_group.skew_matrix_from_vector(rot_vec)
+        sq_skew_mat = np.matmul(skew_mat, skew_mat)
+
+        mask_0 = np.equal(angle, 0)
+        mask_close_0 = np.isclose(angle, 0) & ~mask_0
+
+        mask_0 = np.squeeze(mask_0, axis=1)
+        mask_close_0 = np.squeeze(mask_close_0, axis=1)
+
+        mask_else = ~mask_0 & ~mask_close_0
+
+        <a id="change">coef_1</a> = np.zeros_like(angle)
+        coef_2 = np.zeros_like(angle)
+
+        coef_1[mask_0] = 1. / 2.
+        coef_2[mask_0] = 1. / 6.
+
+        <a id="change">coef_1[mask_close_0]</a> = (1. / 2. - angle[mask_close_0] ** 2 / 24.
+                                + angle[mask_close_0] ** 4 / 720.
+                                - angle[mask_close_0] ** 6 / 40320.)
+        coef_2[mask_close_0] = (1. / 6. - angle[mask_close_0] ** 2 / 120.
+                                + angle[mask_close_0] ** 4 / 5040.
+                                - angle[mask_close_0] ** 6 / 362880.)
+
+        <a id="change">coef_1[mask_else]</a> = ((1. - np.cos(angle[mask_else]))
+                             / angle[mask_else] ** 2)
+        coef_2[mask_else] = ((angle[mask_else] - np.sin(angle[mask_else]))
+                             / angle[mask_else] ** 3)
+
+        n_tangent_vecs, _ = tangent_vec.shape
+        group_exp_translation = np.zeros((n_tangent_vecs, self.n))
+        for i in range(n_tangent_vecs):
+            translation_i = translation[i]
+            term_1_i = coef_1[i] * np.dot(translation_i,
+                                          np.transpose(skew_mat[i]))
+            term_2_i = coef_2[i] * np.dot(translation_i,
+                                          np.transpose(sq_skew_mat[i]))
+
+            <a id="change">group_exp_translation[i]</a> = translation_i + term_1_i + term_2_i
+
+        group_exp = np.zeros_like(tangent_vec)
+        group_exp[:, :dim_rotations] = rot_vec</code></pre>

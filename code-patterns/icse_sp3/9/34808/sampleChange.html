@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self._get_or_create(SqlMetric, run_uuid=run_uuid, key=metric.key,
+                                value=metric.value, timestamp=metric.timestamp)
+        except sqlalchemy.exc.IntegrityError:
+            <a id="change">raise MlflowException(&quotMetric={} must be unique&quot.format(metric),
+                                  INVALID_PARAMETER_VALUE)</a>
+
+    def log_param(self, run_uuid, param):
+        run = self._get_run(run_uuid)
+        self._check_run_is_active(run)</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.session.rollback()
+            existing_metric = [m for m in run.metrics
+                               if m.key == metric.key and m.timestamp == metric.timestamp]
+            <a id="change">if len(existing_metric) == 0:
+                raise MlflowException("Log metric request failed for run ID={}. Attempted to log"
+                                      " metric={}. Error={}".format(run_uuid,
+                                                                    (metric.key, metric.value),
+                                                                    str(ie)))
+            else:
+                m = existing_metric[0]
+                raise MlflowException(&quotMetric={} must be unique. Metric already logged value {} &quot
+                                      &quotat {}&quot.format(metric, m.value, m.timestamp),
+                                      INVALID_PARAMETER_VALUE)
+
+   </a> def get_metric(self, run_uuid, metric_key):
+        metric = self.session.query(SqlMetric).filter_by(
+            run_uuid=run_uuid, key=metric_key
+        ).order_by(sqlalchemy.desc(SqlMetric.timestamp)).first()</code></pre>

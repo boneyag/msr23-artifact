@@ -1,0 +1,52 @@
+<html><h3>cb556a585da0b65d28d2fc7d52c3851ac1a7d369,open_seq2seq/utils/utils.py,,get_results_for_epoch,#Any#Any#Any#Any#Any#,202
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    if compute_loss:
+      total_samples_all = MPI.COMM_WORLD.gather(total_samples)
+      <a id="change">total_loss_all = MPI.COMM_WORLD.gather(total_loss)</a>
+    results_per_batch_all = MPI.COMM_WORLD.gather(results_per_batch)
+
+    MPI.COMM_WORLD.Barrier()
+    if MPI.COMM_WORLD.Get_rank() != 0:
+      &#47&#47 returning dummy tuple of correct shape
+      if compute_loss:
+        return None, None
+      else:
+        return None
+
+    if compute_loss:
+      total_loss = np.sum(total_loss_all)
+      <a id="change">total_samples = np.sum(total_samples_all)</a>
+    &#47&#47 moving GPU dimension into the batch dimension
+    <a id="change">results_per_batch = [item for sl in results_per_batch_all for item in sl]</a>
+
+  if compute_loss:
+    total_loss /= total_samples
+    <a id="change">return results_per_batch, total_loss</a>
+
+  return results_per_batch
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    )
+
+  if compute_loss:
+    <a id="change">total_samples = collect_if_horovod(total_samples, model.hvd, &quotsum&quot)</a>
+    <a id="change">total_loss = collect_if_horovod(total_loss, model.hvd, &quotsum&quot)</a>
+  results_per_batch = collect_if_horovod(results_per_batch, model.hvd, &quotgather&quot)
+
+  if results_per_batch is None:
+    &#47&#47 returning dummy tuple of correct shape if not in master worker
+    if compute_loss:
+      return None, None
+    else:
+      return None
+
+  if compute_loss:
+    <a id="change">return results_per_batch, total_loss / total_samples</a>
+  else:
+    return results_per_batch
+
+</code></pre><img src="11631892.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NVIDIA/OpenSeq2Seq/commit/cb556a585da0b65d28d2fc7d52c3851ac1a7d369#diff-ba487d493f314cbf59f2b42358ce36518ba42fb36ec0d3531eec95addfbbb63cL208' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/OpenSeq2Seq</div><div id='commit'> Commit Name: cb556a585da0b65d28d2fc7d52c3851ac1a7d369</div><div id='time'> Time: 2018-05-30</div><div id='author'> Author: igor.a.gitman@gmail.com</div><div id='file'> File Name: open_seq2seq/utils/utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_results_for_epoch</div><BR><BR><div id='link'><a href='https://github.com/chainer/chainercv/commit/c988c51e02793d7453ae854cc285ef904c8a535d#diff-312830565c9fa2e1d4a0372207040eaaf3e5e5a6d2083c69e7843b47d51c8fbdL25' target='_blank'>Link</a></div><div id='project'> Project Name: chainer/chainercv</div><div id='commit'> Commit Name: c988c51e02793d7453ae854cc285ef904c8a535d</div><div id='time'> Time: 2017-05-06</div><div id='author'> Author: Hakuyume@users.noreply.github.com</div><div id='file'> File Name: tests/extensions_tests/detection_tests/test_detection_vis_report.py</div><div id='class'> Class Name: _RandomDetectionStubLink</div><div id='method'> Method Name: predict</div><BR><BR><div id='link'><a href='https://github.com/chainer/chainercv/commit/f5ff0f5fb3933bb4e704ce7947e2bd5a99ef8358#diff-6e51fa6b7887bbd1c08b6a911d741d7487d6be387f9ce5deffa4f23cb9b70a41L34' target='_blank'>Link</a></div><div id='project'> Project Name: chainer/chainercv</div><div id='commit'> Commit Name: f5ff0f5fb3933bb4e704ce7947e2bd5a99ef8358</div><div id='time'> Time: 2018-05-02</div><div id='author'> Author: Hakuyume@users.noreply.github.com</div><div id='file'> File Name: tests/links_tests/model_tests/yolo_tests/test_yolo_base.py</div><div id='class'> Class Name: DummyYOLO</div><div id='method'> Method Name: _decode</div><BR>

@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        Takes a single training step: one forward and one backwards pass. Both x and y are lists of the same length, one x and y per environment
+        &quot&quot&quot
+        self.train()
+        <a id="change">self.zero_grad()</a>
+        self.optim.zero_grad()
+        if loss is None:
+            outs = self(xs)
+            total_loss = torch.tensor(0.0, device=self.device)
+            for out, y in zip(outs, ys):
+                loss = self.loss_fn(out, y)
+                total_loss += loss
+            loss = total_loss
+        assert not torch.isnan(loss).any(), loss
+        if net_util.to_assert_trained():
+            assert_trained = net_util.gen_assert_trained(self)
+        loss.backward(retain_graph=retain_graph)
+        if self.clip_grad:
+            logger.debug(f&quotClipping gradient: {self.clip_grad_val}&quot)
+            nn.utils.clip_grad_norm_(self.parameters(), self.clip_grad_val)
+        <a id="change">if global_net is None:
+            self.optim.step()
+        else:  &#47&#47 distributed training with global net
+            net_util.push_global_grad(self, global_net)
+            self.optim.step()
+            net_util.pull_global_param(self, global_net)
+       </a> if net_util.to_assert_trained():
+            assert_trained(self, loss)
+            self.store_grad_norms()
+        logger.debug(f&quotNet training_step loss: {loss}&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &quot&quot&quot
+        Takes a single training step: one forward and one backwards pass. Both x and y are lists of the same length, one x and y per environment
+        &quot&quot&quot
+        <a id="change">self.lr_scheduler.step(epoch=lr_t)</a>
+        self.train()
+        self.optim.zero_grad()
+        if loss is None:
+            outs = self(xs)</code></pre>

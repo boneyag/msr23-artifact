@@ -1,0 +1,93 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    tf.io.gfile.makedirs(cmd_args.output_dir)
+
+  &#47&#47 Tell TensorFlow that the model will be built into the default Graph.
+  <a id="change">with tf.Graph().as_default():
+    with tf.compat.v1.Session() as sess:
+      init_op = tf.compat.v1.global_variables_initializer()
+      sess.run(init_op)
+
+      extractor_fn = extractor.MakeExtractor(sess, config)
+
+      start = time.clock()
+      for i in range(num_images):
+        &#47&#47 Write to log-info once in a while.
+        if i == 0:
+          print(&quotStarting to extract DELF features from images...&quot)
+        elif i % _STATUS_CHECK_ITERATIONS == 0:
+          elapsed = (time.clock() - start)
+          print(
+              f&quotProcessing image {i} out of {num_images}, last &quot
+              f&quot{_STATUS_CHECK_ITERATIONS} images took {elapsed} seconds&quot
+              )
+          start = time.clock()
+
+        &#47&#47 If descriptor already exists, skip its computation.
+        out_desc_filename = os.path.splitext(os.path.basename(
+            image_paths[i]))[0] + _DELF_EXT
+        out_desc_fullpath = os.path.join(cmd_args.output_dir, out_desc_filename)
+        if tf.io.gfile.exists(out_desc_fullpath):
+          print(f&quotSkipping {image_paths[i]}&quot)
+          continue
+
+        im = np.array(utils.RgbLoader(image_paths[i]))
+
+        &#47&#47 Extract and save features.
+        extracted_features = extractor_fn(im)
+        locations_out = extracted_features[&quotlocal_features&quot][&quotlocations&quot]
+        descriptors_out = extracted_features[&quotlocal_features&quot][&quotdescriptors&quot]
+        feature_scales_out = extracted_features[&quotlocal_features&quot][&quotscales&quot]
+        attention_out = extracted_features[&quotlocal_features&quot][&quotattention&quot]
+
+        feature_io.WriteToFile(out_desc_fullpath, locations_out,
+                               feature_scales_out, descriptors_out,
+                               attention_out)
+
+
+</a>if __name__ == &quot__main__&quot:
+  parser = argparse.ArgumentParser()
+  parser.register(&quottype&quot, &quotbool&quot, lambda v: v.lower() == &quottrue&quot)
+  parser.add_argument(</code></pre><h3>After Change</h3><pre><code class='java'>
+  extractor_fn = extractor.MakeExtractor(config)
+
+  start = time.time()
+  <a id="change">for i in range(num_images):
+    &#47&#47 Report progress once in a while.
+    if i == 0:
+      print(&quotStarting to extract DELF features from images...&quot)
+    elif i % _STATUS_CHECK_ITERATIONS == 0:
+      elapsed = (time.time() - start)
+      print(
+          f&quotProcessing image {i} out of {num_images}, last &quot
+          f&quot{_STATUS_CHECK_ITERATIONS} images took {elapsed} seconds&quot
+      )
+      start = time.time()
+
+    &#47&#47 If descriptor already exists, skip its computation.
+    out_desc_filename = os.path.splitext(os.path.basename(
+        image_paths[i]))[0] + _DELF_EXT
+    out_desc_fullpath = os.path.join(cmd_args.output_dir, out_desc_filename)
+    if tf.io.gfile.exists(out_desc_fullpath):
+      print(f&quotSkipping {image_paths[i]}&quot)
+      continue
+
+    im = np.array(utils.RgbLoader(image_paths[i]))
+
+    &#47&#47 Extract and save features.
+    extracted_features = extractor_fn(im)
+    locations_out = extracted_features[&quotlocal_features&quot][&quotlocations&quot]
+    descriptors_out = extracted_features[&quotlocal_features&quot][&quotdescriptors&quot]
+    feature_scales_out = extracted_features[&quotlocal_features&quot][&quotscales&quot]
+    attention_out = extracted_features[&quotlocal_features&quot][&quotattention&quot]
+
+    feature_io.WriteToFile(out_desc_fullpath, locations_out, feature_scales_out,
+                           descriptors_out, attention_out)
+
+
+</a>if __name__ == &quot__main__&quot:
+  parser = argparse.ArgumentParser()
+  parser.register(&quottype&quot, &quotbool&quot, lambda v: v.lower() == &quottrue&quot)
+  parser.add_argument(</code></pre>

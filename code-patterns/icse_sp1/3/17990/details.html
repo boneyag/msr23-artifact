@@ -1,0 +1,173 @@
+<html><h3>f364e492dfb287e4043d37fffa1bcef55e2ac5dd,torch/autograd/functional.py,,jacobian,#Any#Any#Any#Any#Any#,404
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return _tuple_postprocess(jacobian_output_input, (is_outputs_tuple, is_inputs_tuple))
+
+    jacobian: Tuple[torch.Tensor, ...] = tuple()
+    <a id="change">for i, out in enumerate(outputs):
+
+        &#47&#47 mypy complains that expression and variable have different types due to the empty list
+        jac_i: Tuple[List[torch.Tensor]] = tuple([] for _ in range(len(inputs)))  &#47&#47 type: ignore
+        for j in range(out.nelement()):
+            vj = _autograd_grad((out.reshape(-1)[j],), inputs,
+                                retain_graph=True, create_graph=create_graph)
+
+            for el_idx, (jac_i_el, vj_el, inp_el) in enumerate(zip(jac_i, vj, inputs)):
+                if vj_el is not None:
+                    if strict and create_graph and not vj_el.requires_grad:
+                        msg = ("The jacobian of the user-provided function is "
+                               "independent of input {}. This is not allowed in "
+                               "strict mode when create_graph=True.".format(i))
+                        raise RuntimeError(msg)
+                    jac_i_el.append(vj_el)
+                else:
+                    if strict:
+                        msg = ("Output {} of the user-provided function is "
+                               "independent of input {}. This is not allowed in "
+                               "strict mode.".format(i, el_idx))
+                        raise RuntimeError(msg)
+                    jac_i_el.append(torch.zeros_like(inp_el))
+
+        jacobian += (tuple(torch.stack(jac_i_el, dim=0).view(out.size()
+                     + inputs[el_idx].size()) for (el_idx, jac_i_el) in enumerate(jac_i)), )
+
+   </a> jacobian = _grad_postprocess(jacobian, create_graph)
+
+    return _tuple_postprocess(jacobian, (is_outputs_tuple, is_inputs_tuple))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                 [0., 3.]]))
+    
+
+    <a id="change">with torch.enable_grad():
+        is_inputs_tuple, inputs = _as_tuple(inputs, "inputs", "jacobian")
+        inputs = _grad_preprocess(inputs, create_graph=create_graph, need_graph=True)
+
+        outputs = func(*inputs)
+        is_outputs_tuple, outputs = _as_tuple(outputs,
+                                              "outputs of the user-provided function",
+                                              "jacobian")
+        _check_requires_grad(outputs, "outputs", strict=strict)
+
+
+
+        if vectorize:
+            if strict:
+                raise RuntimeError(&quottorch.autograd.functional.jacobian: `strict=True` &quot
+                                   &quotand `vectorized=True` are not supported together. &quot
+                                   &quotPlease either set `strict=False` or &quot
+                                   &quot`vectorize=False`.&quot)
+            &#47&#47 NOTE: [Computing jacobian with vmap and grad for multiple outputs]
+            &#47&#47
+            &#47&#47 Let&quots consider f(x) = (x**2, x.sum()) and let x = torch.randn(3).
+            &#47&#47 It turns out we can compute the jacobian of this function with a single
+            &#47&#47 call to autograd.grad by using vmap over the correct grad_outputs.
+            &#47&#47
+            &#47&#47 Firstly, one way to compute the jacobian is to stack x**2 and x.sum()
+            &#47&#47 into a 4D vector. E.g., use g(x) = torch.stack([x**2, x.sum()])
+            &#47&#47
+            &#47&#47 To get the first row of the jacobian, we call
+            &#47&#47 &gt;&gt;&gt; autograd.grad(g(x), x, grad_outputs=torch.tensor([1, 0, 0, 0]))
+            &#47&#47 To get the 2nd row of the jacobian, we call
+            &#47&#47 &gt;&gt;&gt; autograd.grad(g(x), x, grad_outputs=torch.tensor([0, 1, 0, 0]))
+            &#47&#47 and so on.
+            &#47&#47
+            &#47&#47 Using vmap, we can vectorize all 4 of these computations into one by
+            &#47&#47 passing the standard basis for R^4 as the grad_output.
+            &#47&#47 vmap(partial(autograd.grad, g(x), x))(torch.eye(4)).
+            &#47&#47
+            &#47&#47 Now, how do we compute the jacobian *without stacking the output*?
+            &#47&#47 We can just split the standard basis across the outputs. So to
+            &#47&#47 compute the jacobian of f(x), we&quotd use
+            &#47&#47 &gt;&gt;&gt; autograd.grad(f(x), x, grad_outputs=_construct_standard_basis_for(...))
+            &#47&#47 The grad_outputs looks like the following:
+            &#47&#47 ( torch.tensor([[1, 0, 0],
+            &#47&#47                 [0, 1, 0],
+            &#47&#47                 [0, 0, 1],
+            &#47&#47                 [0, 0, 0]]),
+            &#47&#47   torch.tensor([[0],
+            &#47&#47                 [0],
+            &#47&#47                 [0],
+            &#47&#47                 [1]]) )
+            &#47&#47
+            &#47&#47 But we&quotre not done yet!
+            &#47&#47 &gt;&gt;&gt; vmap(partial(autograd.grad(f(x), x, grad_outputs=...)))
+            &#47&#47 returns a Tensor of shape [4, 3]. We have to remember to split the
+            &#47&#47 jacobian of shape [4, 3] into two:
+            &#47&#47 - one of shape [3, 3] for the first output
+            &#47&#47 - one of shape [   3] for the second output
+
+            &#47&#47 Step 1: Construct grad_outputs by splitting the standard basis
+            output_numels = tuple(output.numel() for output in outputs)
+            grad_outputs = _construct_standard_basis_for(outputs, output_numels)
+            flat_outputs = tuple(output.reshape(-1) for output in outputs)
+
+            &#47&#47 Step 2: Call vmap + autograd.grad
+            def vjp(grad_output):
+                vj = list(_autograd_grad(flat_outputs, inputs, grad_output, create_graph=create_graph))
+                for el_idx, vj_el in enumerate(vj):
+                    if vj_el is not None:
+                        continue
+                    vj[el_idx] = torch.zeros_like(inputs[el_idx])
+                return tuple(vj)
+
+            jacobians_of_flat_output = _vmap(vjp)(grad_outputs)
+
+            &#47&#47 Step 3: The returned jacobian is one big tensor per input. In this step,
+            &#47&#47 we split each Tensor by output.
+            jacobian_input_output = []
+            for jac, input_i in zip(jacobians_of_flat_output, inputs):
+                jacobian_input_i_output = []
+                for jac, output_j in zip(jac.split(output_numels, dim=0), outputs):
+                    jacobian_input_i_output_j = jac.view(output_j.shape + input_i.shape)
+                    jacobian_input_i_output.append(jacobian_input_i_output_j)
+                jacobian_input_output.append(jacobian_input_i_output)
+
+            &#47&#47 Step 4: Right now, `jacobian` is a List[List[Tensor]].
+            &#47&#47 The outer List corresponds to the number of inputs,
+            &#47&#47 the inner List corresponds to the number of outputs.
+            &#47&#47 We need to exchange the order of these and convert to tuples
+            &#47&#47 before returning.
+            jacobian_output_input = tuple(zip(*jacobian_input_output))
+
+            jacobian_output_input = _grad_postprocess(jacobian_output_input, create_graph)
+            return _tuple_postprocess(jacobian_output_input, (is_outputs_tuple, is_inputs_tuple))
+
+        jacobian: Tuple[torch.Tensor, ...] = tuple()
+
+        for i, out in enumerate(outputs):
+
+            &#47&#47 mypy complains that expression and variable have different types due to the empty list
+            jac_i: Tuple[List[torch.Tensor]] = tuple([] for _ in range(len(inputs)))  &#47&#47 type: ignore
+            for j in range(out.nelement()):
+                vj = _autograd_grad((out.reshape(-1)[j],), inputs,
+                                    retain_graph=True, create_graph=create_graph)
+
+                for el_idx, (jac_i_el, vj_el, inp_el) in enumerate(zip(jac_i, vj, inputs)):
+                    if vj_el is not None:
+                        if strict and create_graph and not vj_el.requires_grad:
+                            msg = ("The jacobian of the user-provided function is "
+                                   "independent of input {}. This is not allowed in "
+                                   "strict mode when create_graph=True.".format(i))
+                            raise RuntimeError(msg)
+                        jac_i_el.append(vj_el)
+                    else:
+                        if strict:
+                            msg = ("Output {} of the user-provided function is "
+                                   "independent of input {}. This is not allowed in "
+                                   "strict mode.".format(i, el_idx))
+                            raise RuntimeError(msg)
+                        jac_i_el.append(torch.zeros_like(inp_el))
+
+            jacobian += (tuple(torch.stack(jac_i_el, dim=0).view(out.size()
+                         + inputs[el_idx].size()) for (el_idx, jac_i_el) in enumerate(jac_i)), )
+
+        jacobian = _grad_postprocess(jacobian, create_graph)
+
+        return _tuple_postprocess(jacobian, (is_outputs_tuple, is_inputs_tuple))
+
+</a>def hessian(func, inputs, create_graph=False, strict=False, vectorize=False):
+    rFunction that computes the Hessian of a given scalar function.
+
+    Args:</code></pre><img src="101260645.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/f364e492dfb287e4043d37fffa1bcef55e2ac5dd#diff-72d88a419a72b8118800e618ecc27afe0635776ce7c9c4b374fedd996f49ad09L471' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: f364e492dfb287e4043d37fffa1bcef55e2ac5dd</div><div id='time'> Time: 2021-03-11</div><div id='author'> Author: ilqarramazanli@gmail.como</div><div id='file'> File Name: torch/autograd/functional.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: jacobian</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/303217b34070dc47a86622b62764098999b0d7f5#diff-0a5f1b492443f1d45fea644563c842fd31a4a480824e8ed0c9f9ce825fe7f039L392' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 303217b34070dc47a86622b62764098999b0d7f5</div><div id='time'> Time: 2018-12-12</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/lazy_tensor.py</div><div id='class'> Class Name: LazyTensor</div><div id='method'> Method Name: _quad_form_derivative</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/2a548989f90026395d3d47ccf15ac331728c64bf#diff-1e05823efcf5119bf771fc16f182df9cf4b8aac20b722908d7557012b69896d4L246' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: 2a548989f90026395d3d47ccf15ac331728c64bf</div><div id='time'> Time: 2019-06-22</div><div id='author'> Author: jjg@fb.com</div><div id='file'> File Name: ml/rl/training/dqn_trainer.py</div><div id='class'> Class Name: DQNTrainer</div><div id='method'> Method Name: calculate_cpes</div><BR>

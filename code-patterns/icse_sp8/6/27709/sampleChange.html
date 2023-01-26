@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    try:
+      &#47&#47 Send an HTTP request for the tarball.
+      response = self._request(&quotGET&quot, remote_path)
+      <a id="change">if response is None:
+        return None
+
+     </a> with temporary_file() as outfile:
+        total_bytes = 0
+        &#47&#47 Read the data in a loop.
+        for chunk in response.iter_content(self.READ_SIZE_BYTES):
+          outfile.write(chunk)
+          total_bytes += len(chunk)
+
+        outfile.close()
+        self.log.debug(&quotRead %d bytes from artifact cache at %s&quot %
+                       (total_bytes,self._url_string(remote_path)))
+
+        &#47&#47 Extract the tarfile.
+        artifact = TarballArtifact(self.artifact_root, outfile.name, self.compression)
+        <a id="change">artifact.extract()</a>
+        return artifact
+    except Exception as e:
+      self.log.warn(&quotError while reading from remote artifact cache: %s&quot % e)
+      return None</code></pre><h3>After Change</h3><pre><code class='java'>
+    return self._request(&quotHEAD&quot, self._remote_path_for_key(cache_key)) is not None
+
+  def use_cached_files(self, cache_key):
+    <a id="change">if self._localcache.has(cache_key):
+      return self._localcache.use_cached_files(cache_key)
+
+   </a> remote_path = self._remote_path_for_key(cache_key)
+    try:
+      response = self._request(&quotGET&quot, remote_path)
+      if response is not None:
+        &#47&#47 Delegate storage and extraction to local cache
+        byte_iter = response.iter_content(self.READ_SIZE_BYTES)
+        return self._localcache.store_and_use_artifact(cache_key, byte_iter)
+    except Exception as e:
+      logger.warn(<a id="change">&quot\nError while reading from remote artifact cache: {0}\n&quot.format(e)</a>)
+
+    return False
+</code></pre>

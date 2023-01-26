@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        sampled = beta_sample / tf.maximum(x=(alpha_sample + beta_sample), y=util.epsilon)
+
+        <a id="change">return self.action_spec[&quotmin_value&quot] + \
+            (self.action_spec[&quotmax_value&quot] - self.action_spec[&quotmin_value&quot]) * \
+            tf.where(condition=deterministic, x=definite, y=sampled)</a>
+
+    def tf_log_probability(self, distr_params, action):
+        alpha, beta, _, log_norm = distr_params
+        action = (action - self.action_spec[&quotmin_value&quot]) / \</code></pre><h3>After Change</h3><pre><code class='java'>
+        alpha_sample = tf.random_gamma(shape=(), alpha=alpha, dtype=util.tf_dtype(dtype=&quotfloat&quot))
+        beta_sample = tf.random_gamma(shape=(), alpha=beta, dtype=util.tf_dtype(dtype=&quotfloat&quot))
+
+        <a id="change">epsilon = tf.constant(value=util.epsilon, dtype=util.tf_dtype(dtype=&quotfloat&quot))</a>
+
+        sampled = beta_sample / tf.maximum(x=(alpha_sample + beta_sample), y=epsilon)
+
+        <a id="change">sampled = tf.where(condition=deterministic, x=definite, y=sampled)</a>
+
+        min_value = tf.constant(
+            value=self.action_spec[&quotmin_value&quot], dtype=util.tf_dtype(dtype=&quotfloat&quot)
+        )
+        max_value = tf.constant(
+            value=self.action_spec[&quotmax_value&quot], dtype=util.tf_dtype(dtype=&quotfloat&quot)
+        )
+
+        <a id="change">return min_value + (max_value - min_value) * sampled</a>
+
+    def tf_log_probability(self, parameters, action):
+        alpha, beta, _, log_norm = parameters
+</code></pre>

@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 overwrite this since torch MVN uses unbroadcasted_scale_tril for this
+            diag = self.lazy_covariance_matrix.diag()
+            diag = diag.view(diag.shape[:-1] + self._event_shape)
+            <a id="change">return diag.expand(self._batch_shape + self._event_shape)</a>
+        else:
+            return super().variance
+
+    def __add__(self, other):</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 overwrite this since torch MVN uses unbroadcasted_scale_tril for this
+            diag = self.lazy_covariance_matrix.diag()
+            diag = diag.view(diag.shape[:-1] + self._event_shape)
+            <a id="change">variance = diag.expand(self._batch_shape + self._event_shape)</a>
+        else:
+            variance = super().variance
+
+        &#47&#47 Check to make sure that variance isn&quott lower than minimum allowed value (default 1e-6).
+        &#47&#47 This ensures that all variances are positive
+        min_variance = <a id="change">settings.min_variance.value(variance.dtype)</a>
+        if variance.lt(min_variance).any():
+            warnings.warn(
+                f"Negative variance values detected. "
+                "This is likely due to numerical instabilities. "
+                f"Rounding negative variances up to {min_variance}."
+            )
+            variance = variance.clamp_min(min_variance)
+        <a id="change">return variance</a>
+
+    def __add__(self, other):
+        if isinstance(other, MultivariateNormal):
+            return self.__class__(</code></pre>

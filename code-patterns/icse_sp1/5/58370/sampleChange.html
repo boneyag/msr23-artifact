@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                          log_obs_noise_scale_init=torch.randn(obs_dim))
+    elif model == &quotdmgp&quot:
+        gp = DependentMaternGP(nu=nu_statedim, obs_dim=obs_dim, dt=dt,
+                               log_length_scale_init=<a id="change">torch.randn(obs_dim)</a>)
+    elif model == &quotlcdgp&quot:
+        gp = LinearlyCoupledDependentMaternGP(nu=nu_statedim, obs_dim=obs_dim, dt=dt,
+                                              log_length_scale_init=torch.randn(obs_dim))
+
+    targets = torch.randn(T, obs_dim)
+    gp_log_prob = gp.log_prob(targets)
+    if model == &quotimgp&quot:
+        assert gp_log_prob.shape == (obs_dim,)
+    else:
+        assert gp_log_prob.dim() == 0
+
+    &#47&#47 compare matern log probs to vanilla GP result via multivariate normal
+    if model == &quotimgp&quot:
+        times = dt * torch.arange(T).double()
+        for dim in range(obs_dim):
+            lengthscale = <a id="change">gp</a>.kernel.log_length_scale.exp()[dim]
+            variance = (2.0 * gp.kernel.log_kernel_scale).exp()[dim]
+            obs_noise = (2.0 * gp.log_obs_noise_scale).exp()[dim]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    elif model == &quotimgp&quot:
+        gp = IndependentMaternGP(nu=nu_statedim, obs_dim=obs_dim, dt=dt,
+                                 length_scale_init=0.5 + torch.rand(obs_dim),
+                                 kernel_scale_init=<a id="change">0.5 + torch.rand(obs_dim)</a>,
+                                 obs_noise_scale_init=0.5 + torch.rand(obs_dim))
+    elif model == &quotglgssm&quot:
+        gp = GenericLGSSM(state_dim=nu_statedim, obs_dim=obs_dim,</code></pre>

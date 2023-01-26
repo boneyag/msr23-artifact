@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 next compute the contribution from process noise that is injected at each timestep.
+        &#47&#47 (we need to do a cumulative sum to integrate across time for the z-state contribution)
+        <a id="change">eye = torch.eye(self.state_dim, device=fs_cov.device, dtype=fs_cov.dtype)</a>
+        z_process_covar = self.log_trans_noise_scale_sq.exp() * eye
+        N_trans_obs_shift = torch.cat([self.z_obs_matrix.unsqueeze(0), N_trans_obs[0:-1]])
+        predicted_covar2z = torch.matmul(N_trans_obs_shift.transpose(-1, -2),
+                                         torch.matmul(z_process_covar, N_trans_obs_shift))  &#47&#47 N O O
+
+        predicted_covar = predicted_covar1z + predicted_covar1gp + gp_process_covar + \
+            torch.cumsum(predicted_covar2z, dim=0)
+
+        if include_observation_noise:
+            eye = torch.eye(self.obs_dim, device=fs_cov.device, dtype=fs_cov.dtype)
+            predicted_covar = <a id="change">predicted_covar + self._get_obs_noise_scale().pow(2.0) * eye</a>
+
+        return predicted_mean, predicted_covar
+
+    def forecast(self, targets, N_timesteps):</code></pre><h3>After Change</h3><pre><code class='java'>
+            torch.cumsum(predicted_covar2z, dim=0)
+
+        if include_observation_noise:
+            predicted_covar = predicted_covar + <a id="change">self.obs_noise_scale.pow(2.0).diag_embed()</a>
+
+        return predicted_mean, predicted_covar
+
+    @pyro_method</code></pre>

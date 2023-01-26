@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                return mags
+            else:
+                &#47&#47 Reconstruct audio
+                acc_stft = <a id="change">tf.multiply(tf.complex(mags[0], 0.0), tf.exp(tf.complex(0.0, mix_angle)))</a>
+                voice_stft = tf.multiply(tf.complex(mags[1], 0.0), tf.exp(tf.complex(0.0, mix_angle)))
+
+                acc_audio = tf.contrib.signal.inverse_stft(acc_stft, self.frame_len, self.hop, self.frame_len, window_fn=inv_window)
+                voice_audio = tf.contrib.signal.inverse_stft(voice_stft, self.frame_len, self.hop, self.frame_len, window_fn=inv_window)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                &#47&#47 Compute source magnitudes
+                source_mag = tf.multiply(mix_mag, mask)
+                <a id="change">mags[name] = source_mag</a>
+
+            if return_spectrogram:
+                return mags
+            else:
+                audio_out = dict()
+                &#47&#47 Reconstruct audio
+                <a id="change">for source_name in mags.keys():
+                    stft = tf.multiply(tf.complex(mags[source_name], 0.0), tf.exp(tf.complex(0.0, mix_angle)))
+                    audio = tf.contrib.signal.inverse_stft(stft, self.frame_len, self.hop, self.frame_len, window_fn=inv_window)
+
+                    &#47&#47 Reshape to [batch_size, samples, 1]
+                    audio = tf.expand_dims(audio, 2)
+
+                    audio_out[source_name] = audio
+
+               </a> return audio_out
+</code></pre>

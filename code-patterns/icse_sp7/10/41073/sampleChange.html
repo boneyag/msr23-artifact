@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        point_indices = self._tri.simplices.ravel()
+
+        &#47&#47 array_associations will have shape: (6N-12, 2)
+        <a id="change">array_associations = np.dstack((point_indices, tri_indices))[0]</a>
+        array_associations = array_associations[np.lexsort((
+                                                <a id="change">array_associations[...,1]</a>,
+                                                <a id="change">array_associations</a>[...,<a id="change">0</a>]))]
+        array_associations = array_associations.astype(np.intp)
+
+        &#47&#47 group by generator indices to produce
+        &#47&#47 unsorted regions in nested list
+        <a id="change">groups = [list(list(zip(*list(g)))[1])
+                  for k, g in itertools.groupby(array_associations,
+                                                lambda t: t[0])]</a>
+
+        self.regions = groups
+
+    def sort_vertices_of_regions(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 point_indices will have shape: (6N-12,)
+        point_indices = self._tri.simplices.ravel()
+        &#47&#47 indices will have shape: (6N-12,)
+        indices = <a id="change">np.argsort(point_indices, kind=&quotmergesort&quot)</a>
+        &#47&#47 flattened_groups will have shape: (6N-12,)
+        flattened_groups = tri_indices[indices].astype(np.intp)
+        &#47&#47 intervals will have shape: (N+1,)
+        intervals = np.cumsum(np.bincount(point_indices + 1))
+
+        &#47&#47 split flattened groups to get nested list of unsorted regions
+        <a id="change">groups = [list(flattened_groups[intervals[i]:intervals[i + 1]])
+                  for i in range(len(intervals) - 1)]</a>
+        self.regions = groups
+
+    def sort_vertices_of_regions(self):
+        Sort indices of the vertices to be (counter-)clockwise ordered.</code></pre>

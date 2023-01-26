@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        import_format = request.POST[&quotformat&quot]
+        try:
+            if import_format == &quotcsv&quot:
+                <a id="change">form_data = TextIOWrapper(
+                    request.FILES[&quotfile&quot].file, encoding=&quotutf-8&quot)</a>
+                if project.is_type_of(Project.SEQUENCE_LABELING):
+                    <a id="change">Document.objects.bulk_create([
+                        Document(text=line.strip(), project=project)
+                        for line in form_data
+                    ])</a>
+                else:
+                    <a id="change">reader = csv.reader(form_data)</a>
+                    <a id="change">Document</a>.objects.bulk_create([
+                        Document(text=line[0].strip(), project=project)
+                        for line in reader
+                    ])</code></pre><h3>After Change</h3><pre><code class='java'>
+            file = request.FILES[&quotfile&quot].file
+            documents = []
+            if import_format == &quotcsv&quot:
+                <a id="change">documents = self.csv_to_documents(project, file)</a>
+                
+            elif import_format == &quotjson&quot:
+                documents = self.json_to_documents(project, file)
+
+            &#47&#47 TODO: Move to the configuration
+            batch_size = 500
+            while True:
+                batch = list(it.islice(documents, batch_size))
+                <a id="change">if not batch:
+                    break
+
+               </a> Document.objects.bulk_create(batch, batch_size=batch_size)
+                return HttpResponseRedirect(reverse(&quotdataset&quot, args=[project.id]))
+        except DataUpload.ImportFileError as e:
+            messages.add_message(request, messages.ERROR, e.message)</code></pre>

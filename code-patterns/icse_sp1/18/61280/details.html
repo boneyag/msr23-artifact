@@ -1,0 +1,84 @@
+<html><h3>05ff22f2cdff1f560975d60c7371cedcf4dca201,bindsnet/learning/__init__.py,,m_stdp_et,#Any#,193
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            | :code:`a_plus` (:code:`int`): Learning rate (positive).
+            | :code:`a_minus` (:code:`int`): Learning rate (negative).
+    
+    if <a id="change">not &quotkernel_size&quot in conn.__dict__</a>:
+        &#47&#47 Parse keyword arguments.
+        try:
+            reward = kwargs[&quotreward&quot]
+        except KeyError:
+            raise KeyError(&quotfunction m_stdp_et requires a reward kwarg&quot)
+
+        a_plus = kwargs.get(&quota_plus&quot, 1)
+        a_minus = kwargs.get(&quota_plus&quot, -1)
+
+        &#47&#47 Get P^+ and P^- values (function of firing traces).
+        conn.p_plus = -(conn.tc_plus * conn.p_plus) + a_plus * conn.source.x.unsqueeze(-1)
+        conn.p_minus = -(conn.tc_minus * conn.p_minus) + a_minus * conn.target.x.unsqueeze(0)
+
+        &#47&#47 Get pre- and post-synaptic spiking neurons.
+        pre_fire = conn.source.s.float().unsqueeze(-1)
+        post_fire = conn.target.s.float().unsqueeze(0)
+
+        &#47&#47 Calculate value of eligibility trace.
+        <a id="change">conn.e_trace</a> += -(conn.tc_e_trace * conn.e_trace) + \
+                        conn.p_plus * post_fire + pre_fire * conn.p_minus
+
+        &#47&#47 Compute weight update.
+        conn.w += conn.nu * reward * conn.e_trace
+
+        &#47&#47 Bound weights.
+        <a id="change">conn.w</a> = torch.clamp(conn.w, conn.wmin, conn.wmax)
+    else:
+        out_channels, _, kernel_height, kernel_width = conn.w.size()
+        padding, stride = conn.padding, conn.stride</code></pre><h3>After Change</h3><pre><code class='java'>
+    a_plus = kwargs.get(&quota_plus&quot, 1)
+    a_minus = kwargs.get(&quota_plus&quot, -1)
+
+    if <a id="change">isinstance(conn, Connection)</a>:
+        &#47&#47 Get P^+ and P^- values (function of firing traces).
+        conn.p_plus = -(conn.tc_plus * conn.p_plus) + a_plus * conn.source.x.unsqueeze(-1)
+        conn.p_minus = -(conn.tc_minus * conn.p_minus) + a_minus * conn.target.x.unsqueeze(0)
+
+        &#47&#47 Get pre- and post-synaptic spiking neurons.
+        pre_fire = conn.source.s.float().unsqueeze(-1)
+        post_fire = conn.target.s.float().unsqueeze(0)
+
+        &#47&#47 Calculate value of eligibility trace.
+        <a id="change">conn.e_trace</a> += -(conn.tc_e_trace * conn.e_trace) + conn.p_plus * post_fire + pre_fire * conn.p_minus
+
+        conn.w += conn.nu * reward * conn.e_trace  &#47&#47 Compute weight update.
+        <a id="change">conn.w</a> = torch.clamp(conn.w, conn.wmin, conn.wmax)  &#47&#47 Bound weights.
+
+    elif <a id="change">isinstance(conn, Conv2dConnection)</a>:
+        out_channels, _, kernel_height, kernel_width = conn.w.size()
+        padding, stride = conn.padding, conn.stride
+        
+        p_plus = a_plus * im2col_indices(conn.source.x, kernel_height, kernel_width, padding=padding, stride=stride)
+        p_minus = a_minus * conn.target.x.permute(1, 2, 3, 0).reshape(out_channels, -1)
+        pre_fire = im2col_indices(conn.source.s, kernel_height, kernel_width, padding=padding, stride=stride).float()
+        post_fire = conn.target.s.permute(1, 2, 3, 0).reshape(out_channels, -1).float()
+        
+        &#47&#47 Post-synaptic.
+        post = (p_plus @ post_fire.t()).view(conn.w.size())
+        if post.max() &gt; 0:
+            post = post / post.max()
+        
+        &#47&#47 Pre-synaptic.
+        pre = (pre_fire @ p_minus.t()).view(conn.w.size())
+        if pre.max() &gt; 0:
+            pre = pre / pre.max()
+
+        &#47&#47 Calculate point eligibility value.
+        conn.e_trace += -(conn.tc_e_trace * conn.e_trace) + (post + pre)
+
+        conn.w += conn.nu * reward * conn.e_trace  &#47&#47 Compute weight update.
+        conn.w = torch.clamp(conn.w, conn.wmin, conn.wmax)  &#47&#47 Bound weights.
+
+    else:
+        <a id="change">raise NotImplementedError(&quotThis learning rule is not supported for this Connection type.&quot)</a>
+</code></pre><img src="283089631.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/BindsNET/bindsnet/commit/05ff22f2cdff1f560975d60c7371cedcf4dca201#diff-4944d859de15ad081f785eb4bac72aa4ff1b684cff206e68ec01667763802297L192' target='_blank'>Link</a></div><div id='project'> Project Name: BindsNET/bindsnet</div><div id='commit'> Commit Name: 05ff22f2cdff1f560975d60c7371cedcf4dca201</div><div id='time'> Time: 2018-07-19</div><div id='author'> Author: djsaunde@umass.edu</div><div id='file'> File Name: bindsnet/learning/__init__.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: m_stdp_et</div><BR><BR><div id='link'><a href='https://github.com/BindsNET/bindsnet/commit/05ff22f2cdff1f560975d60c7371cedcf4dca201#diff-4944d859de15ad081f785eb4bac72aa4ff1b684cff206e68ec01667763802297L193' target='_blank'>Link</a></div><div id='project'> Project Name: BindsNET/bindsnet</div><div id='commit'> Commit Name: 05ff22f2cdff1f560975d60c7371cedcf4dca201</div><div id='time'> Time: 2018-07-19</div><div id='author'> Author: djsaunde@umass.edu</div><div id='file'> File Name: bindsnet/learning/__init__.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: m_stdp_et</div><BR><BR><div id='link'><a href='https://github.com/BindsNET/bindsnet/commit/05ff22f2cdff1f560975d60c7371cedcf4dca201#diff-4944d859de15ad081f785eb4bac72aa4ff1b684cff206e68ec01667763802297L62' target='_blank'>Link</a></div><div id='project'> Project Name: BindsNET/bindsnet</div><div id='commit'> Commit Name: 05ff22f2cdff1f560975d60c7371cedcf4dca201</div><div id='time'> Time: 2018-07-19</div><div id='author'> Author: djsaunde@umass.edu</div><div id='file'> File Name: bindsnet/learning/__init__.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: hebbian</div><BR><BR><div id='link'><a href='https://github.com/BindsNET/bindsnet/commit/05ff22f2cdff1f560975d60c7371cedcf4dca201#diff-4944d859de15ad081f785eb4bac72aa4ff1b684cff206e68ec01667763802297L15' target='_blank'>Link</a></div><div id='project'> Project Name: BindsNET/bindsnet</div><div id='commit'> Commit Name: 05ff22f2cdff1f560975d60c7371cedcf4dca201</div><div id='time'> Time: 2018-07-19</div><div id='author'> Author: djsaunde@umass.edu</div><div id='file'> File Name: bindsnet/learning/__init__.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: post_pre</div><BR>

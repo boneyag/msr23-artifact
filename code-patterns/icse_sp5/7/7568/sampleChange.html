@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            logging_outputs = [logging_output]
+
+        &#47&#47 aggregate stats and logging outputs
+        ntokens = sum(<a id="change">log</a>.get(&quotntokens&quot, 0) <a id="change">for</a> log in logging_outputs)
+        grad_denom = self.criterion.__class__.grad_denom(sample_sizes)
+        agg_logging_output = self.criterion.__class__.aggregate_logging_outputs(logging_outputs)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.model.eval()
+
+        logging_output, sample_size = {}, 0
+        <a id="change">with torch.no_grad():
+            sample = self._prepare_sample(sample)
+            if sample is None:
+                sample = self._prepare_sample(self._dummy_batch)
+            _loss, sample_size, logging_output = self.task.get_loss(
+                self.model, self.criterion, sample,
+            )
+
+        &#47&#47 gather logging outputs from all replicas
+       </a> if self.args.distributed_world_size &gt; 1:
+            logging_output, sample_size = zip(*distributed_utils.all_gather_list(
+                [logging_output, sample_size],
+            ))</code></pre>

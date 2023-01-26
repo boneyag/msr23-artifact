@@ -1,0 +1,26 @@
+<html><h3>146108a2c027ef2e116236ac8722e00a77103597,thinc/layers/concatenate.py,,forward,#Any#Any#Any#,37
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def forward(model: Model[InT, OutT], X: InT, is_train: bool) -&gt; Tuple[OutT, Callable]:
+    Ys, callbacks = zip(*[lyr(X, is_train=is_train) for lyr in model.layers])
+    widths = [Y.shape[1] for Y in Ys]
+    output = <a id="change">model.ops.xp.hstack(Ys)</a>
+
+    def backprop(d_output: OutT) -&gt; InT:
+        dY = model.ops.xp.ascontiguousarray(d_output[:, : widths[0]])
+        dX = callbacks[0](dY)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def forward(model: Model[InT, OutT], X: InT, is_train: bool) -&gt; Tuple[OutT, Callable]:
+    Ys, callbacks = zip(*[lyr(X, is_train=is_train) for lyr in model.layers])
+    <a id="change">if isinstance(Ys[0], list):
+        return _list_forward(model, X, Ys, callbacks, is_train)
+    else:
+        return _array_forward(model, X, Ys, callbacks, is_train)
+
+
+</a>def _array_forward(model: Model[InT, OutT], X, Ys, callbacks, is_train: bool) -&gt; Tuple[OutT, Callable]:
+    widths = [Y.shape[1] for Y in Ys]
+    output = model.ops.xp.hstack(Ys)
+</code></pre><img src="293061870.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/explosion/thinc/commit/146108a2c027ef2e116236ac8722e00a77103597#diff-54981afcbe9e238fe6e8d6b9b4b623fbf4022517cc3320aea418bfe402386719L38' target='_blank'>Link</a></div><div id='project'> Project Name: explosion/thinc</div><div id='commit'> Commit Name: 146108a2c027ef2e116236ac8722e00a77103597</div><div id='time'> Time: 2020-01-16</div><div id='author'> Author: svlandeg@users.noreply.github.com</div><div id='file'> File Name: thinc/layers/concatenate.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/SheffieldML/GPy/commit/c46a1aaa40d45512468ca7c3c004656ad2f94afb#diff-c916104883e157147876e1a300161d5e04982357093777b9c46d7d60030ed787L107' target='_blank'>Link</a></div><div id='project'> Project Name: SheffieldML/GPy</div><div id='commit'> Commit Name: c46a1aaa40d45512468ca7c3c004656ad2f94afb</div><div id='time'> Time: 2013-09-09</div><div id='author'> Author: alan.daniel.saul@gmail.com</div><div id='file'> File Name: GPy/core/gp.py</div><div id='class'> Class Name: GP</div><div id='method'> Method Name: _log_likelihood_gradients</div><BR><BR><div id='link'><a href='https://github.com/biocore/scikit-bio/commit/9d27c3e2af2e5d4696d9825bc5fcf3e9a6813ccf#diff-d0b3d8e3ee70b4ca62205c0bf60607456b076b648cce6961391c94b7c65ae123L231' target='_blank'>Link</a></div><div id='project'> Project Name: biocore/scikit-bio</div><div id='commit'> Commit Name: 9d27c3e2af2e5d4696d9825bc5fcf3e9a6813ccf</div><div id='time'> Time: 2015-03-24</div><div id='author'> Author: jai.rideout@gmail.com</div><div id='file'> File Name: skbio/sequence/_sequence.py</div><div id='class'> Class Name: Sequence</div><div id='method'> Method Name: __getitem__</div><BR>

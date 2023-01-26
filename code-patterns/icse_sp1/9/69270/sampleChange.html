@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    rule_runner.create_file("src/py/project/app.py", "print(&quothello&quot)")
+    rule_runner.add_to_build_file(
+        "src/py/project",
+        <a id="change">dedent(
+            \
+            pex_binary(
+                dependencies=[&quotassets:files&quot, &quotassets:relocated&quot, &quotassets:resources&quot],
+                entry_point="none",
+            )
+            
+        )</a>,
+    )
+    tgt = rule_runner.get_target(Address("src/py/project"))
+    field_set = PexBinaryFieldSet.create(tgt)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def test_warn_files_targets(rule_runner: RuleRunner, caplog) -&gt; None:
+    rule_runner.set_options([], env_inherit={"PATH", "PYENV_ROOT", "HOME"})
+    <a id="change">rule_runner.write_files(
+        {
+            "assets/f.txt": "",
+            "assets/BUILD": dedent(
+                \
+                files(name=&quotfiles&quot, sources=[&quotf.txt&quot])
+                relocated_files(
+                    name=&quotrelocated&quot,
+                    files_targets=[&quot:files&quot],
+                    src=&quotassets&quot,
+                    dest=&quotnew_assets&quot,
+                )
+
+                &#47&#47 Resources are fine.
+                resources(name=&quotresources&quot, sources=[&quotf.txt&quot])
+                
+            ),
+            "src/py/project/__init__.py": "",
+            "src/py/project/app.py": "print(&quothello&quot)",
+            "src/py/project/BUILD": dedent(
+                \
+                pex_binary(
+                    dependencies=[&quotassets:files&quot, &quotassets:relocated&quot, &quotassets:resources&quot],
+                    entry_point="none",
+                )
+                
+            ),
+        }
+    )</a>
+    tgt = rule_runner.get_target(Address("src/py/project"))
+    field_set = PexBinaryFieldSet.create(tgt)
+
+    assert not caplog.records</code></pre>

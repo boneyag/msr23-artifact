@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    import shutil
+    &#47&#47 Check orientation (dwi_prep)
+    cmd = &quotfslorient -getorient &quot + dwi_prep
+    orient = <a id="change">os.popen(cmd).read().strip(&quot\n&quot)</a>
+    dwi_orig = dwi_prep
+    dwi_prep = "{}/{}_pre_reor.nii.gz".format(out_dir, dwi_prep.split(&quot/&quot)[-1].split(&quot.nii.gz&quot)[0])
+    shutil.copyfile(dwi_orig, dwi_prep)
+    bvecs_orig = bvecs</code></pre><h3>After Change</h3><pre><code class='java'>
+    import shutil
+    &#47&#47 Check orientation (dwi_prep)
+    cmd = &quotfslorient -getorient &quot + dwi_prep
+    cmd_run = <a id="change">os.popen(cmd)</a>
+    orient = cmd_run.read().strip(&quot\n&quot)
+    cmd_run.close()
+    dwi_orig = dwi_prep
+    dwi_prep = "{}/{}_pre_reor.nii.gz".format(out_dir, dwi_prep.split(&quot/&quot)[-1].split(&quot.nii.gz&quot)[0])
+    shutil.copyfile(dwi_orig, dwi_prep)
+    bvecs_orig = bvecs
+    bvecs = "{}/bvecs.bvec".format(out_dir)
+    shutil.copyfile(bvecs_orig, bvecs)
+    bvecs_mat = np.genfromtxt(bvecs)
+    cmd = &quotfslorient -getqform &quot + dwi_prep
+    cmd_run = os.popen(cmd)
+    qform = cmd_run.read().strip(&quot\n&quot)
+    cmd_run.close()
+    reoriented = False
+    if orient == &quotNEUROLOGICAL&quot:
+        reoriented = True
+        print(&quotNeurological (dwi), reorienting to radiological...&quot)
+        &#47&#47 Orient dwi to RADIOLOGICAL
+        &#47&#47 Posterior-Anterior Reorientation
+        if float(qform.split(&quot &quot)[:-1][5]) &lt;= 0:
+            dwi_prep_PA = "{}/dwi_reor_PA.nii.gz".format(out_dir)
+            print(&quotReorienting P-A flip (dwi)...&quot)
+            cmd = &quotfslswapdim &quot + dwi_prep + &quot -x -y z &quot + dwi_prep_PA
+            os.system(cmd)
+            bvecs_mat[:,1] = -bvecs_mat[:,1]
+            cmd = &quotfslorient -getqform &quot + dwi_prep_PA
+            cmd_run = os.popen(cmd)
+            <a id="change">qform = cmd_run.read().strip(&quot\n&quot)</a>
+            cmd_run.close()
+            dwi_prep = dwi_prep_PA
+        &#47&#47 Inferior-Superior Reorientation
+        if float(qform.split(&quot &quot)[:-1][10]) &lt;= 0:</code></pre>

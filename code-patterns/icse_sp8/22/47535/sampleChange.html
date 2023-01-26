@@ -1,0 +1,149 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            print(&quotLoading pre-trained network!&quot)
+            self.load_network(self.netG, &quotG&quot, opt.which_epoch)
+            if self.isTrain:
+                <a id="change">self.load_network(self.netD, &quotD&quot, opt.which_epoch)</a>
+
+        if self.isTrain:
+            self.old_lr = opt.lr
+            &#47&#47 define loss functions
+            self.criterionGAN = networks.GANLoss(gan_type=opt.gan_type, tensor=self.Tensor)
+            self.criterionL1 = torch.nn.L1Loss()
+
+            &#47&#47 initialize optimizers
+            self.schedulers = []
+            self.optimizers = []
+            if self.wgan_gp:
+                opt.beta1 = 0
+                self.optimizer_G = torch.optim.Adam(self.netG.parameters(),
+                                    lr=opt.lr, betas=(opt.beta1, 0.999))
+                self.optimizer_D = torch.optim.Adam(self.netD.parameters(),
+                                                    lr=opt.lr, betas=(opt.beta1, 0.999))
+            else:
+                self.optimizer_G = torch.optim.Adam(self.netG.parameters(),
+                                                    lr=opt.lr, betas=(opt.beta1, 0.999))
+                self.optimizer_D = torch.optim.Adam(self.netD.parameters(),
+                                                    lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizers.append(self.optimizer_G)
+            self.optimizers.append(self.optimizer_D)
+            for optimizer in self.optimizers:
+                self.schedulers.append(networks.get_scheduler(optimizer, opt))
+
+            print(&quot---------- Networks initialized -------------&quot)
+            networks.print_network(self.netG)
+            if self.isTrain:
+                <a id="change">networks.print_network(self.netD)</a>
+            print(&quot-----------------------------------------------&quot)
+
+    def set_input(self, input):
+        input_A = input[&quotA&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.opt = opt
+        self.isTrain = opt.isTrain
+        &#47&#47 specify the training losses you want to print out. The program will call base_model.get_current_losses
+        <a id="change">self.loss_names = [&quotG_GAN&quot, &quotG_L1&quot, &quotD_real&quot, &quotD_fake&quot]</a>
+        &#47&#47 specify the images you want to save/display. The program will call base_model.get_current_visuals
+        <a id="change">self.visual_names = [&quotreal_A&quot, &quotfake_B&quot, &quotreal_B&quot]</a>
+        &#47&#47 specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
+        if self.isTrain:
+            self.model_names = [&quotG&quot, &quotD&quot]
+        else:  &#47&#47 during test time, only load Gs
+            <a id="change">self.model_names = [&quotG&quot]</a>
+
+
+        &#47&#47 batchsize should be 1 for mask_global
+        self.mask_global = torch.ByteTensor(1, 1, \
+                                 opt.fineSize, opt.fineSize)
+
+        &#47&#47 Here we need to set an artificial mask_global(not to make it broken, so center hole is ok.)
+        self.mask_global.zero_()
+        self.mask_global[:, :, int(self.opt.fineSize/4) + self.opt.overlap : int(self.opt.fineSize/2) + int(self.opt.fineSize/4) - self.opt.overlap,\
+                                int(self.opt.fineSize/4) + self.opt.overlap: int(self.opt.fineSize/2) + int(self.opt.fineSize/4) - self.opt.overlap] = 1
+
+        self.mask_type = opt.mask_type
+        self.gMask_opts = {}
+        self.fixed_mask = opt.fixed_mask if opt.mask_type == &quotcenter&quot else 0
+        if opt.mask_type == &quotcenter&quot:
+            assert opt.fixed_mask == 1, "Center mask must be fixed mask!"
+
+        if self.mask_type == &quotrandom&quot:
+            res = 0.06 &#47&#47 the lower it is, the more continuous the output will be. 0.01 is too small and 0.1 is too large
+            density = 0.25
+            MAX_SIZE = 10000
+            maxPartition = 30
+            low_pattern = torch.rand(1, 1, int(res*MAX_SIZE), int(res*MAX_SIZE)).mul(255)
+            pattern = F.functional.interpolate(low_pattern, (MAX_SIZE, MAX_SIZE), mode=&quotbilinear&quot).detach()
+            low_pattern = None
+            pattern.div_(255)
+            pattern = torch.lt(pattern,density).byte()  &#47&#47 25% 1s and 75% 0s
+            pattern = torch.squeeze(pattern).byte()
+            print(&quot...Random pattern generated&quot)
+            self.gMask_opts[&quotpattern&quot] = pattern
+            self.gMask_opts[&quotMAX_SIZE&quot] = MAX_SIZE
+            self.gMask_opts[&quotfineSize&quot] = opt.fineSize
+            self.gMask_opts[&quotmaxPartition&quot] = maxPartition
+            self.gMask_opts[&quotmask_global&quot] = self.mask_global
+            self.mask_global = util.create_gMask(self.gMask_opts) &#47&#47 create an initial random mask.
+
+
+        self.wgan_gp = False
+        &#47&#47 added for wgan-gp
+        if opt.gan_type == &quotwgan_gp&quot:
+            self.gp_lambda = opt.gp_lambda
+            self.ncritic = opt.ncritic
+            self.wgan_gp = True
+
+
+        if len(opt.gpu_ids) &gt; 0:
+            self.use_gpu = True
+            self.mask_global = self.mask_global.to(self.device)
+
+        &#47&#47 load/define networks
+        &#47&#47 self.ng_innerCos_list is the constraint list in netG inner layers.
+        &#47&#47 self.ng_mask_list is the mask list constructing shift operation.
+        self.netG, self.ng_innerCos_list, self.ng_shift_list = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf,
+                                      opt.which_model_netG, opt, self.mask_global, opt.norm, opt.use_dropout, opt.init_type, self.gpu_ids, opt.init_gain) &#47&#47 add opt, we need opt.shift_sz and other stuffs
+        if self.isTrain:
+            use_sigmoid = False
+            if opt.gan_type == &quotvanilla&quot:
+                use_sigmoid = True  &#47&#47 only vanilla GAN using BCECriterion
+            &#47&#47 don&quott use cGAN
+            self.netD = networks.define_D(opt.input_nc, opt.ndf,
+                                          opt.which_model_netD,
+                                          opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids, opt.init_gain)
+
+        if self.isTrain:
+            self.old_lr = opt.lr
+            &#47&#47 define loss functions
+            self.criterionGAN = networks.GANLoss(gan_type=opt.gan_type).to(self.device)
+            self.criterionL1 = torch.nn.L1Loss()
+
+            &#47&#47 initialize optimizers
+            self.schedulers = []
+            self.optimizers = []
+            if self.wgan_gp:
+                opt.beta1 = 0
+                self.optimizer_G = torch.optim.Adam(self.netG.parameters(),
+                                    lr=opt.lr, betas=(opt.beta1, 0.999))
+                self.optimizer_D = torch.optim.Adam(self.netD.parameters(),
+                                                    lr=opt.lr, betas=(opt.beta1, 0.999))
+            else:
+                self.optimizer_G = torch.optim.Adam(self.netG.parameters(),
+                                                    lr=opt.lr, betas=(opt.beta1, 0.999))
+                self.optimizer_D = torch.optim.Adam(self.netD.parameters(),
+                                                    lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizers.append(self.optimizer_G)
+            self.optimizers.append(self.optimizer_D)
+            for optimizer in self.optimizers:
+                self.schedulers.append(networks.get_scheduler(optimizer, opt))
+
+        if not self.isTrain or opt.continue_train:
+            self.load_networks(opt.which_epoch)
+
+        <a id="change">self.print_networks(opt.verbose)</a>
+
+    def set_input(self, input):
+        real_A = input[&quotA&quot].to(self.device)
+        real_B = input[&quotB&quot].to(self.device)</code></pre>

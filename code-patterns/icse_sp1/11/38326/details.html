@@ -1,0 +1,32 @@
+<html><h3>d1ac7b831ad36cd0e4bdd7980819f83208345148,gpflow/expectations.py,,_expectation,#Any#Any#Any#Any#Any#,633
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        Xmu = p.mu
+        Xcov = p.cov
+        <a id="change">Z = feat.Z</a>
+
+        with tf.control_dependencies([
+            tf.assert_equal(tf.shape(Xmu)[1], tf.constant(kern.input_dim, settings.tf_int),
+                            message="Currently cannot handle slicing in exKxz."),
+            tf.assert_equal(tf.shape(Xmu), tf.shape(Xcov)[1:3], name="assert_Xmu_Xcov_shape")
+        ]):
+            Xmu = tf.identity(Xmu)
+
+        N = tf.shape(Xmu)[0] - 1
+        Xmum = Xmu[:-1, :]
+        Xmup = Xmu[1:, :]
+        <a id="change">op = tf.expand_dims(Xmum, 2) * tf.expand_dims(Xmup, 1) + Xcov[1, :-1, :, :]</a>  &#47&#47 NxDxD
+        return kern.variance * <a id="change">tf.matmul(tf.tile(tf.expand_dims(Z, 0), (N, 1, 1)), op)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        N = tf.shape(Xmu)[0] - 1
+        var_Z = kern.variance * feat.Z  &#47&#47 MxD
+        tiled_Z = tf.tile(tf.expand_dims(var_Z, 0), (N, 1, 1))  &#47&#47 NxMxD
+        eXX = Xcov[1, :-1] + (<a id="change">Xmu</a>[:-1][..., None] * Xmu[1:][<a id="change">:, None, :</a>])  &#47&#47 NxDxD
+        return <a id="change">tf.matmul(tiled_Z, eXX)</a>
+
+
+@dispatch((Gaussian, DiagonalGaussian), kernels.Linear, InducingPoints, kernels.Linear, InducingPoints)
+def _expectation(p, kern1, feat1, kern2, feat2):</code></pre><img src="185462765.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/d1ac7b831ad36cd0e4bdd7980819f83208345148#diff-fec3d5d915217c71e27fb0ed9d7f6f3d63da4ee9cbfa4a0733591f2a28c3e228L479' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: d1ac7b831ad36cd0e4bdd7980819f83208345148</div><div id='time'> Time: 2018-02-07</div><div id='author'> Author: alex.ialongo@gmail.com</div><div id='file'> File Name: gpflow/expectations.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _expectation</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/d1ac7b831ad36cd0e4bdd7980819f83208345148#diff-fec3d5d915217c71e27fb0ed9d7f6f3d63da4ee9cbfa4a0733591f2a28c3e228L633' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: d1ac7b831ad36cd0e4bdd7980819f83208345148</div><div id='time'> Time: 2018-02-07</div><div id='author'> Author: alex.ialongo@gmail.com</div><div id='file'> File Name: gpflow/expectations.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _expectation</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/d1ac7b831ad36cd0e4bdd7980819f83208345148#diff-fec3d5d915217c71e27fb0ed9d7f6f3d63da4ee9cbfa4a0733591f2a28c3e228L417' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: d1ac7b831ad36cd0e4bdd7980819f83208345148</div><div id='time'> Time: 2018-02-07</div><div id='author'> Author: alex.ialongo@gmail.com</div><div id='file'> File Name: gpflow/expectations.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _expectation</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/20a3f495691b621165cc7fcce1bca917516edf9a#diff-55546770e440d3a3b29c284215d11d38b254f916c2a4634c4dc8047857282249L64' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: 20a3f495691b621165cc7fcce1bca917516edf9a</div><div id='time'> Time: 2017-02-03</div><div id='author'> Author: mrksr@users.noreply.github.com</div><div id='file'> File Name: GPflow/ekernels.py</div><div id='class'> Class Name: RBF</div><div id='method'> Method Name: exKxz</div><BR>

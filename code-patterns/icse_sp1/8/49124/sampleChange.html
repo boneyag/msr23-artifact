@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def process(
+        self, sparse_data: List[Dict[int, float]]
+    ) -&gt; Tuple[torch.Tensor, torch.Tensor]:
+        <a id="change">dense_data = torch.ones([len(sparse_data), len(self.feature_id_to_index)])</a>
+        dense_presence = torch.zeros(
+            [len(sparse_data), len(self.feature_id_to_index)]
+        ).byte()
+        for i, feature_map in enumerate(sparse_data):
+            assert (
+                feature_map is not None
+            ), f"Please make sure that features are not NULL; row {i}"
+            for j, value in feature_map.items():
+                j_index = self.feature_id_to_index.get(j, None)
+                if j_index is None:
+                    continue
+                dense_data[i][j_index] = value
+                dense_presence[i][j_index] = 1
+        if self.set_missing_value_to_zero:
+            &#47&#47 When we set missing values to 0, we don&quott know what is and isn&quott missing
+            dense_presence = dense_data != 0.0
+        <a id="change">return (dense_data, dense_presence)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            missing_value = 0.0
+        state_features_df = pd.DataFrame(sparse_data).fillna(missing_value)
+        &#47&#47 Add columns identified by normalization, but not present in batch
+        <a id="change">for col in self.sorted_features:
+            if col not in state_features_df.columns:
+                state_features_df[col] = missing_value
+       </a> values = torch.from_numpy(
+            state_features_df[self.sorted_features].values
+        ).float()
+        if self.set_missing_value_to_zero:
+            &#47&#47 When we set missing values to 0, we don&quott know what is and isn&quott missing
+            <a id="change">presence = torch.ones_like(values, dtype=torch.bool)</a>
+        else:
+            presence = values != missing_value
+        <a id="change">return values, presence</a>
+</code></pre>

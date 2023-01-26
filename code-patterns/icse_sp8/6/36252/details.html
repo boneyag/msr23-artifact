@@ -1,0 +1,35 @@
+<html><h3>303217b34070dc47a86622b62764098999b0d7f5,gpytorch/lazy/lazy_tensor.py,LazyTensor,_quad_form_derivative,#LazyTensor#Any#Any#,378
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        toggled = [False] * len(args)
+
+        <a id="change">for i, arg in enumerate(args):
+            if not arg.requires_grad:
+                arg.requires_grad = True
+                toggled[i] = True
+
+       </a> loss = (left_vecs * self._matmul(right_vecs)).sum()
+        loss.requires_grad_(True)
+        grads = torch.autograd.grad(loss, args, allow_unused=True)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        with torch.autograd.enable_grad():
+            loss = (left_vecs * self._matmul(right_vecs)).sum()
+            loss.requires_grad_(True)
+            <a id="change">actual_grads = deque(torch.autograd.grad(loss, args_with_grads, allow_unused=True))</a>
+
+        &#47&#47 Now make sure that the object we return has one entry for every item in args
+        grads = []
+        for arg in args:
+            if arg.requires_grad:
+                grads.append(actual_grads.popleft())
+            else:
+                grads.append(None)
+
+        <a id="change">args_with_grads = tuple(arg for arg in args if arg.requires_grad)</a>
+        return grads
+
+    def _preconditioner(self):
+        </code></pre><img src="175560278.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/303217b34070dc47a86622b62764098999b0d7f5#diff-0a5f1b492443f1d45fea644563c842fd31a4a480824e8ed0c9f9ce825fe7f039L392' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 303217b34070dc47a86622b62764098999b0d7f5</div><div id='time'> Time: 2018-12-12</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/lazy_tensor.py</div><div id='class'> Class Name: LazyTensor</div><div id='method'> Method Name: _quad_form_derivative</div><BR><BR><div id='link'><a href='https://github.com/deepgram/kur/commit/b2d8ee42f12c7d033bdeb929c9f38b3c90e48582#diff-90bb9bc6f7311c43291bb9c8a1062e81fe7a59cc806d38a573bb96fcfa5f0d99L650' target='_blank'>Link</a></div><div id='project'> Project Name: deepgram/kur</div><div id='commit'> Commit Name: b2d8ee42f12c7d033bdeb929c9f38b3c90e48582</div><div id='time'> Time: 2017-03-23</div><div id='author'> Author: ajsyp@syptech.net</div><div id='file'> File Name: kur/kurfile.py</div><div id='class'> Class Name: Kurfile</div><div id='method'> Method Name: _parse_model</div><BR><BR><div id='link'><a href='https://github.com/GoogleCloudPlatform/PerfKitBenchmarker/commit/c4289c6035f95f6e3964273ebf43dd1788a25a9a#diff-5c9535924fee2cf1987c2efd1dac2424b0adeb64e87641d759d2d21e1cf8e723L34' target='_blank'>Link</a></div><div id='project'> Project Name: GoogleCloudPlatform/PerfKitBenchmarker</div><div id='commit'> Commit Name: c4289c6035f95f6e3964273ebf43dd1788a25a9a</div><div id='time'> Time: 2016-04-20</div><div id='author'> Author: skschneider@users.noreply.github.com</div><div id='file'> File Name: perfkitbenchmarker/requirements.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _CheckRequirements</div><BR>

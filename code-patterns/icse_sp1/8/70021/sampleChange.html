@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if len(data_) &lt; 2:
+            return __QA_fetch_get_index_transaction(code, day, 0, api)
+        else:
+            <a id="change">return data_.assign(date=day).assign(
+                datetime=pd.to_datetime(
+                    data_[&quottime&quot].apply(lambda x: str(day) + &quot &quot + x))) \
+                .assign(code=str(code)).assign(
+                order=range(len(data_.index))).set_index(&quotdatetime&quot,
+                                                         drop=False,
+                                                         inplace=False)</a>
+
+
+@retry(stop_max_attempt_number=3, wait_random_min=50, wait_random_max=100)
+def QA_fetch_get_stock_transaction(code, start, end, retry=2, ip=None,</code></pre><h3>After Change</h3><pre><code class='java'>
+    data_arr = []
+    max_offset = 21
+    cur_offset = 0
+    <a id="change">type_ = &quottick&quot</a>
+    while cur_offset &lt;= max_offset:
+        one_chunk = api.get_history_transaction_data(
+            _select_index_code(str(code)), str(code), cur_offset * batch_size,
+            batch_size, QA_util_date_str2int(day))
+        if one_chunk is None or one_chunk == []:
+            break
+        data_arr = one_chunk + data_arr
+        cur_offset += 1
+    data_ = api.to_df(data_arr)
+
+    for _ in range(retry):
+        if len(data_) &lt; 2:
+            return __QA_fetch_get_index_transaction(code, day, 0, api)
+        else:
+            data_ = data_.assign(
+                date=day,
+                datetime=pd.to_datetime(data_[&quottime&quot].apply(
+                    lambda x: str(day) + &quot &quot + x)),
+                code=str(code))
+            <a id="change">data_ = data_.assign(date_stamp=data_[&quotdatetime&quot].apply(lambda x: QA_util_date_stamp(x)),
+                                 time_stamp=data_[&quotdatetime&quot].apply(
+                                     lambda x: QA_util_time_stamp(x)),
+                                 type=type_,
+                                 order=range(len(data_.index))).set_index(&quotdatetime&quot, drop=False)</a>
+            <a id="change">data_[&quotdatetime&quot] = data_[&quotdatetime&quot].apply(lambda x: str(x)[0:19])</a>
+            <a id="change">return data_</a>
+
+
+@retry(stop_max_attempt_number=3, wait_random_min=50, wait_random_max=100)
+def QA_fetch_get_stock_transaction(code, start, end, retry=2, ip=None,</code></pre>

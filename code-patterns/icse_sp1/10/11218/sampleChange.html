@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.classes_ = self._predict(X)
+            
+            &#47&#47 arange class labels as [n_class_labels, n_classifier_predictions]
+            self.classes_ = np.asarray([self.classes_[:,c] <a id="change">for</a> c in range(self.classes_.shape[1])])
+            
+            &#47&#47 duplicate class labels if weights are provided for argmax majority rule
+            if self.weights:
+                <a id="change">self.classes_ = np.concatenate([np.tile(self.classes_[:,c,None], w)
+                                        for w,c in zip(self.weights, range(self.classes_.shape[1]))], axis=1)</a>
+
+            maj = np.apply_along_axis(lambda x: np.argmax(np.bincount(x)), axis=1, arr=self.classes_)
+        
+        return maj</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        if self.voting == &quotsoft&quot:
+
+            maj = <a id="change">np.argmax(self.predict_proba(X), axis=1)</a>
+
+        else:  &#47&#47 &quothard&quot voting
+            predictions = self._predict(X)
+
+            maj = np.apply_along_axis(lambda x:
+                                      np.argmax(np.bincount(x, weights=self.weights)),
+                                      axis=1,
+                                      arr=predictions)
+
+        <a id="change">maj = self.le_.inverse_transform(maj)</a>
+
+        return maj
+
+    def predict_proba(self, X):</code></pre>

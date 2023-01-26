@@ -1,0 +1,44 @@
+<html><h3>eab3c82cabf192154e6f4e9d16615885c7eefc14,art/metrics/privacy/membership_leakage.py,,PDTP,#Any#Any#Any#Any#Any#Any#,36
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    "PDTP metric only supports classifiers that output logits or probabilities."
+                )
+        &#47&#47 divide into 100 bins and return center of bin
+        <a id="change">pred_bin = (np.floor(pred * 100) / 100).round(decimals=2) + 0.005</a>
+        pred_bin[pred_bin &gt; 1] = 0.995
+
+        if not indexes:
+            indexes = range(x.shape[0])</code></pre><h3>After Change</h3><pre><code class='java'>
+                    "PDTP metric only supports classifiers that output logits or probabilities."
+                )
+        &#47&#47 divide into 100 bins and return center of bin
+        bins = <a id="change">np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))</a>
+        pred_bin_indexes = np.digitize(pred, bins)
+        pred_bin = bins[pred_bin_indexes] - 0.005
+
+        if not indexes:
+            indexes = range(x.shape[0])
+        for row in indexes:
+            &#47&#47 create new model without sample in training data
+            alt_x = np.delete(x, row, 0)
+            alt_y = np.delete(y, row, 0)
+            try:
+                extra_estimator.reset()
+            except NotImplementedError:
+                raise ValueError(
+                    "PDTP metric can only be applied to classifiers that implement the reset method."
+                )
+            extra_estimator.fit(alt_x, alt_y)
+            &#47&#47 get probabilities from new model
+            alt_pred = extra_estimator.predict(x)
+            if not is_probability(alt_pred):
+                alt_pred = scipy.special.softmax(alt_pred, axis=1)
+            &#47&#47 divide into 100 bins and return center of bin
+            alt_pred_bin_indexes = np.digitize(alt_pred, bins)
+            <a id="change">alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005</a>
+            ratio_1 = pred_bin / alt_pred_bin
+            ratio_2 = alt_pred_bin / pred_bin
+            &#47&#47 get max value
+            max_value = max(ratio_1.max(), ratio_2.max())</code></pre><img src="140018696.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/eab3c82cabf192154e6f4e9d16615885c7eefc14#diff-be4d2cf6e46e98eedec81bd4cbc8cc63be0c7e20626f673f1d05a5ab9dc06bf0L67' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: eab3c82cabf192154e6f4e9d16615885c7eefc14</div><div id='time'> Time: 2021-01-28</div><div id='author'> Author: abigailt@il.ibm.com</div><div id='file'> File Name: art/metrics/privacy/membership_leakage.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: PDTP</div><BR><BR><div id='link'><a href='https://github.com/SheffieldML/GPy/commit/336f8e11c48bb4e749b9f389907c450e44f02786#diff-1344cd687902c9cb991ee8fb09fa2f23037f8ea7a7e36ffbe7020fac73a5e2b0L275' target='_blank'>Link</a></div><div id='project'> Project Name: SheffieldML/GPy</div><div id='commit'> Commit Name: 336f8e11c48bb4e749b9f389907c450e44f02786</div><div id='time'> Time: 2013-10-28</div><div id='author'> Author: alan.daniel.saul@gmail.com</div><div id='file'> File Name: GPy/examples/regression.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: toy_poisson_rbf_1d</div><BR><BR><div id='link'><a href='https://github.com/SheffieldML/GPy/commit/336f8e11c48bb4e749b9f389907c450e44f02786#diff-1344cd687902c9cb991ee8fb09fa2f23037f8ea7a7e36ffbe7020fac73a5e2b0L295' target='_blank'>Link</a></div><div id='project'> Project Name: SheffieldML/GPy</div><div id='commit'> Commit Name: 336f8e11c48bb4e749b9f389907c450e44f02786</div><div id='time'> Time: 2013-10-28</div><div id='author'> Author: alan.daniel.saul@gmail.com</div><div id='file'> File Name: GPy/examples/regression.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: toy_poisson_rbf_1d_laplace</div><BR>

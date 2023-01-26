@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                   .values_list(&quotorganism_index__salmon_version&quot, flat=True)\
+                                   .distinct())
+
+    <a id="change">if len(salmon_versions) &lt;= 1:
+        &#47&#47 only apply this command on experiments that have more than one salmon version applied on their samples
+        return
+
+   </a> latest_salmon_version = salmon_versions[0]
+
+    &#47&#47 find the samples that were not processed with `latest_salmon_version` and trigger new processor jobs for them
+    <a id="change">newest_computational_results = ComputationalResult.objects.all()\
+        .filter(
+            samples=OuterRef(&quotid&quot),
+            processor__name=ProcessorEnum.SALMON_QUANT.value[&quotname&quot]
+        )\
+        .order_by(&quot-created_at&quot)</a>
+    
+    samples = experiment.samples.all().annotate(
+            salmon_version=Subquery(newest_computational_results.values(&quotorganism_index__salmon_version&quot)[:1])
+        )\</code></pre><h3>After Change</h3><pre><code class='java'>
+logger = get_and_configure_logger(__name__)
+
+def update_salmon_versions(experiment: Experiment):
+    quant_results = <a id="change">get_quant_results_for_experiment</a>(experiment)\
+                        .order_by(&quot-organism_index__created_at&quot)\
+                        .prefetch_related(&quotorganism_index&quot)\
+                        .prefetch_related(&quotsamples__original_files&quot)</code></pre>

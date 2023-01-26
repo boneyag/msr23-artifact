@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    record = tf_utils.get_one_example_from_examples_path(
+        &quot,&quot.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
+    if record is None:
+      <a id="change">raise ValueError(&quotCannot find any records in {}&quot.format(&quot,&quot.join(paths)))</a>
+
+    sample_name = _extract_single_sample_name(record)
+    header = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=[sample_name])
+    use_csi = _decide_to_use_csi(contigs)
+    with tempfile.NamedTemporaryFile() as temp:
+      start_time = time.time()
+      postprocess_variants_lib.process_single_sites_tfrecords(
+          contigs, paths, temp.name)
+      logging.info(&quotCVO sorting took %s minutes&quot,
+                   (time.time() - start_time) / 60)
+
+      logging.info(&quotTransforming call_variants_output to variants.&quot)
+      <a id="change">start_time = time.time()</a>
+      independent_variants = _transform_call_variants_output_to_variants(
+          input_sorted_tfrecord_path=temp.name,
+          qual_filter=FLAGS.qual_filter,
+          multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,</code></pre><h3>After Change</h3><pre><code class='java'>
+    record = tf_utils.get_one_example_from_examples_path(
+        &quot,&quot.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
+    if record is None:
+      <a id="change">logging.info(&quotcall_variants_output is empty. Writing out empty VCF.&quot)</a>
+      <a id="change">sample_name = dv_constants.DEFAULT_SAMPLE_NAME</a>
+      variant_generator = iter([])
+    else:
+      sample_name = _extract_single_sample_name(record)
+      temp = tempfile.NamedTemporaryFile()</code></pre>

@@ -1,0 +1,98 @@
+<html><h3>5c66e3d20241bdcb2d885c683dc721ca884eaf37,src/syft/core/node/common/action/run_class_method_action.py,RunClassMethodAction,execute_action,#RunClassMethodAction#Any#Any#,78
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -&gt; None:
+        method = node.lib_ast(self.path)
+
+        resolved_self = <a id="change">node.store[self._self.id_at_location]</a>
+
+        result_read_permissions = resolved_self.read_permissions
+
+        resolved_args = list()</code></pre><h3>After Change</h3><pre><code class='java'>
+            mutating_internal = True
+
+        resolved_self = node.store.get_object(key=self._self.id_at_location)
+        <a id="change">if resolved_self is None:
+            logger.critical(
+                f"execute_action on {self.path} failed due to missing object"
+                + f" at: {self._self.id_at_location}"
+            )
+            return
+
+       </a> result_read_permissions = resolved_self.read_permissions
+
+        resolved_args = list()
+        for arg in self.args:
+            r_arg = node.store[arg.id_at_location]
+            result_read_permissions = self.intersect_keys(
+                result_read_permissions, r_arg.read_permissions
+            )
+            resolved_args.append(r_arg.data)
+
+        resolved_kwargs = {}
+        for arg_name, arg in self.kwargs.items():
+            r_arg = node.store[arg.id_at_location]
+            result_read_permissions = self.intersect_keys(
+                result_read_permissions, r_arg.read_permissions
+            )
+            resolved_kwargs[arg_name] = r_arg.data
+
+        if type(method).__name__ == "getset_descriptor":
+            &#47&#47 we have a detached class property so we need the __get__ descriptor
+            upcast_attr = getattr(resolved_self.data, "upcast", None)
+            data = resolved_self.data
+            if upcast_attr is not None:
+                data = upcast_attr()
+
+            result = method.__get__(data)
+        else:
+            &#47&#47 we have a callable
+            &#47&#47 upcast our args in case the method only accepts the original types
+            (
+                upcasted_args,
+                upcasted_kwargs,
+            ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+
+        &#47&#47 TODO: replace with proper tuple support
+        if type(result) is tuple:
+            &#47&#47 convert to list until we support tuples
+            result = list(result)
+
+        &#47&#47 to avoid circular imports
+
+        if lib.python.primitive_factory.isprimitive(value=result):
+            &#47&#47 Wrap in a SyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=self.id_at_location
+            )
+        else:
+            &#47&#47 TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                try:
+                    if hasattr(result, "_id"):
+                        &#47&#47 set the underlying id
+                        result._id = self.id_at_location
+                    else:
+                        result.id = self.id_at_location
+
+                    assert result.id == self.id_at_location
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    raise Exception(err)
+
+        &#47&#47 QUESTION: There seems to be return value tensors that have no id
+        &#47&#47 and get auto wrapped? So is this code not correct?
+        &#47&#47 else:
+        &#47&#47     &#47&#47 TODO: Add tests, this could happen if the isprimitive fails due to an
+        &#47&#47     &#47&#47 unsupported type
+        &#47&#47     raise Exception(f"Result has no ID. {result}")
+
+        if mutating_internal:
+            <a id="change">resolved_self.read_permissions = result_read_permissions</a>
+        if not isinstance(result, StorableObject):
+            result = StorableObject(
+                id=self.id_at_location,
+                data=result,</code></pre><img src="97237603.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/OpenMined/PySyft/commit/5c66e3d20241bdcb2d885c683dc721ca884eaf37#diff-9b6784e2976f48d1e098c4909235f3f345b0e2c12afe7176c1b8fe9c97261eabL79' target='_blank'>Link</a></div><div id='project'> Project Name: OpenMined/PySyft</div><div id='commit'> Commit Name: 5c66e3d20241bdcb2d885c683dc721ca884eaf37</div><div id='time'> Time: 2020-11-10</div><div id='author'> Author: me@madhavajay.com</div><div id='file'> File Name: src/syft/core/node/common/action/run_class_method_action.py</div><div id='class'> Class Name: RunClassMethodAction</div><div id='method'> Method Name: execute_action</div><BR><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/6fe60e43efbac200052a76b0a849c4c7cd4654a5#diff-40253fa9934a7027a3f58a2f34132daba473bdf8451465778fb7bcc4904c9b11L158' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: 6fe60e43efbac200052a76b0a849c4c7cd4654a5</div><div id='time'> Time: 2018-04-25</div><div id='author'> Author: jonas.massa@iwr.uni-heidelberg.de</div><div id='file'> File Name: ilastik/applets/networkClassification/nnClassGui.py</div><div id='class'> Class Name: NNClassGui</div><div id='method'> Method Name: pred_nn</div><BR><BR><div id='link'><a href='https://github.com/DT42/BerryNet/commit/23d15da98ec99cf2b848f192c0763b55e1dbfc04#diff-08c0796f381ca3914e87b374db459845d8c122f33bd85ae4e4be2e7352c9d0a2L83' target='_blank'>Link</a></div><div id='project'> Project Name: DT42/BerryNet</div><div id='commit'> Commit Name: 23d15da98ec99cf2b848f192c0763b55e1dbfc04</div><div id='time'> Time: 2020-02-15</div><div id='author'> Author: bofu@dt42.io</div><div id='file'> File Name: berrynet/client/camera.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR>

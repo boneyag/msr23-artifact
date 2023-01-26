@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &quot&quot&quotGet embeddings for the words in vocab&quot&quot&quot
+    word_v_size = vocab.get_vocab_size(&quottokens&quot)
+    embeddings = np.zeros((word_v_size, d_word))
+    <a id="change">for idx in range(word_v_size): &#47&#47 kind of hacky
+        word = vocab.get_token_from_index(idx)
+        if word == &quot@@PADDING@@&quot or word == &quot@@UNKNOWN@@&quot:
+            continue
+        try:
+            assert word in word2vec
+        except AssertionError as error:
+            log.debug(error)
+            pdb.set_trace()
+        embeddings[idx] = word2vec[word]
+   </a> embeddings[vocab.get_token_index(&quot@@PADDING@@&quot)] = 0.
+    embeddings = torch.FloatTensor(embeddings)
+    log.info("\tFinished loading embeddings")
+    return embeddings</code></pre><h3>After Change</h3><pre><code class='java'>
+    &quot&quot&quotGet embeddings for the words in vocab&quot&quot&quot
+    word_v_size, unk_idx = vocab.get_vocab_size(&quottokens&quot), vocab.get_token_index(vocab._oov_token)
+    embeddings = np.random.randn(word_v_size, d_word) &#47&#47np.zeros((word_v_size, d_word))
+    <a id="change">with open(vec_file) as vec_fh:
+        for line in vec_fh:
+            word, vec = line.split(&quot &quot, 1)
+            idx = vocab.get_token_index(word)
+            if idx != unk_idx:
+                idx = vocab.get_token_index(word)
+                embeddings[idx] = np.array(list(map(float, vec.split())))
+   </a> embeddings[vocab.get_token_index(&quot@@PADDING@@&quot)] = 0.
+    embeddings = torch.FloatTensor(embeddings)
+    log.info("\tFinished loading embeddings")
+    return embeddings</code></pre>

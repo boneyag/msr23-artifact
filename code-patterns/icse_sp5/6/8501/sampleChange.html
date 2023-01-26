@@ -1,0 +1,90 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            gold_score_total += sum(gold_score)
+            gold_words_total += sum(len(x) for x in batch.tgt[1:])
+
+        <a id="change">for b in range(len(pred_batch)):
+            count += 1
+            for n in range(opt.n_best):
+                out_file.write(" ".join(pred_batch[b][n]) + &quot\n&quot)
+            out_file.flush()
+
+            if opt.verbose:
+                words = []
+                for f in src[:, b]:
+                    word = translator.fields["src"].vocab.itos[f]
+                    if word == onmt.IO.PAD_WORD:
+                        break
+                    words.append(word)
+
+                os.write(1, bytes(&quot\nSENT %d: %s\n&quot %
+                                  (count, " ".join(words)), &quotUTF-8&quot))
+
+                index += 1
+                os.write(1, bytes(&quotPRED %d: %s\n&quot %
+                                  (count, " ".join(pred_batch[b][0])), &quotUTF-8&quot))
+                print("PRED SCORE: %.4f" % pred_score[b][0])
+
+                if opt.tgt:
+                    tgtSent = &quot &quot.join(gold_batch[b])
+                    os.write(1, bytes(&quotGOLD %d: %s\n&quot %
+                             (count, tgtSent), &quotUTF-8&quot))
+                    print("GOLD SCORE: %.4f" % gold_score[b])
+
+                if opt.n_best &gt; 1:
+                    print(&quot\nBEST HYP:&quot)
+                    for n in range(opt.n_best):
+                        os.write(1, bytes("[%.4f] %s\n" % (pred_score[b][n],
+                                 " ".join(pred_batch[b][n])),
+                            &quotUTF-8&quot))
+
+   </a> report_score(&quotPRED&quot, pred_score_total, pred_words_total)
+    if opt.tgt:
+        report_score(&quotGOLD&quot, gold_score_total, gold_words_total)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        z_batch = zip_longest(
+                pred_batch, gold_batch,
+                pred_scores, gold_scores,
+                (<a id="change">sent.squeeze(1)</a> for sent in src.split(1, dim=1)))
+
+        <a id="change">for pred_sents, gold_sent, pred_score, gold_score, src_sent in z_batch:
+            count += 1
+            for n in range(opt.n_best):
+                out_file.write(" ".join(pred_sents[n]) + &quot\n&quot)
+            out_file.flush()
+
+            if opt.verbose:
+                words = []
+                for f in src_sent:
+                    word = translator.fields["src"].vocab.itos[f]
+                    if word == onmt.IO.PAD_WORD:
+                        break
+                    words.append(word)
+
+                os.write(1, bytes(&quot\nSENT %d: %s\n&quot %
+                                  (count, " ".join(words)), &quotUTF-8&quot))
+
+                index += 1
+                os.write(1, bytes(&quotPRED %d: %s\n&quot %
+                                  (count, " ".join(pred_sents[0])), &quotUTF-8&quot))
+                print("PRED SCORE: %.4f" % pred_score[0])
+
+                if opt.tgt:
+                    tgtSent = &quot &quot.join(gold_sent)
+                    os.write(1, bytes(&quotGOLD %d: %s\n&quot %
+                             (count, tgtSent), &quotUTF-8&quot))
+                    print("GOLD SCORE: %.4f" % gold_score)
+
+                if opt.n_best &gt; 1:
+                    print(&quot\nBEST HYP:&quot)
+                    for n in range(opt.n_best):
+                        os.write(1, bytes("[%.4f] %s\n" % (pred_score[n],
+                                 " ".join(pred_sents[n])),
+                            &quotUTF-8&quot))
+
+   </a> report_score(&quotPRED&quot, pred_score_total, pred_words_total)
+    if opt.tgt:
+        report_score(&quotGOLD&quot, gold_score_total, gold_words_total)
+</code></pre>

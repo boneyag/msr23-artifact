@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _update_sampler_weights(self):
+        if self.epoch % self.weights_sync_period == 0:
+            <a id="change">state_dict = self.algorithm.__dict__[
+                self._weights_sync_mode].state_dict()</a>
+            state_dict = {
+                k: v.detach().cpu().numpy()
+                for k, v in state_dict.items()
+            }</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def _update_sampler_weights(self):
+        if self.epoch % self.weights_sync_period == 0:
+            <a id="change">checkpoint = self.algorithm.pack_checkpoint(with_optimizer=False)</a>
+            <a id="change">for key in checkpoint:
+                checkpoint[key] = {
+                    k: v.detach().cpu().numpy()
+                    for k, v in checkpoint[key].items()
+                }
+
+           </a> self.db_server.save_checkpoint(
+                checkpoint=checkpoint,
+                epoch=self.epoch
+            )</code></pre>

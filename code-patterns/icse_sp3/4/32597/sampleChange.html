@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        continue
+      class_id = kp_params.class_id
+      keypoint_indices = kp_params.keypoint_indices
+      num_keypoints = <a id="change">len(keypoint_indices)</a>
+      kpt_mask = tf.reduce_sum(
+          tf.one_hot(keypoint_indices, depth=total_num_keypoints), axis=0)
+      kpt_mask_tiled = tf.tile(kpt_mask[tf.newaxis, tf.newaxis, :],
+                               multiples=[batch, max_detections, 1])</code></pre><h3>After Change</h3><pre><code class='java'>
+      visible_keypoints = tf.math.greater(keypoint_scores, 0.0)
+      num_visible_keypoints = tf.reduce_sum(
+          class_and_keypoint_mask_float *
+          <a id="change">tf.cast(visible_keypoints, tf.float32)</a>, axis=-1)
+      <a id="change">num_visible_keypoints = tf.math.maximum(num_visible_keypoints, 1.0)</a>
+      scores_for_class = (1./num_visible_keypoints) * (
+          tf.reduce_sum(class_and_keypoint_mask_float *
+                        scores[:, :, tf.newaxis] *
+                        keypoint_scores, axis=-1))</code></pre>

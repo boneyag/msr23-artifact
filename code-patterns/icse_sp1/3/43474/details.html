@@ -1,0 +1,35 @@
+<html><h3>0c60922fb0614132433779ad45ab8f30783db2ae,test/quantization/test_workflow_module.py,,_fake_quantize_learnable_per_channel_affine_grad_reference,#Any#Any#Any#Any#Any#Any#Any#Any#,146
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        X_i = X_flattened[i]
+        dY_i = dY_flattened[i]
+
+        Xq_i = <a id="change">_quantize_per_tensor(
+            X_i, scale_i, zero_point_i, quant_min, quant_max).to(device)</a>
+        Xfq_i = (Xq_i - zero_point_i) * scale_i
+
+        indicate_small_scale_i = (Xq_i == quant_min).float().to(device)
+        indicate_big_scale_i = (Xq_i == quant_max).float().to(device)</code></pre><h3>After Change</h3><pre><code class='java'>
+        X_i = X_flattened[i]
+        dY_i = dY_flattened[i]
+
+        Xq_i = <a id="change">((X_i / scale_i) + zero_point_i).round()</a>
+        Xfq_i = (Xq_i - zero_point_i) * scale_i
+
+        indicate_small_scale_i = (Xq_i &lt; quant_min).float().to(device)
+        indicate_big_scale_i = (Xq_i &gt; quant_max).float().to(device)
+        indicate_middle_scale_i = torch.ones(indicate_small_scale_i.shape).to(device) - \
+            indicate_small_scale_i - indicate_big_scale_i
+
+        indicate_saturate_zp_i = ((Xq_i &lt; quant_min).float() +
+                                  (Xq_i &gt; quant_max).float()).to(device)
+        indicate_unsaturate_zp_i = torch.ones(indicate_saturate_zp_i.shape).to(device) - \
+            indicate_saturate_zp_i
+
+        Xq_i = Xq_i.clamp(quant_min, quant_max)
+        Xfq_i = <a id="change">(Xq_i - zero_point_i)</a> * scale_i
+
+        grad_small_scale_i = quant_min - zero_point_i
+        grad_big_scale_i = quant_max - zero_point_i</code></pre><img src="204191595.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/0c60922fb0614132433779ad45ab8f30783db2ae#diff-a1ad3ccb2c291d8bbc6e0a986f133b7da6bb380e3dd5d2ae6e428c4efd780738L163' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: 0c60922fb0614132433779ad45ab8f30783db2ae</div><div id='time'> Time: 2021-02-03</div><div id='author'> Author: haichuan@fb.com</div><div id='file'> File Name: test/quantization/test_workflow_module.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _fake_quantize_learnable_per_channel_affine_grad_reference</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/705d7ff759a0b76ddf1b30ab8ef135c0b67efa8b#diff-11510d44e096509a03a0ffc572136a5c77b7e469fd057a38b2b63df51fae83ecL123' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: 705d7ff759a0b76ddf1b30ab8ef135c0b67efa8b</div><div id='time'> Time: 2020-04-23</div><div id='author'> Author: M.N.Tran@ibm.com</div><div id='file'> File Name: art/attacks/evasion/projected_gradient_descent/projected_gradient_descent_pytorch.py</div><div id='class'> Class Name: ProjectedGradientDescentPytorch</div><div id='method'> Method Name: generate</div><BR><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/260fe0d000a12e869206d8e36300a446a9891b35#diff-9da92617f2f8b7eadde6bd329adb9023fde7f3ab18fd22e8956861d390936dddL140' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: 260fe0d000a12e869206d8e36300a446a9891b35</div><div id='time'> Time: 2019-11-17</div><div id='author'> Author: nikita_007_94@mail.ru</div><div id='file'> File Name: batchflow/models/eager_torch/layers/core.py</div><div id='class'> Class Name: Dropout</div><div id='method'> Method Name: forward</div><BR>

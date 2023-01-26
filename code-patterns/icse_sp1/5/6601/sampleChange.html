@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.train()
+            self.gan.save(self.save_file)
+            tf.reset_default_graph()
+            <a id="change">self.gan.session.close()</a>
+        elif self.method == &quotbuild&quot:
+            if not self.gan.load(self.save_file):
+                raise ValidationException("Could not load model: "+ self.save_file)
+            else:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                return tf.contrib.tpu.TPUEstimatorSpec(tf.estimator.ModeKeys.TRAIN, loss=(self.gan.loss.sample[0] + self.gan.loss.sample[1]), train_op=self.gan.trainer.optimize_t)
+            
+            tpu_name = <a id="change">self</a>.args.device.split(<a id="change">":"</a>)[1]
+            <a id="change">tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(tpu=tpu_name)</a>
+
+            run_config = tf.contrib.tpu.RunConfig(model_dir="modeldir", 
+                    cluster=tpu_cluster_resolver,
+                    session_config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=True), 
+                    tpu_config=tf.contrib.tpu.TPUConfig(1, 8)) &#47&#47 TODO arguments
+            self.tpu_run_config = run_config
+            self.cluster_resolver = tpu_cluster_resolver
+
+            <a id="change">self.estimator = tf.contrib.tpu.TPUEstimator(
+                model_fn=model_fn,
+                use_tpu=True,
+                train_batch_size=self.args.batch_size,
+                eval_batch_size=self.args.batch_size,
+                predict_batch_size=self.args.batch_size,
+                params={"data_dir": "datadir"},
+                config=self.tpu_run_config
+            )</a>
+
+            self.train()
+        elif self.method == &quotbuild&quot:
+            if not self.gan.load(self.save_file):</code></pre>

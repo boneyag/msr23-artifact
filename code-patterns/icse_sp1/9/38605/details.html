@@ -1,0 +1,45 @@
+<html><h3>7ed8c6bbcfb2dc0da9b1011ba21d12791239de79,deepvariant/postprocess_variants.py,,main,#Any#,932
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 that the call_set_name is identical in each of the records.
+    record = tf_utils.get_one_example_from_examples_path(
+        &quot,&quot.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
+    <a id="change">if record is None:
+      raise ValueError(&quotCannot find any records in {}&quot.format(&quot,&quot.join(paths)))
+
+   </a> sample_name = _extract_single_sample_name(record)
+    header = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=[sample_name])
+    use_csi = _decide_to_use_csi(contigs)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 that the call_set_name is identical in each of the records.
+    record = tf_utils.get_one_example_from_examples_path(
+        &quot,&quot.join(paths), proto=deepvariant_pb2.CallVariantsOutput)
+    <a id="change">if record is None:
+      logging.info(&quotcall_variants_output is empty. Writing out empty VCF.&quot)
+      sample_name = dv_constants.DEFAULT_SAMPLE_NAME
+      variant_generator = iter([])
+    else:
+      sample_name = _extract_single_sample_name(record)
+      temp = tempfile.NamedTemporaryFile()
+      start_time = time.time()
+      postprocess_variants_lib.process_single_sites_tfrecords(
+          contigs, paths, temp.name)
+      logging.info(&quotCVO sorting took %s minutes&quot,
+                   (time.time() - start_time) / 60)
+
+      logging.info(&quotTransforming call_variants_output to variants.&quot)
+      independent_variants = _transform_call_variants_output_to_variants(
+          input_sorted_tfrecord_path=temp.name,
+          qual_filter=FLAGS.qual_filter,
+          multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
+          sample_name=sample_name,
+          group_variants=FLAGS.group_variants)
+      variant_generator = haplotypes.maybe_resolve_conflicting_variants(
+          independent_variants)
+
+   </a> header = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=[sample_name])
+    use_csi = _decide_to_use_csi(contigs)
+</code></pre><img src="186827186.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/google/deepvariant/commit/7ed8c6bbcfb2dc0da9b1011ba21d12791239de79#diff-83516db48608c72884f492e81e70763b4fe1d07753bedef491563cdbef078be7L953' target='_blank'>Link</a></div><div id='project'> Project Name: google/deepvariant</div><div id='commit'> Commit Name: 7ed8c6bbcfb2dc0da9b1011ba21d12791239de79</div><div id='time'> Time: 2019-10-21</div><div id='author'> Author: gunjanbaid@google.com</div><div id='file'> File Name: deepvariant/postprocess_variants.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/neurosynth/neurosynth/commit/edb300280cd7854bb58e023d01ac24160bf6d98d#diff-6412c2f1b7e394a70384cc7119ba57a57c9dcc8385b18c3bd532757c251fdf0dL22' target='_blank'>Link</a></div><div id='project'> Project Name: neurosynth/neurosynth</div><div id='commit'> Commit Name: edb300280cd7854bb58e023d01ac24160bf6d98d</div><div id='time'> Time: 2014-11-07</div><div id='author'> Author: tyarkoni@gmail.com</div><div id='file'> File Name: neurosynth/analysis/cluster.py</div><div id='class'> Class Name: Clusterer</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/biolab/orange3/commit/976f9ea013348f6885114f0dae092e03dd0d1022#diff-cfe228ce938ea8cfbaba84bca5acaea1ef9f171d4a543f4187d9f222ef8f0a11L1644' target='_blank'>Link</a></div><div id='project'> Project Name: biolab/orange3</div><div id='commit'> Commit Name: 976f9ea013348f6885114f0dae092e03dd0d1022</div><div id='time'> Time: 2018-08-02</div><div id='author'> Author: rafael@irgolic.com</div><div id='file'> File Name: Orange/canvas/document/schemeedit.py</div><div id='class'> Class Name: SchemeEditWidget</div><div id='method'> Method Name: __nodeInsert</div><BR>

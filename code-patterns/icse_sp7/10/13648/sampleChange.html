@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    @property
+    def _total_vram_required(self):
+         Return vram required for all phases plus the buffer 
+        <a id="change">vrams = [getattr(self, "_{}".format(p)).vram for p in self._flow]</a>
+        vram_required_count = sum(1 for p in vrams if p &gt; 0)
+        retval = (sum(vrams) * self._parallel_scaling[vram_required_count]) + self._vram_buffer
+        logger.trace(retval)
+        return retval</code></pre><h3>After Change</h3><pre><code class='java'>
+    @property
+    def _total_vram_required(self):
+         Return vram required for all phases plus the buffer 
+        <a id="change">vrams = dict()</a>
+        <a id="change">for phase in self._flow:
+            plugin_type, idx = self._get_plugin_type_and_index(phase)
+            attr = getattr(self, "_{}".format(plugin_type))
+            attr = attr[idx] if idx is not None else attr
+            vrams[phase] = attr.vram
+       </a> vram_required_count = sum(1 for p in vrams.values() if p &gt; 0)
+        logger.debug("VRAM requirements: %s. Plugins requiring VRAM: %s",
+                     vrams, vram_required_count)
+        retval = (sum(vrams.values()) *</code></pre>

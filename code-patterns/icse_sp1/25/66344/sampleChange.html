@@ -1,0 +1,88 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    python_setup: PythonSetup,
+    subprocess_encoding_environment: SubprocessEncodingEnvironment,
+) -&gt; Setup:
+    <a id="change">adaptors_with_origins = request.formatter.adaptors_with_origins</a>
+
+    requirements_pex = await Get[Pex](
+        PexRequest(
+            output_filename="black.pex",
+            requirements=PexRequirements(black.get_requirement_specs()),
+            interpreter_constraints=PexInterpreterConstraints(
+                black.default_interpreter_constraints
+            ),
+            entry_point=black.get_entry_point(),
+        )
+    )
+
+    config_path: Optional[str] = black.options.config
+    config_snapshot = await Get[Snapshot](
+        PathGlobs(
+            globs=tuple([config_path] if config_path else []),
+            glob_match_error_behavior=GlobMatchErrorBehavior.error,
+            description_of_origin="the option `--black-config`",
+        )
+    )
+
+    if request.formatter.prior_formatter_result is None:
+        all_source_files = await Get[SourceFiles](
+            LegacyAllSourceFilesRequest(
+                <a id="change">adaptor_with_origin.adaptor</a> for adaptor_with_origin in adaptors_with_origins
+            )
+        )
+        all_source_files_snapshot = all_source_files.snapshot
+    else:
+        all_source_files_snapshot = request.formatter.prior_formatter_result
+
+    <a id="change">specified_source_files = await Get[SourceFiles](
+        LegacySpecifiedSourceFilesRequest(adaptors_with_origins)
+    )</a>
+
+    merged_input_files = await Get[Digest](
+        DirectoriesToMerge(
+            directories=(
+                all_source_files_snapshot.directory_digest,
+                requirements_pex.directory_digest,
+                config_snapshot.directory_digest,
+            )
+        ),
+    )
+
+    address_references = ", ".join(
+        sorted(
+            <a id="change">adaptor_with_origin</a>.adaptor.address.reference()
+            <a id="change">for</a> adaptor_with_origin in <a id="change">adaptors_with_origins</a>
+        )
+    )
+
+    process = requirements_pex.create_execute_request(</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    if request.configs.prior_formatter_result is None:
+        all_source_files = await Get[SourceFiles](
+            AllSourceFilesRequest(config.sources for config in <a id="change">request.configs</a>)
+        )
+        all_source_files_snapshot = all_source_files.snapshot
+    else:
+        all_source_files_snapshot = request.configs.prior_formatter_result
+
+    <a id="change">specified_source_files = await Get[SourceFiles](
+        SpecifiedSourceFilesRequest((config.sources, config.origin) for config in request.configs)
+    )</a>
+
+    merged_input_files = await Get[Digest](
+        DirectoriesToMerge(
+            directories=(
+                all_source_files_snapshot.directory_digest,
+                requirements_pex.directory_digest,
+                config_snapshot.directory_digest,
+            )
+        ),
+    )
+
+    address_references = ", ".join(sorted(config.address.reference() <a id="change">for</a> config in <a id="change">request.configs</a>))
+
+    process = requirements_pex.create_execute_request(
+        python_setup=python_setup,</code></pre>

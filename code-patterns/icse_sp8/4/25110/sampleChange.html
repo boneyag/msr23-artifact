@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    else:
+        surface = chunk.point_cloud
+
+    <a id="change">for camera in chunk.cameras:
+        if camera.type != Metashape.Camera.Type.Regular or not camera.transform:
+            continue  &#47&#47 skipping NA cameras
+
+        sensor = camera.sensor
+        corners = list()
+        for i in [[0, 0], [sensor.width - 1, 0], [sensor.width - 1, sensor.height - 1], [0, sensor.height - 1]]:
+            corners.append(surface.pickPoint(camera.center, camera.unproject(Metashape.Vector(i))))
+            if not corners[-1]:
+                corners[-1] = chunk.point_cloud.pickPoint(camera.center, camera.unproject(Metashape.Vector(i)))
+            if not corners[-1]:
+                break
+            corners[-1] = chunk.crs.project(T.mulp(corners[-1]))
+
+        if not all(corners):
+            print("Skipping camera " + camera.label)
+            continue
+
+        if len(corners) == 4:
+            shape = chunk.shapes.addShape()
+            shape.label = camera.label
+            shape.attributes["Photo"] = camera.label
+            shape.type = Metashape.Shape.Type.Polygon
+            shape.group = footprints
+            shape.vertices = corners
+            shape.has_z = True
+
+   </a> Metashape.app.update()
+    print("Script finished!")
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            shape.vertices = corners
+            shape.has_z = True
+
+    with concurrent.futures.ThreadPoolExecutor(<a id="change">multiprocessing.cpu_count()</a>) as executor:
+        executor.map(lambda camera: process_camera(chunk, camera), chunk.cameras)
+
+    Metashape.app.update()</code></pre>

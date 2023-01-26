@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        job_context["success"] = False
+        return job_context
+
+    <a id="change">try:
+        file.remove_raw_files()
+    except:
+        &#47&#47 If we fail to remove the raw files, the job is still done
+        &#47&#47 enough to call a success. However logging will be important
+        &#47&#47 so the problem can be identified and the raw files cleaned up.
+        logger.exception("Exception caught while removing raw file %s",
+                         raw_path,
+                         batch=file.batch.id,
+                         processor_job=job_context["job_id"])
+
+   </a> job_context["success"] = True
+    return job_context
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Create a ComputedFile for the sample,
+    &#47&#47 sync it S3 and save it.
+    try:
+        <a id="change">computed_file = ComputedFile()</a>
+        computed_file.absolute_file_path = sample.source_absolute_file_path
+        computed_file.filename = sample.source_filename
+        computed_file.calculate_sha1()
+        computed_file.calculate_size()
+        computed_file.result = result
+        computed_file.sync_to_s3(S3_BUCKET_NAME, computed_file.sha1 + "_" + computed_file.filename)
+        &#47&#47 TODO here: delete local file after S3 sync
+        <a id="change">computed_file.save()</a>
+    except Exception:
+        logger.exception("Exception caught while moving file %s",
+                         raw_path,
+                         processor_job=job_context["job_id"])</code></pre>

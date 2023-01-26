@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            grad_count = 0
+            for p in net.parameters():
+                grad_max = max(grad_max, p.grad.abs().max().data.cpu().numpy()[0])
+                grad_means += <a id="change">(</a>p.grad ** 2).mean().sqrt().data.cpu().numpy()[0]
+                grad_vars += torch.var(p.grad).data.cpu().numpy()[0]
+                grad_count += 1
+
+            writer.add_scalar("baseline", baseline, step_idx)
+            writer.add_scalar("entropy", entropy_v.data.cpu().numpy()[0], step_idx)
+            writer.add_scalar("batch_scales", np.mean(batch_scales), step_idx)
+            writer.add_scalar("batch_scales_std", scale_std, step_idx)
+            writer.add_scalar("loss_entropy", entropy_loss_v.data.cpu().numpy()[0], step_idx)
+            writer.add_scalar("loss_policy", loss_policy_v.data.cpu().numpy()[0], step_idx)
+            writer.add_scalar("loss_total", loss_v.data.cpu().numpy()[0], step_idx)
+            writer.add_scalar("grad_l2", <a id="change">grad_means / grad_count</a>, step_idx)
+            writer.add_scalar("grad_max", grad_max, step_idx)
+            writer.add_scalar("grad_var", grad_vars / grad_count, step_idx)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            kl_div_v = -((new_prob_v / prob_v).log() * prob_v).sum(dim=1).mean()
+            writer.add_scalar("kl", kl_div_v.data.cpu().numpy()[0], step_idx)
+
+            <a id="change">grads = np.concatenate([p.grad.data.cpu().numpy().flatten()
+                                    for p in net.parameters()
+                                    if p.grad is not None])</a>
+
+            writer.add_scalar("baseline", baseline, step_idx)
+            writer.add_scalar("entropy", entropy_v.data.cpu().numpy()[0], step_idx)
+            writer.add_scalar("batch_scales", np.mean(batch_scales), step_idx)
+            writer.add_scalar("batch_scales_std", scale_std, step_idx)
+            writer.add_scalar("loss_entropy", entropy_loss_v.data.cpu().numpy()[0], step_idx)
+            writer.add_scalar("loss_policy", loss_policy_v.data.cpu().numpy()[0], step_idx)
+            writer.add_scalar("loss_total", loss_v.data.cpu().numpy()[0], step_idx)
+
+            writer.add_scalar("grad_l2", np.sqrt(np.mean(np.square(grads))), step_idx)
+            writer.add_scalar("grad_max", np.max(<a id="change">np.abs(grads)</a>), step_idx)
+            writer.add_scalar("grad_var", np.var(grads), step_idx)
+
+            batch_states.clear()</code></pre>

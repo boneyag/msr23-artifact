@@ -1,0 +1,59 @@
+<html><h3>a1fad60d05352b9bfb9e9ee1a7dc54b1390eb24e,src/sos/Julia/kernel.py,sos_Julia,put_vars,#sos_Julia#Any#Any#,234
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if not items:
+            return {}
+
+        <a id="change">py_repr = &quotcat(..py.repr(list({})))&quot.format(&quot,&quot.join(&quot{0}={0}&quot.format(x) for x in items))</a>
+        response = self.sos_kernel.get_response(py_repr, (&quotstream&quot,), name=(&quotstdout&quot,))[0][1]
+        expr = response[&quottext&quot]
+
+        if to_kernel in (&quotPython2&quot, &quotPython3&quot):
+            &#47&#47 directly to python3
+            return &quot{}\nglobals().update({})&quot.format(&quotfrom feather import read_dataframe\n&quot if &quotread_dataframe&quot in expr else &quot&quot, expr)
+        &#47&#47 to sos or any other kernel
+        else:
+            &#47&#47 irkernel (since the new version) does not produce execute_result, only
+            &#47&#47 display_data
+            try:
+                if &quotread_dataframe&quot in expr:
+                    &#47&#47 imported to be used by eval
+                    from feather import read_dataframe
+                    &#47&#47 suppress flakes warning
+                    read_dataframe
+                &#47&#47 evaluate as raw string to correctly handle \\ etc
+                return <a id="change">eval(expr)</a>
+            except Exception as e:
+                self.sos_kernel.warn(&quotFailed to evaluate {!r}: {}&quot.format(expr, e))
+                return None
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def put_vars(self, items, to_kernel=None):
+        &#47&#47 first let us get all variables with names starting with sos
+        response = self.sos_kernel.get_response(&quotwhos(r"sos")&quot, (&quotstream&quot,), name=(&quotstdout&quot,), debug=True)[0][1]
+        all_vars = [x.strip().split()[0] <a id="change">for</a> x in response[&quottext&quot].split(&quot\n&quot) if x.strip()]
+        items += [x for x in all_vars if x.startswith(&quotsos&quot)]
+
+        if not items:
+            return {}
+
+        res = {}
+        for item in items:
+            py_repr = &quot__sos__julia_py_repr({})&quot.format(item)
+            self.sos_kernel.warn("RXPR for {} is {}".format(item, py_repr))
+            response = self.sos_kernel.get_response(py_repr, (&quotstream&quot,), name=(&quotstdout&quot,), debug=True)[0][1]
+            expr = response[&quottext&quot]
+
+            try:
+                if &quotread_dataframe&quot in expr:
+                    &#47&#47 imported to be used by eval
+                    from feather import read_dataframe
+                    &#47&#47 suppress flakes warning
+                    read_dataframe
+                &#47&#47 evaluate as raw string to correctly handle \\ etc
+                <a id="change">res[item] = eval(expr)</a>
+            except Exception as e:
+                self.sos_kernel.warn(&quotFailed to evaluate {!r}: {}&quot.format(expr, e))
+                return None
+        return res</code></pre><img src="58027060.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/a1fad60d05352b9bfb9e9ee1a7dc54b1390eb24e#diff-a2de3f47b3be3b4ab3be381869ed5557ca48ac7ee4468c5bde880022bbc049faL236' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: a1fad60d05352b9bfb9e9ee1a7dc54b1390eb24e</div><div id='time'> Time: 2017-08-21</div><div id='author'> Author: ml69@rice.edu</div><div id='file'> File Name: src/sos/Julia/kernel.py</div><div id='class'> Class Name: sos_Julia</div><div id='method'> Method Name: put_vars</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/bbaa66c5304fad4a45ecbb33445d5c619c1a76e4#diff-dda467b09570f168a5ce3bb110becc046ce94a276ff96a23a75c0e1972c015b6L194' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: bbaa66c5304fad4a45ecbb33445d5c619c1a76e4</div><div id='time'> Time: 2016-02-22</div><div id='author'> Author: Nicholas.Eggert@target.com</div><div id='file'> File Name: tests/keras/layers/test_convolutional.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_averagepooling_2d</div><BR><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/93f4d0776aadf928cc76f04ed810c4e7b44a1d97#diff-3e952fa4065f55c37349a94a71761eb1f6351ab5313206cca2ef77937609f780L254' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: 93f4d0776aadf928cc76f04ed810c4e7b44a1d97</div><div id='time'> Time: 2017-07-19</div><div id='author'> Author: BPeng1@BCBW31517465254.mdanderson.edu</div><div id='file'> File Name: src/sos/Matlab/kernel.py</div><div id='class'> Class Name: sos_Matlab</div><div id='method'> Method Name: put_vars</div><BR>

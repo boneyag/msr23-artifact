@@ -1,0 +1,64 @@
+<html><h3>bc1351d47d9fe83bc6c7830a8563ddb874953ed4,onmt/train_single.py,,main,#Any#Any#,89
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    src_features, tgt_features = _collect_report_features(fields)
+    for j, feat in enumerate(src_features):
+        logger.info(&quot * src feature %d size = %d&quot
+                    % <a id="change">(j, len(fields[feat].vocab))</a>)
+    for j, feat in enumerate(tgt_features):
+        logger.info(&quot * tgt feature %d size = %d&quot
+                    % (j, len(fields[feat].vocab)))</code></pre><h3>After Change</h3><pre><code class='java'>
+        model_opt = default_opt
+        model_opt.__dict__.update(checkpoint[&quotopt&quot].__dict__)
+        logger.info(&quotLoading vocab from checkpoint at %s.&quot % opt.train_from)
+        <a id="change">vocab = checkpoint[&quotvocab&quot]</a>
+    else:
+        checkpoint = None
+        model_opt = opt
+        vocab = torch.load(opt.data + &quot.vocab.pt&quot)
+
+    &#47&#47 Load a shard dataset to determine the data_type.
+    &#47&#47 (All datasets have the same data_type).
+    &#47&#47 this should be refactored out of existence reasonably soon
+    first_dataset = torch.load(glob.glob(opt.data + &quot.train*.pt&quot)[0])
+    data_type = first_dataset.data_type
+
+    &#47&#47 check for code where vocab is saved instead of fields
+    &#47&#47 (in the future this will be done in a smarter way
+    if old_style_vocab(vocab):
+        fields = load_fields_from_vocab(vocab, data_type)
+    else:
+        fields = vocab
+
+    &#47&#47 Report src and tgt vocab sizes, including for features
+    for side in [&quotsrc&quot, &quottgt&quot]:
+        <a id="change">for name, f in fields[side]:
+            if f.use_vocab:
+                logger.info(&quot * %s vocab size = %d&quot % (name, len(f.vocab)))
+
+    &#47&#47 Build model.
+   </a> model = build_model(model_opt, opt, fields, checkpoint)
+    n_params, enc, dec = _tally_parameters(model)
+    logger.info(&quotencoder: %d&quot % enc)
+    logger.info(&quotdecoder: %d&quot % dec)
+    logger.info(&quot* number of parameters: %d&quot % n_params)
+    _check_save_model_path(opt)
+
+    &#47&#47 Build optimizer.
+    optim = build_optim(model, opt, checkpoint)
+
+    &#47&#47 Build model saver
+    model_saver = build_model_saver(model_opt, opt, model, fields, optim)
+
+    trainer = build_trainer(opt, device_id, model, fields,
+                            optim, data_type, model_saver=model_saver)
+
+    &#47&#47 this line is kind of a temporary kludge because different objects expect
+    &#47&#47 fields to have a different structure
+    <a id="change">dataset_fields = dict(chain.from_iterable(fields.values()))</a>
+
+    train_iter = build_dataset_iter("train", dataset_fields, opt)
+    valid_iter = build_dataset_iter(
+        "valid", dataset_fields, opt, is_train=False)</code></pre><img src="174935948.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/bc1351d47d9fe83bc6c7830a8563ddb874953ed4#diff-3656535971a9e53e09b2ede8ef609856b57e14ee609d4fac9e820ef705e52ee1L90' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: bc1351d47d9fe83bc6c7830a8563ddb874953ed4</div><div id='time'> Time: 2019-01-09</div><div id='author'> Author: benzurdopeters@gmail.com</div><div id='file'> File Name: onmt/train_single.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/elbayadm/attn2d/commit/f305086031fc31a838d5b6c06eec35fd5cd16038#diff-4a4a572bb984a4e7ace1a8b230cd114d96e08db54521a803c96e985c10c2cf1dL132' target='_blank'>Link</a></div><div id='project'> Project Name: elbayadm/attn2d</div><div id='commit'> Commit Name: f305086031fc31a838d5b6c06eec35fd5cd16038</div><div id='time'> Time: 2019-03-19</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: scripts/score_moe.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: intra_ref</div><BR>

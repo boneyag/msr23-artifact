@@ -1,0 +1,68 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    subprocess_encoding_environment: SubprocessEncodingEnvironment,
+) -&gt; Setup:
+    adaptor_with_origin = request.target.adaptor_with_origin
+    <a id="change">adaptor = adaptor_with_origin.adaptor</a>
+
+    requirements_pex = await Get[Pex](
+        CreatePex(
+            output_filename="docformatter.pex",
+            requirements=PexRequirements(requirements=tuple(docformatter.get_requirement_specs())),
+            interpreter_constraints=PexInterpreterConstraints(
+                constraint_set=tuple(docformatter.default_interpreter_constraints)
+            ),
+            entry_point=docformatter.get_entry_point(),
+        )
+    )
+
+    if request.target.prior_formatter_result is None:
+        <a id="change">all_source_files = await Get[SourceFiles](AllSourceFilesRequest([adaptor]))</a>
+        all_source_files_snapshot = all_source_files.snapshot
+    else:
+        all_source_files_snapshot = request.target.prior_formatter_result
+
+    <a id="change">specified_source_files = await Get[SourceFiles](
+        SpecifiedSourceFilesRequest([adaptor_with_origin])
+    )</a>
+
+    merged_input_files = await Get[Digest](
+        DirectoriesToMerge(
+            directories=(</code></pre><h3>After Change</h3><pre><code class='java'>
+    )
+
+    if request.targets.prior_formatter_result is None:
+        <a id="change">all_source_files = await Get[SourceFiles](
+            AllSourceFilesRequest(
+                adaptor_with_origin.adaptor for adaptor_with_origin in adaptors_with_origins
+            )
+        )</a>
+        all_source_files_snapshot = all_source_files.snapshot
+    else:
+        all_source_files_snapshot = request.targets.prior_formatter_result
+
+    <a id="change">specified_source_files = await Get[SourceFiles](
+        SpecifiedSourceFilesRequest(adaptors_with_origins)
+    )</a>
+
+    merged_input_files = await Get[Digest](
+        DirectoriesToMerge(
+            directories=(
+                all_source_files_snapshot.directory_digest,
+                requirements_pex.directory_digest,
+            )
+        ),
+    )
+
+    <a id="change">address_references = ", ".join(
+        sorted(
+            adaptor_with_origin.adaptor.address.reference()
+            for adaptor_with_origin in adaptors_with_origins
+        )
+    )</a>
+
+    process_request = requirements_pex.create_execute_request(
+        python_setup=python_setup,
+        subprocess_encoding_environment=subprocess_encoding_environment,</code></pre>

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        evaluated = self.evaluate_lazy_tensor(lazy_tensor)
+
+        res = lazy_tensor.diag()
+        <a id="change">actual = evaluated.diag()</a>
+        self.assertEqual(res.size(), lazy_tensor.size()[:-1])
+        self.assertLess(((res - actual).abs() / actual.abs().clamp(1, 1e5)).max().item(), 3e-1)
+
+    def test_inv_quad_log_det(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+        flattened_evaluated = evaluated.view(-1, *lazy_tensor.matrix_shape)
+
+        res = lazy_tensor.diag()
+        <a id="change">actual = torch.stack([flattened_evaluated[i].diag() for i in range(flattened_evaluated.size(0))])</a>
+        actual = actual.view(*lazy_tensor.batch_shape, -1)
+        self.assertEqual(res.size(), lazy_tensor.size()[:-1])
+        self.assertLess(((res - actual).abs() / actual.abs().clamp(1, 1e5)).max().item(), 3e-1)
+</code></pre>

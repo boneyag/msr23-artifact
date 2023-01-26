@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    &#47&#47 TODO(zheyuye), update when npx.index_update implemented
+    updates = add_vectors_by_position(F, F.np.zeros_like(base), data, positions)
+    <a id="change">updates_mask = add_vectors_by_position(F, F.np.zeros_like(base),
+            F.np.ones_like(positions), positions)</a>
+    updates = (updates / F.np.maximum(1, updates_mask)).astype(np.int32)
+
+    out = F.np.where(updates, updates, base)
+    updates_mask = F.np.minimum(updates_mask, 1)
+
+    return <a id="change">out</a>, updates_mask
+
+
+@use_np</code></pre><h3>After Change</h3><pre><code class='java'>
+        The updated result.
+        Shape (batch_size, seq_length)
+    
+    <a id="change">positions = positions.astype(np.int32)</a>
+    &#47&#47 batch_idx.shape = (batch_size, 1) as [[0], [1], [2], ...]
+    batch_idx = F.np.expand_dims(F.npx.arange_like(positions, axis=0),
+                                 axis=1).astype(np.int32)
+    batch_idx = batch_idx + F.np.zeros_like(positions)
+    <a id="change">indices = F.np.stack([batch_idx.reshape(-1), positions.reshape(-1)])</a>
+
+    out = F.npx.index_update(base, indices, data.reshape(-1))
+    return out
+</code></pre>

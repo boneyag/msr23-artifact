@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    items_op = replay_buffer.gather_all()
+    last_id_op = replay_buffer._get_last_id()
+
+    <a id="change">with self.cached_session() as sess:
+      sess.run(tf.global_variables_initializer())
+      last_id = sess.run(last_id_op)
+      empty_items = sess.run(items_op)
+      sess.run(add_op)
+      values_ = sess.run(values)
+      sample_ = sess.run(sample)
+      nest.map_structure(lambda x, y: self._assertContains([x], list(y)),
+                         values_, sample_)
+      self.assertNotEqual(last_id, sess.run(last_id_op))
+
+      sess.run(clear_op)
+      self.assertEqual(last_id, sess.run(last_id_op))
+
+      def check_np_arrays_everything_equal(x, y):
+        np.testing.assert_equal(x, y)
+        self.assertEqual(x.dtype, y.dtype)
+
+      nest.map_structure(check_np_arrays_everything_equal, empty_items,
+                         sess.run(items_op))
+
+ </a> def testClearAllVariables(self):
+    batch_size = 1
+    spec = self._data_spec()
+    replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(</code></pre><h3>After Change</h3><pre><code class='java'>
+    nest.map_structure(lambda x, y: self._assertContains([x], list(y)),
+                       values_, sample_)
+
+  def testClear(<a id="change">self</a>):
+    batch_size = 1
+    spec = self._data_spec()
+    replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
+        spec, batch_size=batch_size, max_length=10)
+
+    values, add_op = _get_add_op(spec, replay_buffer, batch_size)
+    sample, _ = replay_buffer.get_next(sample_batch_size=3)
+    clear_op = replay_buffer.clear()
+    items_op = replay_buffer.gather_all()
+    last_id_op = replay_buffer._get_last_id()
+
+    <a id="change">self.evaluate(tf.global_variables_initializer())</a>
+    last_id = <a id="change">self.evaluate(last_id_op)</a>
+    empty_items = self.evaluate(items_op)
+    self.evaluate(add_op)
+    <a id="change">values_ = self.evaluate(values)</a>
+    <a id="change">sample_ = self.evaluate(sample)</a>
+    <a id="change">nest.map_structure(lambda x, y: self._assertContains([x], list(y)),
+                       values_, sample_)</a>
+    self.assertNotEqual(last_id, self.evaluate(last_id_op))
+
+    self.evaluate(clear_op)
+    self.assertEqual(last_id, self.evaluate(last_id_op))</code></pre>

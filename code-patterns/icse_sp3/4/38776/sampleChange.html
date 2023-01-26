@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for iteration in range(n_iter_max):
+        for mode in range(tensor.ndim):
+            B = tucker_to_tensor(nn_core, nn_factors, skip_factor=mode)
+            B = <a id="change">unfold</a>(B, mode).T
+
+            numerator = T.dot(unfold(tensor, mode), B)
+            numerator = T.clip(numerator, a_min=epsilon, a_max=None)
+            denominator = T.dot(nn_factors[mode], T.dot(B.T, B))
+            denominator = T.clip(denominator, a_min=epsilon, a_max=None)
+            <a id="change">nn_factors[mode]</a> *= numerator / denominator
+
+        numerator = tucker_to_tensor(tensor, nn_factors, transpose_factors=True)
+        numerator = T.clip(numerator, a_min=epsilon, a_max=None)</code></pre><h3>After Change</h3><pre><code class='java'>
+    for iteration in range(n_iter_max):
+        for mode in range(T.ndim(tensor)):
+            B = tucker_to_tensor(nn_core, nn_factors, skip_factor=mode)
+            B = T.transpose(<a id="change">unfold(B, mode)</a>)
+
+            numerator = T.dot(unfold(tensor, mode), B)
+            numerator = T.clip(numerator, a_min=epsilon, a_max=None)
+            denominator = T.dot(nn_factors[mode], T.dot(T.transpose(B), B))
+            denominator = T.clip(denominator, a_min=epsilon, a_max=None)
+            <a id="change">nn_factors[mode]</a> *= numerator / denominator
+
+        numerator = tucker_to_tensor(tensor, nn_factors, transpose_factors=True)
+        numerator = T.clip(numerator, a_min=epsilon, a_max=None)</code></pre>

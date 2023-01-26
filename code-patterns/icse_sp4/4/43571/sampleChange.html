@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 check batch axis
+    batch_axis = _check_batch_axis_and_force_list(len(x.shape), batch_axis)
+
+    <a id="change">axes = _get_axes_excluding(len(x.shape), [channel_axis, ] + batch_axis)</a>
+
+    if output_stat:
+        <a id="change">out, mean, std = tensor_normalization(x, axes, eps, output_stat)</a>
+
+        return out * gamma + beta, mean, std
+
+    return tensor_normalization(x, axes, eps, output_stat) * gamma + beta</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Unlike layer_norm and group_norm, only instance_norm can use bn scale bias & scale adaptation
+    &#47&#47 by broadcasting channel axis to channel * batch axis. (like [1, C, 1, 1] -&gt; [N, C, 1, 1])
+
+    adapt_shape = [1 <a id="change">for</a> _ in range(len(x.shape))]
+    for baxis in batch_axis:
+        adapt_shape[baxis] = x.shape[baxis]
+    adapt_shape[channel_axis] = x.shape[channel_axis]</code></pre>

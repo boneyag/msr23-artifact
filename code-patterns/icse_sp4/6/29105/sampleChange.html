@@ -1,0 +1,86 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 write output
+    json.dump(results, open(&quot{}_bbox_results.json&quot.format(dataset.set_name), &quotw&quot), indent=4)
+    json.dump(image_ids, open(<a id="change">&quot{}_processed_image_ids.json&quot.format(dataset.set_name)</a>, &quotw&quot), indent=4)
+
+    &#47&#47 load results in COCO evaluation tool
+    coco_true = dataset.coco</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    model.eval()
+    
+    <a id="change">with torch.no_grad():
+
+        &#47&#47 start collecting results
+        results = []
+        image_ids = []
+
+        for index in range(len(dataset)):
+            data = dataset[index]
+            scale = data[&quotscale&quot]
+
+            &#47&#47 run network
+            scores, labels, boxes = model(data[&quotimg&quot].permute(2, 0, 1).cuda().float().unsqueeze(dim=0))
+            scores = scores.cpu()
+            labels = labels.cpu()
+            boxes  = boxes.cpu()
+
+            &#47&#47 correct boxes for image scale
+            boxes /= scale
+
+            &#47&#47 change to (x, y, w, h) (MS COCO standard)
+            boxes[:, 2] -= boxes[:, 0]
+            boxes[:, 3] -= boxes[:, 1]
+
+            &#47&#47 compute predicted labels and scores
+            &#47&#47for box, score, label in zip(boxes[0], scores[0], labels[0]):
+            for box_id in range(boxes.shape[0]):
+                score = float(scores[box_id])
+                label = int(labels[box_id])
+                box = boxes[box_id, :]
+
+                &#47&#47 scores are sorted, so we can break
+                if score &lt; threshold:
+                    break
+
+                &#47&#47 append detection for each positively labeled class
+                image_result = {
+                    &quotimage_id&quot    : dataset.image_ids[index],
+                    &quotcategory_id&quot : dataset.label_to_coco_label(label),
+                    &quotscore&quot       : float(score),
+                    &quotbbox&quot        : box.tolist(),
+                }
+
+                &#47&#47 append detection to results
+                results.append(image_result)
+
+            &#47&#47 append image to list of processed images
+            image_ids.append(dataset.image_ids[index])
+
+            &#47&#47 print progress
+            print(&quot{}/{}&quot.format(index, len(dataset)), end=&quot\r&quot)
+
+        if not len(results):
+            return
+
+        &#47&#47 write output
+        json.dump(results, open(&quot{}_bbox_results.json&quot.format(dataset.set_name), &quotw&quot), indent=4)
+
+        &#47&#47 load results in COCO evaluation tool
+        coco_true = dataset.coco
+        coco_pred = coco_true.loadRes(&quot{}_bbox_results.json&quot.format(dataset.set_name))
+
+        &#47&#47 run COCO evaluation
+        coco_eval = COCOeval(coco_true, coco_pred, &quotbbox&quot)
+        coco_eval.params.imgIds = image_ids
+        coco_eval.evaluate()
+        coco_eval.accumulate()
+        coco_eval.summarize()
+
+        model.train()
+
+        return</a>
+</code></pre>

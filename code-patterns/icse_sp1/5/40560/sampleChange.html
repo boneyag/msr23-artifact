@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for d in range(self.num_latent):
+            b = self.q_lambda[:, d]
+            A = K + tf.diag(1./tf.square(b))
+            <a id="change">L = tf.cholesky(A)</a>
+            LiKx = tf.matrix_triangular_solve(L, tf.transpose(Kx), lower=True)
+            if full_cov:
+                <a id="change">f_var.append(self.kern.K(Xnew) -
+                             tf.matmul(tf.transpose(LiKx), LiKx))</a>
+            else:
+                f_var.append(self.kern.Kdiag(Xnew) -
+                             tf.reduce_sum(tf.square(LiKx), 0))
+        f_var = tf.pack(f_var)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 predictive var
+        A = K + tf.batch_matrix_diag(tf.transpose(1./tf.square(self.q_lambda)))
+        <a id="change">L = tf.batch_cholesky(A)</a>
+        Kx_tiled = <a id="change">tf.tile(tf.expand_dims(Kx, 0), [self.num_latent, 1, 1])</a>
+        <a id="change">LiKx = tf.batch_matrix_triangular_solve(L, Kx_tiled)</a>
+        if full_cov:
+            f_var = self.kern.K(Xnew) - tf.batch_matmul(LiKx, LiKx, adj_x=True)
+        else:
+            f_var = self.kern.Kdiag(Xnew) - tf.reduce_sum(tf.square(LiKx), 1)</code></pre>

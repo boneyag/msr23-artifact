@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        nenv = nbatch // nsteps
+        nh, nw, nc = ob_space.shape
+        ob_shape = (nbatch, nh, nw, nc)
+        <a id="change">nact = ac_space.n</a>
+        X = tf.placeholder(tf.uint8, ob_shape) &#47&#47obs
+        M = tf.placeholder(tf.float32, [nbatch]) &#47&#47mask (done t-1)
+        S = tf.placeholder(tf.float32, [nenv, nlstm*2]) &#47&#47states
+        with tf.variable_scope("model", reuse=reuse):
+            h = nature_cnn(X)
+            xs = batch_to_seq(h, nenv, nsteps)
+            ms = batch_to_seq(M, nenv, nsteps)
+            h5, snew = lnlstm(xs, ms, S, &quotlstm1&quot, nh=nlstm)
+            h5 = seq_to_batch(h5)
+            <a id="change">pi = fc(h5, &quotpi&quot, nact)</a>
+            vf = fc(h5, &quotv&quot, 1)
+
+        self.pdtype = make_pdtype(ac_space)
+        <a id="change">self.pd</a> = self.pdtype.pdfromflat(pi)
+
+        v0 = vf[:, 0]
+        a0 = self.pd.sample()
+        neglogp0 = self.pd.neglogp(a0)
+        self.initial_state = np.zeros((nenv, nlstm*2), dtype=np.float32)
+
+        def step(ob, state, mask):
+            return sess.run([a0, v0, snew, neglogp0], {X:ob, S:state, M:mask})
+
+        def value(ob, state, mask):
+            return sess.run(v0, {X:ob, S:state, M:mask})
+
+        self.X = X
+        self.M = M
+        self.S = S
+        <a id="change">self.pi = pi</a>
+        self.vf = vf
+        self.step = step
+        self.value = value
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            h5, snew = lnlstm(xs, ms, S, &quotlstm1&quot, nh=nlstm)
+            h5 = seq_to_batch(h5)
+            vf = fc(h5, &quotv&quot, 1)
+            <a id="change">self.pd</a>, <a id="change">self.pi</a> = self.pdtype.pdfromlatent(h5)
+
+        v0 = vf[:, 0]
+        a0 = self.pd.sample()</code></pre>

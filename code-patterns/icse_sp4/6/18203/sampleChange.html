@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if len(excluded_trial_ids) &gt;= self._get_trials_failed_excluded_trial_ids_len:
+            trial_models = self._get_trial_models_inclusive(study_id, excluded_trial_ids, session)
+        else:
+            <a id="change">try:
+                trial_models = (
+                    session.query(models.TrialModel)
+                    .filter(
+                        ~models.TrialModel.trial_id.in_(excluded_trial_ids),
+                        models.TrialModel.study_id == study_id,
+                    )
+                    .all()
+                )
+            except OperationalError as e:
+                &#47&#47 Likely exceeding the number of maximum allowed variables. This number differ
+                &#47&#47 between database dialects. For SQLite for instance,
+                &#47&#47 see https://www.sqlite.org/limits.html and the section describing
+                &#47&#47 SQLITE_MAX_VARIABLE_NUMBER.
+
+                _logger.warning(
+                    "Caught an error from sqlalchemy: {}. Falling back to a slower alternative. "
+                    "".format(str(e))
+                )
+
+                &#47&#47 Bookkeeping to circumvent the same error in the next call.
+                self._get_trials_failed_excluded_trial_ids_len = len(excluded_trial_ids)
+
+                trial_models = self._get_trial_models_inclusive(
+                    study_id, excluded_trial_ids, session
+                )
+
+       </a> trials = [self._build_frozen_trial_from_trial_model(trial) for trial in trial_models]
+
+        self._commit(session)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            .filter(models.TrialModel.study_id == study_id,)
+            .all()
+        )
+        <a id="change">trial_ids = set(trial_id_tuple[0] for trial_id_tuple in trial_ids)</a>
+        <a id="change">trial_ids -= excluded_trial_ids</a>
+        trial_models = (
+            session.query(models.TrialModel)
+            .filter(
+                models.TrialModel.trial_id.in_(trial_ids), models.TrialModel.study_id == study_id,</code></pre>

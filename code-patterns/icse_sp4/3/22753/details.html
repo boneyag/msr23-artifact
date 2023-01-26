@@ -1,0 +1,43 @@
+<html><h3>c5ad56010a3302472f6d25ba1a34d1f826d2d2cb,nisl/tests/test_masking.py,,test_apply_mask,#,90
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    mask = np.ones((40, 40, 40))
+    for affine in (np.eye(4), np.diag((1, 1, -1, 1)),
+                   np.diag((.5, 1, .5, 1))):
+        series = <a id="change">masking.apply_mask(Nifti1Image(data, affine),
+                                    Nifti1Image(mask, affine), smooth=9)</a>
+        series = np.reshape(series[0, :], (40, 40, 40))
+        vmax = series.max()
+        &#47&#47 We are expecting a full-width at half maximum of
+        &#47&#47 9mm/voxel_size:</code></pre><h3>After Change</h3><pre><code class='java'>
+    data = np.zeros((40, 40, 40, 2))
+    data[20, 20, 20] = 1
+    mask = np.ones((40, 40, 40))
+    <a id="change">for create_files in (False, True):
+        for affine in (np.eye(4), np.diag((1, 1, -1, 1)),
+                       np.diag((.5, 1, .5, 1))):
+            data_img = Nifti1Image(data, affine)
+            mask_img = Nifti1Image(mask, affine)
+            with write_tmp_imgs(data_img, mask_img, create_files=create_files)\
+                     as filenames:
+                series = masking.apply_mask(filenames[0], filenames[1],
+                                            smooth=9)
+
+            series = np.reshape(series[0, :], (40, 40, 40))
+            vmax = series.max()
+            &#47&#47 We are expecting a full-width at half maximum of
+            &#47&#47 9mm/voxel_size:
+            above_half_max = series &gt; .5 * vmax
+            for axis in (0, 1, 2):
+                proj = np.any(np.any(np.rollaxis(above_half_max,
+                              axis=axis), axis=-1), axis=-1)
+                np.testing.assert_equal(proj.sum(),
+                                        9 / np.abs(affine[axis, axis]))
+
+    &#47&#47 Check that NaNs in the data do not propagate
+   </a> data[10, 10, 10] = np.NaN
+    data_img = Nifti1Image(data, affine)
+    mask_img = Nifti1Image(mask, affine)
+    series = masking.apply_mask(data_img, mask_img, smooth=9)</code></pre><img src="120241209.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/nilearn/nilearn/commit/c5ad56010a3302472f6d25ba1a34d1f826d2d2cb#diff-1de38f5e4538922fbbcb1a0d2dcf65ffb236b05feaaa8c151e9782c4076087eeL98' target='_blank'>Link</a></div><div id='project'> Project Name: nilearn/nilearn</div><div id='commit'> Commit Name: c5ad56010a3302472f6d25ba1a34d1f826d2d2cb</div><div id='time'> Time: 2013-05-14</div><div id='author'> Author: philippe.gervais@inria.fr</div><div id='file'> File Name: nisl/tests/test_masking.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_apply_mask</div><BR><BR><div id='link'><a href='https://github.com/interactiveaudiolab/nussl/commit/310f9e600e32a69efcb60ae7efee33138d665f51#diff-63dac719815464a14d662af574c21554c74b22d81f424afdbf8b31cd2d7731e6L81' target='_blank'>Link</a></div><div id='project'> Project Name: interactiveaudiolab/nussl</div><div id='commit'> Commit Name: 310f9e600e32a69efcb60ae7efee33138d665f51</div><div id='time'> Time: 2017-09-06</div><div id='author'> Author: daniel.felixkim@gmail.com</div><div id='file'> File Name: nussl/separation/nmf_mfcc.py</div><div id='class'> Class Name: NMF_MFCC</div><div id='method'> Method Name: make_audio_signals</div><BR><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/1f0750670cf8ea24ad264debf9603002ab0fb565#diff-c286906d570450b8eb12fb23504437b17f53357dbe0e87e0d3ca534ded310af0L77' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: 1f0750670cf8ea24ad264debf9603002ab0fb565</div><div id='time'> Time: 2021-03-15</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: torch_geometric/nn/pool/mem_pool.py</div><div id='class'> Class Name: MemPool</div><div id='method'> Method Name: forward</div><BR>

@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with self._graph.as_default():
+            total_outputs = np.empty([1, self._last_layer().output_size])
+
+            <a id="change">num_batches = len(x) // self._batch_size</a>
+            remainder = len(x) % self._batch_size
+
+            if <a id="change">remainder != 0:
+   </a>             num_batches += 1
+                <a id="change">remainder = self._batch_size - remainder</a>
+
+            &#47&#47 self.load_images_from_list(x) no longer calls following 2 lines so we needed to force them here
+            images = x
+            self._parse_images(images)
+
+            x_test = <a id="change">tf.train.batch([self._all_images], batch_size=self._batch_size, num_threads=self._num_threads)</a>
+            <a id="change">x_test = tf.reshape(x_test, shape=[-1, self._image_height, self._image_width, self._image_depth])</a>
+
+            if self._load_from_saved:
+                self.load_state()
+            <a id="change">self._initialize_queue_runners()</a>
+            &#47&#47 Run model on them
+            x_pred = self.forward_pass(x_test, deterministic=True)
+
+            for i in range(int(num_batches)):
+                xx = self._session.run(x_pred)
+                for img in np.array_split(xx, self._batch_size):
+                    total_outputs = np.append(total_outputs, img, axis=0)
+
+            &#47&#47 delete weird first row
+            total_outputs = np.delete(total_outputs, 0, 0)
+
+            &#47&#47 delete any outputs which are overruns from the last batch
+            <a id="change">if remainder != 0:
+                for i in range(remainder):
+                    total_outputs = np.delete(total_outputs, -1, 0)
+
+       </a> return total_outputs
+
+    def forward_pass_with_interpreted_outputs(self, x):
+        &#47&#47 Perform forward pass of the network to get raw outputs and apply a softmax</code></pre><h3>After Change</h3><pre><code class='java'>
+            self._parse_images(images)
+            &#47&#47 x_test = tf.train.batch([self._all_images], batch_size=self._batch_size, num_threads=self._num_threads)
+            &#47&#47 x_test = tf.reshape(x_test, shape=[-1, self._image_height, self._image_width, self._image_depth])
+            im_data = <a id="change">self._all_images.batch(self._batch_size).prefetch(1)</a>
+            <a id="change">x_test = im_data.make_one_shot_iterator().get_next()</a>
+
+            if self._load_from_saved:
+                self.load_state()
+            &#47&#47 self._initialize_queue_runners()</code></pre>

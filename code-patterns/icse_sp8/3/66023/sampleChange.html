@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def pyro_model(self, input, beta=1.0, name_prefix=""):
+        &#47&#47 Inducing values p(u)
+        with pyro.poutine.scale(scale=beta):
+            u_samples = <a id="change">pyro.sample(self.name_prefix + ".u", self.variational_strategy.prior_distribution)</a>
+
+        &#47&#47 Include term for GPyTorch priors
+        log_prior = torch.tensor(0.0, dtype=u_samples.dtype, device=u_samples.device)
+        for _, prior, closure, _ in self.named_priors():</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Inducing values p(u)
+        with pyro.poutine.scale(scale=beta):
+            prior_distribution = self.variational_strategy.prior_distribution
+            prior_distribution = <a id="change">prior_distribution.to_event(len(prior_distribution.batch_shape))</a>
+            <a id="change">u_samples = pyro.sample(name_prefix + ".u", prior_distribution)</a>
+
+        &#47&#47 Include term for GPyTorch priors
+        log_prior = torch.tensor(0.0, dtype=u_samples.dtype, device=u_samples.device)
+        for _, prior, closure, _ in self.named_priors():</code></pre>

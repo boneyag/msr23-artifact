@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 In order to convert the upper triangular correlation values to a complete
+&#47&#47 correlation matrix, we need to construct an index matrix:
+n_elem = int(n_var * (n_var - 1) / 2)
+tri_index = np.zeros(<a id="change">[n_var, n_var]</a>, dtype=int)
+tri_index[np.triu_indices(n_var, k=1)] = np.arange(n_elem)
+tri_index[np.triu_indices(n_var, k=1)[::-1]] = np.arange(n_elem)
+
+with pm.Model() as model:
+
+    mu = pm.Normal(&quotmu&quot, mu=0, sd=1, shape=n_var)
+
+    &#47&#47 We can specify separate priors for sigma and the correlation matrix:
+    sigma = pm.Uniform(&quotsigma&quot, shape=n_var)
+    corr_triangle = pm.LKJCorr(&quotcorr&quot, n=1, p=n_var)
+    <a id="change">corr_matrix = corr_triangle[tri_index]</a>
+    corr_matrix = tt.fill_diagonal(corr_matrix, 1)
+
+    cov_matrix = tt.diag(sigma).dot(corr_matrix.dot(tt.diag(sigma)))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    cov = tt.dot(chol, chol.T)
+
+    &#47&#47 Extract the standard deviations etc
+    sd = <a id="change">pm.Deterministic(&quotsd&quot, tt.sqrt(tt.diag(cov)))</a>
+    corr = tt.diag(sd**-1).dot(cov.dot(tt.diag(sd**-1)))
+    <a id="change">r = pm.Deterministic(&quotr&quot, corr[np.triu_indices(n_var, k=1)])</a>
+
+    like = pm.MvNormal(&quotlikelihood&quot, mu=mu, chol=chol, observed=dataset)
+
+</code></pre>

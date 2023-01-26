@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      disk_spec: virtual_machine.BaseDiskSpec object of the disk.
+    
+    volume = aws_disk.AwsDisk(disk_spec, self.zone)
+    <a id="change">self.scratch_disks.append(volume)</a>
+
+    if volume.disk_type == disk.LOCAL:
+      if self.local_drive_counter &gt;= self.max_local_drives:
+        raise errors.Error(&quotNot enough local drives.&quot)
+      volume.device_letter = chr(ord(DRIVE_START_LETTER) +
+                                 self.local_drive_counter)
+      self.local_drive_counter += 1
+    else:
+      <a id="change">volume.Create()</a>
+      util.AddDefaultTags(volume.id, self.region)
+      volume.Attach(self)
+
+    self.FormatDisk(volume.GetDevicePath())
+    <a id="change">self.MountDisk(volume.GetDevicePath(), disk_spec.mount_point)</a>
+
+  def GetLocalDrives(self):
+    Returns a list of local drives on the VM.
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Instantiate the disk(s) that we want to create.
+    if disk_spec.disk_type == disk.LOCAL:
+      disks = []
+      <a id="change">for _ in range(disk_spec.num_striped_disks):
+        local_disk = aws_disk.AwsDisk(disk_spec, self.zone)
+        local_disk.device_letter = chr(ord(DRIVE_START_LETTER) +
+                                       self.local_drive_counter)
+        self.local_drive_counter += 1
+        disks.append(local_disk)
+     </a> if self.local_drive_counter &gt; self.max_local_drives:
+        raise errors.Error(&quotNot enough local drives.&quot)
+    else:
+      disks = [aws_disk.AwsDisk(disk_spec, self.zone)
+               for _ in range(<a id="change">disk_spec.num_striped_disks</a>)]
+
+    self._CreateScratchDiskFromDisks(disk_spec, disks)
+</code></pre>

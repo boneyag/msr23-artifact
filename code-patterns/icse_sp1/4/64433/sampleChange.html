@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            qt = sqlite3_quote_name(phrase.table)
+            bdb.sql_execute(&quotDROP TABLE IF EXISTS guessed_stattypes_%s&quot
+                %(phrase.table,))
+            <a id="change">bdb.sql_execute(&quot&quot&quot
+                CREATE TABLE guessed_stattypes_%s
+                (column TEXT, stattype TEXT, reason TEXT)
+            &quot&quot&quot %(phrase.table,))</a>
+            cursor = bdb.sql_execute(&quotSELECT * FROM %s&quot % (qt,))
+            column_names = [d[0] for d in cursor.description]
+            rows = cursor.fetchall()
+            stattypes = bayesdb_guess_stattypes(column_names, rows)</code></pre><h3>After Change</h3><pre><code class='java'>
+        out = compiler.Output(0, {}, {})
+        with bdb.savepoint():
+            qt = sqlite3_quote_name(phrase.table)
+            <a id="change">temptable = bdb.temp_table_name()</a>
+            qtt = sqlite3_quote_name(temptable)
+            cursor = bdb.sql_execute(&quotSELECT * FROM %s&quot % (qt,))
+            column_names = [d[0] for d in cursor.description]
+            rows = cursor.fetchall()
+            stattypes = bayesdb_guess_stattypes(column_names, rows)
+            out.winder(&quot&quot&quot
+                CREATE TEMP TABLE %s (column TEXT, stattype TEXT, reason TEXT)
+            &quot&quot&quot % (qtt), ())
+            for cn, st in zip(column_names, stattypes):
+                out.winder(&quot&quot&quot
+                    INSERT INTO %s VALUES (?, ?, ?)
+                &quot&quot&quot % (qtt), (cn, st[0], st[1]))
+            out.write(&quotSELECT * FROM %s&quot % <a id="change">(qtt,)</a>)
+            out.unwinder(&quotDROP TABLE %s&quot % (qtt,), ())
+        winders, unwinders = out.getwindings()
+        return execute_wound(</code></pre>

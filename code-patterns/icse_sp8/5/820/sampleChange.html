@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.layer_norm = None
+
+    def forward(self, src_tokens, src_lengths):
+        <a id="change">x</a>, input_lengths = self.subsample(src_tokens, src_lengths)
+        x = self.embed_scale * x
+
+        encoder_padding_mask = lengths_to_padding_mask(input_lengths)
+        positions = self.embed_positions(encoder_padding_mask).transpose(0, 1)
+        x += positions
+        x = self.dropout_module(x)
+
+        for layer in self.transformer_layers:
+            x = layer(x, encoder_padding_mask)
+
+        if self.layer_norm is not None:
+            x = self.layer_norm(x)
+
+        <a id="change">return {
+            "encoder_out": [x],  &#47&#47 T x B x C
+            "encoder_padding_mask": [encoder_padding_mask] if encoder_padding_mask.any() else [],  &#47&#47 B x T
+            "encoder_embedding": [],  &#47&#47 B x T x C
+            "encoder_states": [],  &#47&#47 List[T x B x C]
+            "src_tokens": [],
+            "src_lengths": [],
+        }</a>
+
+    def reorder_encoder_out(self, encoder_out, new_order):
+        new_encoder_out = (
+            [] if len(encoder_out["encoder_out"]) == 0</code></pre><h3>After Change</h3><pre><code class='java'>
+    def forward(self, src_tokens, src_lengths):
+        if self.num_updates &lt; self.encoder_freezing_updates:
+            with torch.no_grad():
+                x = <a id="change">self._forward(src_tokens, src_lengths)</a>
+        else:
+            x = self._forward(src_tokens, src_lengths)
+        <a id="change">return x</a>
+
+    def reorder_encoder_out(self, encoder_out, new_order):
+        new_encoder_out = (
+            [] if len(encoder_out["encoder_out"]) == 0</code></pre>

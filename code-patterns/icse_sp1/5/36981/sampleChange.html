@@ -1,0 +1,83 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        y_max = max([plot_tracker.data[constants.MEAN][i][-1],
+                                     plot_tracker.data[constants.CURRENT][i][-1], y_max])
+                        pad = 0.5 * y_max  &#47&#47 Padding bellow and above thresholds
+            <a id="change">plot_tracker.sub_plot_obj.set_ylim((y_min-pad, y_max+pad))</a>
+            plot_tracker.sub_plot_obj.set_xlim(0, self._sample_ids[-1])
+
+    def _clear_annotations(self):
+         Clear annotations, so next frame is correctly rendered. </code></pre><h3>After Change</h3><pre><code class='java'>
+                    y_min = min([plot_tracker.data[data_id][i][-1], plot_tracker.data[constants.Y_TRUE][-1], y_min])
+                    y_max = max([plot_tracker.data[data_id][i][-1], plot_tracker.data[constants.Y_TRUE][-1], y_max])
+            elif metric_id == constants.DATA_POINTS:
+                <a id="change">update_xy_limits = False</a>
+                &#47&#47 Process features
+                data_id = &quotX&quot
+                features_dict = data_buffer.get_data(metric_id=metric_id, data_id=data_id)
+                feature_indices = list(features_dict.keys())
+                feature_indices.sort()
+                &#47&#47 Store tuple of feature values into the buffer, sorted by index
+                plot_tracker.data[data_id].add_element([[features_dict[feature_indices[0]],
+                                                        features_dict[feature_indices[1]]]])
+
+                plot_tracker.sub_plot_obj.set_xlabel(&quotFeature {}&quot.format(feature_indices[0]))
+                plot_tracker.sub_plot_obj.set_ylabel(&quotFeature {}&quot.format(feature_indices[1]))
+                &#47&#47 TODO consider a fading/update strategy instead
+                plot_tracker.sub_plot_obj.clear()
+                X1 = plot_tracker.data[data_id].get_queue()[-1][0]
+                X2 = plot_tracker.data[data_id].get_queue()[-1][1]
+
+                &#47&#47 Process target values
+                data_id = &quottarget_values&quot
+                plot_tracker.data[data_id] = data_buffer.get_data(metric_id=metric_id, data_id=data_id)
+                if not plot_tracker.data[&quotclusters_initialized&quot]:
+                    for j in range(len(plot_tracker.data[data_id])):
+                        plot_tracker.data[&quotclusters&quot].append(FastBuffer(plot_tracker.data[&quotbuffer_size&quot]))
+
+                &#47&#47 Process predictions
+                data_id = &quotpredictions&quot
+                plot_tracker.data[data_id].add_element([data_buffer.get_data(metric_id=metric_id, data_id=data_id)])
+
+                for k, cluster in enumerate(plot_tracker.data[&quotclusters&quot]):
+                    if plot_tracker.data[data_id].get_queue()[-1] == k:
+                        plot_tracker.data[&quotclusters&quot][k].add_element([(X1, X2)])
+                        &#47&#47 TODO confirm buffer update inside the loop
+                    if cluster.get_queue():
+                        temp = cluster.get_queue()
+                        plot_tracker.sub_plot_obj.scatter(*zip(*temp), label="Class {k}".format(k=k))
+                plot_tracker.sub_plot_obj.legend(loc=2, bbox_to_anchor=(1.01, 1.))
+
+            else:
+                &#47&#47 Default case, &quotmean&quot and &quotcurrent&quot performance
+                for data_id in data_ids:
+                    &#47&#47 Buffer data
+                    data = data_buffer.get_data(metric_id=metric_id, data_id=data_id)
+                    for i in range(self.n_models):
+                        plot_tracker.data[data_id][i].append(data[i])
+                        plot_tracker.line_objs[data_id][i].set_data(self._sample_ids, plot_tracker.data[data_id][i])
+                &#47&#47 Process data
+                for i in range(self.n_models):
+                    &#47&#47 Update annotations
+                    self._update_annotations(i, plot_tracker.sub_plot_obj, self.model_names[i],
+                                             plot_tracker.data[constants.MEAN][i][-1],
+                                             plot_tracker.data[constants.CURRENT][i][-1])
+                    &#47&#47 Update plot limits
+                    if metric_id in [constants.KAPPA_T, constants.KAPPA_M]:
+                        y_min = min([plot_tracker.data[constants.MEAN][i][-1],
+                                     plot_tracker.data[constants.CURRENT][i][-1], y_min])
+                    if metric_id in [constants.MSE, constants.MAE, constants.AMSE, constants.AMAE, constants.ARMSE]:
+                        y_min = -1
+                        y_max = max([plot_tracker.data[constants.MEAN][i][-1],
+                                     plot_tracker.data[constants.CURRENT][i][-1], y_max])
+                        pad = 0.5 * y_max  &#47&#47 Padding bellow and above thresholds
+            <a id="change">if update_xy_limits:
+                plot_tracker.sub_plot_obj.set_ylim((y_min-pad, y_max+pad))
+                plot_tracker.sub_plot_obj.set_xlim(0, self._sample_ids[-1])
+
+   </a> def _clear_annotations(self):
+         Clear annotations, so next frame is correctly rendered. 
+        for i in range(len(self._text_annotations)):
+            self._text_annotations[i].remove()</code></pre>

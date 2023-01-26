@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def testSequenceToSequenceWithReplaceUnknownTarget(self):
+    mode = tf.estimator.ModeKeys.PREDICT
+    model = catalog.NMTSmall()
+    params = <a id="change">model.auto_config()["params"]</a>
+    params["replace_unknown_target"] = True
+    features_file, _, data_config = self._makeToyEnDeData()
+    features = model.input_fn(mode, 16, data_config, features_file)()
+    estimator_spec = model.model_fn()(features, None, params, mode, None)</code></pre><h3>After Change</h3><pre><code class='java'>
+    model.initialize(data_config)
+    with tf.Graph().as_default():
+      dataset = estimator.make_input_fn(model, mode, 16, features_file, labels_file)()
+      <a id="change">iterator = tf.compat.v1.data.make_initializable_iterator(dataset)</a>
+      features = <a id="change">iterator.get_next()</a>
+      estimator_spec = estimator.make_model_fn(model)(features, None, params, mode, None)
+      with self.session() as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
+        sess.run(tf.compat.v1.local_variables_initializer())
+        sess.run(tf.compat.v1.tables_initializer())
+        <a id="change">sess.run(iterator.initializer)</a>
+        _ = sess.run(estimator_spec.predictions)
+
+  def testSequenceToSequenceServing(self):
+    &#47&#47 Test that serving features can be forwarded into the model.</code></pre>

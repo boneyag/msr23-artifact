@@ -1,0 +1,50 @@
+<html><h3>e3fd56b08ed5c4d7247a147c3fab7c0fe59e9a0e,pymc3/distributions/mixture.py,Mixture,comp_dists,#Mixture#Any#,111
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with _DrawValuesContextBlocker():
+            if isinstance(self.comp_dists, (list, tuple)):
+                try:
+                    [<a id="change">comp_dist.random(size=23)</a>
+                     for comp_dist in self.comp_dists]
+                    self._comp_dists_vect = True
+                except Exception:
+                    &#47&#47 The comp_dists cannot call random with non None size or</code></pre><h3>After Change</h3><pre><code class='java'>
+    @comp_dists.setter
+    def comp_dists(self, comp_dists):
+        self._comp_dists = comp_dists
+        <a id="change">if isinstance(comp_dists, Distribution):
+            self._comp_dist_shapes = to_tuple(comp_dists.shape)
+            self._broadcast_shape = self._comp_dist_shapes
+            self.comp_is_distribution = True
+        else:
+            &#47&#47 Now we check the comp_dists distribution shape, see what
+            &#47&#47 the broadcast shape would be. This shape will be the dist_shape
+            &#47&#47 used by generate samples (the shape of a single random sample)
+            &#47&#47 from the mixture
+            self._comp_dist_shapes = [to_tuple(d.shape) for d in comp_dists]
+            &#47&#47 All component distributions must broadcast with each other
+            try:
+                self._broadcast_shape = np.broadcast(
+                    *[np.empty(shape) for shape in self._comp_dist_shapes]
+                ).shape
+            except Exception:
+                raise TypeError(&quotSupplied comp_dists shapes do not broadcast &quot
+                                &quotwith each other. comp_dists shapes are: &quot
+                                &quot{}&quot.format(self._comp_dist_shapes))
+
+            &#47&#47 We wrap the _comp_dist.random by adding the kwarg raw_size_,
+            &#47&#47 which will be the size attribute passed to _comp_samples.
+            &#47&#47 _comp_samples then calls generate_samples, which may change the
+            &#47&#47 size value to make it compatible with scipy.stats.*.rvs
+            self._generators = []
+            for comp_dist in comp_dists:
+                generator = Mixture._comp_dist_random_wrapper(comp_dist.random)
+                self._generators.append(generator)
+            self.comp_is_distribution = False
+
+   </a> @staticmethod
+    def _comp_dist_random_wrapper(random):
+        Wrap the comp_dists.random method to take the kwarg raw_size_ and
+        use it&quots value to replace the size parameter. This is needed because</code></pre><img src="269967126.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pymc-devs/pymc3/commit/e3fd56b08ed5c4d7247a147c3fab7c0fe59e9a0e#diff-2c93f3d5023e26b5813466f6a0db28dcfd91b20013a65633ec9c99a8f3bdcd7bL111' target='_blank'>Link</a></div><div id='project'> Project Name: pymc-devs/pymc3</div><div id='commit'> Commit Name: e3fd56b08ed5c4d7247a147c3fab7c0fe59e9a0e</div><div id='time'> Time: 2019-02-16</div><div id='author'> Author: luciano.paz.neuro@gmail.com</div><div id='file'> File Name: pymc3/distributions/mixture.py</div><div id='class'> Class Name: Mixture</div><div id='method'> Method Name: comp_dists</div><BR><BR><div id='link'><a href='https://github.com/pymc-devs/pymc3/commit/7cd66b7ff35659bf6dc7ae100794925e18708781#diff-2d47219278a472e61d4539413760a16dd54b8a445e346f6089acbcaced444bd4L116' target='_blank'>Link</a></div><div id='project'> Project Name: pymc-devs/pymc3</div><div id='commit'> Commit Name: 7cd66b7ff35659bf6dc7ae100794925e18708781</div><div id='time'> Time: 2017-12-12</div><div id='author'> Author: aloctavodia@gmail.com</div><div id='file'> File Name: pymc3/step_methods/smc.py</div><div id='class'> Class Name: SMC</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/Rostlab/nalaf/commit/c3b8333a251c62315b52c599033ef97c697a31a4#diff-299ed11a3296020e9e63220b089dea63c681ed72802d31403a97646637c8ee5dL25' target='_blank'>Link</a></div><div id='project'> Project Name: Rostlab/nalaf</div><div id='commit'> Commit Name: c3b8333a251c62315b52c599033ef97c697a31a4</div><div id='time'> Time: 2016-12-30</div><div id='author'> Author: i@juanmi.rocks</div><div id='file'> File Name: nalaf/utils/floyd_warshall.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: path</div><BR>

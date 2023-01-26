@@ -1,0 +1,244 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                           name=scope.get_unique_operator_name(&quotReshape&quot), shape=[-1, 2 * hidden_size])
+
+        if len(operator.outputs) &gt; 1:
+            <a id="change">lstm_y_h_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_h&quot)</a>
+            <a id="change">lstm_outputs.append(lstm_y_h_name)</a>
+
+            lstm_y_h_reshape_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_h_reshape&quot)
+            container.add_node(&quotReshape&quot, lstm_y_h_name, lstm_y_h_reshape_name,
+                               name=scope.get_unique_operator_name(&quotReshape&quot), shape=[2, hidden_size])
+
+            container.add_node(&quotSplit&quot, lstm_y_h_reshape_name,
+                               [operator.outputs[1].full_name, operator.outputs[3].full_name],
+                               op_version=2, name=scope.get_unique_operator_name(&quotSplit&quot), split=[1, 1, ], axis=0)
+    else:
+        &#47&#47 Here we ingore ONNX RNN&quots first output because it&quots useless.
+        <a id="change">lstm_outputs.append(scope.get_unique_variable_name(&quotisolated&quot))</a>
+
+        &#47&#47 Handle the second output of ONNX LSTM. It will become the first and the second outputs of
+        &#47&#47 CoreML&quots LSTM.
+        <a id="change">lstm_y_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y&quot)</a>
+        <a id="change">lstm_outputs.append(lstm_y_name)</a>
+
+        &#47&#47 Directly reshape ONNX LSTM&quots 2nd output to CoreML LSTM&quots 1st output.
+        <a id="change">container.add_node(&quotReshape&quot, lstm_y_name, operator.outputs[0].full_name,
+                           name=scope.get_unique_operator_name(&quotReshape&quot), shape=[1, 2 * hidden_size])</a>
+
+        if len(operator.outputs) &gt; 1:
+            lstm_y_reshape_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_reshape&quot)
+
+            container.add_node(&quotReshape&quot, lstm_y_name, lstm_y_reshape_name,
+                               name=scope.get_unique_operator_name(&quotReshape&quot), shape=[2, hidden_size])
+
+            container.add_node(&quotSplit&quot, lstm_y_reshape_name,
+                               [operator.outputs[1].full_name, operator.outputs[3].full_name],
+                               op_version=2, name=scope.get_unique_operator_name(&quotSplit&quot), split=[1, 1], axis=0)
+
+    &#47&#47 Output cell state if necessary
+    if len(operator.outputs) &gt; 2:
+        <a id="change">lstm_y_c_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_c&quot)</a>
+        <a id="change">lstm_outputs.append(lstm_y_c_name)</a>
+
+        lstm_y_c_reshape_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_c_reshape&quot)
+        container.add_node(&quotReshape&quot, lstm_y_c_name, lstm_y_c_reshape_name,
+                           name=scope.get_unique_operator_name(&quotReshape&quot), shape=[2, hidden_size])
+
+        container.add_node(&quotSplit&quot, lstm_y_c_reshape_name,
+                           [operator.outputs[2].full_name, operator.outputs[4].full_name],
+                           op_version=2, name=scope.get_unique_operator_name(&quotSplit&quot), split=[1, 1], axis=0)
+
+    &#47&#47 Create the major LSTM operator
+    <a id="change">container.add_node(&quotLSTM&quot, lstm_inputs, lstm_outputs, **lstm_attrs)</a>
+
+
+register_converter(&quotbiDirectionalLSTM&quot, convert_bidirectional_lstm)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    lstm_op_name = scope.get_unique_operator_name(&quotLSTM&quot)
+    lstm_attrs = {&quotname&quot: lstm_op_name}
+    lstm_inputs = []
+    <a id="change">lstm_outputs</a> = []
+
+    lstm_x_reshape_name = scope.get_unique_variable_name(lstm_op_name + &quot_X_reshape&quot)
+    container.add_node(&quotReshape&quot, operator.inputs[0].full_name, lstm_x_reshape_name,
+                       name=scope.get_unique_operator_name(&quotReshape&quot), shape=[-1, 1, input_size])
+    lstm_inputs.append(lstm_x_reshape_name)
+
+    &#47&#47 Handle LSTM&quots weight matrices
+    matrices_w_forward = np.concatenate([lstm_weights[0].inputGateWeightMatrix.floatValue,
+                                         lstm_weights[0].outputGateWeightMatrix.floatValue,
+                                         lstm_weights[0].forgetGateWeightMatrix.floatValue,
+                                         lstm_weights[0].blockInputWeightMatrix.floatValue])
+    matrices_w_backward = np.concatenate([lstm_weights[1].inputGateWeightMatrix.floatValue,
+                                          lstm_weights[1].outputGateWeightMatrix.floatValue,
+                                          lstm_weights[1].forgetGateWeightMatrix.floatValue,
+                                          lstm_weights[1].blockInputWeightMatrix.floatValue])
+    matrices_w_name = scope.get_unique_variable_name(lstm_op_name + &quot_W&quot)
+    container.add_initializer(matrices_w_name, onnx_proto.TensorProto.FLOAT, [2, 4 * hidden_size, input_size],
+                              np.concatenate([matrices_w_forward, matrices_w_backward]))
+    lstm_inputs.append(matrices_w_name)
+
+    &#47&#47 Handle LSTM&quots recursion matrices
+    matrices_r_forward = np.concatenate([lstm_weights[0].inputGateRecursionMatrix.floatValue,
+                                         lstm_weights[0].outputGateRecursionMatrix.floatValue,
+                                         lstm_weights[0].forgetGateRecursionMatrix.floatValue,
+                                         lstm_weights[0].blockInputRecursionMatrix.floatValue])
+    matrices_r_backward = np.concatenate([lstm_weights[1].inputGateRecursionMatrix.floatValue,
+                                          lstm_weights[1].outputGateRecursionMatrix.floatValue,
+                                          lstm_weights[1].forgetGateRecursionMatrix.floatValue,
+                                          lstm_weights[1].blockInputRecursionMatrix.floatValue])
+    matrices_r_name = scope.get_unique_variable_name(lstm_op_name + &quot_R&quot)
+    container.add_initializer(matrices_r_name, onnx_proto.TensorProto.FLOAT, [2, 4 * hidden_size, hidden_size],
+                              np.concatenate([matrices_r_forward, matrices_r_backward]))
+    lstm_inputs.append(matrices_r_name)
+
+    &#47&#47 Handle bias vectors
+    vectors_b = np.zeros(shape=(2, 8, hidden_size))
+    if lstm_params.hasBiasVectors:
+        vectors_b[0, 0, :] = lstm_weights[0].inputGateBiasVector.floatValue
+        vectors_b[0, 1, :] = lstm_weights[0].outputGateBiasVector.floatValue
+        vectors_b[0, 2, :] = lstm_weights[0].forgetGateBiasVector.floatValue
+        vectors_b[0, 3, :] = lstm_weights[0].blockInputBiasVector.floatValue
+        vectors_b[1, 0, :] = lstm_weights[1].inputGateBiasVector.floatValue
+        vectors_b[1, 1, :] = lstm_weights[1].outputGateBiasVector.floatValue
+        vectors_b[1, 2, :] = lstm_weights[1].forgetGateBiasVector.floatValue
+        vectors_b[1, 3, :] = lstm_weights[1].blockInputBiasVector.floatValue
+    if lstm_params.forgetBias:
+        &#47&#47 One may think we should do something like b[0, 2, :] += 1. and b[1, 2, :] += 1.,
+        &#47&#47 but it&quots not correct as CoreML has added 1 into those bias vectors.
+        pass
+    if lstm_params.hasBiasVectors or lstm_params.forgetBias:
+        vectors_b_name = scope.get_unique_variable_name(lstm_op_name + &quot_B&quot)
+        container.add_initializer(vectors_b_name, onnx_proto.TensorProto.FLOAT,
+                                  [2, 8 * hidden_size], vectors_b.flatten())
+        lstm_inputs.append(vectors_b_name)
+    else:
+        lstm_inputs.append(&quot&quot)
+
+    &#47&#47 Due to the position sensitivity in ONNX argument parsing, we add an empty string for the non-existing
+    &#47&#47 sequence length
+    lstm_inputs.append(&quot&quot)
+
+    &#47&#47 Handle initial hidden state if necessary
+    if len(operator.inputs) &gt; 1:
+        lstm_h_init_name = scope.get_unique_variable_name(lstm_op_name + &quot_h_init&quot)
+        container.add_node(&quotConcat&quot, [operator.inputs[1].full_name, operator.inputs[3].full_name],
+                           lstm_h_init_name, name=scope.get_unique_operator_name(&quotConcat&quot), axis=0)
+
+        lstm_h_init_reshape_name = scope.get_unique_variable_name(lstm_op_name + &quot_h_init_reshape&quot)
+        container.add_node(&quotReshape&quot, lstm_h_init_name, lstm_h_init_reshape_name,
+                           name=scope.get_unique_operator_name(&quotReshape&quot), shape=[2, 1, hidden_size])
+
+        &#47&#47 Add zero initializers to forward and backward initial hidden states so that they become optional
+        container.add_initializer(operator.inputs[1].full_name, onnx_proto.TensorProto.FLOAT,
+                                  operator.inputs[1].type.shape,
+                                  np.zeros(shape=operator.inputs[1].type.shape).flatten())
+        container.add_initializer(operator.inputs[3].full_name, onnx_proto.TensorProto.FLOAT,
+                                  operator.inputs[3].type.shape,
+                                  np.zeros(shape=operator.inputs[3].type.shape).flatten())
+        lstm_inputs.append(lstm_h_init_reshape_name)
+    else:
+        lstm_inputs.append(&quot&quot)
+
+    &#47&#47 Handle initial cell state if needed
+    if len(operator.inputs) &gt; 2:
+        lstm_c_init_name = scope.get_unique_variable_name(lstm_op_name + &quot_c_init&quot)
+        container.add_node(&quotConcat&quot, [operator.inputs[2].full_name, operator.inputs[4].full_name],
+                           lstm_c_init_name, name=scope.get_unique_operator_name(&quotConcat&quot), axis=0)
+
+        lstm_c_init_reshape_name = scope.get_unique_variable_name(lstm_op_name + &quot_c_init_reshape&quot)
+        container.add_node(&quotReshape&quot, lstm_c_init_name, lstm_c_init_reshape_name,
+                           name=scope.get_unique_operator_name(&quotReshape&quot), shape=[2, 1, hidden_size])
+
+        lstm_inputs.append(lstm_c_init_reshape_name)
+        &#47&#47 Add zero initializers to forward and backward initial cell states so that they become optional
+        container.add_initializer(operator.inputs[2].full_name, onnx_proto.TensorProto.FLOAT,
+                                  operator.inputs[2].type.shape,
+                                  np.zeros(shape=operator.inputs[2].type.shape).flatten())
+        container.add_initializer(operator.inputs[4].full_name, onnx_proto.TensorProto.FLOAT,
+                                  operator.inputs[4].type.shape,
+                                  np.zeros(shape=operator.inputs[4].type.shape).flatten())
+    else:
+        lstm_inputs.append(&quot&quot)
+
+    &#47&#47 Handle peephole vectors if necessary
+    if lstm_params.hasPeepholeVectors:
+        p_forward = np.concatenate([lstm_weights[0].inputGatePeepholeVector.floatValue,
+                                    lstm_weights[0].outputGatePeepholeVector.floatValue,
+                                    lstm_weights[0].forgetGatePeepholeVector.floatValue])
+        p_backward = np.concatenate([lstm_weights[1].inputGatePeepholeVector.floatValue,
+                                     lstm_weights[1].outputGatePeepholeVector.floatValue,
+                                     lstm_weights[1].forgetGatePeepholeVector.floatValue])
+        p_name = scope.get_unique_variable_name(lstm_op_name + &quot_P&quot)
+        container.add_initializer(p_name, onnx_proto.TensorProto.FLOAT,
+                                  [2, 3 * hidden_size], np.concatenate([p_forward, p_backward]))
+        lstm_inputs.append(p_name)
+    else:
+        lstm_inputs.append(&quot&quot)
+
+    &#47&#47 Parse activation functions and add them into ONNX LSTM&quots attribute dictionary
+    activation_types = []
+    alphas = []
+    betas = []
+    for activation in params.activationsForwardLSTM:
+        activation_type, alpha, beta = extract_rnn_activation_info(activation)
+        activation_types.append(activation_type.encode(&quotascii&quot))
+        if alpha is not None:
+            alphas.append(alpha)
+        if beta is not None:
+            betas.append(beta)
+    for activation in params.activationsBackwardLSTM:
+        activation_type, alpha, beta = extract_rnn_activation_info(activation)
+        activation_types.append(activation_type.encode(&quotascii&quot))
+        if alpha is not None:
+            alphas.append(alpha)
+        if beta is not None:
+            betas.append(beta)
+    lstm_attrs[&quotactivations&quot] = activation_types
+    if alphas:
+        lstm_attrs[&quotactivation_alpha&quot] = alphas
+    if betas:
+        lstm_attrs[&quotactivation_beta&quot] = betas
+
+    &#47&#47 Add more attributes
+    lstm_attrs[&quotdirection&quot] = &quotbidirectional&quot
+    lstm_attrs[&quotoutput_sequence&quot] = lstm_params.sequenceOutput
+    lstm_attrs[&quothidden_size&quot] = hidden_size
+    lstm_attrs[&quotclip&quot] = lstm_params.cellClipThreshold
+    lstm_attrs[&quotinput_forget&quot] = lstm_params.coupledInputAndForgetGate
+
+    &#47&#47 Create the major LSTM operator. We assign a tensor name to each output of LSTM. However, variables can be
+    &#47&#47 undefined in some cases. For example, when output_sequence=False, the first output is not meaningful.
+    lstm_y_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y&quot)
+    <a id="change">lstm_y_h_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_h&quot)</a>
+    <a id="change">lstm_y_c_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_c&quot)</a>
+    <a id="change">lstm_outputs.extend([lstm_y_name, lstm_y_h_name, lstm_y_c_name])</a>
+    <a id="change">container.add_node(&quotLSTM&quot, lstm_inputs, lstm_outputs, **lstm_attrs)</a>
+
+    &#47&#47 Create post-processing operators for converting ONNX LSTM outputs to CoreML ones
+    if lstm_params.sequenceOutput:
+        container.add_node(&quotReshape&quot, lstm_y_name, operator.outputs[0].full_name,
+                           name=scope.get_unique_operator_name(&quotReshape&quot), shape=[-1, 2 * hidden_size])
+
+        if len(operator.outputs) &gt; 1:
+            lstm_y_h_reshape_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_h_reshape&quot)
+            container.add_node(&quotReshape&quot, lstm_y_h_name, lstm_y_h_reshape_name,
+                               name=scope.get_unique_operator_name(&quotReshape&quot), shape=[2, hidden_size])
+
+            container.add_node(&quotSplit&quot, lstm_y_h_reshape_name,
+                               [operator.outputs[1].full_name, operator.outputs[3].full_name],
+                               op_version=2, name=scope.get_unique_operator_name(&quotSplit&quot), split=[1, 1], axis=0)
+    else:
+        &#47&#47 Here we ignore ONNX RNN&quots first output because it&quots useless. The second output of ONNX LSTM will be used to
+        &#47&#47 generate the first and the second outputs of CoreML LSTM.
+
+        &#47&#47 Directly reshape ONNX LSTM&quots 2nd output to CoreML LSTM&quots 1st output.
+        <a id="change">container.add_node(&quotReshape&quot, lstm_y_h_name, operator.outputs[0].full_name,
+                           name=scope.get_unique_operator_name(&quotReshape&quot), shape=[1, 2 * hidden_size])</a>
+
+        if len(operator.outputs) &gt; 1:
+            lstm_y_reshape_name = scope.get_unique_variable_name(lstm_op_name + &quot_Y_reshape&quot)
+</code></pre>

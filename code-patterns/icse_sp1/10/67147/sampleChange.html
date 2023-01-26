@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            input_time_dim = {k: input_time_dim for k in inpts.keys()}
+
+        &#47&#47 Keep around a list of slices for each input.
+        time_slices = {k: [<a id="change">slice(None)</a>] * inpts[k].dim() <a id="change">for</a> k in inpts.keys()}
+
+        &#47&#47 Get input to all layers.
+        inpts.update(self.get_inputs())
+
+        &#47&#47 Simulate network activity for `time` timesteps.
+        for t in range(timesteps):
+            for l in self.layers:
+                &#47&#47 Update each layer of nodes.
+                if isinstance(self.layers[l], AbstractInput):
+                    &#47&#47 Grab the time slice for each input.
+                    <a id="change">t_slice = time_slices[l]</a>
+                    &#47&#47 Overwrite the None with a specific time.
+                    t_slice[input_time_dim[l]] = t
+                    &#47&#47 Pull out that individual time slice and ensure the memory is contiguous.
+                    self.layers[l].forward(x=inpts[l][t_slice].contiguous())</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Dynamic setting of batch size.
+        if inpts != {}:
+            <a id="change">for key in inpts:
+                if inpts[key].size(0) != self.batch_size:
+                    self.batch_size = inpts[key].size(0)
+
+                    for l in self.layers:
+                        self.layers[l].set_batch_size(self.batch_size)
+
+                    for m in self.monitors:
+                        self.monitors[m].reset_()
+
+                break
+
+        &#47&#47 Effective number of timesteps.
+       </a> timesteps = int(time / self.dt)
+
+        &#47&#47 Get input to all layers.
+        inpts.update(self.get_inputs())</code></pre>

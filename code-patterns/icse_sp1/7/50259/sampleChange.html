@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        batch_size=batch_size,
+        collate_fn=collator.collate_test,
+        num_workers=num_workers)
+    <a id="change">dataloader_it = iter(dataloader)</a>
+
+    &#47&#47 Model
+    model = PinSAGEModel(g, item_ntype, textset, hidden_dims, num_layers).to(device)
+    &#47&#47 Optimizer
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
+
+    model.train()
+    for batch_id in range(batches_per_epoch):
+        <a id="change">pos_graph, neg_graph, blocks = next(dataloader_it)</a>
+        &#47&#47 Copy to GPU
+        for i in range(len(blocks)):
+            blocks[i] = blocks[i].to(device)
+        pos_graph = pos_graph.to(device)</code></pre><h3>After Change</h3><pre><code class='java'>
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
+
+    model.train()
+    <a id="change">for batch_id, (pos_graph, neg_graph, blocks) in enumerate(dataloader):
+        &#47&#47 Copy to GPU
+        for i in range(len(blocks)):
+            blocks[i] = blocks[i].to(device)
+        pos_graph = pos_graph.to(device)
+        neg_graph = neg_graph.to(device)
+
+        loss = model(pos_graph, neg_graph, blocks).mean()
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+
+        if batch_id &gt;= 3:
+            break
+
+   </a> print("start training...")
+    t0 = time.time()
+    &#47&#47 For each batch of head-tail-negative triplets...
+    for batch_id, (pos_graph, neg_graph, blocks) in enumerate(dataloader):</code></pre>

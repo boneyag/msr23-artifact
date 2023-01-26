@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+
+        weight = layer.module.weight.data
+        <a id="change">op_name = layer.name</a>
+        op_type = layer.type
+        assert op_type == &quotBatchNorm2d&quot, &quotSlimPruner only supports 2d batch normalization layer pruning&quot
+        <a id="change">if op_name in self.mask_calculated_ops:
+            assert op_name in self.mask_dict
+            return self.mask_dict.get(op_name)
+       </a> base_mask = torch.ones(weight.size()).type_as(weight).detach()
+        mask = {&quotweight&quot: base_mask.detach(), &quotbias&quot: base_mask.clone().detach()}
+        try:
+            filters = weight.size(0)</code></pre><h3>After Change</h3><pre><code class='java'>
+        op_type = layer.type
+        if_calculated = kwargs["if_calculated"]
+        assert op_type == &quotBatchNorm2d&quot, &quotSlimPruner only supports 2d batch normalization layer pruning&quot
+        <a id="change">if if_calculated:
+            return None
+       </a> base_mask = torch.ones(weight.size()).type_as(weight).detach()
+        mask = {&quotweight&quot: base_mask.detach(), &quotbias&quot: base_mask.clone().detach()}
+        filters = weight.size(0)
+        num_prune = int(filters * config.get(&quotsparsity&quot))
+        if filters &gt;= 2 and num_prune &gt;= 1:
+            w_abs = weight.abs()
+            mask_weight = torch.gt(w_abs, self.global_threshold).type_as(weight)
+            mask_bias = mask_weight.clone()
+            mask = {&quotweight&quot: mask_weight.detach(), &quotbias&quot: mask_bias.detach()}
+        <a id="change">if_calculated.copy_(torch.tensor(True))</a> &#47&#47 pylint: disable=not-callable
+        return mask
+
+class LotteryTicketPruner(Pruner):</code></pre>

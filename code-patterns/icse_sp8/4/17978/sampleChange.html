@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    &#47&#47 Obtain the data from the corresponding output and store it to the project.
+                    &#47&#47 TODO: Optimize this for large datasets by streaming it chunk-by-chunk using an OpH5WriterBigDataset!
+                    dataSlot = self.mainOperator.Image[index]
+                    data = <a id="change">dataSlot[...].wait()</a>
+    
+                    &#47&#47 Vigra thinks its okay to reorder the data if it has axistags,
+                    &#47&#47  but we don&quott want that. To avoid reordering, we write the data
+                    &#47&#47  ourselves and attach the axistags afterwards.
+                    <a id="change">dataset = localDataGroup.create_dataset(info.datasetId, data=data)</a>
+                    dataset.attrs[&quotaxistags&quot] = dataSlot.meta.axistags.toJSON()
+                    wroteInternalData = True
+    
+            &#47&#47 Construct a list of all the local dataset ids we want to keep</code></pre><h3>After Change</h3><pre><code class='java'>
+                    dataSlot = self.mainOperator.Image[index]
+
+                    opWriter = OpH5WriterBigDataset(graph=self.mainOperator.graph)
+                    <a id="change">opWriter.hdf5File.setValue( localDataGroup )</a>
+                    opWriter.hdf5Path.setValue( info.datasetId )
+                    opWriter.Image.connect(dataSlot)
+
+                    &#47&#47 Trigger the copy</code></pre>

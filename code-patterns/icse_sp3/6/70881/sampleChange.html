@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if mode == &quottrain&quot or mode == &quoteval&quot:
+      if hparams.skip_first_n_losses:
+        logits = tf.reshape(logits_flat, [hparams.batch_size, -1, num_classes])
+        logits = <a id="change">logits[:, hparams.skip_first_n_losses:, :]</a>
+        logits_flat = tf.reshape(logits, [-1, num_classes])
+        labels = labels[:, hparams.skip_first_n_losses:]
+
+      labels_flat = tf.reshape(labels, [-1])</code></pre><h3>After Change</h3><pre><code class='java'>
+      labels_flat = tf.reshape(labels, [-1])
+      mask = tf.sequence_mask(lengths)
+      if hparams.skip_first_n_losses:
+        <a id="change">skip = tf.minimum(lengths, hparams.skip_first_n_losses)</a>
+        skip_mask = <a id="change">tf.sequence_mask(skip, maxlen=tf.reduce_max(lengths))</a>
+        mask = tf.logical_and(mask, tf.logical_not(skip_mask))
+      mask = tf.cast(mask, tf.float32)
+      mask_flat = tf.reshape(mask, [-1])
+</code></pre>

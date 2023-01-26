@@ -1,0 +1,75 @@
+<html><h3>7c0200c93b88898507dbafcb2d92314d0dbcd451,python/ray/serve/master.py,ServeMaster,set_backend_config,#ServeMaster#Any#Any#,296
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                          BackendConfig), ("backend_config must be"
+                                           " of instance BackendConfig")
+        backend_config_dict = dict(backend_config)
+        old_backend_config_dict = <a id="change">self</a>.backend_table.get_info(backend_tag)
+
+        if (not old_backend_config_dict["has_accept_batch_annotation"]
+                and backend_config.max_batch_size is not None):
+            raise batch_annotation_not_found
+
+        self.backend_table.register_info(backend_tag, backend_config_dict)
+
+        &#47&#47 Inform the router about change in configuration
+        &#47&#47 (particularly for setting max_batch_size).
+        [router] = <a id="change">self.get_router()</a>
+        await router.set_backend_config.remote(backend_tag,
+                                               backend_config_dict)
+
+        &#47&#47 Restart replicas if there is a change in the backend config related</code></pre><h3>After Change</h3><pre><code class='java'>
+            await self.router.set_backend_config.remote(
+                backend_tag, backend_config_dict)
+
+    async def set_backend_config(<a id="change">self</a>, backend_tag, backend_config):
+        Set the config for the specified backend.
+        <a id="change">async with self.write_lock:
+            assert (backend_tag in self.backends
+                    ), "Backend {} is not registered.".format(backend_tag)
+            assert isinstance(backend_config,
+                              BackendConfig), ("backend_config must be"
+                                               " of instance BackendConfig")
+            backend_config_dict = dict(backend_config)
+            backend_worker, init_args, old_backend_config_dict = self.backends[
+                backend_tag]
+
+            if (not old_backend_config_dict["has_accept_batch_annotation"]
+                    and backend_config.max_batch_size is not None):
+                raise batch_annotation_not_found
+
+            self.backends[backend_tag] = (backend_worker, init_args,
+                                          backend_config_dict)
+
+            &#47&#47 Restart replicas if there is a change in the backend config
+            &#47&#47 related to restart_configs.
+            need_to_restart_replicas = any(
+                old_backend_config_dict[k] != backend_config_dict[k]
+                for k in BackendConfig.restart_on_change_fields)
+            if need_to_restart_replicas:
+                &#47&#47 Kill all the replicas for restarting with new configurations.
+                self._scale_replicas(backend_tag, 0)
+
+            &#47&#47 Scale the replicas with the new configuration.
+            self._scale_replicas(backend_tag,
+                                 backend_config_dict["num_replicas"])
+
+            &#47&#47 NOTE(edoakes): we must write a checkpoint before pushing the
+            &#47&#47 update to avoid inconsistent state if we crash after pushing the
+            &#47&#47 update.
+            self._checkpoint()
+
+            &#47&#47 Inform the router about change in configuration
+            &#47&#47 (particularly for setting max_batch_size).
+            await self.router.set_backend_config.remote(
+                backend_tag, backend_config_dict)
+
+            await self._start_pending_replicas()
+            await self._stop_pending_replicas()
+
+   </a> def get_backend_config(self, backend_tag):
+        Get the current config for the specified backend.
+        assert (backend_tag in self.backends
+                ), "Backend {} is not registered.".format(backend_tag)</code></pre><img src="251123383.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/7c0200c93b88898507dbafcb2d92314d0dbcd451#diff-2282f450bed7ade0c0efd2b1550fdacb6757d32d08e9e63b9735a06e55df740bL296' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 7c0200c93b88898507dbafcb2d92314d0dbcd451</div><div id='time'> Time: 2020-04-28</div><div id='author'> Author: ed.nmi.oakes@gmail.com</div><div id='file'> File Name: python/ray/serve/master.py</div><div id='class'> Class Name: ServeMaster</div><div id='method'> Method Name: set_backend_config</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/7c0200c93b88898507dbafcb2d92314d0dbcd451#diff-2282f450bed7ade0c0efd2b1550fdacb6757d32d08e9e63b9735a06e55df740bL269' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 7c0200c93b88898507dbafcb2d92314d0dbcd451</div><div id='time'> Time: 2020-04-28</div><div id='author'> Author: ed.nmi.oakes@gmail.com</div><div id='file'> File Name: python/ray/serve/master.py</div><div id='class'> Class Name: ServeMaster</div><div id='method'> Method Name: create_backend</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/7c0200c93b88898507dbafcb2d92314d0dbcd451#diff-2282f450bed7ade0c0efd2b1550fdacb6757d32d08e9e63b9735a06e55df740bL228' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 7c0200c93b88898507dbafcb2d92314d0dbcd451</div><div id='time'> Time: 2020-04-28</div><div id='author'> Author: ed.nmi.oakes@gmail.com</div><div id='file'> File Name: python/ray/serve/master.py</div><div id='class'> Class Name: ServeMaster</div><div id='method'> Method Name: set_traffic</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/7c0200c93b88898507dbafcb2d92314d0dbcd451#diff-2282f450bed7ade0c0efd2b1550fdacb6757d32d08e9e63b9735a06e55df740bL296' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 7c0200c93b88898507dbafcb2d92314d0dbcd451</div><div id='time'> Time: 2020-04-28</div><div id='author'> Author: ed.nmi.oakes@gmail.com</div><div id='file'> File Name: python/ray/serve/master.py</div><div id='class'> Class Name: ServeMaster</div><div id='method'> Method Name: set_backend_config</div><BR>

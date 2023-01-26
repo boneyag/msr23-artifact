@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      variance = tf.reduce_mean(tf.abs(x), axis=[-1], keepdims=True)
+      norm_x = tf.div(x , variance + self.epsilon)
+    else:
+      <a id="change">print("WARNING: Layer norm: type ", self.norm_type, "not supported")</a>
+      norm_x = x
+
+    y = norm_x * self.scale + self.bias
+    if dtype == tf.float16:</code></pre><h3>After Change</h3><pre><code class='java'>
+    if self.norm_type=="layernorm_L2":
+      epsilon = self.epsilon
+      dtype = x.dtype
+      x = <a id="change">tf.cast(x=x, dtype=tf.float32)</a>
+      mean = tf.reduce_mean(x, axis=[-1], keepdims=True)
+      variance = tf.reduce_mean(tf.square(x - mean), axis=[-1], keepdims=True)
+      norm_x = (x - mean) * tf.rsqrt(variance + epsilon)
+      <a id="change">result = norm_x * self.scale + self.bias</a>
+      return tf.cast(x=result, dtype=dtype)
+
+    else: &#47&#47if self.norm_type=="layernorm_L1":
+      dtype = x.dtype</code></pre>

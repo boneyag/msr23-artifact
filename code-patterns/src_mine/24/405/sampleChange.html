@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    to_keep[indices] = 0
+                else:
+                    &#47&#47 keep index, but replace it with [MASK]
+                    for i in <a id="change">indices</a>:
+                        tokens[i] = self.mask_tok
+                    <a id="change">random_toks</a> = <a id="change">torch.randint(
+                        0, len(self.vocab), size=(mask_random.sum(),))</a>
+                    for i, rand_tok in zip(<a id="change">indices[mask_random]</a>, random_toks):
+                        <a id="change">tokens[i]</a> = rand_tok
+
+                &#47&#47 assert tokens_length - 1 not in indices
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            while indices.size(0) &gt; 0:
+                &#47&#47 to cover whole token
+                uncompleted = is_word_start[indices + 1] == 0
+                <a id="change">indices</a> = indices[uncompleted] + 1
+                mask_random = mask_random[uncompleted]
+                if self.replace_length != -1:
+                    &#47&#47 delete token
+                    to_keep[indices] = 0
+                else:
+                    &#47&#47 keep index, but replace it with [MASK]
+                    for i in <a id="change">indices.tolist()</a>:
+                        tokens[i] = self.mask_tok
+                    <a id="change">random_tok_ids</a> = <a id="change">torch.randint(
+                        0, len(self.vocab), size=(mask_random.sum(),)).tolist()</a>
+                    for i, rid in zip(
+                            <a id="change">indices[mask_random].tolist()</a>, random_tok_ids):
+                        <a id="change">tokens[i]</a> = <a id="change">self.vocab[rid]</a>
+
+                &#47&#47 assert tokens_length - 1 not in indices
+
+        tokens = [tok for tok, keep in zip(tokens, to_keep.tolist())</code></pre>

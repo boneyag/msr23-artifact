@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            loss = self.crit(pred, y)
+            total_loss += loss.item()
+            _add_to_cm(cm, y, pred)
+            <a id="change">pg.update()</a>
+        <a id="change">pg.done()</a>
+
+        metrics = cm.get_all_metrics()
+        metrics[&quotavg_loss&quot] = total_loss/float(steps)
+        verbose_output(verbose, cm)</code></pre><h3>After Change</h3><pre><code class='java'>
+        cm = ConfusionMatrix(self.labels)
+        verbose = kwargs.get("verbose", None)
+
+        for batch_dict in <a id="change">pg(loader)</a>:
+            example = self._make_input(batch_dict)
+            y = example.pop(&quoty&quot)
+            pred = self.model(example)
+            loss = self.crit(pred, y)
+            <a id="change">batchsz = self._get_batchsz(batch_dict)</a>
+            total_loss += <a id="change">loss.item() * batchsz</a>
+            <a id="change">total_norm += batchsz</a>
+            _add_to_cm(cm, y, pred)
+
+        metrics = cm.get_all_metrics()
+        metrics[&quotavg_loss&quot] = total_loss / float(total_norm)</code></pre>

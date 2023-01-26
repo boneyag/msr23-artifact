@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    &#47&#47 TODO(rbharath/enf): This GPU_RAM is black magic. Needs to be removed/made
+    &#47&#47 more general.
+    MAX_GPU_RAM = <a id="change">float(691007488/50)</a>
+    for epoch in range(self.model_params["nb_epoch"]):
+      print("Starting epoch %s" % str(epoch+1))
+      for i, (X, y, w, _) in enumerate(dataset.itershards()):
+        print("Training on batch-%s/epoch-%s" % (str(i+1), str(epoch+1)))
+        <a id="change">if sys.getsizeof(X) &gt; MAX_GPU_RAM:
+          nb_block = float(sys.getsizeof(X))/MAX_GPU_RAM
+          nb_sample = np.shape(X)[0]
+          interval_points = np.linspace(nb_sample,nb_block+1).astype(int)
+          for j in range(len(interval_points)-1):
+            indices = range(interval_points[j],interval_points[j+1])
+            X_batch = X[indices,:]
+            y_batch = y[indices]
+            w_batch = w[indices]
+            self.fit_on_batch(X_batch, y_batch, w_batch)
+        else:
+          self.fit_on_batch(X, y, w)
+
+  &#47&#47 TODO(rbharath): What does this function do when y is not provided. Suspect
+  &#47&#47 it breaks. Need to fix.
+
+  &#47&#47 TODO(rbharath): The structure of the produced df might be
+  &#47&#47 complicated. Better way to model?
+ </a> def predict(self, dataset):
+    
+    Uses self to make predictions on provided Dataset object.
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+      for i, (X, y, w, _) in enumerate(dataset.itershards()):
+        print("Training on batch-%s/epoch-%s" % (str(i+1), str(epoch+1)))
+        nb_sample = np.shape(X)[0]
+        interval_points = np.linspace(0,nb_sample, <a id="change">np.ceil(float(nb_sample)/batch_size)+1</a>).astype(int)
+        for j in range(len(interval_points)-1):
+          indices = range(interval_points[j],interval_points[j+1])
+          X_batch = X[indices,:]</code></pre>

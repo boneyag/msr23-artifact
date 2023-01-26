@@ -1,0 +1,33 @@
+<html><h3>b48c943b9f6248dbdd42d0fce44658b937098372,torch_geometric/nn/functional/spline_gcn.py,,spline_gcn,#Any#Any#Any#Any#Any#Any#Any#,9
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Convolution via sparse row sum. Converts [|E| x M_out] feature matrix to
+    &#47&#47 [n x M_out] feature matrix.
+    size = torch.Size([adj.size(0), adj.size(1), <a id="change">output.size(1)</a>])
+    adj = torch.sparse.FloatTensor(indices, output, size)
+    <a id="change">output = sum(adj, dim=1)</a>
+
+    &#47&#47 TODO: root node and weight mean
+    &#47&#47 root_weight = weight[torch.arange(kernel_size[-1])]
+    &#47&#47 root_weight.mean(0)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Convolution via `scatter_add`. Converts [|E| x M_out] feature matrix to
+    &#47&#47 [n x M_out] feature matrix.
+    zero = torch.zeros(adj.size(1), <a id="change">output.size(1)</a>)
+    zero = zero.cuda() if output.is_cuda else zero
+    zero = Variable(zero) if not torch.is_tensor(output) else zero
+    row = row.view(-1, 1).expand(row.size(0), <a id="change">output.size(1)</a>)
+    output = zero.scatter_add_(0, row, output)
+
+    &#47&#47 Weighten root node features by multiplying with the meaned weights at the
+    &#47&#47 origin.
+    index = torch.arange(0, kernel_size[-1]).long()
+    <a id="change">root_weight = weight[index].mean(0)</a>
+    <a id="change">output += torch.mm(features, root_weight)</a>
+
+    if bias is not None:
+        output += bias
+</code></pre><img src="17872976.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 5</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/b48c943b9f6248dbdd42d0fce44658b937098372#diff-685daf364b1bd742cd981434149e2aa77fa64e96839502c6932da421d39504a7L17' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: b48c943b9f6248dbdd42d0fce44658b937098372</div><div id='time'> Time: 2017-10-23</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: torch_geometric/nn/functional/spline_gcn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: spline_gcn</div><BR><BR><div id='link'><a href='https://github.com/r9y9/deepvoice3_pytorch/commit/96ecbdba66058274e2ceb9f58261daa4a45eb873#diff-e2bb38e254f3c8b6c9bbea51b962fb9b89d3e4f3c96ddefc79a56b912617316aL238' target='_blank'>Link</a></div><div id='project'> Project Name: r9y9/deepvoice3_pytorch</div><div id='commit'> Commit Name: 96ecbdba66058274e2ceb9f58261daa4a45eb873</div><div id='time'> Time: 2019-12-21</div><div id='author'> Author: zryuichi@gmail.com</div><div id='file'> File Name: deepvoice3_pytorch/modules.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_mask_from_lengths</div><BR><BR><div id='link'><a href='https://github.com/stanfordnlp/stanza/commit/fcea9fee573e854177b4b9af1cfd1b20029ed21e#diff-90d2eeebd9deb2053bf9ddfa87fce659e52d89df2fa817750979c7cfb1b4be15L25' target='_blank'>Link</a></div><div id='project'> Project Name: stanfordnlp/stanza</div><div id='commit'> Commit Name: fcea9fee573e854177b4b9af1cfd1b20029ed21e</div><div id='time'> Time: 2018-10-11</div><div id='author'> Author: qipeng@users.noreply.github.com</div><div id='file'> File Name: models/common/char_model.py</div><div id='class'> Class Name: CharacterModel</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/elbayadm/attn2d/commit/3dcb5c77165c1a0c33a35a7831182f1aa2e8ad73#diff-8ad0418a3f08206382b8fa9bee9c18500b0bf220d2ccea54edea00c3334b5cf6L39' target='_blank'>Link</a></div><div id='project'> Project Name: elbayadm/attn2d</div><div id='commit'> Commit Name: 3dcb5c77165c1a0c33a35a7831182f1aa2e8ad73</div><div id='time'> Time: 2019-10-18</div><div id='author'> Author: changhan@fb.com</div><div id='file'> File Name: fairseq/models/model_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: fill_tensors</div><BR>

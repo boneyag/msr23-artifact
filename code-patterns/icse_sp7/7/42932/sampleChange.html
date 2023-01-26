@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    latest_salmon_version = salmon_versions[0]
+
+    &#47&#47 find the samples that were not processed with `latest_salmon_version` and trigger new processor jobs for them
+    <a id="change">newest_computational_results = ComputationalResult.objects.all()\
+        .filter(
+            samples=OuterRef(&quotid&quot),
+            processor__name=ProcessorEnum.SALMON_QUANT.value[&quotname&quot]
+        )\
+        .order_by(&quot-created_at&quot)</a>
+    
+    samples = experiment.samples.all().annotate(
+            salmon_version=Subquery(newest_computational_results.values(&quotorganism_index__salmon_version&quot)[:1])
+        )\</code></pre><h3>After Change</h3><pre><code class='java'>
+logger = get_and_configure_logger(__name__)
+
+def update_salmon_versions(experiment: Experiment):
+    quant_results = <a id="change">get_quant_results_for_experiment</a>(experiment)\
+                        .order_by(<a id="change">&quot-organism_index__created_at&quot</a>)\
+                        .prefetch_related(&quotorganism_index&quot)\
+                        .prefetch_related(&quotsamples__original_files&quot)
+
+    latest_salmon_version = None
+    <a id="change">for quant_result in quant_results:
+        if not latest_salmon_version:
+            &#47&#47 we can safely ignore the latest salmon version, that will be the first
+            &#47&#47 quant result. Note we are ordering by -organism_index__created_at
+            latest_salmon_version = quant_result.organism_index.salmon_version
+        elif latest_salmon_version != quant_result.organism_index.salmon_version:
+            &#47&#47 we found a quant result associated with an experiment where we need to run salmon
+            &#47&#47 hopefully each computational result is associated with a single sample
+            for sample in quant_result.samples.all():
+                original_files = list(sample.original_files.all())
+
+                if not len(original_files): continue
+
+                &#47&#47 Ensure that there&quots no processor jobs for these original files that the foreman
+                &#47&#47 might want to retry (failed | hung | lost)
+                has_open_processor_job = ProcessorJob.objects.all()\
+                                            .filter(original_files = original_files[0], pipeline_applied=ProcessorPipeline.SALMON)\
+                                            .filter(
+                                                Q(success=False, retried=False, no_retry=False) | 
+                                                Q(success=None, retried=False, no_retry=False, start_time__isnull=False, end_time=None, nomad_job_id__isnull=False) |
+                                                Q(success=None, retried=False, no_retry=False, start_time=None, end_time=None)
+                                            )\
+                                            .exists()
+                if (has_open_processor_job):
+                    continue
+
+                create_processor_job_for_original_files(original_files)
+
+</a>def update_salmon_all_experiments():
+    Creates a tximport job for all eligible experiments.
+    eligible_experiments = Experiment.objects.all()\
+        .filter(technology=&quotRNA-SEQ&quot, num_processed_samples=0)\</code></pre>

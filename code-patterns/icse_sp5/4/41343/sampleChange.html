@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47 The log_prob of samples are zero for regular importance sampling (no learned proposals) as it cancels out
+                current_sample = Sample(address, distribution, value, log_prob=0, controlled=True)
+            else:
+                current_sample = <a id="change">Sample(address, distribution, value, log_prob=distribution.log_prob(value), controlled=True)</a>
+
+            if _trace_state == TraceState.RECORD_USE_INFERENCE_NETWORK:
+                previous_sample = None
+                if _current_trace.length &gt; 0:</code></pre><h3>After Change</h3><pre><code class='java'>
+                if replace:
+                    if address not in _current_trace_replaced_sample_proposal_distributions:
+                        _current_trace_replaced_sample_proposal_distributions[address] = _current_trace_inference_network.forward_one_time_step(_current_trace_previous_sample, current_sample)
+                    <a id="change">proposal_distribution = _current_trace_replaced_sample_proposal_distributions[address]</a>
+                else:
+                    proposal_distribution = _current_trace_inference_network.forward_one_time_step(_current_trace_previous_sample, current_sample)
+                value = proposal_distribution.sample()[0]
+                current_sample = Sample(address, distribution, value, log_prob=distribution.log_prob(value) - proposal_distribution.log_prob(value), controlled=True)</code></pre>

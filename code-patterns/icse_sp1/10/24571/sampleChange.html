@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  @contextlib.contextmanager
+  def scope(self):
+    parent_scope = super(TpuReplicator, self).scope()
+    <a id="change">with parent_scope, tf.variable_creator_scope(replica_local_creator_tpu):
+      yield</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  @contextlib.contextmanager
+  def scope(self):
+    <a id="change">with contextlib.ExitStack() as stack:
+      stack.enter_context(super(TpuReplicator, self).scope())
+      stack.enter_context(tf.variable_creator_scope(replica_local_creator_tpu))
+
+      &#47&#47 The two hacks below enable a large speedup when initializing TPUs (on
+      &#47&#47 a 4x4 slice startup for ResNet50 goes from 42m -&gt; 2m).
+      &#47&#47 TODO(tomhennigan) Remove these workarounds.
+      stack.enter_context(tf.variable_creator_scope(create_variables_eagerly))
+      stack.enter_context(eager_initial_values())
+
+      yield</a>
+</code></pre>

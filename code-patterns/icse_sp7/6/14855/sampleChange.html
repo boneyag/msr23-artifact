@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.run[connection_id] = False
+        with self.thread_shutdown_lock:
+            if connection_id in self.queues:
+                <a id="change">while not self.queues[connection_id].empty():  &#47&#47 Empty queue
+                    try:
+                        item = self.queues[connection_id].get(block=False)
+                        t = item[0]
+                        packet = item[1]
+                        if not packet:
+                            continue
+                        packet.requires_ack = False
+                        packet.blocking = False
+                        if packet.status is not Packet.STATUS_ACK:
+                            self._send_packet(packet, connection_id, t)
+                    except Empty:
+                        break
+                &#47&#47 Clean up packets
+               </a> with self.packet_map_lock:
+                    packet_ids = list(self.packet_map.keys())
+                    for packet_id in packet_ids:
+                        packet = self.packet_map[packet_id]</code></pre><h3>After Change</h3><pre><code class='java'>
+            &quotClosing channel {}&quot.format(connection_id)
+        )
+        if connection_id in self.open_channels:
+            <a id="change">self.open_channels.remove(connection_id)</a>
+            with self.packet_map_lock:
+                packet_ids = list(self.packet_map.keys())
+                for packet_id in packet_ids:
+                    packet = self.packet_map[packet_id]</code></pre>

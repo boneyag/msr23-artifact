@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            power=2.0)
+
+        for fw in framework_iterator(frameworks=["tf", "tfe", "torch", None]):
+            fw_ = <a id="change">fw if fw != "tfe" else "tf"</a>
+            polynomial = from_config(config, framework=fw_)
+            for t in ts:
+                out = polynomial(t)
+                t = min(t, 100)
+                <a id="change">check(out, 0.5 + (2.0 - 0.5) * (1.0 - t / 100)**2, decimals=4)</a>
+
+    def test_exponential_schedule(self):
+        ts = [0, 5, 10, 100, 90, 2, 1, 99, 23]
+        config = dict(initial_p=2.0, decay_rate=0.99, schedule_timesteps=100)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def test_polynomial_schedule(self):
+        ts = [0, 5, 10, 100, 90, 2, 1, 99, 23, 1000]
+        <a id="change">expected = [
+            0.5 + (2.0 - 0.5) * (1.0 - min(t, 100) / 100)**2 for t in ts]</a>
+        config = dict(
+            type="ray.rllib.utils.schedules.polynomial_schedule."
+            "PolynomialSchedule",
+            schedule_timesteps=100,
+            initial_p=2.0,
+            final_p=0.5,
+            power=2.0)
+
+        for fw in framework_iterator(
+                frameworks=["tf2", "tf", "tfe", "torch", None]):
+            polynomial = from_config(config, framework=fw)
+            for t, e in <a id="change">zip(ts, expected)</a>:
+                <a id="change">out = polynomial(t)</a>
+                <a id="change">check(out, e, decimals=4)</a>
+
+            <a id="change">ts_as_tensors = self._get_framework_tensors(ts, fw)</a>
+            <a id="change">for t, e in zip(ts_as_tensors, expected):
+                out = polynomial(t)
+                assert fw != "tf" or isinstance(out, tf.Tensor)
+                check(out, e, decimals=4)
+
+   </a> def test_exponential_schedule(self):
+        decay_rate = 0.2
+        ts = [0, 5, 10, 100, 90, 2, 1, 99, 23]
+        expected = [2.0 * decay_rate**(t / 100) for t in ts]</code></pre>

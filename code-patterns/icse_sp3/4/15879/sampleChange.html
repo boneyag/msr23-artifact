@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            node_group = self._build_module_node_group(
+                module_name, module_to_type[module_name], node_cpps, input_to_node, output_to_node
+            )
+            <a id="change">_logger.debug(&quotnode_group: %s&quot, node_group)</a>
+            nodes_py.nodes_op.append(node_group)
+
+        &#47&#47 each scope_name may have multiple funcs, we split them and create node for each of them
+        &#47&#47 build node group for torch.nn.functional</code></pre><h3>After Change</h3><pre><code class='java'>
+            use_count = 0
+            merged = set()
+            for node in node_cpps:
+                <a id="change">if node not in merged:
+                    &#47&#47 modules that have same scope name may have different locations in the
+                    &#47&#47 graph. Futhermore, there are also lots of prim:: nodes that in node_cpps,
+                    &#47&#47 so we also need to call the expand_module_node.
+                    unique_name = module_name
+                    if use_count &gt; 0:
+                        unique_name = module_name + &quot.%d&quot % use_count
+                    node_group = self._expand_module_node(
+                        node, module_name, unique_name, module_to_type[module_name],
+                        node_cpps, input_to_node, output_to_node, &quotmodule&quot)
+                    nodes_py.nodes_op.append(node_group)
+                    use_count += 1
+                    merged.update(node_group.node_cpps)
+
+        &#47&#47 each scope_name may have multiple funcs, we split them and create node for each of them
+        &#47&#47 build node group for torch.nn.functional
+       </a> for _, nodes in func_to_nodes.items():
+            &#47&#47 extract non prim:: nodes
+            non_prim_nodes = list()
+            for node in nodes:</code></pre>

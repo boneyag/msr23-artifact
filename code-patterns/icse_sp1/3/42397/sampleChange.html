@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 maxc, max_indices = image.max(-3)
+    if image.is_cuda and torch.__version__ == &quot1.6.0&quot:
+        maxc, max_indices = image.cpu().max(-3)
+        maxc, max_indices = maxc.to(image), <a id="change">max_indices.to(image.device)</a>
+    else:
+        maxc, max_indices = image.max(-3)
+
+    minc: torch.Tensor = image.min(-3)[0]</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 https://github.com/pytorch/pytorch/issues/20414
+    maxc, _ = image.max(-3)
+    maxc_mask = image == maxc.unsqueeze(-3)
+    <a id="change">_, max_indices = ((maxc_mask.cumsum(-3) == 1) & maxc_mask).max(-3)</a>
+    minc: torch.Tensor = image.min(-3)[0]
+
+    v: torch.Tensor = maxc  &#47&#47 brightness
+</code></pre>

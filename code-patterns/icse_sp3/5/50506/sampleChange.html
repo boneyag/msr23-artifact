@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            trunc_size = batch.tgt.size(0) - trunc_start
+        trunc_range = (trunc_start, trunc_start + trunc_size)
+        shard_state = self._make_shard_state(batch, output, trunc_range, attns)
+        all_shards = <a id="change">(
+            shards(shard_state, shard_size)
+            if shard_size &gt; 0 else (shard_state,))</a>
+        total_loss = 0
+        batch_stats = onmt.utils.Statistics()
+        for i, shard in enumerate(all_shards):
+            loss, stats = self._compute_loss(batch, **shard)</code></pre><h3>After Change</h3><pre><code class='java'>
+            trunc_size = batch.tgt.size(0) - trunc_start
+        trunc_range = (trunc_start, trunc_start + trunc_size)
+        shard_state = self._make_shard_state(batch, output, trunc_range, attns)
+        <a id="change">if shard_size == 0:
+            loss, stats = self._compute_loss(batch, **shard_state)
+            return loss / float(normalization), stats
+       </a> batch_stats = onmt.utils.Statistics()
+        for shard in shards(shard_state, shard_size):
+            loss, stats = self._compute_loss(batch, **shard)
+            <a id="change">loss</a>.div(float(normalization)).backward()
+            batch_stats.update(stats)
+        return None, batch_stats
+</code></pre>

@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    import time
+    import datetime
+    <a id="change">for i in range(100):
+        print(datetime.datetime.now())
+        status = submission_status(submission_id, public_id, secret_key)
+        print(status)
+        if status.values().count(None) == 0:
+            break
+        time.sleep(1)
+
+   </a> return submission_id
+
+
+def submission_status(submission_id, public_id, secret_key):</code></pre><h3>After Change</h3><pre><code class='java'>
+    This function assume that the scope of your token is both
+    upload_submission and read_submission_info.
+    
+    t0 = <a id="change">time.time()</a>
+    api = Numerai(public_id, secret_key)
+    if not api.has_token():
+        raise ValueError("Must supply public_id, secret_key")
+    filename = os.path.basename(full_filename)
+    auth_query = \
+        &quot&quot&quot
+        query($filename: String!) {
+            submission_upload_auth(filename: $filename) {
+                filename
+                url
+            }
+        }
+        &quot&quot&quot
+    submission_resp = api.call(auth_query, {&quotfilename&quot: filename})
+    submission_auth = submission_resp[&quotdata&quot][&quotsubmission_upload_auth&quot]
+    file_object = open(full_filename, &quotrb&quot).read()
+    requests.put(submission_auth[&quoturl&quot], data=file_object)
+    create_query = \
+        &quot&quot&quot
+        mutation($filename: String!) {
+            create_submission(filename: $filename) {
+                id
+            }
+        }
+        &quot&quot&quot
+    create = api.call(create_query, {&quotfilename&quot: submission_auth[&quotfilename&quot]})
+    submission_id = create[&quotdata&quot][&quotcreate_submission&quot][&quotid&quot]
+
+    &#47&#47 diplay status until complete
+    seen = []
+    print("            minutes")
+    fmt = "{:&gt;10.6f}  {:&lt;.4f}  {:&lt;}"
+    while True:
+        status = submission_status(submission_id, public_id, secret_key)
+        for key, value in status.items():
+            if value is not None and key not in seen:
+                seen.append(key)
+                t = time.time()
+                <a id="change">minutes = (t - t0) / 60</a>
+                print(fmt.format(value, minutes, key))
+        if len(status) == len(seen):
+            break
+        time.sleep(1)</code></pre>

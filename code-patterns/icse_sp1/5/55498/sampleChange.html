@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                             self._mask_size, 1.0, sample_ratio=2)
+            pooled_mask = pooled_mask.reshape((-3, 0, 0))
+            &#47&#47 duplicate to C * (N, MS, MS)
+            <a id="change">mask_target = []</a>
+            mask_mask = []
+            for cid in range(1, self._num_classes + 1):
+                &#47&#47 boolean array (N,) -&gt; (N, 1, 1)
+                same_cid = (cls_target == cid).reshape((-1, 1, 1))
+                &#47&#47 keep orig targets
+                mask_target.append(pooled_mask)
+                &#47&#47 but mask out the one not belong to this class [N, MS, MS]
+                mask_mask.append(F.broadcast_mul(F.ones_like(pooled_mask), same_cid))
+            &#47&#47 (C, N, MS, MS) -&gt; (N, C, MS, MS)
+            mask_targets.append(<a id="change">F</a>.stack(*mask_target, axis=0).transpose((1, 0, 2, 3)))
+            mask_masks.append(F.stack(*mask_mask, axis=0).transpose((1, 0, 2, 3)))
+
+        &#47&#47 B * (N, C, MS, MS) -&gt; (B, N, C, MS, MS)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 (N,) -&gt; (C, 1) -&gt; (C, N, 1, 1)
+            cls_target = F.expand_dims(cls_target, 0)
+            same_cids = F.broadcast_equal(cls_target, cids)
+            same_cids = <a id="change">same_cids.reshape((-2, 1, 1))</a>
+
+            &#47&#47 (N, MS, MS) -&gt; (C, N, 1, 1) -&gt; (C, N, MS, MS)
+            <a id="change">mask_mask = F.broadcast_like(same_cids, pooled_mask, lhs_axes=(2, 3), rhs_axes=(1, 2))</a>
+
+            &#47&#47 (N, MS, MS) -&gt; (C, N, MS, MS)
+            mask_target = F.expand_dims(pooled_mask, 0)
+            mask_target = F.broadcast_axis(mask_target, size=self._num_classes, axis=0)</code></pre>

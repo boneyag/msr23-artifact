@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        while True:
+            status, im = capture.read()
+            <a id="change">if (status is False):
+                logger.warn(&quotERROR: Failure happened when reading frame&quot)
+
+           </a> counter += 1
+            if counter == interval:
+                logger.debug(&quotDrop frames: {}&quot.format(counter-1))
+                counter = 0</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47    True if a stream is dead afterward. So you can not use
+            &#47&#47    the capture return value (capture status) to determine
+            &#47&#47    whether a stream is alive or not.
+            <a id="change">if (status is True):
+                counter += 1
+                if counter == interval:
+                    logger.debug(&quotDrop frames: {}&quot.format(counter-1))
+                    counter = 0
+
+                    &#47&#47 Open a window and display the ready-to-send frame.
+                    &#47&#47 This is useful for development and debugging.
+                    if args[&quotdisplay&quot]:
+                        cv2.imshow(&quotFrame&quot, im)
+                        cv2.waitKey(1)
+
+                    t = datetime.now()
+                    retval, jpg_bytes = cv2.imencode(&quot.jpg&quot, im)
+                    mqtt_payload = payload.serialize_jpg(jpg_bytes)
+                    comm.send(&quotberrynet/data/rgbimage&quot, mqtt_payload)
+                    logger.debug(&quotsend: {} ms&quot.format(duration(t)))
+                else:
+                    pass
+            else:
+                fail_counter += 1
+                logger.critical(&quotERROR: Failure &#47&#47{} happened when reading frame&quot.format(fail_counter))
+
+                &#47&#47 Re-create capture.
+                capture.release()
+                logger.critical(&quotRe-create a capture and reconnect to {} after 5s&quot.format(stream_source))
+                time.sleep(5)
+                capture = cv2.VideoCapture(stream_source)
+   </a> elif args[&quotmode&quot] == &quotfile&quot:
+        &#47&#47 Prepare MQTT payload
+        im = cv2.imread(args[&quotfilepath&quot])
+        retval, jpg_bytes = cv2.imencode(&quot.jpg&quot, im)</code></pre>

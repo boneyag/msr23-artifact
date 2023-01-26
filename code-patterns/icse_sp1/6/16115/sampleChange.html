@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        else:  &#47&#47 soft-labels
+            losses = F.kl_div(logits, targets, reduction="none")
+            losses = <a id="change">losses</a>.float().sum(-1).type_as(losses)
+
+        nll_loss = mean_ds(losses)
+        if label_smoothing &gt; 0:</code></pre><h3>After Change</h3><pre><code class='java'>
+        if masks is not None:
+            outputs, targets = outputs[masks], targets[masks]
+
+        <a id="change">if not masks.any():
+            nll_loss = torch.tensor(0)
+            loss = nll_loss
+        else:
+            logits = F.log_softmax(outputs, dim=-1)
+            if targets.dim() == 1:
+                losses = F.nll_loss(logits, targets.to(logits.device), reduction=&quotnone&quot)
+
+            else:  &#47&#47 soft-labels
+                losses = F.kl_div(logits, targets.to(logits.device), reduction=&quotnone&quot)
+                losses = losses.sum(-1)
+
+            nll_loss = mean_ds(losses)
+            if label_smoothing &gt; 0:
+                loss = nll_loss * (
+                    1 - label_smoothing) - mean_ds(logits) * label_smoothing
+            else:
+                loss = nll_loss
+
+       </a> loss = loss * factor
+        return {"name": name, "loss": loss, "nll_loss": nll_loss, "factor": factor}
+
+    def _custom_loss(self, loss, name="loss"):</code></pre>

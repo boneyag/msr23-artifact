@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        from gpytorch.lazy import RootLazyTensor
+
+        if method == "symeig" or method is None:
+            <a id="change">evals, evecs = self._symeig(eigenvectors=True, return_evals_as_lazy=True)</a>
+            &#47&#47 TODO: only use non-zero evals (req. dealing w/ batches...)
+            f_list = [
+                evec * eval.diag().clamp(0.0).sqrt().unsqueeze(-2)
+                for eval, evec in zip(evals.lazy_tensors, evecs.lazy_tensors)
+            ]
+            <a id="change">F = KroneckerProductLazyTensor(*f_list)</a>
+            return RootLazyTensor(F)
+        else:
+            return super().root_decomposition(method=method)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        from gpytorch.lazy import RootLazyTensor
+
+        &#47&#47 return a dense root decomposition if the matrix is small
+        <a id="change">if self.shape[-1] &lt;= settings.max_cholesky_size.value():
+            return super().root_decomposition(method=method)
+
+       </a> root_list = [lt.root_decomposition(method=method).root for lt in self.lazy_tensors]
+        kronecker_root = KroneckerProductLazyTensor(*root_list)
+        return RootLazyTensor(kronecker_root)
+</code></pre>

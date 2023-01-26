@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  &#47&#47 We do not use *any* default values for arguments, in case for whatever
+  &#47&#47 reason the Keras API changes a default arg.
+  if <a id="change">config.training.HasField(&quotadam_optimizer&quot)</a>:
+    adam = config.training.adam_optimizer
+    return keras.optimizers.Adam(
+        lr=adam.initial_learning_rate_micros / 1e6,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  &#47&#47 We do not use *any* default values for arguments, in case for whatever
+  &#47&#47 reason the Keras API changes a default arg.
+  <a id="change">if config.training.HasField(&quotadam_optimizer&quot):
+    opt = config.training.adam_optimizer
+    return keras.optimizers.Adam(
+        lr=opt.initial_learning_rate_micros / 1e6,
+        beta_1=opt.beta_1_micros / 1e6,
+        beta_2=opt.beta_2_micros / 1e6,
+        epsilon=None,
+        decay=opt.learning_rate_decay_per_epoch_micros / 1e6,
+        amsgrad=False,
+        clipnorm=opt.normalized_gradient_clip_micros / 1e6,
+    )
+  elif config.training.HasField(&quotrmsprop_optimizer&quot):
+    opt = config.training.rmsprop_optimizer
+    return keras.optimizers.RMSprop(
+        lr=opt.initial_learning_rate_micros / 1e6,
+        decay=opt.initial_learning_rate_micros / 1e6,
+        rho=0.9, epsilon=None,
+    )
+  else:
+    raise errors.InternalError(
+        "Unrecognized value: &quotTrainingOptions.optimizer&quot")
+
+
+</a>def BuildKerasModel(config: model_pb2.Model,
+                    vocabulary_size: int) -&gt; &quotkeras.models.Sequential&quot:
+  Build a Keras model from a Model proto.
+</code></pre>

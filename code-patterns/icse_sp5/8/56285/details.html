@@ -1,0 +1,41 @@
+<html><h3>5a2f76ede044b4904af9461e18253f2929cfc5a4,fairseq/criterions/nat_loss.py,LabelSmoothedDualImitationCriterion,_compute_loss,#LabelSmoothedDualImitationCriterion#Any#Any#Any#Any#Any#Any#,29
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        else:  &#47&#47 soft-labels
+            losses = F.kl_div(logits, targets, reduction="none")
+            losses = <a id="change">losses.float().sum(-1).type_as(losses)</a>
+
+        <a id="change">nll_loss = mean_ds(losses)</a>
+        if label_smoothing &gt; 0:
+            loss = nll_loss * (1 - label_smoothing) - mean_ds(logits) * label_smoothing
+        else:
+            loss = nll_loss</code></pre><h3>After Change</h3><pre><code class='java'>
+        if masks is not None:
+            outputs, targets = outputs[masks], targets[masks]
+
+        <a id="change">if not masks.any():
+            nll_loss = torch.tensor(0)
+            loss = nll_loss
+        else:
+            logits = F.log_softmax(outputs, dim=-1)
+            if targets.dim() == 1:
+                losses = F.nll_loss(logits, targets.to(logits.device), reduction=&quotnone&quot)
+
+            else:  &#47&#47 soft-labels
+                losses = F.kl_div(logits, targets.to(logits.device), reduction=&quotnone&quot)
+                losses = losses.sum(-1)
+
+            nll_loss = mean_ds(losses)
+            if label_smoothing &gt; 0:
+                loss = nll_loss * (
+                    1 - label_smoothing) - mean_ds(logits) * label_smoothing
+            else:
+                loss = nll_loss
+
+       </a> loss = loss * factor
+        return {"name": name, "loss": loss, "nll_loss": nll_loss, "factor": factor}
+
+    def _custom_loss(self, loss, name="loss"):</code></pre><img src="259761565.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/5a2f76ede044b4904af9461e18253f2929cfc5a4#diff-3e7c55c128f8bc110fc5114ea5b640e0e5135c9b9115174ea93281cfc550c9fdL51' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 5a2f76ede044b4904af9461e18253f2929cfc5a4</div><div id='time'> Time: 2019-10-23</div><div id='author'> Author: dnn@fb.com</div><div id='file'> File Name: fairseq/criterions/nat_loss.py</div><div id='class'> Class Name: LabelSmoothedDualImitationCriterion</div><div id='method'> Method Name: _compute_loss</div><BR><BR><div id='link'><a href='https://github.com/Microsoft/nni/commit/c7d58033db0e25736d33406ed262cb5232d366e8#diff-d72cb60e34a99ac8777edbc5d03f6ca00ea67d5667cf0a51bf3df60ab9dc8b1cL88' target='_blank'>Link</a></div><div id='project'> Project Name: Microsoft/nni</div><div id='commit'> Commit Name: c7d58033db0e25736d33406ed262cb5232d366e8</div><div id='time'> Time: 2020-02-09</div><div id='author'> Author: 38930155+chicm-ms@users.noreply.github.com</div><div id='file'> File Name: src/sdk/pynni/nni/compression/torch/pruners.py</div><div id='class'> Class Name: AGP_Pruner</div><div id='method'> Method Name: calc_mask</div><BR>

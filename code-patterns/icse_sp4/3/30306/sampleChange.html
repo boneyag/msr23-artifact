@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        exKxz = _expectation(p, rbf_kern, feat, mean_functions.Identity(D_in), None)
+        eKxz = _expectation(p, rbf_kern, feat, None, None)
+
+        eAxKxz = tf.reduce_sum(<a id="change">exKxz[:, :, None, :]</a>
+                               * tf.transpose(linear_mean.A)[None, None, :, :], axis=3)
+        ebKxz = eKxz[..., None] * linear_mean.b[None, None, :]
+        return eAxKxz + ebKxz
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    with params_as_tensors_for(linear_mean):
+        N = p.mu.shape[0].value
+        D = p.mu.shape[1].value
+        exKxz = <a id="change">expectation(p, mean_functions.Identity(D), (kern, feat))</a>
+        eKxz = expectation(p, (kern, feat))
+        eAxKxz = tf.matmul(tf.tile(linear_mean.A[None, :, :], (N, 1, 1)),
+                           exKxz, transpose_a=True)
+        ebKxz = linear_mean.b[None, :, None] * eKxz[:, None, :]</code></pre>

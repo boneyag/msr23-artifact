@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            ITER_STARTED.send(&quotsender_string&quot, iter_msg=iter_msg)
+
+            iter_msg.ops_to_run[NETWORK_OUTPUT] = \
+                <a id="change">self.outputs_collector.variables(NETWORK_OUTPUT)</a>
+            graph_output = sess.run(iter_msg.ops_to_run,
+                                    feed_dict=iter_msg.data_feed_dict)
+            iter_msg.current_iter_output = graph_output
+            iter_msg.should_stop = not self.app.interpret_output(</code></pre><h3>After Change</h3><pre><code class='java'>
+            useful when the loop exited in an unexpected manner.
+        :return:
+        
+        <a id="change">if not sess:
+            return
+
+       </a> loop_status = loop_status or {}
+        for iter_msg in iteration_generator:
+            if self._coord.should_stop():
+                break
+            loop_status[&quotcurrent_iter&quot] = iter_msg.current_iter
+
+            &#47&#47 broadcasting event of starting an iteration
+            ITER_STARTED.send(&quotsender_string&quot, iter_msg=iter_msg)
+
+            &#47&#47 ``iter_msg.ops_to_run`` are populated with the ops to run in
+            &#47&#47  each iteration, fed into ``session.run()`` and then
+            &#47&#47 passed to the app (and observers) for interpretation.
+            graph_output = sess.run(
+                iter_msg.ops_to_run, feed_dict=iter_msg.data_feed_dict)
+            iter_msg.current_iter_output = graph_output
+
+            &#47&#47 broadcasting event of finishing an iteration
+            ITER_FINISHED.send(&quotsender_string&quot, iter_msg=iter_msg)
+
+            &#47&#47 Checking stopping conditions
+            if iter_msg.should_stop:
+                <a id="change">loop_status[&quotall_saved_flag&quot] = True</a>
+                tf.logging.info(&quotStopping message from event handler: %s.&quot,
+                                iter_msg.should_stop)
+                <a id="change">break</a>
+
+    def _run_sampler_threads(self, session=None):
+        
+        Get samplers from application and try to run sampler threads.</code></pre>

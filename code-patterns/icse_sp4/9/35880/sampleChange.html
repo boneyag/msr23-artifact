@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 ConcatV2&quots last input is axis
+        return all(graph[inp].attr.get(&quotdata_format&quot) == &quotNHWC&quot for inp in
+            node.inputs[:-1])
+    <a id="change">if node in ELEMENTWISE_OPS:
+        return all(graph[inp].attr.get(&quotdata_format&quot) == &quotNHWC&quot for inp in
+            node.inputs)
+   </a> return False
+
+
+def _insert_transpose_to_nchw(graph, src, dst):</code></pre><h3>After Change</h3><pre><code class='java'>
+        if NHWC_parent:
+            for inp in node.inputs:
+                parent_node = graph[inp]
+                <a id="change">if parent_node.attr.get(&quotdata_format&quot, None) == &quotNHWC_format_inserted&quot:
+                    continue
+                elif parent_node.value is not None:
+                    &#47&#47 check that the input is a constant and a vector (rank 1)
+                    val = np.array(parent_node.value.val)
+                    if len(val.shape) == 1 and builtins.is_tensor(parent_node.datatype) and len(parent_node.outputs) == 1:
+                        continue
+                    else:
+                        return False
+                else:
+                    return False
+           </a> return True
+
+    return False
+</code></pre>

@@ -1,0 +1,60 @@
+<html><h3>cce84b5ca5fb02bda814138bd361eea6cafc16d5,test/test_foreach.py,TestForeach,test_float_scalarlist,#TestForeach#Any#Any#,485
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    @dtypes(*torch.testing.get_all_dtypes())
+    def test_float_scalarlist(self, device, dtype):
+        for N in N_values:
+            for foreach_bin_op, foreach_bin_op_, torch_bin_op in <a id="change">zip(self.foreach_bin_ops,
+                                                                     self.foreach_bin_ops_,
+                                                                     self.torch_bin_ops)</a>:
+                tensors = self._get_test_data(device, dtype, N)
+                scalars = [1.1 for _ in range(N)]
+
+                &#47&#47 If incoming dtype is float16 or bfloat16, runs in float32 and casts output back to dtype.
+                control_dtype = torch.float32 if (self.device_type == &quotcuda&quot and
+                                                  (dtype is torch.float16 or dtype is torch.bfloat16)) else dtype
+                expected = [torch_bin_op(t.to(dtype=control_dtype),
+                                         s) for t, s in zip(tensors, scalars)]
+                if (dtype is torch.float16 or dtype is torch.bfloat16):
+                    expected = [e.to(dtype=dtype) for e in expected]
+
+                &#47&#47 we dont support bool and complex types on CUDA for now
+                if (dtype in torch.testing.get_all_complex_dtypes() or dtype == torch.bool) and self.device_type == &quotcuda&quot:
+                    with self.assertRaisesRegex(RuntimeError, "not implemented for"):
+                        foreach_bin_op_(tensors, scalars)
+
+                    with self.assertRaisesRegex(RuntimeError, "not implemented for"):
+                        foreach_bin_op(tensors, scalars)
+                    return
+
+                res = foreach_bin_op(tensors, scalars)
+
+                if dtype == torch.bool:
+                    &#47&#47 see TODO[Fix scalar list]
+                    <a id="change">self.assertEqual(res, [torch_bin_op(t.to(torch.float32), s) for t, s in zip(tensors, scalars)])</a>
+
+                    with self.assertRaisesRegex(RuntimeError, "result type Float can&quott be cast to the desired output type"):
+                        foreach_bin_op_(tensors, scalars)
+                    return
+
+                if dtype in torch.testing.integral_types() and self.device_type == &quotcuda&quot:
+                    &#47&#47 see TODO[Fix scalar list]
+                    self.assertEqual(res, [e.to(dtype) for e in expected])
+
+                    foreach_bin_op_(tensors, scalars)
+                    self.assertEqual(tensors, res)
+                    <a id="change">return</a>
+                else:
+                    if (dtype is torch.float16 or dtype is torch.bfloat16) and TEST_WITH_ROCM:
+                        self.assertEqual(res, expected, atol=1.e-3, rtol=self.dtype_precisions[dtype][0])
+                    else:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                if dtype in torch.testing.integral_types() and self.device_type == "cpu":
+                    with self.assertRaisesRegex(RuntimeError, "result type Float can&quott be cast to the desired output type"):
+                        <a id="change">foreach_bin_op_(tensors, scalars)</a>
+                    continue
+
+                foreach_bin_op_(tensors, scalars)
+                if (dtype is torch.float16 or dtype is torch.bfloat16) and TEST_WITH_ROCM:</code></pre><img src="90933739.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/cce84b5ca5fb02bda814138bd361eea6cafc16d5#diff-d11ea193df3e88b33bbb36334bb325f36630ad7c2486057068c58f633a79d1c1L472' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: cce84b5ca5fb02bda814138bd361eea6cafc16d5</div><div id='time'> Time: 2021-02-02</div><div id='author'> Author: iuriiz@devfair004.maas</div><div id='file'> File Name: test/test_foreach.py</div><div id='class'> Class Name: TestForeach</div><div id='method'> Method Name: test_float_scalarlist</div><BR><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/110a17a4d96d21cecf449073c9b66e1c888d2573#diff-d11ea193df3e88b33bbb36334bb325f36630ad7c2486057068c58f633a79d1c1L402' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: 110a17a4d96d21cecf449073c9b66e1c888d2573</div><div id='time'> Time: 2021-03-04</div><div id='author'> Author: iuriiz@fb.com</div><div id='file'> File Name: test/test_foreach.py</div><div id='class'> Class Name: TestForeach</div><div id='method'> Method Name: test_int_scalarlist</div><BR><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/cce84b5ca5fb02bda814138bd361eea6cafc16d5#diff-d11ea193df3e88b33bbb36334bb325f36630ad7c2486057068c58f633a79d1c1L395' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: cce84b5ca5fb02bda814138bd361eea6cafc16d5</div><div id='time'> Time: 2021-02-02</div><div id='author'> Author: iuriiz@devfair004.maas</div><div id='file'> File Name: test/test_foreach.py</div><div id='class'> Class Name: TestForeach</div><div id='method'> Method Name: test_int_scalarlist</div><BR><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/110a17a4d96d21cecf449073c9b66e1c888d2573#diff-d11ea193df3e88b33bbb36334bb325f36630ad7c2486057068c58f633a79d1c1L492' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: 110a17a4d96d21cecf449073c9b66e1c888d2573</div><div id='time'> Time: 2021-03-04</div><div id='author'> Author: iuriiz@fb.com</div><div id='file'> File Name: test/test_foreach.py</div><div id='class'> Class Name: TestForeach</div><div id='method'> Method Name: test_float_scalarlist</div><BR>

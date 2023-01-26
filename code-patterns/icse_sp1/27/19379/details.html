@@ -1,0 +1,63 @@
+<html><h3>5b3af9ff43bc61f8034f1202a2b57f21c8ee3771,autokeras/graph.py,Graph,to_concat_skip_model,#Graph#Any#Any#,423
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        skip_output_id = conv_block_input_id
+        for index, layer_id in enumerate(pooling_layer_list):
+            layer = self.layer_list[layer_id]
+            new_node_id = <a id="change">self._add_new_node()</a>
+            self._add_edge(deepcopy(layer), skip_output_id, new_node_id)
+            skip_output_id = new_node_id
+
+        &#47&#47 Add the concatenate layer.
+        <a id="change">new_node_id = self._add_new_node()</a>
+        layer = StubConcatenate()
+        new_node_id2 = self._add_new_node()
+        layer2 = StubConv(self.layer_list[start_id].filters + self.layer_list[end_id].filters,
+                          self.layer_list[end_id].filters, 1)
+        if self.weighted:
+            filters_end = self.layer_list[end_id].filters
+            filters_start = self.layer_list[start_id].filters
+            filter_shape = (1,) * (len(self.layer_list[end_id].get_weights()[0].shape) - 2)
+            weights = np.zeros((filters_end, filters_end) + filter_shape)
+            for i in range(filters_end):
+                filter_weight = np.zeros((filters_end,) + filter_shape)
+                filter_weight[(i, 0, 0)] = 1
+                weights[i, ...] = filter_weight
+            weights = np.concatenate((weights,
+                                      np.zeros((filters_end, filters_start) + filter_shape)), axis=1)
+            bias = np.zeros(filters_end)
+            layer2.set_weights((add_noise(weights, np.array([0, 1])), add_noise(bias, np.array([0, 1]))))
+
+        dropout_output_id = self.adj_list[dropout_input_id][0][0]
+        self._redirect_edge(dropout_input_id, dropout_output_id, new_node_id)
+        <a id="change">self._add_edge(layer, new_node_id, new_node_id2)</a>
+        <a id="change">self._add_edge(layer, skip_output_id, new_node_id2)</a>
+        self._add_edge(layer2, new_node_id2, dropout_output_id)
+
+        &#47&#47 &#47&#47 Widen the related layers.
+        &#47&#47 dim = layer_width(end)</code></pre><h3>After Change</h3><pre><code class='java'>
+        pooling_layer_list = self._get_pooling_layers(conv_block_input_id, dropout_input_id)
+        skip_output_id = conv_block_input_id
+        for index, layer_id in enumerate(pooling_layer_list):
+            <a id="change">skip_output_id</a> = <a id="change">self.add_layer(deepcopy(self.layer_list[layer_id]), skip_output_id)</a>
+
+        &#47&#47 Add the concatenate layer.
+        new_conv_layer = StubConv(self.layer_list[start_id].filters + self.layer_list[end_id].filters,
+                                  self.layer_list[end_id].filters, 1)
+
+        dropout_output_id = self.adj_list[dropout_input_id][0][0]
+        <a id="change">concat_input_node_id = self._add_node(deepcopy(self.node_list[dropout_output_id]))</a>
+        self._redirect_edge(dropout_input_id, dropout_output_id, concat_input_node_id)
+
+        concat_layer = StubConcatenate()
+        <a id="change">concat_layer.input = [self.node_list[concat_input_node_id], self.node_list[skip_output_id]]</a>
+        concat_output_node_id = self._add_node(Node(concat_layer.output_shape))
+        self._add_edge(concat_layer, concat_input_node_id, concat_output_node_id)
+        <a id="change">self._add_edge(concat_layer, skip_output_id, concat_output_node_id)</a>
+        <a id="change">concat_layer.output = self.node_list[concat_output_node_id]</a>
+        self.node_list[concat_output_node_id].shape = concat_layer.output_shape
+
+        self._add_edge(new_conv_layer, concat_output_node_id, dropout_output_id)
+        new_conv_layer.input = self.node_list[concat_output_node_id]</code></pre><img src="107406501.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 24</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/keras-team/autokeras/commit/5b3af9ff43bc61f8034f1202a2b57f21c8ee3771#diff-c5c31de724f6d82045a7f0cc212b41d3e5c7c6b858cd144a19ac734502da62cfL422' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/autokeras</div><div id='commit'> Commit Name: 5b3af9ff43bc61f8034f1202a2b57f21c8ee3771</div><div id='time'> Time: 2018-08-01</div><div id='author'> Author: jin@tamu.edu</div><div id='file'> File Name: autokeras/graph.py</div><div id='class'> Class Name: Graph</div><div id='method'> Method Name: to_concat_skip_model</div><BR><BR><div id='link'><a href='https://github.com/jhfjhfj1/autokeras/commit/5b3af9ff43bc61f8034f1202a2b57f21c8ee3771#diff-c5c31de724f6d82045a7f0cc212b41d3e5c7c6b858cd144a19ac734502da62cfL423' target='_blank'>Link</a></div><div id='project'> Project Name: jhfjhfj1/autokeras</div><div id='commit'> Commit Name: 5b3af9ff43bc61f8034f1202a2b57f21c8ee3771</div><div id='time'> Time: 2018-08-01</div><div id='author'> Author: jin@tamu.edu</div><div id='file'> File Name: autokeras/graph.py</div><div id='class'> Class Name: Graph</div><div id='method'> Method Name: to_concat_skip_model</div><BR><BR><div id='link'><a href='https://github.com/jhfjhfj1/autokeras/commit/5b3af9ff43bc61f8034f1202a2b57f21c8ee3771#diff-c5c31de724f6d82045a7f0cc212b41d3e5c7c6b858cd144a19ac734502da62cfL377' target='_blank'>Link</a></div><div id='project'> Project Name: jhfjhfj1/autokeras</div><div id='commit'> Commit Name: 5b3af9ff43bc61f8034f1202a2b57f21c8ee3771</div><div id='time'> Time: 2018-08-01</div><div id='author'> Author: jin@tamu.edu</div><div id='file'> File Name: autokeras/graph.py</div><div id='class'> Class Name: Graph</div><div id='method'> Method Name: to_add_skip_model</div><BR>

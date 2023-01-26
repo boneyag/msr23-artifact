@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def get_trial_system_attrs(self, trial_id: int) -&gt; Dict[str, Any]:
+
+        <a id="change">session = self.scoped_session()</a>
+
+        &#47&#47 Ensure trial exists.
+        <a id="change">models.TrialModel.find_or_raise_by_id(trial_id, session)</a>
+
+        <a id="change">attributes = models.TrialSystemAttributeModel.where_trial_id(trial_id, session)</a>
+        <a id="change">system_attrs = {attr.key: json.loads(attr.value_json) for attr in attributes}</a>
+        &#47&#47 Terminate transaction explicitly to avoid connection timeout during transaction.
+        <a id="change">self._commit(session)</a>
+
+        return system_attrs
+
+    def get_all_study_summaries(self) -&gt; List[StudySummary]:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        return user_attrs
+
+    def get_trial_system_attrs(<a id="change">self</a>, trial_id: int) -&gt; Dict[str, Any]:
+
+        <a id="change">with self._session_scope() as session:
+            &#47&#47 Ensure trial exists.
+            models.TrialModel.find_or_raise_by_id(trial_id, session)
+
+            attributes = models.TrialSystemAttributeModel.where_trial_id(trial_id, session)
+            system_attrs = {attr.key: json.loads(attr.value_json) for attr in attributes}
+
+       </a> return system_attrs
+
+    def get_all_study_summaries(self) -&gt; List[StudySummary]:
+</code></pre>

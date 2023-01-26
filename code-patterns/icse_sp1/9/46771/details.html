@@ -1,0 +1,61 @@
+<html><h3>f25bc176d0365234ebb051d5069edff24ad2de4d,python/dgl/nn/pytorch/conv/sgconv.py,SGConv,forward,#SGConv#Any#Any#,58
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        If ``cache`` is se to True, ``feat`` and ``graph`` should not change during
+        training, or you will get wrong results.
+        
+        <a id="change">graph = graph.local_var()</a>
+        if self._cached_h is not None:
+            feat = self._cached_h
+        else:
+            &#47&#47 compute normalization
+            degs = graph.in_degrees().float().clamp(min=1)
+            norm = th.pow(degs, -0.5)
+            norm = norm.to(feat.device).unsqueeze(1)
+            &#47&#47 compute (D^-1 A^k D)^k X
+            for _ in range(self._k):
+                feat = feat * norm
+                <a id="change">graph.ndata[&quoth&quot]</a> = feat
+                graph.update_all(fn.copy_u(&quoth&quot, &quotm&quot),
+                                 fn.sum(&quotm&quot, &quoth&quot))
+                feat = graph.ndata.pop(&quoth&quot)
+                feat = feat * norm
+
+            if self.norm is not None:
+                feat = self.norm(feat)
+
+            &#47&#47 cache feature
+            if self._cached:
+                <a id="change">self._cached_h</a> = feat
+        <a id="change">return self.fc(feat)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        If ``cache`` is se to True, ``feat`` and ``graph`` should not change during
+        training, or you will get wrong results.
+        
+        <a id="change">with graph.local_scope():
+            if self._cached_h is not None:
+                feat = self._cached_h
+            else:
+                &#47&#47 compute normalization
+                degs = graph.in_degrees().float().clamp(min=1)
+                norm = th.pow(degs, -0.5)
+                norm = norm.to(feat.device).unsqueeze(1)
+                &#47&#47 compute (D^-1 A^k D)^k X
+                for _ in range(self._k):
+                    feat = feat * norm
+                    graph.ndata[&quoth&quot] = feat
+                    graph.update_all(fn.copy_u(&quoth&quot, &quotm&quot),
+                                     fn.sum(&quotm&quot, &quoth&quot))
+                    feat = graph.ndata.pop(&quoth&quot)
+                    feat = feat * norm
+
+                if self.norm is not None:
+                    feat = self.norm(feat)
+
+                &#47&#47 cache feature
+                if self._cached:
+                    self._cached_h = feat
+            return self.fc(feat)</a>
+</code></pre><img src="218264726.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f25bc176d0365234ebb051d5069edff24ad2de4d#diff-e22ca9c5e60d166b965f57668f200d4581c83d33e7e8b31bbc882dbe42d313edL80' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f25bc176d0365234ebb051d5069edff24ad2de4d</div><div id='time'> Time: 2020-05-01</div><div id='author'> Author: wmjlyjemaine@gmail.com</div><div id='file'> File Name: python/dgl/nn/pytorch/conv/sgconv.py</div><div id='class'> Class Name: SGConv</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f25bc176d0365234ebb051d5069edff24ad2de4d#diff-55639951c483a2d95c1d3a4b976dbed7644fad9912517fc0a16e51f3f127d4a4L77' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f25bc176d0365234ebb051d5069edff24ad2de4d</div><div id='time'> Time: 2020-05-01</div><div id='author'> Author: wmjlyjemaine@gmail.com</div><div id='file'> File Name: python/dgl/nn/mxnet/conv/sgconv.py</div><div id='class'> Class Name: SGConv</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/f25bc176d0365234ebb051d5069edff24ad2de4d#diff-60281526db1c3bb58eb9f167f588764a1af19a12f7d60b886a433b2478743213L75' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: f25bc176d0365234ebb051d5069edff24ad2de4d</div><div id='time'> Time: 2020-05-01</div><div id='author'> Author: wmjlyjemaine@gmail.com</div><div id='file'> File Name: python/dgl/nn/tensorflow/conv/sgconv.py</div><div id='class'> Class Name: SGConv</div><div id='method'> Method Name: call</div><BR>

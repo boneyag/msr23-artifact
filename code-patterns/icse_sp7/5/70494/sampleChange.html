@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with tf.name_scope("predict"):
+            self.dqn_action = tf.argmax(self.training_network(self.state), dimension=1, name=&quotdqn_action&quot)
+
+        <a id="change">with tf.name_scope("target_values"):
+            self.target_values = tf.reduce_max(self.target_network(self.next_states), reduction_indices=1, name=&quottarget_values&quot)
+
+       </a> with tf.name_scope("training"):
+            self.q_targets = tf.placeholder(&quotfloat32&quot, [None], name=&quotbatch_q_targets&quot)
+            self.batch_actions = tf.placeholder(&quotint64&quot, [None], name=&quotbatch_actions&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.batch_next_states = tf.placeholder(tf.float32, None, name="next_states")
+            self.batch_actions = tf.placeholder(tf.int64, [None], name=&quotbatch_actions&quot)
+            self.batch_terminals = tf.placeholder(tf.float32, [None], name=&quotbatch_terminals&quot)
+            self.batch_rewards = tf.placeholder(tf.float32, <a id="change">[None]</a>, name=&quotbatch_rewards&quot)
+
+            float_terminals = np.array(self.batch_terminals, dtype=float)
+            self.target_values = tf.reduce_max(self.target_network(self.batch_next_states), reduction_indices=1,
+                                               name=&quottarget_values&quot)
+
+            <a id="change">q_targets = self.batch_rewards + (1. - float_terminals) * self.gamma * self.target_values</a>
+
+            actions_one_hot = tf.one_hot(self.batch_actions, self.actions, 1.0, 0.0)
+
+            self.batch_q_values = tf.identity(self.training_network(self.batch_states), name="batch_q_values")</code></pre>

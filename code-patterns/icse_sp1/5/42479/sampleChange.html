@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    model = retinanet(inputs=inputs, num_classes=num_classes, *args, **kwargs)
+
+    predictions, anchors = model.outputs
+    regression     = <a id="change">keras.layers.Lambda(lambda x: x[:, :, :4], name=&quotregression&quot)(predictions)</a>
+    classification = keras.layers.Lambda(lambda x: x[:, :, 4:4 + num_classes], name=&quotclassification&quot)(predictions)
+    other          = keras.layers.Lambda(lambda x: x[:, :, 4 + num_classes:])(predictions)
+
+    &#47&#47 apply predicted regression to anchors</code></pre><h3>After Change</h3><pre><code class='java'>
+    anchors        = model.outputs[0]
+    regression     = model.outputs[1]
+    classification = model.outputs[2]
+    <a id="change">if len(model.outputs) &gt; 3:
+        other = keras.layers.Concatenate(axis=2, name=&quotother&quot)(model.outputs[2:])
+    else:
+        other = None
+
+    &#47&#47 apply predicted regression to anchors
+   </a> boxes      = keras_retinanet.layers.RegressBoxes(name=&quotboxes&quot)([anchors, regression])
+    detections = keras.layers.Concatenate(axis=2)([boxes, classification] + ([other,] if other is not None else []))
+
+    &#47&#47 additionally apply non maximum suppression</code></pre>

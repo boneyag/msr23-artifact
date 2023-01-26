@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            new_covar_cache = torch.triangular_solve(Q.transpose(-2, -1), R)[0]
+        except RuntimeError as e:
+            &#47&#47 TODO: Deprecate once batch QR supported in latest torch stable
+            <a id="change">if "invalid argument 1: A should be 2 dimensional" not in e.args[0]:
+                raise e
+           </a> <a id="change">cap_mat = new_root.transpose(-2, -1).matmul(new_root)</a>
+            if cap_mat.requires_grad or new_root.requires_grad:
+                new_covar_cache = torch.solve(new_root.transpose(-2, -1), cap_mat)[0]
+            else:
+                new_covar_cache = torch.cholesky_solve(new_root.transpose(-2, -1), torch.cholesky(cap_mat))</code></pre><h3>After Change</h3><pre><code class='java'>
+        if torch.any(zeroish):
+            &#47&#47 can&quott use in-place operation here b/c it would mess up backward pass
+            &#47&#47 haven&quott found a more elegant way to add a jitter diagonal yet...
+            <a id="change">jitter_diag = 1e-6 * torch.sign(Rdiag) * zeroish.to(Rdiag)</a>
+            R = R + jitter_diag.unsqueeze(-1) * torch.eye(R.size(-1), device=R.device, dtype=R.dtype)
+        new_covar_cache = torch.triangular_solve(Q.transpose(-2, -1), R)[0].transpose(-2, -1)
+
+        &#47&#47 Expand inputs accordingly if necessary (for fantasies at the same points)</code></pre>

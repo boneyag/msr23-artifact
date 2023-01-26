@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Pad leading dims with 1
+    padded_dims = 5-a.ndim
+    blockshape_5d = (1,) * padded_dims + blockshape
+    a_5d = a[<a id="change">(None,)</a>*padded_dims]
+
+    view_10d = blockwise_view_5d( a_5d, blockshape_5d )
+    
+    &#47&#47 Drop the extra dimensions
+    slicing_5d = (0,)*padded_dims + (<a id="change">slice(None)</a>,)*a.ndim
+    <a id="change">slicing_10d = slicing_5d + slicing_5d</a>
+    
+    view = view_10d[slicing_10d]
+    assert view.shape == tuple(numpy.array(a.shape) / blockshape) + blockshape
+    if require_aligned_blocks:</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 inter_block_strides = a.itemsize * numpy.array([z*y*x*bt, y*x*bz, x*by, bx])
+
+    &#47&#47 strides within each block
+    <a id="change">intra_block_strides = [1]</a>
+    for s in a.shape[-1:0:-1]:
+        intra_block_strides.append( s*intra_block_strides[-1] )
+    intra_block_strides = numpy.array(intra_block_strides[::-1])
+    
+    &#47&#47 strides from one block to another
+    <a id="change">inter_block_strides = numpy.array(intra_block_strides) * blockshape</a>
+    
+    intra_block_strides *= a.itemsize
+    inter_block_strides *= a.itemsize
+
+    strides = tuple(inter_block_strides) + tuple(intra_block_strides)
+
+    &#47&#47 This is where the magic happens.
+    &#47&#47 Generate a view with our new strides.
+    <a id="change">return numpy.lib.stride_tricks.as_strided(a, shape=view_shape, strides=strides)</a>
+    </code></pre>

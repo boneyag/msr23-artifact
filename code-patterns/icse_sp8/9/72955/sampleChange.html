@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+           attention_mask=None,
+           cache=None,
+           decode_loop_step=None):
+    <a id="change">from_tensor = inputs[0]</a>
+    <a id="change">to_tensor = inputs[1]</a>
+
+    &#47&#47 Scalar dimensions referenced here:
+    &#47&#47   B = batch size (number of sequences)
+    &#47&#47   F = `from_tensor` sequence length
+    &#47&#47   T = `to_tensor` sequence length
+    &#47&#47   N = `num_attention_heads`
+    &#47&#47   H = `size_per_head`
+    &#47&#47 `query_tensor` = [B, F, N ,H]
+    query_tensor = self._query_dense(from_tensor)
+
+    &#47&#47 `key_tensor` = [B, T, N, H]
+    key_tensor = self._key_dense(to_tensor)
+
+    &#47&#47 `value_tensor` = [B, T, N, H]
+    value_tensor = self._value_dense(to_tensor)
+
+    if cache:
+      key_tensor, value_tensor = self._update_cache(key_tensor, value_tensor,
+                                                    cache, decode_loop_step)
+
+    &#47&#47 Take the dot product between "query" and "key" to get the raw
+    &#47&#47 attention scores.
+    <a id="change">attention_scores = tf.einsum(self._dot_product_equation, key_tensor,
+                                 query_tensor)</a>
+    <a id="change">attention_scores = tf.multiply(attention_scores,
+                                   1.0 / math.sqrt(float(self._key_size)))</a>
+
+    &#47&#47 Normalize the attention scores to probabilities.
+    &#47&#47 `attention_scores` = [B, N, F, T]
+    attention_scores = self._masked_softmax(attention_scores, attention_mask)
+
+    &#47&#47 This is actually dropping out entire tokens to attend to, which might
+    &#47&#47 seem a bit unusual, but is taken from the original Transformer paper.
+    attention_scores = self._dropout_layer(attention_scores)
+    &#47&#47 `context_layer` = [B, F, N, H]
+    <a id="change">attention_output = tf.einsum(self._combine_equation, attention_scores,
+                                 value_tensor)</a>
+    attention_output = self._output_dense(attention_output)
+    if self._return_attention_scores:
+      return attention_output, attention_scores, cache
+    return attention_output, cache</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 `value` = [B, S, N, H]
+    value = self._value_dense(value)
+
+    <a id="change">attention_output</a>, attention_scores = self.compute_attention(
+        query, key, value, attention_mask)
+    attention_output = self._output_dense(attention_output)
+</code></pre>

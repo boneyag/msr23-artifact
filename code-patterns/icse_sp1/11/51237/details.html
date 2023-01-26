@@ -1,0 +1,120 @@
+<html><h3>145170ca9bbd89aa01d8a40841e3c039d3683af8,stellargraph/layer/graph_attention.py,GraphAttention,call,#GraphAttention#Any#,211
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if kwargs.get("add_self_loops", False):
+            &#47&#47 get the number of nodes from inputs[1] directly
+            N = K.int_shape(inputs[1])[-1]
+            <a id="change">if N is not None:
+                &#47&#47 create self-loops
+                A = tf.linalg.set_diag(A, K.cast(np.ones((N,)), dtype="float"))
+            else:
+                raise ValueError(
+                    "{}: need to know number of nodes to add self-loops; obtained None instead".format(
+                        type(self).__name__
+                    )
+                )
+
+       </a> outputs = []
+        for head in range(self.attn_heads):
+            kernel = self.kernels[head]  &#47&#47 W in the paper (F x F&quot)
+            attention_kernel = self.attn_kernels[</code></pre><h3>After Change</h3><pre><code class='java'>
+        print("&gt;&gt;", X.shape, A.shape, out_indices.shape)
+
+        batch_dim, n_nodes, _ = K.int_shape(X)
+        <a id="change">if batch_dim != 1:
+            raise ValueError(
+                "Currently full-batch methods only support a batch dimension of one"
+            )
+
+        &#47&#47 Remove singleton batch dimension
+       </a> A = K.squeeze(A, 0)
+        <a id="change">X = K.squeeze(X, 0)</a>
+        out_indices = K.squeeze(out_indices, 0)
+
+        &#47&#47 TODO: move this pre-processing to the generator
+        &#47&#47 if kwargs.get("add_self_loops", False):
+        &#47&#47     &#47&#47 get the number of nodes from inputs[1] directly
+        &#47&#47     N = K.int_shape(inputs[1])[-1]
+        &#47&#47     if N is not None:
+        &#47&#47         &#47&#47 create self-loops
+        &#47&#47         A = tf.linalg.set_diag(A, K.cast(np.ones((N,)), dtype="float"))
+        &#47&#47     else:
+        &#47&#47         raise ValueError(
+        &#47&#47             "{}: need to know number of nodes to add self-loops; obtained None instead".format(
+        &#47&#47                 type(self).__name__
+        &#47&#47             )
+        &#47&#47         )
+
+        outputs = []
+        for head in range(self.attn_heads):
+            kernel = self.kernels[head]  &#47&#47 W in the paper (F x F&quot)
+            attention_kernel = self.attn_kernels[
+                head
+            ]  &#47&#47 Attention kernel a in the paper (2F&quot x 1)
+
+            &#47&#47 Compute inputs to attention network
+            features = K.dot(X, kernel)  &#47&#47 (N x F&quot)
+
+            &#47&#47 Compute feature combinations
+            &#47&#47 Note: [[a_1], [a_2]]^T [[Wh_i], [Wh_2]] = [a_1]^T [Wh_i] + [a_2]^T [Wh_j]
+            attn_for_self = K.dot(
+                features, attention_kernel[0]
+            )  &#47&#47 (N x 1), [a_1]^T [Wh_i]
+            attn_for_neighs = K.dot(
+                features, attention_kernel[1]
+            )  &#47&#47 (N x 1), [a_2]^T [Wh_j]
+
+            &#47&#47 Attention head a(Wh_i, Wh_j) = a^T [[Wh_i], [Wh_j]]
+            dense = attn_for_self + K.transpose(
+                attn_for_neighs
+            )  &#47&#47 (N x N) via broadcasting
+
+            &#47&#47 Add nonlinearity
+            dense = LeakyReLU(alpha=0.2)(dense)
+
+            &#47&#47 Mask values before activation (Vaswani et al., 2017)
+            &#47&#47 YT: this only works for &quotbinary&quot A, not for &quotweighted&quot A!
+            &#47&#47 YT: if A does not have self-loops, the node itself will be masked, so A should have self-loops
+            &#47&#47 YT: this is ensured by setting the diagonal elements of A tensor to 1 above
+            mask = -10e9 * (1.0 - A)
+            dense += mask
+
+            &#47&#47 Apply softmax to get attention coefficients
+            dense = K.softmax(dense, axis=1)  &#47&#47 (N x N), Eq. 3 of the paper
+
+            &#47&#47 Apply dropout to features and attention coefficients
+            dropout_feat = Dropout(self.in_dropout_rate)(features)  &#47&#47 (N x F&quot)
+            dropout_attn = Dropout(self.attn_dropout_rate)(dense)  &#47&#47 (N x N)
+
+            &#47&#47 Linear combination with neighbors&quot features [YT: see Eq. 4]
+            node_features = K.dot(dropout_attn, dropout_feat)  &#47&#47 (N x F&quot)
+
+            if self.use_bias:
+                node_features = K.bias_add(node_features, self.biases[head])
+
+            &#47&#47 Add output of attention head to final output
+            outputs.append(node_features)
+
+        &#47&#47 Aggregate the heads&quot output according to the reduction method
+        if self.attn_heads_reduction == "concat":
+            output = K.concatenate(outputs)  &#47&#47 (N x KF&quot)
+        else:
+            output = K.mean(K.stack(outputs), axis=0)  &#47&#47 N x F&quot)
+
+        &#47&#47 Nonlinear activation function
+        output = self.activation(output)
+
+        &#47&#47 On the final layer we gather the nodes referenced by the indices
+        if self.final_layer:
+            output = K.gather(output, out_indices)
+
+        &#47&#47 Add batch dimension back if we removed it
+        print("BATCH DIM:", batch_dim)
+        if batch_dim == 1:
+            <a id="change">output = K.expand_dims(output, 0)</a>
+
+        return output
+
+</code></pre><img src="237132258.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/stellargraph/stellargraph/commit/145170ca9bbd89aa01d8a40841e3c039d3683af8#diff-a7fe88a489b615f3fc3ad491dab9fad6f9195bdf9cea28b70933003c04e8095cL211' target='_blank'>Link</a></div><div id='project'> Project Name: stellargraph/stellargraph</div><div id='commit'> Commit Name: 145170ca9bbd89aa01d8a40841e3c039d3683af8</div><div id='time'> Time: 2019-06-03</div><div id='author'> Author: andrew.docherty@data61.csiro.au</div><div id='file'> File Name: stellargraph/layer/graph_attention.py</div><div id='class'> Class Name: GraphAttention</div><div id='method'> Method Name: call</div><BR><BR><div id='link'><a href='https://github.com/sentinel-hub/eo-learn/commit/059eb126d50aaebb41433961d02bf5e360a9885e#diff-3c364628a38b7c187998d53cdb39c82af847006b9941288f2e8047aa33e9e24aL74' target='_blank'>Link</a></div><div id='project'> Project Name: sentinel-hub/eo-learn</div><div id='commit'> Commit Name: 059eb126d50aaebb41433961d02bf5e360a9885e</div><div id='time'> Time: 2019-05-27</div><div id='author'> Author: matej.aleksandrov@sinergise.com</div><div id='file'> File Name: geometry/eolearn/geometry/transformations.py</div><div id='class'> Class Name: VectorToRaster</div><div id='method'> Method Name: execute</div><BR><BR><div id='link'><a href='https://github.com/sentinel-hub/eo-learn/commit/60b6d7a3777d1e0c4b17bc954823951aac857fab#diff-6d339e1bc86501e43978096a515a86c8db59e050b374efa3df36fddf571b6d75L295' target='_blank'>Link</a></div><div id='project'> Project Name: sentinel-hub/eo-learn</div><div id='commit'> Commit Name: 60b6d7a3777d1e0c4b17bc954823951aac857fab</div><div id='time'> Time: 2018-06-12</div><div id='author'> Author: devis.peressutti@sinergise.com</div><div id='file'> File Name: io/eolearn/io/sh_add.py</div><div id='class'> Class Name: AddGeopediaFeature</div><div id='method'> Method Name: execute</div><BR>

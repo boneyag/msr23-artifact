@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        batch_size = get_dict_values(x, self._p.input_var[0])[0].shape[0]
+
+        &#47&#47 sample x from p
+        x_dict = <a id="change">get_dict_values(x, self._p.input_var, True)</a>
+        x_p_dict = self._p.sample(x_dict, batch_size=batch_size)
+        x_p_dict = get_dict_values(x_p_dict, self.d.input_var, True)
+
+        if discriminator:
+            &#47&#47 sample x from q
+            x_dict = get_dict_values(x, self._q.input_var, True)
+            x_q_dict = self._q.sample(x_dict, batch_size=batch_size)
+            x_q_dict = get_dict_values(x_q_dict, self.d.input_var, True)
+
+            &#47&#47 sample y_p from d
+            <a id="change">y_p_dict = self.d.sample(detach_dict(x_p_dict))</a>
+            y_p = get_dict_values(y_p_dict, self.d.var)[0]
+
+            &#47&#47 sample y_q from d
+            y_q_dict = self.d.sample(detach_dict(x_q_dict))</code></pre><h3>After Change</h3><pre><code class='java'>
+        batch_size = get_dict_values(x, self._p.input_var[0])[0].shape[0]
+
+        &#47&#47 sample x_p from p
+        x_p_dict = get_dict_values(<a id="change">self._p.sample(x, batch_size=batch_size)</a>, self.d.input_var, True)
+
+        if discriminator:
+            &#47&#47 sample x_q from q
+            x_q_dict = get_dict_values(self._q.sample(x, batch_size=batch_size), self.d.input_var, True)
+
+            &#47&#47 sample y_p from d
+            <a id="change">y_p = get_dict_values(self.d.sample(detach_dict(x_p_dict)), self.d.var)[0]</a>
+            &#47&#47 sample y_q from d
+            y_q = get_dict_values(self.d.sample(detach_dict(x_q_dict)), self.d.var)[0]
+
+            return self.d_loss(y_p, y_q, batch_size), x</code></pre>

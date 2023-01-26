@@ -1,0 +1,66 @@
+<html><h3>f27ac426c89b773b0b2e4d16d58adf12fd577ecb,tensorforce/execution/distributed_runner.py,DistributedRunner,run,#DistributedRunner#,68
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                                           log_device_placement=True))
+            print(&quotCreated server&quot)
+            worker_agent = DistributedAgent(self.agent_config, scope, self.task_index, cluster)
+            <a id="change">print(&quotCreated agent&quot)</a>
+
+            variables_to_save = [v for v in tf.global_variables() if not v.name.startswith("local")]
+            init_op = tf.variables_initializer(variables_to_save)
+            local_init_op = tf.variables_initializer(tf.local_variables() + [v for v in tf.global_variables() if v.name.startswith("local")])</code></pre><h3>After Change</h3><pre><code class='java'>
+                                     config=tf.ConfigProto(intra_op_parallelism_threads=1,
+                                                           inter_op_parallelism_threads=2,
+                                                           log_device_placement=True))
+            <a id="change">self.logger.debug(&quotCreated server&quot)</a>
+            worker_agent = DistributedAgent(self.agent_config, scope, self.task_index, cluster)
+            <a id="change">self.logger.debug(&quotCreated agent&quot)</a>
+
+            variables_to_save = [v for v in tf.global_variables() if not v.name.startswith("local")]
+            init_op = tf.variables_initializer(variables_to_save)
+            local_init_op = tf.variables_initializer(tf.local_variables() + [v for v in tf.global_variables() if v.name.startswith("local")])
+            init_all_op = tf.global_variables_initializer()
+
+            def init_fn(session):
+                &#47&#47 sess.run(worker_agent.model.init_op)
+                session.run(init_all_op)
+
+            config = tf.ConfigProto(device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(self.task_index)])
+
+            supervisor = tf.train.Supervisor(is_chief=(self.task_index == 0),
+                                             logdir="/tmp/train_logs",
+                                             global_step=worker_agent.model.global_step,
+                                             init_op=init_op,
+                                             local_init_op=local_init_op,
+                                             init_fn=init_fn,
+                                             ready_op=tf.report_uninitialized_variables(variables_to_save),
+                                             saver=worker_agent.model.saver)
+                                             &#47&#47 summary_op=tf.summary.merge_all(),
+                                             &#47&#47 summary_writer=worker_agent.model.summary_writer)
+
+            runner = ThreadRunner(worker_agent, deepcopy(self.environment),
+                                  self.max_episode_steps, self.local_steps, preprocessor=self.preprocessor,
+                                  repeat_actions=self.repeat_actions)
+
+            &#47&#47 Connecting to parameter server
+            self.logger.debug(&quotConnecting to session..&quot)
+            <a id="change">self</a>.logger.info(&quotServer target = &quot + str(server.target))
+
+            with supervisor.managed_session(server.target, config=config) as session, session.as_default():
+                self.logger.info(&quotEstablished session, starting runner..&quot)
+                session.run(worker_agent.model.assign_global_to_local)
+
+                runner.start_thread(session)
+                <a id="change">self</a>.logger.debug("Runner started")
+                global_step_count = worker_agent.increment_global_step()
+                <a id="change">self.logger.debug("Got global step count")</a>
+
+                while not supervisor.should_stop() and global_step_count &lt; self.global_steps:
+                    runner.update()
+                    global_step_count = worker_agent.increment_global_step()
+                    <a id="change">self</a>.logger.debug("Global step count: {}".format(global_step_count))
+
+            self.logger.info(&quotStopping supervisor&quot)
+            supervisor.stop()</code></pre><img src="238849980.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/f27ac426c89b773b0b2e4d16d58adf12fd577ecb#diff-2a4af91b3a0306cbef853485ecde39416ad942c670fab28d2083a71e73afda5cL74' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: f27ac426c89b773b0b2e4d16d58adf12fd577ecb</div><div id='time'> Time: 2017-03-18</div><div id='author'> Author: k@ifricke.com</div><div id='file'> File Name: tensorforce/execution/distributed_runner.py</div><div id='class'> Class Name: DistributedRunner</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/f27ac426c89b773b0b2e4d16d58adf12fd577ecb#diff-2a4af91b3a0306cbef853485ecde39416ad942c670fab28d2083a71e73afda5cL74' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: f27ac426c89b773b0b2e4d16d58adf12fd577ecb</div><div id='time'> Time: 2017-03-18</div><div id='author'> Author: k@ifricke.com</div><div id='file'> File Name: tensorforce/execution/distributed_runner.py</div><div id='class'> Class Name: DistributedRunner</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/8877235a8dfb94345462990d776c2fcbc59a287b#diff-6ee2375629e3aa47f9fd4b2f31e231f1427d76bc70033146215fa6e6362c8d49L97' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: 8877235a8dfb94345462990d776c2fcbc59a287b</div><div id='time'> Time: 2017-03-25</div><div id='author'> Author: mi.schaarschmidt@gmail.com</div><div id='file'> File Name: tensorforce/models/trpo_model.py</div><div id='class'> Class Name: TRPOModel</div><div id='method'> Method Name: update</div><BR><BR><div id='link'><a href='https://github.com/graphbrain/graphbrain/commit/a75716bc34ac1ad16884dacb21d2467652f72350#diff-de4db802fa8ad0b890b7592aacd901f9259b3cbf111734693777fce33412f16eL120' target='_blank'>Link</a></div><div id='project'> Project Name: graphbrain/graphbrain</div><div id='commit'> Commit Name: a75716bc34ac1ad16884dacb21d2467652f72350</div><div id='time'> Time: 2020-09-10</div><div id='author'> Author: telmo@telmomenezes.net</div><div id='file'> File Name: graphbrain/agents/claims.py</div><div id='class'> Class Name: Claims</div><div id='method'> Method Name: on_end</div><BR>

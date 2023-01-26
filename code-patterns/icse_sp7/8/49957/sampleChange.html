@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            trainable=False
+        )
+
+        <a id="change">with tf.control_dependencies([tf.assign_add(ref=count, value=1)]):
+            &#47&#47 TODO Do we want to allow an axis or always standardize along time
+            update_mean = tf.reduce_sum(input_tensor=(state - mean_estimate), axis=self.axis)
+
+            &#47&#47 Update implements: https://www.johndcook.com/blog/standard_deviation/
+            &#47&#47 TODO check batch shapes?
+            float_count = tf.cast(x=count, dtype=tf.float32)
+            mean_estimate = tf.cond(
+                pred=(count &gt; 1),
+                true_fn=(lambda: mean_estimate + update_mean / float_count),
+                false_fn=(lambda: mean_estimate)
+            )
+            update_variance_sum = (state - mean_estimate) * (state - update_mean)
+            variance_sum_estimate = variance_sum_estimate + \
+                tf.reduce_sum(input_tensor=update_variance_sum, axis=self.axis)
+
+            variance_estimate = tf.cond(
+                pred=(count &gt; 1),
+                true_fn=(lambda: variance_sum_estimate / (float_count - 1.0)),
+                false_fn=(lambda: variance_estimate)
+            )
+        &#47&#47 print(&quotmean estimate shape = {}&quot.format(tf.shape(mean_estimate)))
+
+       </a> return tf.cond(
+            pred=(count &gt; 1),
+            true_fn=(lambda: (state - mean_estimate) / (tf.maximum(x=tf.sqrt(x=variance_estimate), y=util.epsilon))),
+            false_fn=(lambda: state)</code></pre><h3>After Change</h3><pre><code class='java'>
+            trainable=False
+        )
+
+        <a id="change">assignment = tf.assign_add(ref=count, value=1.0)</a>
+
+        <a id="change">with tf.control_dependencies(control_inputs=(assignment,)):
+            &#47&#47 Mean update
+            mean = tf.reduce_sum(input_tensor=(tensor - mean_estimate), axis=0)
+            assignment = tf.assign_add(ref=mean_estimate, value=(mean / count))
+
+       </a> with tf.control_dependencies(control_inputs=(assignment,)):
+
+            def first_run():
+                &#47&#47 No meaningful mean and variance yet</code></pre>

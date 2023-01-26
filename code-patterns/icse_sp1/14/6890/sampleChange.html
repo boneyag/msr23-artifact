@@ -1,0 +1,80 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                order_model=QA.ORDER_MODEL.CLOSE, 
+                amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
+                )
+            <a id="change">Account.receive_deal(Broker.receive_order(QA.QA_Event(order=order,market_data=item)))</a>
+        elif daily_ind.CROSS_SC.iloc[0] &gt; 0:
+            if Account.sell_available.get(item.code[0], 0) &gt; 0:
+                order=Account.send_order(
+                    code=item.data.code[0], 
+                    time=item.data.date[0], 
+                    amount=Account.sell_available.get(item.code[0], 0), 
+                    towards=QA.ORDER_DIRECTION.SELL, 
+                    price=0, 
+                    order_model=QA.ORDER_MODEL.MARKET, 
+                    amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
+                    )
+                <a id="change">Account.receive_deal(Broker.receive_order(QA.QA_Event(order=order,market_data=item)))</a>
+    Account.settle()
+
+print(Account.history)
+print(Account.history_table)</code></pre><h3>After Change</h3><pre><code class='java'>
+Broker = QA.QA_BacktestBroker()
+
+Account.reset_assets(1000000)
+<a id="change">Account.account_cookie</a> = &quotuser_admin_qsdd&quot
+
+&#47&#47 get data from mongodb
+data = QA.QA_fetch_stock_day_adv(code_list, start_date, end_date)
+data = data.to_qfq()
+
+&#47&#47 add indicator
+ind = data.add_func(QSDD)
+&#47&#47 ind.xs(&quot000001&quot,level=1)[&quot2018-01&quot].plot()
+
+&#47&#47 data_forbacktest=data.select_time(&quot2018-01-01&quot,&quot2018-05-20&quot)
+data_forbacktest = data
+
+for items in data_forbacktest.panel_gen:
+    for item in items.security_gen:
+        daily_ind = ind.loc[item.index]
+        if daily_ind.CROSS_JC.iloc[0] &gt; 0:
+            order = Account.send_order(
+                code=item.code[0],
+                time=item.date[0],
+                amount=1000,
+                towards=QA.ORDER_DIRECTION.BUY,
+                price=0,
+                order_model=QA.ORDER_MODEL.CLOSE,
+                amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
+            )
+            Broker.receive_order(QA.QA_Event(order=order, market_data=item))
+            trade_mes = Broker.query_orders(Account.account_cookie, &quotfilled&quot)
+            res = trade_mes.loc[order.account_cookie, order.realorder_id]
+            order.trade(res.trade_id, res.trade_price,
+                        res.trade_amount, res.trade_time)
+        elif daily_ind.CROSS_SC.iloc[0] &gt; 0:
+            if Account.sell_available.get(item.code[0], 0) &gt; 0:
+                order = Account.send_order(
+                    code=item.code[0],
+                    time=item.date[0],
+                    amount=Account.sell_available.get(item.code[0], 0),
+                    towards=QA.ORDER_DIRECTION.SELL,
+                    price=0,
+                    order_model=QA.ORDER_MODEL.MARKET,
+                    amount_model=QA.AMOUNT_MODEL.BY_AMOUNT
+                )
+                Broker.receive_order(QA.QA_Event(
+                    order=order, market_data=item))
+                <a id="change">trade_mes = Broker.query_orders(
+                    Account.account_cookie, &quotfilled&quot)</a>
+                <a id="change">res = trade_mes.loc[order.account_cookie, order.realorder_id]</a>
+                <a id="change">order.trade(res.trade_id, res.trade_price,
+                            res.trade_amount, res.trade_time)</a>
+    Account.settle()
+
+print(Account.history)
+print(Account.history_table)</code></pre>

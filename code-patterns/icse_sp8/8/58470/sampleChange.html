@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    tol = 1e-6
+    data = np.asarray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    <a id="change">dti_params = np.empty((len(data_flat), 4, 3))</a>
+
+    &#47&#47obtain OLS fitting matrix
+    &#47&#47U,S,V = np.linalg.svd(design_matrix, False)
+    &#47&#47math: beta_ols = inv(X.T*X)*X.T*y
+    &#47&#47math: ols_fit = X*beta_ols*inv(y)
+    &#47&#47ols_fit = np.dot(U, U.T)
+    ols_fit = _ols_fit_matrix(design_matrix)
+    min_diffusivity = tol / -design_matrix.min()
+
+    for param, sig in zip(dti_params, data_flat):
+        <a id="change">param[0]</a>, <a id="change">param[1:]</a> = _wls_iter(ols_fit, design_matrix, sig,
+                                        min_diffusivity)
+
+    dti_params.shape = data.shape[:-1] + (12,)
+    <a id="change">return dti_params</a>
+
+
+def _wls_iter(ols_fit, design_matrix, sig, min_diffusivity):
+    &quot&quot&quot Helper function used by wls_fit_tensor.</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    log_s = np.log(data)
+    w = np.exp(np.einsum(&quot...ij,...j&quot, ols_fit, log_s))
+    <a id="change">evals, evecs = decompose_tensor(
+        from_lower_triangular(
+            np.einsum(&quot...ij,...j&quot,
+                      pinv_vec(design_matrix * w[..., None]),
+                      w * log_s)
+        ),
+        min_diffusivity=tol / -design_matrix.min()
+    )</a>
+
+    dti_params = np.concatenate((evals[..., None, :], evecs), axis=-2)
+    return dti_params.reshape(data.shape[:-1] + (12,))
+</code></pre>

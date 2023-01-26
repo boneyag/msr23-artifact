@@ -1,0 +1,74 @@
+<html><h3>b5a02391e003c33c8f8258a7e3d0736503c3c048,examples/babi_memnn.py,,,#,97
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 output: (samples, story_maxlen, query_maxlen)
+&#47&#47 sum the match vector with the input vector:
+response = Sequential()
+response.add(Merge(<a id="change">[match, input_encoder_c]</a>, mode=&quotsum&quot))
+&#47&#47 output: (samples, story_maxlen, query_maxlen)
+response.add(Permute((2, 1)))  &#47&#47 output: (samples, query_maxlen, story_maxlen)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+print(&quotCompiling...&quot)
+
+&#47&#47 placeholders
+<a id="change">input_sequence = Input((story_maxlen,))</a>
+question = Input((query_maxlen,))
+
+&#47&#47 encoders
+&#47&#47 embed the input sequence into a sequence of vectors
+input_encoder_m = Sequential()
+input_encoder_m.add(Embedding(input_dim=vocab_size,
+                              output_dim=64))
+input_encoder_m.add(Dropout(0.3))
+&#47&#47 output: (samples, story_maxlen, embedding_dim)
+
+&#47&#47 embed the input into a sequence of vectors of size query_maxlen
+input_encoder_c = Sequential()
+input_encoder_c.add(Embedding(input_dim=vocab_size,
+                              output_dim=query_maxlen))
+input_encoder_c.add(Dropout(0.3))
+&#47&#47 output: (samples, story_maxlen, query_maxlen)
+
+&#47&#47 embed the question into a sequence of vectors
+question_encoder = Sequential()
+question_encoder.add(Embedding(input_dim=vocab_size,
+                               output_dim=64,
+                               input_length=query_maxlen))
+question_encoder.add(Dropout(0.3))
+&#47&#47 output: (samples, query_maxlen, embedding_dim)
+
+&#47&#47 encode input sequence and questions (which are indices) to sequences of dense vectors
+input_encoded_m = input_encoder_m(input_sequence)
+input_encoded_c = input_encoder_c(input_sequence)
+question_encoded = question_encoder(question)
+
+&#47&#47 compute a &quotmatch&quot between the first input vector sequence
+&#47&#47 and the question vector sequence
+match = dot([input_encoded_m, question_encoded], axes=(2, 2))  &#47&#47 (samples, story_maxlen, query_maxlen)
+match = Activation(&quotsoftmax&quot)(match)
+
+&#47&#47 add the match matrix with the second input vector sequence
+response = add([match, input_encoded_c])  &#47&#47 (samples, story_maxlen, query_maxlen)
+response = Permute((2, 1))(response)  &#47&#47 (samples, query_maxlen, story_maxlen)
+
+&#47&#47 concatenate the match matrix with the question vector sequence
+answer = concatenate([response, question_encoded])
+
+&#47&#47 the original paper uses a matrix multiplication for this reduction step.
+&#47&#47 we choose to use a RNN instead.
+answer = <a id="change">LSTM(32)(answer)</a>  &#47&#47 (samples, 32)
+
+&#47&#47 one regularization layer -- more would probably be needed.
+answer = Dropout(0.3)(answer)
+<a id="change">answer = Dense(vocab_size)(answer)</a>  &#47&#47 (samples, vocab_size)
+&#47&#47 we output a probability distribution over the vocabulary
+answer = Activation(&quotsoftmax&quot)(answer)
+
+&#47&#47 build the final model
+<a id="change">model = Model([input_sequence, question], answer)</a>
+model.compile(optimizer=&quotrmsprop&quot, loss=&quotcategorical_crossentropy&quot,
+               metrics=[&quotaccuracy&quot])
+
+&#47&#47 train</code></pre><img src="332199886.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/b5a02391e003c33c8f8258a7e3d0736503c3c048#diff-238b174768800b222e507d9a32e2756691a0c3720909da4504d6b08214f13e06L121' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: b5a02391e003c33c8f8258a7e3d0736503c3c048</div><div id='time'> Time: 2017-03-15</div><div id='author'> Author: farizrahman4u@gmail.com</div><div id='file'> File Name: examples/babi_memnn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/pyannote/pyannote-audio/commit/a07c82b9886d1d3fd58908c6109c4d2096760824#diff-e64cccc3c008c7f43f97a66998cb96159976873d834df60d7572d4961ed4d369L260' target='_blank'>Link</a></div><div id='project'> Project Name: pyannote/pyannote-audio</div><div id='commit'> Commit Name: a07c82b9886d1d3fd58908c6109c4d2096760824</div><div id='time'> Time: 2016-08-29</div><div id='author'> Author: bredin@limsi.fr</div><div id='file'> File Name: pyannote/audio/labeling/models.py</div><div id='class'> Class Name: LSTMSequenceLabeling</div><div id='method'> Method Name: design_model</div><BR><BR><div id='link'><a href='https://github.com/pyannote/pyannote-audio/commit/78197159b897391afd44862381694134bb8d049f#diff-e64cccc3c008c7f43f97a66998cb96159976873d834df60d7572d4961ed4d369L63' target='_blank'>Link</a></div><div id='project'> Project Name: pyannote/pyannote-audio</div><div id='commit'> Commit Name: 78197159b897391afd44862381694134bb8d049f</div><div id='time'> Time: 2017-01-11</div><div id='author'> Author: bredin@limsi.fr</div><div id='file'> File Name: pyannote/audio/labeling/models.py</div><div id='class'> Class Name: StackedLSTM</div><div id='method'> Method Name: __call__</div><BR>

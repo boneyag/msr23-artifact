@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                             sparse))
+
+    &#47&#47 Wait for processes to complete and store results
+    <a id="change">pool.close()</a>
+    pool.join()
+    ids = ids_result.get()
+    classes = classes_result.get()
+    features, feat_vectorizer = features_result.get()</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 memory (even though this requires reading the file multiple times).
+    &#47&#47 Do this using a process pool so that we can clear out the temporary
+    &#47&#47 variables more easily and do these in parallel.
+    <a id="change">if MAX_CONCURRENT_PROCESSES == 1:
+        ids = _ids_for_gen_func(example_gen_func, path, ids_to_floats)
+        classes = _classes_for_gen_func(example_gen_func, path, tsv_label)
+        features, feat_vectorizer = _features_for_gen_func(example_gen_func,
+                                                           path, quiet, sparse)
+    else:
+        pool = Pool(min(3, MAX_CONCURRENT_PROCESSES))
+
+        ids_result = pool.apply_async(_ids_for_gen_func,
+                                      args=(example_gen_func, path,
+                                            ids_to_floats))
+        classes_result = pool.apply_async(_classes_for_gen_func,
+                                          args=(example_gen_func, path,
+                                                tsv_label))
+        features_result = pool.apply_async(_features_for_gen_func,
+                                           args=(example_gen_func, path, quiet,
+                                                 sparse))
+
+        &#47&#47 Wait for processes to complete and store results
+        pool.close()
+        pool.join()
+        ids = ids_result.get()
+        classes = classes_result.get()
+        features, feat_vectorizer = features_result.get()
+
+   </a> return ExamplesTuple(ids, classes, features, feat_vectorizer)
+
+
+def convert_examples(example_dicts, sparse=True, ids_to_floats=False):</code></pre>

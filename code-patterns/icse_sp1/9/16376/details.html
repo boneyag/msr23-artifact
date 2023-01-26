@@ -1,0 +1,151 @@
+<html><h3>246339ce01898c92ce9e143895c5def9c46dcb78,skopt/gp_opt.py,,gp_minimize,#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#,26
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    rng = check_random_state(random_state)
+
+    &#47&#47 Bounds
+    <a id="change">n_params = len(bounds)</a>
+    lb, ub = extract_bounds(bounds)
+
+    &#47&#47 Default GP
+    if base_estimator is None:
+        base_estimator = GaussianProcessRegressor(
+            kernel=(ConstantKernel(1.0, (0.01, 1000.0)) *
+                    Matern(length_scale=np.ones(n_params),
+                           length_scale_bounds=[(0.01, 100)] * n_params,
+                           nu=2.5)),
+            normalize_y=True, alpha=10e-6, random_state=random_state)
+
+    &#47&#47 First points
+    Xi = lb + (ub - lb) * rng.rand(n_start, n_params)
+    yi = [func(x) for x in Xi]
+    if np.ndim(yi) != 1:
+        raise ValueError(
+            "The function to be optimized should return a scalar")
+
+    &#47&#47 Bayesian optimization loop
+    models = []
+
+    for i in range(maxiter - n_start):
+        gp = clone(base_estimator)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            gp.fit(Xi, yi)
+
+        models.append(gp)
+
+        if search == "sampling":
+            X = lb + (ub - lb) * rng.rand(n_points, n_params)
+            values = _gaussian_acquisition(
+                X=X, model=gp,  y_opt=np.min(yi), method=acq,
+                xi=xi, kappa=kappa)
+            next_x = X[np.argmin(values)]
+
+        elif search == "lbfgs":
+            best = np.inf
+
+            for j in range(n_restarts_optimizer):
+                x0 = lb + (ub - lb) * rng.rand(n_params)
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    x, a, _ = fmin_l_bfgs_b(
+                        _acquisition, x0,
+                        args=(gp, np.min(yi), acq, xi, kappa),
+                        bounds=bounds, approx_grad=True, maxiter=10)
+
+                if a &lt; best:
+                    next_x, best = x, a
+
+        next_y = func(next_x)
+        Xi = np.vstack((Xi, next_x))
+        yi.append(next_y)
+
+    &#47&#47 Pack results
+    res = OptimizeResult()
+    best = np.argmin(yi)
+    <a id="change">res.x</a> = Xi[best]
+    res.fun = yi[best]
+    res.func_vals = np.array(yi)
+    <a id="change">res.x_iters</a> = Xi
+    res.models = models
+
+    return res</code></pre><h3>After Change</h3><pre><code class='java'>
+    rng = check_random_state(random_state)
+
+    &#47&#47 Bounds
+    <a id="change">space = Space(dimensions)</a>
+
+    &#47&#47 Default GP
+    if base_estimator is None:
+        base_estimator = GaussianProcessRegressor(
+            kernel=(ConstantKernel(1.0, (0.01, 1000.0)) *
+                    Matern(length_scale=np.ones(space.transformed_n_dims),
+                           length_scale_bounds=[(0.01, 100)] * space.transformed_n_dims,
+                           nu=2.5)),
+            normalize_y=True, alpha=10e-6, random_state=random_state)
+
+    &#47&#47 First points
+    Xi = <a id="change">space.rvs(n_samples=n_start, random_state=rng)</a>
+    yi = [func(x) for x in Xi]
+    if np.ndim(yi) != 1:
+        raise ValueError(
+            "The function to be optimized should return a scalar")
+
+    &#47&#47 Bayesian optimization loop
+    models = []
+
+    for i in range(maxiter - n_start):
+        gp = clone(base_estimator)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            gp.fit(space.transform(Xi), yi)
+
+        models.append(gp)
+
+        if search == "sampling":
+            X = space.transform(space.rvs(n_samples=n_points,
+                                          random_state=rng))
+            values = _gaussian_acquisition(
+                X=X, model=gp,  y_opt=np.min(yi), method=acq,
+                xi=xi, kappa=kappa)
+            next_x = X[np.argmin(values)]
+
+        elif search == "lbfgs":
+            best = np.inf
+
+            for j in range(n_restarts_optimizer):
+                x0 = space.transform(space.rvs(n_samples=1,
+                                               random_state=rng))[0]
+
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    x, a, _ = fmin_l_bfgs_b(
+                        _acquisition, x0,
+                        args=(gp, np.min(yi), acq, xi, kappa),
+                        bounds=space.transformed_bounds,
+                        approx_grad=True, maxiter=10)
+
+                if a &lt; best:
+                    next_x, best = x, a
+
+        next_x = space.inverse_transform(next_x.reshape((1, -1)))[0]
+        print(next_x)
+        next_y = func(next_x)
+        Xi = np.vstack((Xi, next_x))
+        yi.append(next_y)
+
+    &#47&#47 Pack results
+    res = OptimizeResult()
+    best = np.argmin(yi)
+    <a id="change">res.x</a> = Xi[best]
+    res.fun = yi[best]
+    res.func_vals = np.array(yi)
+    <a id="change">res.x_iters</a> = Xi
+    res.models = models
+
+    return res</code></pre><img src="96068024.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/scikit-optimize/scikit-optimize/commit/246339ce01898c92ce9e143895c5def9c46dcb78#diff-97050f864b120e12efbf2dc90b39500f0534c635d2c6f5cd442216bc9abcebcbL121' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-optimize/scikit-optimize</div><div id='commit'> Commit Name: 246339ce01898c92ce9e143895c5def9c46dcb78</div><div id='time'> Time: 2016-06-14</div><div id='author'> Author: g.louppe@gmail.com</div><div id='file'> File Name: skopt/gp_opt.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: gp_minimize</div><BR><BR><div id='link'><a href='https://github.com/scikit-optimize/scikit-optimize/commit/246339ce01898c92ce9e143895c5def9c46dcb78#diff-b664a3975b355614eb5080a28622c74841ee57034e3aa7ccb00c1cb7ff75b571L45' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-optimize/scikit-optimize</div><div id='commit'> Commit Name: 246339ce01898c92ce9e143895c5def9c46dcb78</div><div id='time'> Time: 2016-06-14</div><div id='author'> Author: g.louppe@gmail.com</div><div id='file'> File Name: skopt/dummy_opt.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: dummy_minimize</div><BR><BR><div id='link'><a href='https://github.com/scikit-optimize/scikit-optimize/commit/0a60b2d2807cf370e984b0bd9f7c4d0edabe4267#diff-6ff0979d222b062a3c7534e3f38f057b1fd540d5ba8007def05ef75cf7aaab5eL79' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-optimize/scikit-optimize</div><div id='commit'> Commit Name: 0a60b2d2807cf370e984b0bd9f7c4d0edabe4267</div><div id='time'> Time: 2016-06-14</div><div id='author'> Author: g.louppe@gmail.com</div><div id='file'> File Name: skopt/gbrt_opt.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: gbrt_minimize</div><BR>

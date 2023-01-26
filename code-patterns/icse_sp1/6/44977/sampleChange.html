@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with tf.control_dependencies([
+            tf.assert_equal(tf.shape(Xmu)[1], tf.constant(kern.input_dim, settings.tf_int),
+                            message="Currently cannot handle slicing in exKxz."),
+            <a id="change">tf.assert_equal(tf.shape(Xmu), tf.shape(Xcov)[1:3], name="assert_Xmu_Xcov_shape")</a>
+        ]):
+            Xmu = tf.identity(Xmu)
+
+        N = tf.shape(Xmu)[0] - 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        N = tf.shape(Xmu)[0] - 1
+        var_Z = kern.variance * feat.Z  &#47&#47 MxD
+        tiled_Z = tf.tile(tf.expand_dims(var_Z, 0), (N, 1, 1))  &#47&#47 NxMxD
+        <a id="change">eXX = Xcov[1, :-1] + (Xmu[:-1][..., None] * Xmu[1:][:, None, :])</a>  &#47&#47 NxDxD
+        return <a id="change">tf.matmul(tiled_Z, eXX)</a>
+
+
+@dispatch((Gaussian, DiagonalGaussian), kernels.Linear, InducingPoints, kernels.Linear, InducingPoints)
+def _expectation(p, kern1, feat1, kern2, feat2):</code></pre>

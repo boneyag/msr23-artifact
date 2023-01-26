@@ -1,0 +1,106 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    mnist = MNIST()
+
+    <a id="change">train_template</a> = (<a id="change">Pipeline</a>(config=dict(model=VGG7))
+                .init_variable(&quotmodel&quot, VGG16)
+                .init_variable(&quotloss_history&quot, init_on_each_run=list)
+                .init_variable(&quotcurrent_loss&quot, init_on_each_run=0)
+                .init_variable(&quotpred_label&quot, init_on_each_run=list)
+                .init_model(&quotdynamic&quot, V(&quotmodel&quot), &quotconv&quot,
+                            config={&quotinputs&quot: dict(images={&quotshape&quot: B(&quotimage_shape&quot)},
+                                                   labels={&quotclasses&quot: 10, &quottransform&quot: &quotohe&quot, &quotname&quot: &quottargets&quot}),
+                                    &quotinput_block/inputs&quot: &quotimages&quot,
+                                    &#47&#47&quotbody/block/bottleneck&quot: 1,
+                                    &#47&#47&quothead/units&quot: [100, 100, 10],
+                                    &quotnothing&quot: F(lambda batch: batch.images.shape[1:]),
+                                    &#47&#47&quotfilters&quot: 16, &quotwidth_factor&quot: 1,
+                                    &#47&#47&quotbody&quot: dict(se_block=1, se_factor=4, resnext=1, resnext_factor=4, bottleneck=1),
+                                    &quotoutput&quot: dict(ops=[&quotaccuracy&quot])})
+                .resize(shape=<a id="change">(16, 16)</a>)
+                .train_model(&quotconv&quot, fetches=&quotloss&quot,
+                                     feed_dict={&quotimages&quot: B(&quotimages&quot),
+                                                &quotlabels&quot: B(&quotlabels&quot)},
+                             save_to=V(&quotcurrent_loss&quot), use_lock=True)
+                .print_variable(&quotcurrent_loss&quot)
+                .update_variable(&quotloss_history&quot, V(&quotcurrent_loss&quot), mode=&quota&quot))
+
+    <a id="change">train_pp</a> = (train_template &lt;&lt; mnist.train)
+    print("Start training...")
+    t = time()
+    train_pp.run(BATCH_SIZE, shuffle=True, n_epochs=1, drop_last=False, prefetch=0)
+    print("End training", time() - t)
+
+
+    print()
+    print("Start testing...")
+    t = time()
+    <a id="change">test_pp</a> = (mnist.test.p
+                .import_model(&quotconv&quot, train_pp)
+                .init_variable(&quotaccuracy&quot, init_on_each_run=list)
+                .predict_model(&quotconv&quot, fetches=&quotaccuracy&quot, feed_dict={&quotimages&quot: B(&quotimages&quot),
+                                                                      &quotlabels&quot: B(&quotlabels&quot)},
+                               save_to=V(&quotaccuracy&quot), mode=&quota&quot)
+                .run(BATCH_SIZE, shuffle=True, n_epochs=1, drop_last=True, prefetch=0))
+    print("End testing", time() - t)
+
+    <a id="change">accuracy</a> = np.array(test_pp.get_variable(&quotaccuracy&quot)).mean()
+    print(&quotAccuracy {:6.2f}&quot.format(accuracy))
+
+
+    <a id="change">conv</a> = train_pp.get_model_by_name("conv")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    mnist = MNIST()
+
+    <a id="change">train_template</a> = (<a id="change">Pipeline</a>(config=dict(model=VGG7))
+                .init_variable(&quotmodel&quot, ResNetAttention56)
+                .init_variable(&quotloss_history&quot, init_on_each_run=list)
+                .init_variable(&quotcurrent_loss&quot, init_on_each_run=0)
+                .init_variable(&quotpred_label&quot, init_on_each_run=list)
+                .init_model(&quotdynamic&quot, V(&quotmodel&quot), &quotconv&quot,
+                            config={&quotinputs&quot: dict(images={&quotshape&quot: B(&quotimage_shape&quot)},
+                                                   labels={&quotclasses&quot: 10, &quottransform&quot: &quotohe&quot, &quotname&quot: &quottargets&quot}),
+                                    &quotinput_block/inputs&quot: &quotimages&quot,
+                                    &#47&#47&quotbody/block/bottleneck&quot: 1,
+                                    &#47&#47&quothead/units&quot: [100, 100, 10],
+                                    &#47&#47&quotnothing&quot: F(lambda batch: batch.images.shape[1:]),
+                                    &#47&#47&quotfilters&quot: 16, &quotwidth_factor&quot: 1,
+                                    &#47&#47&quotbody&quot: dict(se_block=1, se_factor=4, resnext=1, resnext_factor=4, bottleneck=1),
+                                    &quotoutput&quot: dict(ops=[&quotaccuracy&quot])})
+                &#47&#47.resize(shape=(16, 16))
+                .train_model(&quotconv&quot, fetches=&quotloss&quot,
+                                     feed_dict={&quotimages&quot: B(&quotimages&quot),
+                                                &quotlabels&quot: B(&quotlabels&quot)},
+                             save_to=V(&quotcurrent_loss&quot), use_lock=True)
+                .print(V(&quotcurrent_loss&quot), model=C(&quotmodel&quot))
+                .update_variable(&quotloss_history&quot, V(&quotcurrent_loss&quot), mode=&quota&quot))
+
+    <a id="change">train_pp</a> = (train_template &lt;&lt; mnist.train)
+    print("Start training...")
+    t = time()
+    train_pp.run(BATCH_SIZE, shuffle=True, n_epochs=1, drop_last=False, prefetch=0)
+    print("End training", time() - t)
+
+
+    print()
+    print("Start testing...")
+    t = time()
+    <a id="change">test_pp</a> = (mnist.test.p
+                .import_model(&quotconv&quot, train_pp)
+                .init_variable(&quotaccuracy&quot, init_on_each_run=list)
+                .predict_model(&quotconv&quot, fetches=&quotaccuracy&quot, feed_dict={&quotimages&quot: B(&quotimages&quot),
+                                                                      &quotlabels&quot: B(&quotlabels&quot)},
+                               save_to=V(&quotaccuracy&quot), mode=&quota&quot)
+                .run(BATCH_SIZE, shuffle=True, n_epochs=1, drop_last=True, prefetch=0))
+    print("End testing", time() - t)
+
+    <a id="change">accuracy</a> = np.array(test_pp.get_variable(&quotaccuracy&quot)).mean()
+    print(&quotAccuracy {:6.2f}&quot.format(accuracy))
+
+
+    <a id="change">conv</a> = train_pp.get_model_by_name("conv")
+</code></pre>

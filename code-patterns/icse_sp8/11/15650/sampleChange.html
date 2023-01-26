@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            resolved_addresses.add(addr)
+    else:
+        &#47&#47 if outbound traffic to non-resolved ip, flag
+        <a id="change">if packet[&quotdest_ip&quot] not in network_machines:
+            if packet[&quotdest_ip&quot] not in resolved_addresses:
+                return "TODO: signaling packet of interest"
+
+</a>
+channel.basic_consume(verify_dns_record, queue=queue_name, no_ack=True)
+channel.start_consuming()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    packet = ast.literal_eval(body)
+    src_addr = packet[&quotsrc_ip&quot]
+    <a id="change">if src_addr in network_machines:
+        if &quotdns_resolved&quot in packet:
+            &#47&#47 if dns packet then update resolved addresses
+            if src_addr in dns_records:
+                for addr in packet[&quotdns_resolved&quot]:
+                    dns_records[src_addr].add(addr)
+            else:
+                new_record = DNSRecord(src_addr)
+                for addr in packet[&quotdns_resolved&quot]:
+                    new_record.add(addr)
+                dns_records[src_addr] = new_record
+        else:
+            &#47&#47 if outbound traffic to non-resolved ip, flag
+            if packet[&quotdest_ip&quot] not in dns_records[src_addr]:
+                return "TODO: signaling packet of interest"
+
+</a>
+channel.basic_consume(verify_dns_record, queue=queue_name, no_ack=True)
+channel.start_consuming()
+</code></pre>

@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def _eval_corr_matrix(self):
+        corr_factor = self.task_noise_corr_factor.squeeze(0)
+        corr_diag = self.task_noise_corr_diag.squeeze(0)
+        M = corr_factor.matmul(<a id="change">corr_factor.transpose(-1, -2)</a>)
+        idx = torch.arange(M.shape[-1], dtype=torch.long, device=M.device)
+        M[..., idx, idx] += corr_diag
+        sem_inv = 1 / torch.diagonal(M, dim1=-2, dim2=-1).sqrt().unsqueeze(-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def _eval_corr_matrix(self):
+        tnc = self.task_noise_corr
+        <a id="change">fac_diag = torch.ones(*tnc.shape[:-1], self.num_tasks, device=tnc.device, dtype=tnc.dtype)</a>
+        Cfac = torch.diag_embed(fac_diag)
+        Cfac[..., self.tidcs[0], self.tidcs[1]] = self.task_noise_corr
+        &#47&#47 squared rows must sum to one for this to be a correlation matrix
+        C = Cfac / Cfac.pow(2).sum(dim=-1, keepdim=True).sqrt()</code></pre>

@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47if opt.fp16:
+            &#47&#47    input_img = input_img.half()
+            outputs = model(input_img) 
+            f = <a id="change">outputs.data.cpu().float()</a>
+            ff = <a id="change">ff+f</a>
+        &#47&#47 norm feature
+        if opt.PCB:
+            &#47&#47 feature size (n,2048,6)
+            &#47&#47 1. To treat every part equally, I calculate the norm for every 2048-dim part feature.</code></pre><h3>After Change</h3><pre><code class='java'>
+        n, c, h, w = img.size()
+        count += n
+        print(count)
+        ff = <a id="change">torch.FloatTensor(n,512).zero_().cuda()</a>
+        if opt.PCB:
+            ff = <a id="change">torch.FloatTensor(n,2048,6).zero_().cuda()</a> &#47&#47 we have six parts
+
+        for i in range(2):
+            if(i==1):
+                img = fliplr(img)
+            input_img = Variable(img.cuda())
+            for scale in ms:
+                if scale != 1:
+                    &#47&#47 bicubic is only  available in pytorch&gt; 1.1
+                    input_img = nn.functional.interpolate(input_img, scale_factor=scale, mode=&quotbicubic&quot, align_corners=False)
+                outputs = model(input_img) 
+                <a id="change">ff += outputs</a>
+        &#47&#47 norm feature
+        if opt.PCB:
+            &#47&#47 feature size (n,2048,6)
+            &#47&#47 1. To treat every part equally, I calculate the norm for every 2048-dim part feature.</code></pre>

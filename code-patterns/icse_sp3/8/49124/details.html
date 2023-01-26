@@ -1,0 +1,41 @@
+<html><h3>9cf8f6cdf6a2008843cb37da6e34b8d10353b0bf,ml/rl/preprocessing/sparse_to_dense.py,PythonSparseToDenseProcessor,process,#PythonSparseToDenseProcessor#Any#,73
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def process(
+        self, sparse_data: List[Dict[int, float]]
+    ) -&gt; Tuple[torch.Tensor, torch.Tensor]:
+        <a id="change">dense_data = torch.ones([len(sparse_data), len(self.feature_id_to_index)])</a>
+        dense_presence = torch.zeros(
+            [len(sparse_data), len(self.feature_id_to_index)]
+        ).byte()
+        for i, feature_map in enumerate(sparse_data):
+            assert (
+                feature_map is not None
+            ), f"Please make sure that features are not NULL; row {i}"
+            for j, value in feature_map.items():
+                j_index = self.feature_id_to_index.get(j, None)
+                if j_index is None:
+                    continue
+                dense_data[i][j_index] = value
+                dense_presence[i][j_index] = 1
+        if self.set_missing_value_to_zero:
+            &#47&#47 When we set missing values to 0, we don&quott know what is and isn&quott missing
+            dense_presence = dense_data != 0.0
+        <a id="change">return (dense_data, dense_presence)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Add columns identified by normalization, but not present in batch
+        for col in self.sorted_features:
+            if col not in state_features_df.columns:
+                <a id="change">state_features_df[col] = missing_value</a>
+        values = torch.from_numpy(
+            state_features_df[self.sorted_features].values
+        ).float()
+        if self.set_missing_value_to_zero:
+            &#47&#47 When we set missing values to 0, we don&quott know what is and isn&quott missing
+            <a id="change">presence = torch.ones_like(values, dtype=torch.bool)</a>
+        else:
+            presence = values != missing_value
+        <a id="change">return values, presence</a>
+</code></pre><img src="227454830.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/9cf8f6cdf6a2008843cb37da6e34b8d10353b0bf#diff-40d0522b82c5b70c345cafb4ea88481bd3a3a6fb58079921a00ba83d2cb9f0c5L58' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: 9cf8f6cdf6a2008843cb37da6e34b8d10353b0bf</div><div id='time'> Time: 2019-12-12</div><div id='author'> Author: kittipat@fb.com</div><div id='file'> File Name: ml/rl/preprocessing/sparse_to_dense.py</div><div id='class'> Class Name: PythonSparseToDenseProcessor</div><div id='method'> Method Name: process</div><BR><BR><div id='link'><a href='https://github.com/HyperGAN/HyperGAN/commit/ee19c97fefd74ce588428a96e157bb826c0a450c#diff-066ad47948361607d62b707bdde47e127cbbdbec14f10361488db18365140a44L19' target='_blank'>Link</a></div><div id='project'> Project Name: HyperGAN/HyperGAN</div><div id='commit'> Commit Name: ee19c97fefd74ce588428a96e157bb826c0a450c</div><div id='time'> Time: 2020-12-20</div><div id='author'> Author: martyn@255bits.com</div><div id='file'> File Name: hypergan/samplers/aligned_sampler.py</div><div id='class'> Class Name: AlignedSampler</div><div id='method'> Method Name: _sample</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/ranking/commit/6bf3f51cd0a312da842157665663c2dad9983248#diff-ac0a8b23265c0fdd56da5d2709bf0e7dfce716e2713c8c9fd8d44f4fd9461ff7L930' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/ranking</div><div id='commit'> Commit Name: 6bf3f51cd0a312da842157665663c2dad9983248</div><div id='time'> Time: 2021-01-29</div><div id='author'> Author: xuanhui@google.com</div><div id='file'> File Name: tensorflow_ranking/python/losses_impl.py</div><div id='class'> Class Name: ClickEMLoss</div><div id='method'> Method Name: _compute_latent_prob</div><BR>

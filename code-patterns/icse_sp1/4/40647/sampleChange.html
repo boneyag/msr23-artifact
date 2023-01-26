@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        encoded = OrderedDict()
+        for encoder in self.encoders:
+            transformed = <a id="change">encoder.transform(self.read_column(data, encoder.source_column))</a>
+            if hasattr(encoder, &quotsequence_length&quot):
+                for i in range(encoder.sequence_length):
+                    encoded[encoder.sequence_name(i)] = transformed.iloc[:, i]
+            else:</code></pre><h3>After Change</h3><pre><code class='java'>
+        :return: a dict with encoded values
+        
+        encoded = OrderedDict()
+        <a id="change">if self.multiprocessing:
+            pool = multiprocessing.Pool(self.workers)
+            results = []
+            for encoder in self.encoders:
+                results.append((encoder, pool.apply_async(self.transform, (encoder, data))))
+
+            for encoder, result in results:
+                self.merged_transformed(encoded, encoder, result.get())
+    
+        else:
+            for encoder in self.encoders:
+                self.merged_transformed(encoded, encoder, self.transform(encoder, data))
+
+       </a> for column in self.index:
+            encoded[column] = self.read_column(data, column)
+            
+        &#47&#47 Using a DataFrame as a container temporarily requires double the memory,</code></pre>

@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.context.log.warn(&quotUnknown target for test %{0}&quot.format(test))
+
+      filename = get_test_filename(test)
+      <a id="change">if os.path.exists(filename):
+        try:
+          xml = XmlParser.from_file(filename)
+          str_failures = xml.get_attribute(&quottestsuite&quot, &quotfailures&quot)
+          int_failures = int(str_failures)
+
+          str_errors = xml.get_attribute(&quottestsuite&quot, &quoterrors&quot)
+          int_errors = int(str_errors)
+
+          if target and (int_failures or int_errors):
+            for testcase in xml.parsed.getElementsByTagName(&quottestcase&quot):
+              test_failed = testcase.getElementsByTagName(&quotfailure&quot)
+              test_errored = testcase.getElementsByTagName(&quoterror&quot)
+              if test_failed or test_errored:
+                failed_targets[target].add(&quot{testclass}&#47&#47{testname}&quot.format(
+                  testclass=testcase.getAttribute(&quotclassname&quot),
+                  testname=testcase.getAttribute(&quotname&quot),
+                ))
+        except (XmlParser.XmlError, ValueError) as e:
+          self.context.log.error(&quotError parsing test result file {0}: {1}&quot.format(filename, e))
+      else:
+        &#47&#47 If the test file doesn&quott exist, then it must have failed before running the tests, so we should
+        &#47&#47 ensure this target is in failed_targets, but we don&quott have details about which testclass&#47&#47testname
+        &#47&#47 failed. Instead we just use the &quottest&quot up to the first &quot$&quot.
+        test_split = test.split(&quot$&quot)
+        failed_targets[target].add(test_split[0])
+
+   </a> return dict(failed_targets)
+
+  def _run_tests(self, tests_to_targets):
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def get_test_filename(test_class_name):
+      return os.path.join(self.workdir, &quotTEST-{0}.xml&quot.format(test_class_name.replace(&quot$&quot, &quot-&quot)))
+
+    <a id="change">xml_filenames_to_targets = defaultdict()</a>
+    for test, target in tests_and_targets.items():
+      if target is None:
+        self.context.log.warn(&quotUnknown target for test %{0}&quot.format(test))
+
+      &#47&#47 Look for a TEST-*.xml file that matches the classname or a containing classname
+      test_class_name = test
+      for _part in test.split(&quot$&quot):
+        filename = get_test_filename(test_class_name)
+        <a id="change">if os.path.exists(filename):
+          xml_filenames_to_targets[filename] = target
+          break
+        else:
+          test_class_name = test_class_name.rsplit(&quot$&quot, 1)[0]
+
+   </a> failed_targets = defaultdict(set)
+    for xml_filename, target in xml_filenames_to_targets.items():
+      try:
+        xml = XmlParser.from_file(xml_filename)</code></pre>

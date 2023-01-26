@@ -1,0 +1,69 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    Segment breakpoints are not the same across samples, so samples are listed
+    in serial with the sample ID as the left column.
+    
+    <a id="change">outrows = []</a>
+    chrom_ids = None
+    for fname in sample_fnames:
+        segments = CNA.read(fname)
+        if chrom_ids is None:
+            &#47&#47 Create & store
+            chrom_ids = create_chrom_ids(segments)
+        else:
+            &#47&#47 Verify
+            core.assert_equal("Segment chromosome names differ",
+                              previous=chrom_ids.keys(),
+                              current=create_chrom_ids(segments).keys())
+
+        if &quotprobes&quot in segments:
+            <a id="change">outheader = ["ID", "Chromosome", "Start", "End", "NumProbes", "Mean"]</a>
+            def row2out(row):
+                return (segments.sample_id, chrom_ids[row[&quotchromosome&quot]],
+                        row[&quotstart&quot], row[&quotend&quot], row[&quotprobes&quot],
+                        row[&quotlog2&quot])
+        else:
+            outheader = ["ID", "Chromosome", "Start", "End", "Mean"]
+            def row2out(row):
+                return (segments.sample_id, chrom_ids[row[&quotchromosome&quot]],
+                        row[&quotstart&quot], row[&quotend&quot], row[&quotlog2&quot])
+        <a id="change">outrows.extend(row2out(row) for row in segments)</a>
+    <a id="change">return outheader, outrows</a>
+
+
+def create_chrom_ids(segments):
+    Map chromosome names to integers in the order encountered.</code></pre><h3>After Change</h3><pre><code class='java'>
+    Segment breakpoints are not the same across samples, so samples are listed
+    in serial with the sample ID as the left column.
+    
+    <a id="change">out_tables = []</a>
+    chrom_ids = None
+    for fname in sample_fnames:
+        segments = CNA.read(fname)
+        if chrom_ids is None:
+            &#47&#47 Create & store
+            chrom_ids = create_chrom_ids(segments)
+        else:
+            &#47&#47 Verify
+            core.assert_equal("Segment chromosome names differ",
+                              previous=chrom_ids.keys(),
+                              current=create_chrom_ids(segments).keys())
+        table = segments.data.loc[:, ["start", "end"]]
+        table["ID"] = segments.sample_id
+        table["mean"] = segments.data["log2"]
+        table["chromosome"] = [chrom_ids[chrom]
+                               for chrom in segments["chromosome"]]
+        if "probes" in segments:
+            table["num_probes"] = segments["probes"]
+            sorted_cols = ["ID", "chromosome", "start", "end", "num_probes",
+                           "mean"]
+        else:
+            sorted_cols = ["ID", "chromosome", "start", "end", "mean"]
+        <a id="change">out_tables.append(table.reindex(columns=sorted_cols))</a>
+    <a id="change">return pd.concat(out_tables)</a>
+
+
+def create_chrom_ids(segments):
+    Map chromosome names to integers in the order encountered.</code></pre>

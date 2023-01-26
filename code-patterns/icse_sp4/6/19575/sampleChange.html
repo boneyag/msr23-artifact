@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                                           target_files_dict[&quot%s:CONTIG&quot % alphabet],
+                                                           rna_alphabet=True if alphabet==&quotRNA&quot else False)
+
+        <a id="change">commander = HMMer(target_files_dict, num_threads_to_use=self.num_threads_to_use)</a>
+
+        for source in sources:
+            alphabet, context = utils.anvio_hmm_target_term_to_alphabet_and_context(sources[source][&quottarget&quot])
+
+            kind_of_search = sources[source][&quotkind&quot]
+            domain = sources[source][&quotdomain&quot]
+            all_genes_searched_against = sources[source][&quotgenes&quot]
+            hmm_model = sources[source][&quotmodel&quot]
+            reference = sources[source][&quotref&quot]
+            noise_cutoff_terms = sources[source][&quotnoise_cutoff_terms&quot]
+
+            hmm_scan_hits_txt = commander.run_hmmscan(source,
+                                                      alphabet,
+                                                      context,
+                                                      kind_of_search,
+                                                      domain,
+                                                      len(all_genes_searched_against),
+                                                      hmm_model,
+                                                      reference,
+                                                      noise_cutoff_terms)
+
+            if not hmm_scan_hits_txt:
+                search_results_dict = {}
+            else:
+                parser = parser_modules[&quotsearch&quot][&quothmmscan&quot](hmm_scan_hits_txt, alphabet=alphabet, context=context)
+                search_results_dict = parser.get_search_results()
+
+            <a id="change">if not len(search_results_dict):
+                run.info_single("The HMM source &quot%s&quot returned 0 hits. SAD (but it&quots stil OK)." % source, nl_before=1)
+
+
+           </a> if context == &quotCONTIG&quot:
+                &#47&#47 we are in trouble here. because our search results dictionary contains no gene calls, but contig
+                &#47&#47 names that contain our hits. on the other hand, the rest of the code outside of this if statement
+                &#47&#47 expects a `search_results_dict` with gene callers id in it. so there are two things we need to do</code></pre><h3>After Change</h3><pre><code class='java'>
+        for source in sources:
+            threads = []
+            for i in range(self.num_threads_to_use):
+                <a id="change">new_thread = Thread(target=hmm_worker, args=(i, source))</a>
+                <a id="change">new_thread.start()</a>
+                threads.append(new_thread)
+
+            for t in threads:
+                t.join()</code></pre>

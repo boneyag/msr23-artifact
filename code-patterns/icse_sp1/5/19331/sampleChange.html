@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 decomposition of a real matrix A of size (n x m) such that A=USV′.
+        &#47&#47 Irrespective of the original strides, the returned matrix U will
+        &#47&#47 be transposed, i.e. with strides (1, n) instead of (n, 1).
+        U, _, V = <a id="change">mat.squeeze().svd()</a>
+        S = torch.eye(self.dim)
+        if U.is_cuda:
+            S = S.cuda()
+        S[self.dim - 1, self.dim - 1] = float(np.linalg.det(U.cpu().numpy()) *</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 mat_normalized = U.mm(S).mm(V.t_())
+
+        &#47&#47 pytorch SVD seems to be inaccurate, so just move to numpy immediately
+        <a id="change">mat_cpu = mat.cpu().numpy().squeeze()</a>
+        U, _, V = <a id="change">np.linalg.svd(mat_cpu, full_matrices=False)</a>
+        S = np.eye(self.dim)
+        S[self.dim - 1, self.dim - 1] = np.linalg.det(U) * np.linalg.det(V)
+
+        mat_normalized = mat.__class__(U.dot(S).dot(V))</code></pre>

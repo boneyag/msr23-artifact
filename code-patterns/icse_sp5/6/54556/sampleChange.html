@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def forward_stream(src_fd, dst_stream, prefix, index):
+    with os.fdopen(src_fd, &quotr&quot) as src:
+        while True:
+            <a id="change">line = src.readline()</a>
+            if not line:
+                break
+
+            if index is not None:</code></pre><h3>After Change</h3><pre><code class='java'>
+    with os.fdopen(src_fd, &quotr&quot) as src:
+        line_buffer = &quot&quot
+        while True:
+            <a id="change">text = os.read(src.fileno(), 1000)</a>
+            if not isinstance(text, str):
+                text = text.decode(&quotutf-8&quot)
+            if not text:
+                break
+
+            for line in re.split(&quot([\r\n])&quot, text):
+                line_buffer += line
+                <a id="change">if line == &quot\r&quot or line == &quot\n&quot:
+                    if index is not None:
+                        localtime = time.asctime(time.localtime(time.time()))
+                        line_buffer = &quot{time}[{rank}]&lt;{prefix}&gt;:{line}&quot.format(
+                            time=localtime,
+                            rank=str(index),
+                            prefix=prefix,
+                            line=line_buffer
+                        )
+
+                    dst_stream.write(line_buffer)
+                    dst_stream.flush()
+                    line_buffer = &quot&quot
+
+
+</a>def execute(command, env=None, stdout=None, stderr=None, index=None, event=None):
+    &#47&#47 Make a pipe for the subprocess stdout/stderr.
+    (stdout_r, stdout_w) = os.pipe()
+    (stderr_r, stderr_w) = os.pipe()</code></pre>

@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def random(self):
+        filenum = random.randrange(0, self.nshards)
+        <a id="change">fileobj = self.get_file(filenum)</a>
+        byte_offset = random.randrange(0, self.file_sizes[filenum])
+        fileobj.seek(byte_offset)
+
+        &#47&#47 This is kind of an evil hack. We&quotve seeked to a random place in the
+        &#47&#47 file, which is probably in the middle of an edge. We&quotll find the
+        &#47&#47 start of the edge by seeking backwards until we find a byte 0x8D,
+        &#47&#47 then try to decode the dictionary that begins there.
+        &#47&#47
+        &#47&#47 We have to allow the result to fail sometimes, as Unicode strings
+        &#47&#47 will also contain byte 8D, and it turns out we have a lot of those.
+
+        while True:
+            <a id="change">try:
+                curbyte = fileobj.read(1)
+                while curbyte != b&quot\x8d&quot:
+                    byte_offset -= 1
+                    fileobj.seek(byte_offset)
+                    curbyte = fileobj.read(1)
+                fileobj.seek(byte_offset)
+
+                unpacker = Unpacker(fileobj, encoding=encoding)
+                result = unpacker.unpack()
+                if len(result) == 13 and &quoturi&quot in result:
+                    return result
+                else:
+                    byte_offset -= 2
+            except (ValueError, TypeError):
+                byte_offset -= 2
+</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        offset = random.randrange(0, 100)
+        rows = []
+        while not rows:
+            <a id="change">c.execute(
+                "SELECT filenum, offset from text_index "
+                "WHERE queryhash &gt;= ? "
+                "ORDER BY queryhash LIMIT 1 OFFSET ?",
+                (hashval, offset)
+            )</a>
+            rows = c.fetchall()
+
+        filenum, offset = rows[0]
+        return self.get_edge(filenum, offset)</code></pre>

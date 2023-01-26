@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    result = {}
+    for passthrough_key, column_index in zip(
+        self._passthrough_keys, self._passthrough_column_indices):
+      result[passthrough_key] = np.asarray(<a id="change">batch</a>.column(column_index).flatten())
+    return result
+
+  def _handle_batch(self, batch):</code></pre><h3>After Change</h3><pre><code class='java'>
+    result = {}
+    for passthrough_key, column_index in zip(self._passthrough_keys,
+                                             self._passthrough_column_indices):
+      passthrough_data_column = <a id="change">batch.column(column_index)</a>
+      &#47&#47 the passthrough column should be of list&lt;primitive&gt; type with each
+      &#47&#47 sub-list being either null or of length 1.
+      assert (
+          pa.types.is_list(passthrough_data_column.type) or
+          pa.types.is_large_list(passthrough_data_column.type))
+      result[passthrough_key] = [
+          <a id="change">None if elem is None else elem[0]</a>
+          for elem in passthrough_data_column.to_pylist()
+      ]
+    return result
+</code></pre>

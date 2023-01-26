@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self._grad_norm_buf.zero_()
+            self._grad_norm_buf[self.data_parallel_rank] = grad_norm
+            distributed_utils.all_reduce(self._grad_norm_buf, group=self.data_parallel_process_group)
+            <a id="change">if not (self._grad_norm_buf == self._grad_norm_buf[0]).all():
+                raise RuntimeError(
+                    "Fatal error: gradients are inconsistent between workers. "
+                    "Try --ddp-backend=no_c10d."
+                )
+
+   </a> def _reduce_and_log_stats(self, logging_outputs, sample_size, grad_norm=None):
+        if grad_norm is not None:
+            metrics.log_speed("ups", 1., priority=100, round=2)
+            metrics.log_scalar("gnorm", grad_norm, priority=400, round=3)</code></pre><h3>After Change</h3><pre><code class='java'>
+                group=self.data_parallel_process_group
+            )
+
+            <a id="change">if not self._is_grad_norms_consistent(self._grad_norm_buf):
+                pretty_detail = "\n".join(
+                    "rank {:3d} = {:.8f}".format(r, n)
+                    for r, n in enumerate(self._grad_norm_buf.tolist())
+                )
+                error_detail = "grad_norm across the workers:\n{}\n".format(pretty_detail)
+                raise RuntimeError(
+                    "Fatal error: gradients are inconsistent between workers. "
+                    "Try --ddp-backend=no_c10d. "
+                    "Or are you mixing up different generation of GPUs in training?"
+                    + "\n"
+                    + "-" * 80
+                    + "\n{}\n".format(error_detail)
+                    + "-" * 80
+                )
+
+   </a> def _reduce_and_log_stats(self, logging_outputs, sample_size, grad_norm=None):
+        if grad_norm is not None:
+            metrics.log_speed("ups", 1., priority=100, round=2)
+            metrics.log_scalar("gnorm", grad_norm, priority=400, round=3)</code></pre>

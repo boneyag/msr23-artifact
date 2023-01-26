@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return handle_torch_function(linear, (input, weight), input, weight, bias=bias)
+    if input.dim() == 2 and bias is not None:
+        &#47&#47 fused op is marginally faster
+        <a id="change">ret = torch.addmm(bias, input, weight.t())</a>
+    else:
+        <a id="change">output = input.matmul(weight.t())</a>
+        <a id="change">if bias is not None:
+            output += bias
+       </a> ret = output
+    <a id="change">return ret</a>
+
+
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -&gt; Tensor:
+    r</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    if has_torch_function_variadic(input, weight):
+        return handle_torch_function(linear, (input, weight), input, weight, bias=bias)
+    <a id="change">return torch._C._nn.linear(input, weight, bias)</a>
+
+
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -&gt; Tensor:
+    r</code></pre>

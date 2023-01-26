@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    res = dot_product_attention(q, k, v, mask=mask)
+    with tf.Session() as sess:
+        res, gold = sess.run([res, v])
+    <a id="change">for b in range(B):
+        for h in range(H):
+            for t in range(T):
+                print(b, h, t)
+                np.testing.assert_allclose(res[b, h, t, :], np.mean(gold[:, :, :lens[b], :], axis=2)[b, h, :], atol=1e-5)
+
+
+</a>def test_attn_value_sub_mask(qkv):
+    q, k, v = qkv
+    B, H, T, _ = q.get_shape().as_list()
+    q = tf.zeros_like(q)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def test_attn_value_seq_mask(qkv):
+    q, k, v = qkv
+    <a id="change">with tf.device(&quot/cpu:0&quot):
+        B, H, T, _ = q.get_shape().as_list()
+        q = tf.zeros_like(q)
+        lens = np.random.randint(1, T, size=B).astype(np.int32)
+        tf_lens = tf.constant(lens)
+        mask = tf.expand_dims(tf.expand_dims(tf.sequence_mask(tf_lens, T, dtype=tf.float32), 1), 1)
+        res = dot_product_attention(q, k, v, mask=mask)
+        with tf.Session() as sess:
+            res, gold = sess.run([res, v])
+        for b in range(B):
+            for h in range(H):
+                for t in range(T):
+                    print(b, h, t)
+                    np.testing.assert_allclose(res[b, h, t, :], np.mean(gold[:, :, :lens[b], :], axis=2)[b, h, :], atol=1e-5)
+
+
+</a>def test_attn_value_sub_mask(qkv):
+    q, k, v = qkv
+    with tf.device(&quot/cpu:0&quot):
+        B, H, T, _ = q.get_shape().as_list()</code></pre>

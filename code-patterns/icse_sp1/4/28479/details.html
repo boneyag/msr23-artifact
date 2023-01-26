@@ -1,0 +1,78 @@
+<html><h3>3b1bf154144ca1c637471605384c5a438ee6f659,deeplearning/clgen/corpuses/corpuses.py,Corpus,Create,#Corpus#,200
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Nothing to do for already-encoded databases.
+    &#47&#47 TODO(github.com/ChrisCummins/clgen/issues/130): Refactor this after
+    &#47&#47 splitting out Corpus class.
+    <a id="change">if self.config.HasField(&quotpre_encoded_corpus_url&quot):
+      return
+
+   </a> preprocessed_lock_path = pathlib.Path(
+        self.preprocessed.url[len(&quotsqlite:///&quot):]).parent / &quotLOCK&quot
+    with lockfile.LockFile(preprocessed_lock_path):
+      self.preprocessed.Create(self.config)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Nothing to do for already-encoded databases.
+    &#47&#47 TODO(github.com/ChrisCummins/clgen/issues/130): Refactor this after
+    &#47&#47 splitting out Corpus class.
+    <a id="change">if self.config.HasField(&quotpre_encoded_corpus_url&quot):
+      with self.dashboard_db.Session(commit=True) as session:
+        config_to_store = corpus_pb2.Corpus()
+        config_to_store.CopyFrom(self.config)
+        &#47&#47 Clear the contentfiles field, since we use the content_id to uniquely
+        &#47&#47 identify the input files. This means that corpuses with the same content
+        &#47&#47 files delivered through different means (e.g. two separate but identical
+        &#47&#47 directories) have the same hash.
+        config_to_store.ClearField(&quotcontentfiles&quot)
+        corpus = session.GetOrAdd(
+            dashboard_db.Corpus,
+            config_proto_sha1=crypto.sha1(config_to_store.SerializeToString()),
+            config_proto=str(config_to_store),
+            preprocessed_url=&quot&quot,
+            encoded_url=self.encoded.url,
+            summary=self.GetShortSummary(),
+        )
+        session.flush()
+        self._dashboard_db_id = corpus.id
+      return
+
+   </a> preprocessed_lock_path = pathlib.Path(
+        self.preprocessed.url[len(&quotsqlite:///&quot):]).parent / &quotLOCK&quot
+    with lockfile.LockFile(preprocessed_lock_path):
+      self.preprocessed.Create(self.config)
+    if not self.preprocessed.size:
+      raise errors.EmptyCorpusException(
+          f"Pre-processed corpus contains no files: &quot{self.preprocessed.url}&quot")
+    encoded_lock_path = pathlib.Path(
+        self.encoded.url[len(&quotsqlite:///&quot):]).parent / &quotLOCK&quot
+    with lockfile.LockFile(encoded_lock_path):
+      start_time = time.time()
+      atomizer = self.atomizer
+      app.Log(1, &quot%s: %s tokens in %s ms&quot,
+              type(atomizer).__name__, humanize.Commas(atomizer.vocab_size),
+              humanize.Commas(int((time.time() - start_time) * 1000)))
+      self.encoded.Create(self.preprocessed, atomizer,
+                          self.config.contentfile_separator)
+
+    &#47&#47 Add entry to dashboard database
+    with self.dashboard_db.Session(commit=True) as session:
+      config_to_store = corpus_pb2.Corpus()
+      <a id="change">config_to_store.CopyFrom(self.config)</a>
+      &#47&#47 Clear the contentfiles field, since we use the content_id to uniquely
+      &#47&#47 identify the input files. This means that corpuses with the same content
+      &#47&#47 files delivered through different means (e.g. two separate but identical
+      &#47&#47 directories) have the same hash.
+      config_to_store.ClearField(&quotcontentfiles&quot)
+      <a id="change">corpus = session.GetOrAdd(
+          dashboard_db.Corpus,
+          config_proto_sha1=crypto.sha1(config_to_store.SerializeToString()),
+          config_proto=str(config_to_store),
+          preprocessed_url=self.preprocessed.url,
+          encoded_url=self.encoded.url,
+          summary=self.GetShortSummary(),
+      )</a>
+      session.flush()
+      self._dashboard_db_id = corpus.id
+
+  @property</code></pre><img src="144728976.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ChrisCummins/clgen/commit/3b1bf154144ca1c637471605384c5a438ee6f659#diff-8847c3cd5a9ee9508e28f92dd5bfdf029002238429b84c7cbc813aa044c27aacL206' target='_blank'>Link</a></div><div id='project'> Project Name: ChrisCummins/clgen</div><div id='commit'> Commit Name: 3b1bf154144ca1c637471605384c5a438ee6f659</div><div id='time'> Time: 2019-08-21</div><div id='author'> Author: chrisc.101@gmail.com</div><div id='file'> File Name: deeplearning/clgen/corpuses/corpuses.py</div><div id='class'> Class Name: Corpus</div><div id='method'> Method Name: Create</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/transform/commit/dee5b826fc271cab049319f52883d37177c65080#diff-7c697d83aa6620961aeec38eff05ef07e1ca8c5892490ff5884c73482dba20c7L320' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/transform</div><div id='commit'> Commit Name: dee5b826fc271cab049319f52883d37177c65080</div><div id='time'> Time: 2018-12-17</div><div id='author'> Author: tf-transform-dev@google.com</div><div id='file'> File Name: tensorflow_transform/coders/example_proto_coder.py</div><div id='class'> Class Name: ExampleProtoCoder</div><div id='method'> Method Name: encode</div><BR><BR><div id='link'><a href='https://github.com/OpenMined/PySyft/commit/5efaf25f5499c7065f1c37bfd4288159714406d8#diff-7bcfa5e872d1fc4bdf8f1fce88833342899befc9e6fa8e592f6aabe67a081998L64' target='_blank'>Link</a></div><div id='project'> Project Name: OpenMined/PySyft</div><div id='commit'> Commit Name: 5efaf25f5499c7065f1c37bfd4288159714406d8</div><div id='time'> Time: 2020-08-12</div><div id='author'> Author: vova@promail.spb.ru</div><div id='file'> File Name: src/syft/lib/torch/uppercase_tensor.py</div><div id='class'> Class Name: TorchTensorWrapper</div><div id='method'> Method Name: _data_object2proto</div><BR>

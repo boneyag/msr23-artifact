@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                numerator = -z[z_is_small].mul(numerator.div(math.sqrt(2))) + r_i
+
+            for q_i in self.q:
+                denominator = -<a id="change">z</a>[<a id="change">z_is_small</a>].mul(denominator.div(math.sqrt(2))) + q_i
+
+            e = numerator.div(denominator)
+            <a id="change">log_phi_z[z_is_small]</a> = torch.log(e / 2) - z[z_is_small].pow(2).div_(2)
+
+            self.denominator = denominator
+            self.numerator = numerator</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Three cases to handle: An entry of z is near zero, an entry of z is small, or an entry of z neither of these.
+        z_near_zero = z.pow(2).lt(0.04)
+        <a id="change">z_is_small</a> = z.lt(-1)
+        z_is_ordinary = (1 - z_near_zero).mul_(1 - z_is_small)
+
+        &#47&#47 Case 1: Entries of z that are near zero
+        if z_near_zero.sum() &gt; 0:
+            log_phi_first = -z.masked_select(z_near_zero).div_(math.sqrt(2 * math.pi))
+            f = 0
+            for c_i in self.c:
+                f = log_phi_first.mul(c_i + f)
+
+            log_phi_z.masked_scatter_(z_near_zero, f.mul_(-2).sub_(math.log(2)))
+
+        &#47&#47 Case 2: Entries of z that are very small
+        if z_is_small.sum() &gt; 0:
+            z_where_z_is_small = <a id="change">z.masked_select(z_is_small)</a>
+            numerator = z.new([0.5641895835477550741]).expand_as(z_where_z_is_small)
+            denominator = z.new([1.0]).expand_as(z_where_z_is_small)
+</code></pre>

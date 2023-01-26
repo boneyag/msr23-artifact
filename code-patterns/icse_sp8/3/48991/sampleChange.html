@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    net.eval()
+
+    params_queues = [mp.Queue(maxsize=1) for _ in range(PROCESSES_COUNT)]
+    rewards_queues = [<a id="change">mp.Queue(maxsize=ITERS_PER_UPDATE)</a> for _ in range(PROCESSES_COUNT)]
+    workers = []
+
+    for idx, (params_queue, rewards_queue) in enumerate(zip(params_queues, rewards_queues)):
+        proc = mp.Process(target=worker_func, args=(idx, params_queue, rewards_queue, args.cuda))
+        proc.start()
+        workers.append(proc)
+
+    print("All started!")
+
+    for step_idx in range(100000):
+        &#47&#47 broadcasting network params
+        params = net.state_dict()
+        for q in params_queues:
+            q.put(params)
+
+        &#47&#47 waiting for results
+        t_start = time.time()
+        batch_noise = []
+        batch_reward = []
+        results = 0
+        batch_steps = 0
+        batch_steps_data = []
+        while True:
+            <a id="change">for idx, q in enumerate(rewards_queues):
+                if not q.empty():
+                    reward = q.get_nowait()
+                    np.random.seed(reward.seed)
+                    noise, neg_noise = sample_noise(net)
+                    batch_noise.append(noise)
+                    batch_reward.append(reward.pos_reward)
+                    batch_noise.append(neg_noise)
+                    batch_reward.append(reward.neg_reward)
+                    results += 1
+                    batch_steps += reward.steps
+                    batch_steps_data.append(reward.steps)
+                    &#47&#47 print("Result from %d: %s, noise: %s" % (
+                    &#47&#47     idx, reward, noise[0][0, 0, 0:1]))
+
+           </a> if results == PROCESSES_COUNT * ITERS_PER_UPDATE:
+                break
+            time.sleep(0.1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    net.eval()
+
+    params_queues = [mp.Queue(maxsize=1) for _ in range(PROCESSES_COUNT)]
+    rewards_queue = <a id="change">mp.Queue(maxsize=ITERS_PER_UPDATE)</a>
+    workers = []
+
+    for idx, params_queue in enumerate(params_queues):
+        proc = mp.Process(target=worker_func, args=(idx, params_queue, rewards_queue, args.cuda))</code></pre>

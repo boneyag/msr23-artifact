@@ -1,0 +1,88 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        
+        del itr
+        <a id="change">pbar = ProgBarCounter(num_samples)</a>
+        batches = []
+        completed_samples = 0
+        self._agent_version += 1
+        updated_workers = set()
+        agent_ups = self._factory.prepare_worker_messages(
+            agent_update, cloudpickle.dumps)
+        env_ups = self._factory.prepare_worker_messages(env_update)
+
+        while completed_samples &lt; num_samples:
+            self._push_updates(updated_workers, agent_ups, env_ups)
+            for _ in range(self._factory.n_workers):
+                try:
+                    tag, contents = self._to_sampler.get_nowait()
+                    if tag == &quottrajectory&quot:
+                        batch, version, worker_n = contents
+                        del worker_n
+                        if version == self._agent_version:
+                            batches.append(batch)
+                            num_returned_samples = batch.lengths.sum()
+                            completed_samples += num_returned_samples
+                            pbar.inc(num_returned_samples)
+                        else:
+                            &#47&#47 Receiving paths from previous iterations is
+                            &#47&#47 normal.  Potentially, we could gather them here,
+                            &#47&#47 if an off-policy method wants them.
+                            pass
+                    else:
+                        raise AssertionError(
+                            &quotUnknown tag {} with contents {}&quot.format(
+                                tag, contents))
+                except queue.Empty:
+                    pass
+        for q in self._to_worker:
+            try:
+                q.put_nowait((&quotstop&quot, ()))
+            except queue.Full:
+                pass
+        <a id="change">pbar.stop()</a>
+        return TrajectoryBatch.concatenate(*batches)
+
+    def obtain_exact_trajectories(self,
+                                  n_traj_per_worker,</code></pre><h3>After Change</h3><pre><code class='java'>
+            agent_update, cloudpickle.dumps)
+        env_ups = self._factory.prepare_worker_messages(env_update)
+
+        <a id="change">with click.progressbar(length=num_samples, label=&quotSampling&quot) as pbar:
+            while completed_samples &lt; num_samples:
+                self._push_updates(updated_workers, agent_ups, env_ups)
+                for _ in range(self._factory.n_workers):
+                    try:
+                        tag, contents = self._to_sampler.get_nowait()
+                        if tag == &quottrajectory&quot:
+                            batch, version, worker_n = contents
+                            del worker_n
+                            if version == self._agent_version:
+                                batches.append(batch)
+                                num_returned_samples = batch.lengths.sum()
+                                completed_samples += num_returned_samples
+                                pbar.update(num_returned_samples)
+                            else:
+                                &#47&#47 Receiving paths from previous iterations is
+                                &#47&#47 normal.  Potentially, we could gather them
+                                &#47&#47 here, if an off-policy method wants them.
+                                pass
+                        else:
+                            raise AssertionError(
+                                &quotUnknown tag {} with contents {}&quot.format(
+                                    tag, contents))
+                    except queue.Empty:
+                        pass
+            for q in self._to_worker:
+                try:
+                    q.put_nowait((&quotstop&quot, ()))
+                except queue.Full:
+                    pass
+
+       </a> return TrajectoryBatch.concatenate(*batches)
+
+    def obtain_exact_trajectories(self,
+                                  n_traj_per_worker,</code></pre>

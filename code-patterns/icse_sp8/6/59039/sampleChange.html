@@ -1,0 +1,84 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        decOut = self.model.make_init_decoder_output(context)
+
+        padMask = <a id="change">srcBatch.data.eq(onmt.Constants.PAD).t() \
+                                                      .unsqueeze(0) \
+                                                      .repeat(beamSize, 1, 1)</a>
+
+        batchIdx = list(range(batchSize))
+        remainingSents = batchSize
+        for i in range(self.opt.max_sent_length):
+
+            self.model.decoder.apply(applyContextMask)
+
+            &#47&#47 Prepare decoder input.
+            input = torch.stack([b.getCurrentState() for b in beam
+                                 if not b.done]).t().contiguous().view(1, -1)
+
+            decOut, decStates, attn = self.model.decoder(
+                Variable(input, volatile=True), decStates, context, decOut)
+            &#47&#47 decOut: 1 x (beam*batch) x numWords
+            decOut = decOut.squeeze(0)
+            out = self.model.generator.forward(decOut)
+
+            &#47&#47 batch x beam x numWords
+            wordLk = out.view(beamSize, remainingSents, -1) \
+                        .transpose(0, 1).contiguous()
+            attn = attn.view(beamSize, remainingSents, -1) \
+                       .transpose(0, 1).contiguous()
+
+            active = []
+            for b in range(batchSize):
+                if beam[b].done:
+                    continue
+
+                idx = batchIdx[b]
+                if not beam[b].advance(wordLk.data[idx], attn.data[idx]):
+                    active += [b]
+
+                for decState in decStates:  &#47&#47 iterate over h, c
+                    &#47&#47 layers x beam*sent x dim
+                    sentStates = decState.view(-1, beamSize,
+                                               remainingSents,
+                                               decState.size(2))[:, :, idx]
+                    sentStates.data.copy_(
+                        sentStates.data.index_select(
+                            1, beam[b].getCurrentOrigin()))
+
+            if not active:
+                break
+
+            &#47&#47 in this section, the sentences that are still active are
+            &#47&#47 compacted so that the decoder is not run on completed sentences
+            activeIdx = self.tt.LongTensor([batchIdx[k] for k in active])
+            batchIdx = {beam: idx for idx, beam in enumerate(active)}
+
+            def updateActive(t):
+                &#47&#47 select only the remaining active sentences
+                view = t.data.view(-1, remainingSents, rnnSize)
+                newSize = list(t.size())
+                newSize[-2] = newSize[-2] * len(activeIdx) // remainingSents
+                return Variable(view.index_select(1, activeIdx)
+                                .view(*newSize), volatile=True)
+
+            decStates = (updateActive(decStates[0]),
+                         updateActive(decStates[1]))
+            decOut = updateActive(decOut)
+            context = updateActive(context)
+            <a id="change">padMask = padMask.index_select(1, activeIdx)</a>
+
+            remainingSents = len(active)
+
+        &#47&#47  (4) package everything up</code></pre><h3>After Change</h3><pre><code class='java'>
+        if srcBatch[0].dim() == 2:
+            batchSize = srcBatch[0].size(1)
+        else:
+            <a id="change">batchSize = srcBatch[0].size(0)</a>
+        beamSize = self.opt.beam_size
+
+        &#47&#47  (1) run the encoder on the src
+        encStates, context = self.model.encoder(srcBatch)</code></pre>

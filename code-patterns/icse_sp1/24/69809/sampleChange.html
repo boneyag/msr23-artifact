@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def get_other_player_pots(self):
+        func_dict = self.coo[inspect.stack()[0][3]][self.tbl]
+        <a id="change">if terminalmode == False: ui_action_and_signals.signal_status.emit("Get player pots")
+</a>        for n, fd in enumerate(func_dict, start=0):
+            <a id="change">if not terminalmode:  ui_action_and_signals.signal_progressbar_increase.emit(1)
+</a>            pot_area_image = self.crop_image(self.entireScreenPIL, self.tlc[0]-20 + fd[0], self.tlc[1] + fd[1]-20,self.tlc[0] + fd[2]+20, self.tlc[1] + fd[3]+20)
+            img = cv2.cvtColor(np.array(pot_area_image), cv2.COLOR_BGR2RGB)
+            count, points, bestfit = self.find_template_on_screen(self.smallDollarSign1, img, 0.02)
+            has_small_dollarsign=count&gt;0</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def get_other_player_pots(self):
+        func_dict = self.coo[inspect.stack()[0][3]][self.tbl]
+        <a id="change">self.gui_signals.signal_status.emit("Get player pots")</a>
+        for n, fd in enumerate(func_dict, start=0):
+            <a id="change">self.gui_signals.signal_progressbar_increase.emit(1)</a>
+            pot_area_image = self.crop_image(self.entireScreenPIL, self.tlc[0]-20 + fd[0], self.tlc[1] + fd[1]-20,self.tlc[0] + fd[2]+20, self.tlc[1] + fd[3]+20)
+            img = cv2.cvtColor(np.array(pot_area_image), cv2.COLOR_BGR2RGB)
+            count, points, bestfit = self.find_template_on_screen(self.smallDollarSign1, img, 0.02)
+            has_small_dollarsign=count&gt;0
+            if has_small_dollarsign:
+                pil_image = self.crop_image(self.entireScreenPIL, self.tlc[0] + fd[0], self.tlc[1] + fd[1],self.tlc[0] + fd[2], self.tlc[1] + fd[3])
+                value = self.get_ocr_float(pil_image, str(inspect.stack()[0][3]), force_method=1)
+                try:
+                    value = re.findall(r&quot\d{1}\.\d{1,2}&quot, str(value))[0]
+                except:
+                    self.logger.warning("Player pot regex problem: "+str(value))
+                    value=&quot&quot
+                value=float(value) if value!=&quot&quot else &quot&quot
+                <a id="change">self</a>.logger.debug("FINAL POT after regex: "+str(value))
+                self.other_players[str(n)][&quotpot&quot] = value
+        return True
+</code></pre>

@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                 self.evaluator.p_r_f1())
+        log_info(&quot * Generated trees DEP  scores: P: %.4f, R: %.4f, F: %.4f&quot %
+                 self.evaluator.p_r_f1(EvalTypes.DEP))
+        <a id="change">log_info(&quot * Gold tree BEST: %.4f, on CLOSE: %.4f, on ANY list: %4f&quot %
+                 self.lists_analyzer.stats())</a>
+        log_info(&quot * Tree size stats:\n -- GOLD: %s\n -- PRED: %s\n -- DIFF: %s&quot %
+                 self.evaluator.tree_size_stats())
+        log_info(&quot * Score stats\n -- GOLD: %s\n -- PRED: %s\n -- DIFF: %s&quot
+                 % self.evaluator.score_stats())</code></pre><h3>After Change</h3><pre><code class='java'>
+        @return: a tuple of Evaluator and ListsAnalyzer objects containing iteration statistics.
+
+        iter_start_time = time.clock()
+        <a id="change">self.evaluator = Evaluator()</a>
+        self.lists_analyzer = ASearchListsAnalyzer()
+
+        log_debug(&quot\n***\nTR %05d:&quot % iter_no)
+
+        for tree_no in xrange(len(self.train_trees)):
+            &#47&#47 obtain some &quotrival&quot, alternative incorrect candidates
+            gold_ttree, gold_feats = self.train_trees[tree_no], self.train_feats[tree_no]
+            rival_ttrees, rival_feats = self._get_rival_candidates(tree_no)
+            cands = [gold_feats] + rival_feats
+
+            &#47&#47 score them along with the right one
+            scores = [self._score(cand) for cand in cands]
+            top_cand_idx = scores.index(max(scores))
+
+            &#47&#47 find the top-scoring generated tree, evaluate against gold t-tree
+            &#47&#47 (disregarding whether it was selected as the best one)
+            self.evaluator.append(TreeNode(gold_ttree),
+                                  TreeNode(rival_ttrees[scores[1:].index(max(scores[1:]))]),
+                                  scores[0],
+                                  max(scores[1:]))
+
+            &#47&#47 debug print: candidate trees
+            log_debug(&quotTTREE-NO: %04d, SEL_CAND: %04d, LEN: %02d&quot % (tree_no, top_cand_idx, len(cands)))
+            log_debug(&quotSENT: %s&quot % self.train_sents[tree_no])
+            log_debug(&quotALL CAND TREES:&quot)
+            for ttree, score in zip([gold_ttree] + rival_ttrees, scores):
+                log_debug("%.3f" % score, "\t", ttree)
+
+            &#47&#47 update weights if the system doesn&quott give the highest score to the right one
+            if top_cand_idx != 0:
+                self.w += (self.alpha * gold_feats - self.alpha * cands[top_cand_idx])
+
+        &#47&#47 store a copy of the current weights for averaging
+        self.w_after_iter.append(np.copy(self.w))
+
+        &#47&#47 debug print: current weights and iteration accuracy
+        log_debug(self._feat_val_str(self.w), &quot\n***&quot)
+        log_debug(&quotITER ACCURACY: %.3f&quot % self.evaluator.tree_accuracy())
+
+        &#47&#47 print and return statistics
+        self._print_iter_stats(iter_no, datetime.timedelta(seconds=(time.clock() - iter_start_time)))
+        return <a id="change">self</a>.evaluator, self.lists_analyzer
+
+    def _print_iter_stats(self, iter_no, iter_duration):
+        Print iteration statistics from internal evaluator fields and given iteration duration.</code></pre>

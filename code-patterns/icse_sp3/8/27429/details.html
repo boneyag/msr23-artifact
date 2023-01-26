@@ -1,0 +1,78 @@
+<html><h3>fa17621d9c8c5e5a0b7f9a89be489dd0c5ba0445,ilastik-shell/applets/pixelClassification/pixelClassificationSerializer.py,PixelClassificationSerializer,_serializePredictions,#PixelClassificationSerializer#Any#Any#Any#,138
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                    &#47&#47 Trigger the write
+                    success = opWriter.WriteImage.value
+                    <a id="change">if not success:
+                        raise RuntimeError("Error while writing predictions to project file.")
+                    
+                   </a> startProgress = progress[0]
+                    
+                self._dirtyFlags[Section.Predictions] = False
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        with Tracer(traceLogger):
+            &#47&#47 If the predictions are missing, then maybe the user wants them stored (even if they aren&quott dirty)
+            <a id="change">if self._dirtyFlags[Section.Predictions] or &quotPredictions&quot not in topGroup.keys():
+
+                self.deleteIfPresent(topGroup, &quotPredictions&quot)
+                predictionDir = topGroup.create_group(&quotPredictions&quot)
+
+                if self.predictionStorageEnabled:
+                    numImages = len(self.mainOperator.PredictionProbabilities)
+    
+                    if numImages &gt; 0:
+                        increment = (endProgress - startProgress) / float(numImages)
+    
+                    for imageIndex in range(numImages):
+                        &#47&#47 Have we been cancelled?
+                        if not self.predictionStorageEnabled:
+                            break
+    
+                        datasetName = &quotpredictions{:04d}&quot.format(imageIndex)
+    
+                        progress = [startProgress]
+    
+                        &#47&#47 Use a big dataset writer to do this in chunks
+                        opWriter = OpH5WriterBigDataset(self.mainOperator.graph)
+                        opWriter.hdf5File.setValue( predictionDir )
+                        opWriter.hdf5Path.setValue( datasetName )
+                        opWriter.Image.connect( self.mainOperator.PredictionProbabilities[imageIndex] )
+                        
+                        &#47&#47 Create the request
+                        self._predictionStorageRequest = opWriter.WriteImage[...]
+    
+                        def handleProgress(percent):
+                            &#47&#47 Stop sending progress if we were cancelled
+                            if self.predictionStorageEnabled:
+                                progress[0] = startProgress + percent * (increment / 100.0)
+                                self.progressSignal.emit( progress[0] )
+                        opWriter.progressSignal.subscribe( handleProgress )
+    
+                        finishedEvent = threading.Event()
+                        def handleFinish(request):
+                            finishedEvent.set()
+    
+                        def handleCancel(request):
+                            self._predictionStorageRequest = None
+                            finishedEvent.set()
+    
+                        &#47&#47 Trigger the write and wait for it to complete or cancel.
+                        self._predictionStorageRequest.notify(handleFinish)
+                        self._predictionStorageRequest.onCancel(handleCancel)
+                        finishedEvent.wait()
+                        
+                    &#47&#47 If we were cancelled, delete the predictions we just started
+                    if not self.predictionStorageEnabled:
+                        self.deleteIfPresent(&quotPredictions/&quot + datasetName)
+                        startProgress = progress[0]
+                        
+                    self._dirtyFlags[Section.Predictions] = False
+
+   </a> def cancel(self):
+        Currently, this only cancels prediction storage.
+        if self._predictionStorageRequest is not None:
+            self.predictionStorageEnabled = False</code></pre><img src="140017161.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/fa17621d9c8c5e5a0b7f9a89be489dd0c5ba0445#diff-3cde99245d4924694cf15f71320ea7830cdb5ee9198cab0bcc0fa9d2b505a359L142' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: fa17621d9c8c5e5a0b7f9a89be489dd0c5ba0445</div><div id='time'> Time: 2012-07-11</div><div id='author'> Author: bergs@janelia.hhmi.org</div><div id='file'> File Name: ilastik-shell/applets/pixelClassification/pixelClassificationSerializer.py</div><div id='class'> Class Name: PixelClassificationSerializer</div><div id='method'> Method Name: _serializePredictions</div><BR><BR><div id='link'><a href='https://github.com/streamlit/streamlit/commit/d6b3aa9668d0211b8439fa8057b5295c1ab11f23#diff-3120aca01aa0b554f62217a355af8b6eeaf728c6b610c6dd4ba6de1e6d9306efL132' target='_blank'>Link</a></div><div id='project'> Project Name: streamlit/streamlit</div><div id='commit'> Commit Name: d6b3aa9668d0211b8439fa8057b5295c1ab11f23</div><div id='time'> Time: 2018-05-21</div><div id='author'> Author: armando@playground.global</div><div id='file'> File Name: lib/streamlit/Proxy.py</div><div id='class'> Class Name: Proxy</div><div id='method'> Method Name: _client_ws_handler</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-tf/commit/5cc1b3327714cbefb85a14540c20c90d963e341c#diff-fd3ec181173ca09f203ada8548167bf7897932889e98ae24d12dfffcf6a0048cL166' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-tf</div><div id='commit'> Commit Name: 5cc1b3327714cbefb85a14540c20c90d963e341c</div><div id='time'> Time: 2020-06-08</div><div id='author'> Author: guillaumekln@users.noreply.github.com</div><div id='file'> File Name: opennmt/training.py</div><div id='class'> Class Name: Trainer</div><div id='method'> Method Name: _steps</div><BR><BR><div id='link'><a href='https://github.com/streamlit/streamlit/commit/4e1a728f3a7af1f1db1b8265f208cc34880bf17e#diff-3120aca01aa0b554f62217a355af8b6eeaf728c6b610c6dd4ba6de1e6d9306efL132' target='_blank'>Link</a></div><div id='project'> Project Name: streamlit/streamlit</div><div id='commit'> Commit Name: 4e1a728f3a7af1f1db1b8265f208cc34880bf17e</div><div id='time'> Time: 2018-05-18</div><div id='author'> Author: armando@playground.global</div><div id='file'> File Name: lib/streamlit/Proxy.py</div><div id='class'> Class Name: Proxy</div><div id='method'> Method Name: _client_ws_handler</div><BR>

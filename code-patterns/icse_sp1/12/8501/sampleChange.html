@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                           self.heads, self.hidden_dim))
+        device_id = cuda.get_device_from_array(h_i.array).id
+        h_j = functions.copy(h_i, device_id)
+        <a id="change">h_j = functions.transpose(h_j, (0, 2, 1, 3, 4))</a>
+
+        &#47&#47 (minibatch, atom, atom, heads, out_dim * 2)
+        e = functions.concat([h_i, h_j], axis=4)
+
+        &#47&#47 (minibatch, heads, atom, atom, out_dim * 2)
+        e = functions.transpose(e, (0, 3, 1, 2, 4))
+        &#47&#47 (minibatch * heads, atom * atom, out_dim * 2)
+        e = functions.reshape(e, (mb * self.heads, atom * atom,
+                                  self.hidden_dim * 2))
+        &#47&#47 (minibatch * heads, atom * atom, 1)
+        e = self.attenstion_layers[step](e)
+
+        &#47&#47 (minibatch, heads, atom, atom)
+        e = functions.reshape(e, (mb, self.heads, atom, atom))
+        &#47&#47 (heads, minibatch, atom, atom)
+        <a id="change">e = functions.transpose(e, (1, 0, 2, 3))</a>
+        e = functions.leaky_relu(e)
+        &#47&#47 z = functions.reshape(z, (self.heads, mb, atom, atom))
+
+        cond = adj.array.astype(xp.bool)
+        cond = xp.broadcast_to(cond, e.array.shape)
+        &#47&#47 TODO(mottodora): find better way to ignore non connected
+        e = functions.where(cond, e,
+                            xp.broadcast_to(xp.array(-10000), e.array.shape)
+                            .astype(xp.float32))
+        &#47&#47 (heads, minibatch, atom, atom)
+        alpha = functions.softmax(e)
+        &#47&#47 (minibatch, heads, atom, atom)
+        <a id="change">alpha = functions.transpose(alpha, (1, 0, 2, 3))</a>
+        &#47&#47 (minibatch, heads, atom, out_dim)
+        h = functions.transpose(h, (0, 2, 1, 3))
+        &#47&#47 (minibatch, heads, atom, out_dim)
+        h_new = functions.matmul(alpha, h)</code></pre><h3>After Change</h3><pre><code class='java'>
+                                           self.heads, self.hidden_dim))
+
+        &#47&#47 (minibatch, atom, 1, heads, out_dim)
+        <a id="change">h_j = functions.reshape(h, (mb, atom, 1, self.heads, self.hidden_dim))</a>
+        &#47&#47 (minibatch, atom, atom, heads, out_dim)
+        <a id="change">h_j = functions.broadcast_to(h_j, (mb, atom, atom,
+                                           self.heads, self.hidden_dim))</a>
+
+        &#47&#47 (minibatch, atom, atom, heads, out_dim * 2)
+        e = functions.concat([h_i, h_j], axis=4)
+</code></pre>

@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        raise ValueError("Method &quotlm&quot doesn&quott work when the number of "
+                         "residuals is less than the number of variables.")
+
+    if jac in <a id="change">[&quot2-point&quot, &quot3-point&quot, &quotcs&quot]</a>:
+        if method == &quotlm&quot:
+            if jac_sparsity is not None:
+                raise ValueError("Usage of method=&quotlm&quot with `jac_sparsity` "</code></pre><h3>After Change</h3><pre><code class='java'>
+    if callable(jac):
+        J0 = jac(x0, *args, **kwargs)
+
+        <a id="change">if issparse(J0):
+            J0 = csr_matrix(J0)
+
+            def jac_wrapped(x, _=None):
+                return csr_matrix(jac(x, *args, **kwargs))
+        elif isinstance(J0, LinearOperator):
+            def jac_wrapped(x, _=None):
+                return jac(x, *args, **kwargs)
+        else:
+            J0 = np.atleast_2d(J0)
+
+            def jac_wrapped(x, _=None):
+                return np.atleast_2d(jac(x, *args, **kwargs))
+
+       </a> if jac_sparsity is not None:
+            warn(&quot`jac_sparsity = `%s is ignored.&quot % jac_sparsity)
+
+    else:</code></pre>

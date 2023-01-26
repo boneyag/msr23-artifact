@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    trainer.extend(E.snapshot(), trigger=(args.epoch, &quotepoch&quot))
+    trainer.extend(E.LogReport())
+    print_report_targets = [&quotepoch&quot, &quotmain/loss&quot, &quotvalidation/main/loss&quot]
+    if metrics_fun is not None and <a id="change">type(metrics_fun)</a> == dict:
+        for m_k in metrics_fun.keys():
+            print_report_targets.append(&quotmain/&quot+m_k)
+            print_report_targets.append(&quotvalidation/main/&quot+m_k)</code></pre><h3>After Change</h3><pre><code class='java'>
+    trainer.extend(E.snapshot(), trigger=(args.epoch, &quotepoch&quot))
+    trainer.extend(E.LogReport())
+    print_report_targets = [&quotepoch&quot, &quotmain/loss&quot, &quotvalidation/main/loss&quot]
+    <a id="change">for metric_name, metric_fun in metrics.items():
+        if isinstance(metric_fun, types.FunctionType):
+            print_report_targets.append(&quotmain/&quot + metric_name)
+            print_report_targets.append(&quotvalidation/main/&quot + metric_name)
+        elif BatchEvaluator in inspect.getmro(metric_fun):
+            &#47&#47 Evaluation for train data takes time, skip for now.
+            &#47&#47 trainer.extend(metric_fun(
+            &#47&#47     train_iter, model, device=args.gpu, eval_func=predictor,
+            &#47&#47     converter=concat_mols, name=&quottrain&quot,
+            &#47&#47     raise_value_error=False))
+            &#47&#47 print_report_targets.append(&quottrain/main/roc_auc&quot)
+            trainer.extend(metric_fun(
+                val_iter, model, device=args.gpu, eval_func=predictor,
+                converter=concat_mols, name=&quotval&quot, raise_value_error=False))
+            print_report_targets.append(&quotval/main/&quot + metric_name)
+        else:
+            raise TypeError
+   </a> print_report_targets.append(&quotelapsed_time&quot)
+    trainer.extend(E.PrintReport(print_report_targets))
+    trainer.extend(E.ProgressBar())
+    trainer.run()</code></pre>

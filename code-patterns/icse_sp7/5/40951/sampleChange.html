@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            then will attempt to use voltage data from this meter.
+        nominal_voltage : float
+        
+        <a id="change">chunk = next(self.store.load(key=self.sensor_keys[0], **load_kwargs))</a>
+        for key in self.sensor_keys[1:]:
+            chunk += next(self.store.load(key=key, **load_kwargs))
+        best_ac_type = select_best_ac_type(self.available_ac_types(),
+                                           measurement_ac_type_prefs)</code></pre><h3>After Change</h3><pre><code class='java'>
+        best_ac_type = select_best_ac_type(self.available_ac_types(),
+                                           measurement_ac_type_prefs)
+
+        <a id="change">generators = []</a>
+        for key in self.sensor_keys:
+            generators.append(self.store.load(key=key, **load_kwargs))
+
+        while True:
+            try:
+                chunk = next(generators[0])
+            except StopIteration:
+                break
+            <a id="change">for generator in generators[1:]:
+                chunk += next(generator)
+           </a> yield chunk[Power(best_ac_type)].dropna()
+        
+    def voltage_series(self):
+        Returns a generator of pd.Series of voltage, if available.</code></pre>

@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                        "*")
+        batch_identifiers_binary = [
+            key[len(gcs_utils.TablePrefix_PROFILE_string):]
+            <a id="change">for</a> key in profile_table_keys
+        ]
+
+        result = defaultdict(list)
+        for batch_id in batch_identifiers_binary:
+            profile_data = self._profile_table(binary_to_object_id(batch_id))
+            &#47&#47 Note that if keys are being evicted from Redis, then it is
+            &#47&#47 possible that the batch will be evicted before we get it.
+            if len(profile_data) &gt; 0:
+                component_id = <a id="change">profile_data</a>[<a id="change">0</a>]["component_id"]
+                result[component_id].extend(profile_data)
+
+        return dict(result)</code></pre><h3>After Change</h3><pre><code class='java'>
+        for i in range(len(profile_table)):
+            profile = gcs_utils.ProfileTableData.FromString(profile_table[i])
+
+            <a id="change">component_type = profile.component_type</a>
+            component_id = binary_to_hex(profile.component_id)
+            node_ip_address = profile.node_ip_address
+
+            for event in profile.profile_events:
+                try:
+                    extra_data = <a id="change">json.loads(event.extra_data)</a>
+                except ValueError:
+                    extra_data = {}
+                <a id="change">profile_event = {
+                    "event_type": event.event_type,
+                    "component_id": component_id,
+                    "node_ip_address": node_ip_address,
+                    "component_type": component_type,
+                    "start_time": event.start_time,
+                    "end_time": event.end_time,
+                    "extra_data": extra_data
+                }</a>
+
+                result[component_id].append(profile_event)
+
+        return dict(result)</code></pre>

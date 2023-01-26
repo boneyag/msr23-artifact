@@ -1,0 +1,81 @@
+<html><h3>b85e1b59d6bac874d270d2604977e9ec8bd60851,train_vidreid_xent.py,,main,#,35
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    optimizer = init_optimizer(model.parameters(), **optimizer_kwargs(args))
+    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=args.stepsize, gamma=args.gamma)
+
+    <a id="change">if args.fixbase_epoch &gt; 0:
+        if hasattr(model, &quotclassifier&quot) and isinstance(model.classifier, nn.Module):
+            optimizer_tmp = init_optimizer(model.classifier.parameters(), **optimizer_kwargs(args))
+        else:
+            print("Warn: model has no attribute &quotclassifier&quot and fixbase_epoch is reset to 0")
+            args.fixbase_epoch = 0
+        raise NotImplementedError
+
+   </a> if args.load_weights and check_isfile(args.load_weights):
+        &#47&#47 load pretrained weights but ignore layers that don&quott match in size
+        checkpoint = torch.load(args.load_weights)
+        pretrain_dict = checkpoint[&quotstate_dict&quot]
+        model_dict = model.state_dict()
+        pretrain_dict = {k: v for k, v in pretrain_dict.items() if k in model_dict and model_dict[k].size() == v.size()}
+        model_dict.update(pretrain_dict)
+        model.load_state_dict(model_dict)
+        print("Loaded pretrained weights from &quot{}&quot".format(args.load_weights))
+
+    if args.resume and check_isfile(args.resume):
+        checkpoint = torch.load(args.resume)
+        model.load_state_dict(checkpoint[&quotstate_dict&quot])
+        args.start_epoch = checkpoint[&quotepoch&quot] + 1
+        print("Loaded checkpoint from &quot{}&quot".format(args.resume))
+        print("- start_epoch: {}\n- rank1: {}".format(args.start_epoch, checkpoint[&quotrank1&quot]))
+
+    if use_gpu:
+        model = nn.DataParallel(model).cuda()
+
+    if args.evaluate:
+        print("Evaluate only")
+
+        for name in args.target_names:
+            print("Evaluating {} ...".format(name))
+            queryloader = testloader_dict[name][&quotquery&quot]
+            galleryloader = testloader_dict[name][&quotgallery&quot]
+            distmat = test(model, queryloader, galleryloader, args.pool_tracklet_features, use_gpu, return_distmat=True)
+        
+            if args.visualize_ranks:
+                visualize_ranked_results(
+                    distmat, dm.return_testdataset_by_name(name),
+                    save_dir=osp.join(args.save_dir, &quotranked_results&quot, name),
+                    topk=20
+                )
+        return
+
+    start_time = time.time()
+    ranklogger = RankLogger(args.source_names, args.target_names)
+    train_time = 0
+    print("==&gt; Start training")
+
+    if args.fixbase_epoch &gt; 0:
+        print("Train classifier for {} epochs while keeping base network frozen".format(args.fixbase_epoch))
+
+        for epoch in range(args.fixbase_epoch):
+            start_train_time = time.time()
+            train(epoch, model, criterion, optimizer_tmp, trainloader, use_gpu, freeze_bn=True)
+            train_time += round(time.time() - start_train_time)
+
+        del optimizer_tmp
+        print("Now open all layers for training")
+        <a id="change">raise NotImplementedError</a>
+
+    for epoch in range(args.start_epoch, args.max_epoch):
+        start_train_time = time.time()
+        train(epoch, model, criterion, optimizer, trainloader, use_gpu)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        for epoch in range(args.fixbase_epoch):
+            start_train_time = time.time()
+            <a id="change">train(epoch, model, criterion, optimizer, trainloader, use_gpu, fixbase=True)</a>
+            train_time += round(time.time() - start_train_time)
+
+        print("Done. All layers are open to train for {} epochs".format(args.max_epoch))
+        optimizer.load_state_dict(initial_optim_state)</code></pre><img src="77691489.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/KaiyangZhou/deep-person-reid/commit/b85e1b59d6bac874d270d2604977e9ec8bd60851#diff-e6c0c833279ad43f0c76b2e4799c36ce85c9cbbcd1aeb2f6e0af3401a600792eL40' target='_blank'>Link</a></div><div id='project'> Project Name: KaiyangZhou/deep-person-reid</div><div id='commit'> Commit Name: b85e1b59d6bac874d270d2604977e9ec8bd60851</div><div id='time'> Time: 2018-11-08</div><div id='author'> Author: k.zhou@qmul.ac.uk</div><div id='file'> File Name: train_vidreid_xent.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/IBM/adversarial-robustness-toolbox/commit/64764718080b11c8fb91df34c12e0ce8ac54aa4e#diff-6919a2dfe30728fa2663270e78bb7c97a68c14f9308dc2b5d31cbe6eca2e5599L67' target='_blank'>Link</a></div><div id='project'> Project Name: IBM/adversarial-robustness-toolbox</div><div id='commit'> Commit Name: 64764718080b11c8fb91df34c12e0ce8ac54aa4e</div><div id='time'> Time: 2018-05-15</div><div id='author'> Author: M.N.Tran@ibm.com</div><div id='file'> File Name: art/classifiers/pytorch.py</div><div id='class'> Class Name: PyTorchClassifier</div><div id='method'> Method Name: fit</div><BR><BR><div id='link'><a href='https://github.com/kermitt2/delft/commit/3ff106b5be3c5a06b83fa38b2fc83fbe83864ac1#diff-df3d0b62c5c31db348d08f13f908c3cf5b3c32b50907e383379ccfcfee7a6ac4L58' target='_blank'>Link</a></div><div id='project'> Project Name: kermitt2/delft</div><div id='commit'> Commit Name: 3ff106b5be3c5a06b83fa38b2fc83fbe83864ac1</div><div id='time'> Time: 2018-05-07</div><div id='author'> Author: patrice.lopez@science-miner.com</div><div id='file'> File Name: insultTagger.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/explosion/thinc/commit/7d5270802a3b2aafc7f6fc23b5f3d33ef69ab7d7#diff-72b76558fd72b226febb82277262cc972ee6479a5ba00b2049d301be3380dcc6L133' target='_blank'>Link</a></div><div id='project'> Project Name: explosion/thinc</div><div id='commit'> Commit Name: 7d5270802a3b2aafc7f6fc23b5f3d33ef69ab7d7</div><div id='time'> Time: 2016-01-11</div><div id='author'> Author: honnibal@gmail.com</div><div id='file'> File Name: examples/iyyer_dan.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR>

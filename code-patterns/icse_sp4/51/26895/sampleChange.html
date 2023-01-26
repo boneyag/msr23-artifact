@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+     Transfer smiles strings to fixed length integer vectors
+    
+    for epoch in range(epochs):
+      <a id="change">if not predict:
+        print(&quotStarting epoch %i&quot % epoch)
+     </a> for (X_b, y_b, w_b, ids_b) in dataset.iterbatches(
+          batch_size=self.batch_size,
+          deterministic=deterministic,
+          pad_batches=pad_batches):
+
+        feed_dict = dict()
+        if y_b is not None and not predict:
+          <a id="change">for index, label in enumerate(self.labels_fd):
+            if self.mode == "classification":
+              feed_dict[label] = to_one_hot(y_b[:, index])
+            if self.mode == "regression":
+              feed_dict[label] = y_b[:, index:index + 1]
+       </a> if w_b is not None:
+          feed_dict[<a id="change">self.weights</a>] = w_b
+        &#47&#47 Transform SMILES string to integer vectors
+        smiles_seqs = [self.smiles_to_seq(smiles) for smiles in ids_b]
+        feed_dict[self.smiles_seqs] = np.stack(smiles_seqs, axis=0)</code></pre><h3>After Change</h3><pre><code class='java'>
+    weighted_loss = WeightedError(in_layers=[loss, weights])
+    self.set_loss(weighted_loss)
+
+  def default_generator(<a id="change">self</a>,
+                        dataset,
+                        epochs=1,
+                        predict=False,
+                        deterministic=True,
+                        pad_batches=True):
+     Transfer smiles strings to fixed length integer vectors
+    
+    for epoch in range(epochs):
+      for (X_b, y_b, w_b, ids_b) in dataset.iterbatches(
+          batch_size=self.batch_size,
+          deterministic=deterministic,
+          pad_batches=pad_batches):
+
+        feed_dict = dict()
+        if y_b is not None and not predict:
+          <a id="change">if self.mode == "classification":
+            feed_dict[self.labels[0]] = to_one_hot(y_b.flatten(), 2).reshape(
+                -1, self.n_tasks, 2)
+          else:
+            feed_dict[self.labels[0]] = y_b
+       </a> if w_b is not None and not predict:
+          feed_dict[<a id="change">self.task_weights[0]</a>] = w_b
+
+        &#47&#47 Transform SMILES sequence to integers
+        smiles_seqs = [self.smiles_to_seq(smiles) for smiles in ids_b]</code></pre>

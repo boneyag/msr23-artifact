@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def cuda(self):
+        cuda_tensor = {}
+        for field in dataclasses.fields(self):  &#47&#47 noqa F402
+            <a id="change">f = getattr(self, field.name)</a>
+            if isinstance(f, torch.Tensor):
+                cuda_tensor[field.name] = f.cuda(non_blocking=True)
+            elif isinstance(f, TensorDataClass):
+                cuda_tensor[field.name] = f.cuda()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def cuda(self, *args, **kwargs):
+        cuda_tensor = {}
+        <a id="change">for k, v in self.__dict__.items():  &#47&#47 noqa F402
+            if isinstance(v, torch.Tensor):
+                kwargs["non_blocking"] = kwargs.get("non_blocking", True)
+                cuda_tensor[k] = v.cuda(*args, **kwargs)
+            elif isinstance(v, TensorDataClass):
+                cuda_tensor[k] = v.cuda(*args, **kwargs)
+            else:
+                cuda_tensor[k] = v
+       </a> return type(self)(**cuda_tensor)
+
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47</code></pre>

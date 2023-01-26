@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 predictions must contain tensors with the same batch size
+        &#47&#47 so replicate the transition matrix accordingly.
+        <a id="change">transition_params = tf.convert_to_tensor(transition_params)</a>
+        <a id="change">transition_params = tf.expand_dims(transition_params, axis=0)</a>
+        transition_params = tf.tile(transition_params, <a id="change">[tf.shape(logits)[0], 1, 1]</a>)
+
+        predictions["logits"] = logits
+        <a id="change">predictions["transition_params"] = transition_params</a>
+      else:
+        probs = tf.nn.softmax(logits)
+        predictions["argmax"] = tf.argmax(probs, axis=2)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+          logits,
+          transition_params,
+          encoder_sequence_length)
+        labels = <a id="change">tf.cast(labels, tf.int64)</a>
+      else:
+        probs = tf.nn.softmax(logits)
+        labels = tf.argmax(probs, axis=2)
+
+      <a id="change">labels_vocab_rev = tf.contrib.lookup.index_to_string_table_from_file(
+        self.labels_vocabulary_file,
+        vocab_size=self.num_labels)</a>
+
+      predictions = {}
+      predictions["length"] = encoder_sequence_length
+      <a id="change">predictions["labels"] = labels_vocab_rev.lookup(labels)</a>
+
+      return tf.estimator.EstimatorSpec(
+        mode,
+        predictions=predictions)</code></pre>

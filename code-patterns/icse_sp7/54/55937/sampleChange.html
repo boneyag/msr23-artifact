@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        super().__init__(name, parameters)
+
+    def __call__(self, x: Variable):
+        <a id="change">N = x.shape[0]</a>
+        H2 = (<a id="change">x.shape[1]</a> + 2 * self.parameters["padding"][0] - self.parameters["ksize"][0]) / self.parameters["stride"][0] + 1
+        W2 = (<a id="change">x.shape[2]</a> + 2 * self.parameters["padding"][1] - self.parameters["ksize"][1]) / self.parameters["stride"][1] + 1
+        <a id="change">C2 = self.parameters["out_size"]</a>
+
+        <a id="change">y = Variable([N, H2, W2, C2])</a>
+        self.append_input("x", x)
+        self.append_output("y", y)
+        return y,
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        super().__init__(name, parameters)
+
+    def __call__(self, x: Variable):
+        <a id="change">x_shape_dict = x.shape_dict</a>
+        N = x_shape_dict[<a id="change">A.Axis.N</a>]
+        H2 = (<a id="change">x_shape_dict[A.Axis.H]</a> + 2 * self.parameters["padding"][0] - self.parameters["ksize"][0]) // self.parameters["stride"][0] + 1
+        W2 = (<a id="change">x_shape_dict[A.Axis.W]</a> + 2 * self.parameters["padding"][1] - self.parameters["ksize"][1]) // self.parameters["stride"][1] + 1
+        <a id="change">C2 = x_shape_dict[A.Axis.C]</a>
+
+        <a id="change">if x.axis_order == VA.OrderNCHW:
+            var_shape = [N, C2, H2, W2]
+        elif x.axis_order == VA.OrderNHWC:
+            var_shape = [N, H2, W2, C2]
+        else:
+            raise NotImplementedError()
+       </a> <a id="change">y = Variable(var_shape, x.axis_order)</a>
+        self.append_input("x", x)
+        self.append_output("y", y)
+        return y,
+</code></pre>

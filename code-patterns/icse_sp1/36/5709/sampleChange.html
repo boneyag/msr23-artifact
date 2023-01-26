@@ -1,0 +1,94 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        assert plxfile.matrix[&quotloss&quot].to_dict() == {&quotvalues&quot: [&quotMeanSquaredError&quot,
+                                                               &quotAbsoluteDifference&quot]}
+        assert plxfile.matrix_space == 10
+        <a id="change">declarations = []</a>
+        <a id="change">for lr in plxfile.matrix[&quotlr&quot].to_numpy():
+            for loss in plxfile.matrix[&quotloss&quot].to_numpy():
+                declarations.append({&quotloss&quot: loss, &quotlr&quot: lr})
+       </a> assert sorted(
+            plxfile.matrix_declarations, key=lambda x: (x[&quotlr&quot], x[&quotloss&quot])) == sorted(
+            declarations, key=lambda x: (x[&quotlr&quot], x[&quotloss&quot]))
+        assert isinstance(plxfile.settings, SettingsConfig)
+        assert plxfile.settings.concurrent_experiments == 2
+        assert plxfile.settings.n_experiments == 300
+        assert plxfile.early_stopping == []
+        assert plxfile.run_type == RunTypes.KUBERNETES
+
+        assert plxfile.experiments_def == (
+            10,
+            None,
+            2,
+            SearchMethods.GRID
+        )
+
+        <a id="change">for xp in range(plxfile.matrix_space):
+            spec = plxfile.experiment_spec_at(xp)
+            assert spec.is_runnable
+            assert spec.environment is None
+            assert spec.framework is None
+            assert spec.cluster_def == ({TaskType.MASTER: 1}, False)
+
+            model = spec.model
+            assert isinstance(model, RegressorConfig)
+            assert isinstance(model.loss, (MeanSquaredErrorConfig, AbsoluteDifferenceConfig))
+            assert isinstance(model.optimizer, AdamConfig)
+            assert isinstance(model.graph, GraphConfig)
+            assert len(model.graph.layers) == 4
+            assert model.graph.input_layers == [[&quotimages&quot, 0, 0]]
+            last_layer = model.graph.layers[-1].name
+            assert model.graph.output_layers == [[last_layer, 0, 0]]
+            assert isinstance(spec.train.data_pipeline, TFRecordImagePipelineConfig)
+
+   </a> def test_one_matrix_file_passes(self):
+        plxfile = PolyaxonFile(os.path.abspath(&quottests/fixtures/one_matrix_file.yml&quot))
+        assert plxfile.version == 1
+        assert plxfile.project.name == &quotproject1&quot</code></pre><h3>After Change</h3><pre><code class='java'>
+        assert isinstance(spec.train.data_pipeline, TFRecordImagePipelineConfig)
+
+    def test_matrix_large_n_experiments_ignored_file_passes(self):
+        <a id="change">plxfile</a> = PolyaxonFile(
+            os.path.abspath(&quottests/fixtures/matrix_file_ignored_n_experiments.yml&quot))
+        assert plxfile.version == 1
+        assert plxfile.project.name == &quotproject1&quot
+        assert isinstance(plxfile.matrix[&quotlr&quot], MatrixConfig)
+        assert isinstance(plxfile.matrix[&quotloss&quot], MatrixConfig)
+        assert plxfile.matrix[&quotlr&quot].to_dict() == {
+            &quotlogspace&quot: {&quotstart&quot: 0.01, &quotstop&quot: 0.1, &quotnum&quot: 5}}
+        assert plxfile.matrix[&quotloss&quot].to_dict() == {&quotvalues&quot: [&quotMeanSquaredError&quot,
+                                                               &quotAbsoluteDifference&quot]}
+        assert plxfile.matrix_space == 10
+        assert isinstance(plxfile.settings, SettingsConfig)
+        assert plxfile.settings.concurrent_experiments == 2
+        assert plxfile.settings.n_experiments == 300
+        assert plxfile.early_stopping == []
+        assert plxfile.run_type == RunTypes.KUBERNETES
+
+        assert plxfile.experiments_def == (
+            10,
+            None,
+            2,
+            SearchMethods.GRID
+        )
+
+        <a id="change">spec = plxfile.get_experiment_spec(matrix_declaration=plxfile.matrix_declaration_test)</a>
+        assert spec.is_runnable
+        assert spec.environment is None
+        assert spec.framework is None
+        assert spec.cluster_def == ({TaskType.MASTER: 1}, False)
+
+        <a id="change">model = spec.model</a>
+        assert isinstance(model, RegressorConfig)
+        assert isinstance(model.loss, (MeanSquaredErrorConfig, AbsoluteDifferenceConfig))
+        assert isinstance(model.optimizer, AdamConfig)
+        assert isinstance(model.graph, GraphConfig)
+        assert len(model.graph.layers) == 4
+        assert model.graph.input_layers == [[&quotimages&quot, 0, 0]]
+        <a id="change">last_layer = model.graph.layers[-1].name</a>
+        assert model.graph.output_layers == [[last_layer, 0, 0]]
+        assert isinstance(spec.train.data_pipeline, TFRecordImagePipelineConfig)
+
+    def test_one_matrix_file_passes(self):</code></pre>

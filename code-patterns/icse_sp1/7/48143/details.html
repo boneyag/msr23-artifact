@@ -1,0 +1,156 @@
+<html><h3>1f7492f81063cd039201b7b2e00a547547362d06,dipy/reconst/peaks.py,,_peaks_from_model_parallel,#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#,140
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    n = data.shape[0]
+    nbr_chunks = nbr_processes ** 2
+    chunk_size = int(np.ceil(n / nbr_chunks))
+    indices = <a id="change">zip(np.arange(0, n, chunk_size),
+                  np.arange(0, n, chunk_size) + chunk_size)</a>
+
+    with InTemporaryDirectory() as tmpdir:
+
+        data_file_name = path.join(tmpdir, &quotdata.npy&quot)
+        np.save(data_file_name, data)
+        if mask is not None:
+            mask = mask.flatten()
+            mask_file_name = path.join(tmpdir, &quotmask.npy&quot)
+            np.save(mask_file_name, mask)
+        else:
+            mask_file_name = None
+
+        pool = Pool(nbr_processes)
+
+        pam_res = pool.map(_peaks_from_model_parallel_sub,
+                           zip(repeat((data_file_name, mask_file_name)),
+                               indices,
+                               repeat(model),
+                               repeat(sphere),
+                               repeat(relative_peak_threshold),
+                               repeat(min_separation_angle),
+                               repeat(return_odf),
+                               repeat(return_sh),
+                               repeat(gfa_thr),
+                               repeat(normalize_peaks),
+                               repeat(sh_order),
+                               repeat(sh_basis_type),
+                               repeat(npeaks),
+                               repeat(B),
+                               repeat(invB)))
+        pool.close()
+
+        pam = PeaksAndMetrics()
+
+        &#47&#47 use memmap to reduce the memory usage
+        pam.gfa = np.memmap(path.join(tmpdir, &quotgfa.npy&quot),
+                            dtype=pam_res[0].gfa.dtype,
+                            mode=&quotw+&quot,
+                            shape=(data.shape[0]))
+
+        pam.peak_dirs = np.memmap(path.join(tmpdir, &quotpeak_dirs.npy&quot),
+                                  dtype=pam_res[0].peak_dirs.dtype,
+                                  mode=&quotw+&quot,
+                                  shape=(data.shape[0], npeaks, 3))
+        <a id="change">pam.peak_values</a> = np.memmap(path.join(tmpdir, &quotpeak_values.npy&quot),
+                                    dtype=pam_res[0].peak_values.dtype,
+                                    mode=&quotw+&quot,
+                                    shape=(data.shape[0], npeaks))
+        pam.peak_indices = np.memmap(path.join(tmpdir, &quotpeak_indices.npy&quot),
+                                     dtype=pam_res[0].peak_indices.dtype,
+                                     mode=&quotw+&quot,
+                                     shape=(data.shape[0], npeaks))
+        pam.qa = np.memmap(path.join(tmpdir, &quotqa.npy&quot),
+                           dtype=pam_res[0].qa.dtype,
+                           mode=&quotw+&quot,
+                           shape=(data.shape[0], npeaks))
+        if return_sh:
+            nbr_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+            pam.shm_coeff = np.memmap(path.join(tmpdir, &quotshm.npy&quot),
+                                      dtype=pam_res[0].shm_coeff.dtype,
+                                      mode=&quotw+&quot,
+                                      shape=(data.shape[0], nbr_shm_coeff))
+            pam.B = pam_res[0].B
+        else:
+            pam.shm_coeff = None
+            pam.invB = None
+        if return_odf:
+            <a id="change">pam.odf</a> = np.memmap(path.join(tmpdir, &quotodf.npy&quot),
+                                dtype=pam_res[0].odf.dtype,
+                                mode=&quotw+&quot,
+                                shape=(data.shape[0], len(sphere.vertices)))</code></pre><h3>After Change</h3><pre><code class='java'>
+    n = data.shape[0]
+    nbr_chunks = nbr_processes ** 2
+    chunk_size = int(np.ceil(n / nbr_chunks))
+    indices = <a id="change">list(zip(np.arange(0, n, chunk_size),
+                       np.arange(0, n, chunk_size) + chunk_size))</a>
+
+    with InTemporaryDirectory() as tmpdir:
+
+        data_file_name = path.join(tmpdir, &quotdata.npy&quot)
+        np.save(data_file_name, data)
+        if mask is not None:
+            mask = mask.flatten()
+            mask_file_name = path.join(tmpdir, &quotmask.npy&quot)
+            np.save(mask_file_name, mask)
+        else:
+            mask_file_name = None
+
+        pool = Pool(nbr_processes)
+
+        pam_res = pool.map(_peaks_from_model_parallel_sub,
+                           zip(repeat((data_file_name, mask_file_name)),
+                               indices,
+                               repeat(model),
+                               repeat(sphere),
+                               repeat(relative_peak_threshold),
+                               repeat(min_separation_angle),
+                               repeat(return_odf),
+                               repeat(return_sh),
+                               repeat(gfa_thr),
+                               repeat(normalize_peaks),
+                               repeat(sh_order),
+                               repeat(sh_basis_type),
+                               repeat(npeaks),
+                               repeat(B),
+                               repeat(invB)))
+        pool.close()
+
+        pam = PeaksAndMetrics()
+        &#47&#47 use memmap to reduce the memory usage
+        pam.gfa = np.memmap(path.join(tmpdir, &quotgfa.npy&quot),
+                            dtype=pam_res[0].gfa.dtype,
+                            mode=&quotw+&quot,
+                            shape=(data.shape[0]))
+
+        pam.peak_dirs = np.memmap(path.join(tmpdir, &quotpeak_dirs.npy&quot),
+                                  dtype=pam_res[0].peak_dirs.dtype,
+                                  mode=&quotw+&quot,
+                                  shape=(data.shape[0], npeaks, 3))
+        <a id="change">pam.peak_values</a> = np.memmap(path.join(tmpdir, &quotpeak_values.npy&quot),
+                                    dtype=pam_res[0].peak_values.dtype,
+                                    mode=&quotw+&quot,
+                                    shape=(data.shape[0], npeaks))
+        pam.peak_indices = np.memmap(path.join(tmpdir, &quotpeak_indices.npy&quot),
+                                     dtype=pam_res[0].peak_indices.dtype,
+                                     mode=&quotw+&quot,
+                                     shape=(data.shape[0], npeaks))
+        pam.qa = np.memmap(path.join(tmpdir, &quotqa.npy&quot),
+                           dtype=pam_res[0].qa.dtype,
+                           mode=&quotw+&quot,
+                           shape=(data.shape[0], npeaks))
+        if return_sh:
+            nbr_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+            pam.shm_coeff = np.memmap(path.join(tmpdir, &quotshm.npy&quot),
+                                      dtype=pam_res[0].shm_coeff.dtype,
+                                      mode=&quotw+&quot,
+                                      shape=(data.shape[0], nbr_shm_coeff))
+            pam.B = pam_res[0].B
+        else:
+            pam.shm_coeff = None
+            pam.invB = None
+        if return_odf:
+            <a id="change">pam.odf</a> = np.memmap(path.join(tmpdir, &quotodf.npy&quot),
+                                dtype=pam_res[0].odf.dtype,
+                                mode=&quotw+&quot,
+                                shape=(data.shape[0], len(sphere.vertices)))</code></pre><img src="222633284.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/1f7492f81063cd039201b7b2e00a547547362d06#diff-1f1268fae6771593948f110c644e6fdab407852780aaacbbbccb600c38967bcfL163' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: 1f7492f81063cd039201b7b2e00a547547362d06</div><div id='time'> Time: 2013-11-18</div><div id='author'> Author: girard.gabriel@gmail.com</div><div id='file'> File Name: dipy/reconst/peaks.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _peaks_from_model_parallel</div><BR><BR><div id='link'><a href='https://github.com/HazyResearch/pdftotree/commit/ff0fa66f8997121dccb421f82b0eadc3e21688e2#diff-6b111eae498f521250770e7a66379885cb3a687779c16e8095ef259f01adc696L49' target='_blank'>Link</a></div><div id='project'> Project Name: HazyResearch/pdftotree</div><div id='commit'> Commit Name: ff0fa66f8997121dccb421f82b0eadc3e21688e2</div><div id='time'> Time: 2018-04-04</div><div id='author'> Author: lwhsiao@stanford.edu</div><div id='file'> File Name: pdftotree/utils/pdf/grid.py</div><div id='class'> Class Name: Grid</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/tflearn/tflearn/commit/e322665f17f0a35e2d5fe6163fc558d5b9deba7e#diff-072717fddd82ca76946c8c0903f1e5c2ea088952712fbe457efa4f729a0a65a9L500' target='_blank'>Link</a></div><div id='project'> Project Name: tflearn/tflearn</div><div id='commit'> Commit Name: e322665f17f0a35e2d5fe6163fc558d5b9deba7e</div><div id='time'> Time: 2016-04-04</div><div id='author'> Author: brettnaul@gmail.com</div><div id='file'> File Name: tflearn/helpers/trainer.py</div><div id='class'> Class Name: TrainOp</div><div id='method'> Method Name: initialize_training_ops</div><BR><BR><div id='link'><a href='https://github.com/apache/incubator-mxnet/commit/566905f2421599d83c446ecb0b25176238f7a909#diff-7296a8e9337aa87c250b94f8ecb55c0a6bbe57630853667437b1e9037c1ae76aL86' target='_blank'>Link</a></div><div id='project'> Project Name: apache/incubator-mxnet</div><div id='commit'> Commit Name: 566905f2421599d83c446ecb0b25176238f7a909</div><div id='time'> Time: 2020-01-19</div><div id='author'> Author: 1483586698@qq.com</div><div id='file'> File Name: example/speech_recognition/stt_io_bucketingiter.py</div><div id='class'> Class Name: BucketSTTIter</div><div id='method'> Method Name: __init__</div><BR>

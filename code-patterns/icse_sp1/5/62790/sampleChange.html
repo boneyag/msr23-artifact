@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        manifold.metric.squared_dist(
+            reshaped_example_embedding, negative_embedding)
+    negative_distance =\
+        <a id="change">gs.to_ndarray(negative_distance, to_ndim=2, axis=-1)</a>
+    negative_loss = log_sigmoid(negative_distance)
+
+    total_loss = -(positive_loss + negative_loss.sum())
+
+    positive_log_sigmoid_grad =\
+        -grad_log_sigmoid(-positive_distance)
+
+    positive_distance_grad =\
+        grad_squared_distance(example_embedding, context_embedding)
+
+    positive_grad =\
+        gs.repeat(positive_log_sigmoid_grad, dim, axis=-1)\
+        * positive_distance_grad
+
+    negative_distance_grad =\
+        grad_squared_distance(reshaped_example_embedding, negative_embedding)
+
+    negative_log_sigmoid_grad =\
+        grad_log_sigmoid(negative_distance)
+
+    <a id="change">negative_grad = negative_log_sigmoid_grad\
+        * negative_distance_grad</a>
+
+    example_grad = -(positive_grad + negative_grad.sum(axis=0))
+
+    return total_loss, example_grad</code></pre><h3>After Change</h3><pre><code class='java'>
+        grad_squared_distance(example_embedding, context_embedding)
+
+    positive_grad =\
+        <a id="change">gs.einsum(&quoti, i...-&gt;i...&quot, positive_log_sigmoid_grad,
+                  positive_distance_grad)</a>
+
+    negative_distance_grad =\
+        grad_squared_distance(reshaped_example_embedding, negative_embedding)
+</code></pre>

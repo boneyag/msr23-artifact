@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    tt_rank = np.append(tt_rank, 1)
+  tt_rank = tt_rank.astype(int)
+  &#47&#47 TODO: variable (name?) scope.
+  <a id="change">tt_cores = [None] * num_dims</a>
+  <a id="change">for i in range(num_dims):
+    curr_core_shape = (batch_size, tt_rank[i], shape[i], tt_rank[i + 1])
+    tt_cores[i] = tf.random_normal(curr_core_shape, mean=mean, stddev=stddev)
+
+ </a> <a id="change">return TensorTrainBatch(tt_cores, shape, tt_rank, batch_size)</a>
+
+
+def random_matrix(shape, tt_rank=2, mean=0., stddev=1.):
+  Generate a random TT-matrix of given shape.</code></pre><h3>After Change</h3><pre><code class='java'>
+      raise ValueError(&quotall elements in `tt_rank` should be integers&quot)
+  if not isinstance(batch_size, (int, np.integer)):
+    raise ValueError(&quot`batch_size` should be integer&quot)
+  <a id="change">num_dims</a> = shape.size
+  if tt_rank.size == 1:
+    tt_rank = tt_rank * np.ones(num_dims - 1)
+    tt_rank = np.insert(tt_rank, 0, 1)
+    tt_rank = np.append(tt_rank, 1)
+  <a id="change">tt_rank</a> = tt_rank.astype(int)
+
+  <a id="change">cr_exponent = -1.0 / (2 * num_dims)</a>
+  <a id="change">var = np.prod(tt_rank ** cr_exponent)</a>
+  <a id="change">cr_stddev = stddev ** (1.0 / num_dims) * var</a>
+  <a id="change">tt = tensor_batch_with_random_cores(shape, tt_rank=tt_rank, stddev=cr_stddev,
+                                      batch_size=batch_size)</a>
+
+  <a id="change">if np.abs(mean) &lt; 1e-8:
+    return tt
+  else:
+    raise NotImplementedError(&quotnon-zero mean is not supported yet&quot)
+
+
+</a>def random_matrix(shape, tt_rank=2, mean=0., stddev=1.):
+  Generate a random TT-matrix of the given shape with given mean and stddev.
+
+  Entries of the generated matrix (in the full format) will be iid and satisfy</code></pre>

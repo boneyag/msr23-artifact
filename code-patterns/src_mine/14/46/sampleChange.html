@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            mb_locs_local, mb_confs_local,
+            gt_mb_locs_local, gt_mb_labels_local, k, self.comm)
+
+        <a id="change">loc_loss_local</a> = <a id="change">cuda.to_cpu(loc_loss_local.array)</a>
+        conf_loss_local = cuda.to_cpu(conf_loss_local.array)
+        <a id="change">loc_loss</a> = <a id="change">self.comm.allreduce(loc_loss_local) / self.comm.size</a>
+        conf_loss = self.comm.allreduce(conf_loss_local) / self.comm.size
+
+        expect_loc_loss, expect_conf_loss = multibox_loss(
+            self.mb_locs, self.mb_confs, self.gt_mb_locs, self.gt_mb_labels, k)</code></pre><h3>After Change</h3><pre><code class='java'>
+            mb_locs_local, mb_confs_local,
+            gt_mb_locs_local, gt_mb_labels_local, k, self.comm)
+
+        <a id="change">loc_loss_local</a> = <a id="change">cuda</a>.to_cpu(loc_loss_local.array).reshape((-1,))
+        conf_loss_local = cuda.to_cpu(conf_loss_local.array).reshape((-1,))
+        <a id="change">loc_loss</a> = np.asscalar(
+            <a id="change">self.comm.allreduce(loc_loss_local) / self.comm.size</a>)
+        conf_loss = np.asscalar(
+            self.comm.allreduce(conf_loss_local) / self.comm.size)
+</code></pre>

@@ -1,0 +1,77 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                    &#47&#47 Trigger the write
+                    success = opWriter.WriteImage.value
+                    <a id="change">if not success:
+                        raise RuntimeError("Error while writing predictions to project file.")
+                    
+                   </a> startProgress = progress[0]
+                    
+                self._dirtyFlags[Section.Predictions] = False
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        with Tracer(traceLogger):
+            &#47&#47 If the predictions are missing, then maybe the user wants them stored (even if they aren&quott dirty)
+            <a id="change">if self._dirtyFlags[Section.Predictions] or &quotPredictions&quot not in topGroup.keys():
+
+                self.deleteIfPresent(topGroup, &quotPredictions&quot)
+                predictionDir = topGroup.create_group(&quotPredictions&quot)
+
+                if self.predictionStorageEnabled:
+                    numImages = len(self.mainOperator.PredictionProbabilities)
+    
+                    if numImages &gt; 0:
+                        increment = (endProgress - startProgress) / float(numImages)
+    
+                    for imageIndex in range(numImages):
+                        &#47&#47 Have we been cancelled?
+                        if not self.predictionStorageEnabled:
+                            break
+    
+                        datasetName = &quotpredictions{:04d}&quot.format(imageIndex)
+    
+                        progress = [startProgress]
+    
+                        &#47&#47 Use a big dataset writer to do this in chunks
+                        opWriter = OpH5WriterBigDataset(self.mainOperator.graph)
+                        opWriter.hdf5File.setValue( predictionDir )
+                        opWriter.hdf5Path.setValue( datasetName )
+                        opWriter.Image.connect( self.mainOperator.PredictionProbabilities[imageIndex] )
+                        
+                        &#47&#47 Create the request
+                        self._predictionStorageRequest = opWriter.WriteImage[...]
+    
+                        def handleProgress(percent):
+                            &#47&#47 Stop sending progress if we were cancelled
+                            if self.predictionStorageEnabled:
+                                progress[0] = startProgress + percent * (increment / 100.0)
+                                self.progressSignal.emit( progress[0] )
+                        opWriter.progressSignal.subscribe( handleProgress )
+    
+                        finishedEvent = threading.Event()
+                        def handleFinish(request):
+                            finishedEvent.set()
+    
+                        def handleCancel(request):
+                            self._predictionStorageRequest = None
+                            finishedEvent.set()
+    
+                        &#47&#47 Trigger the write and wait for it to complete or cancel.
+                        self._predictionStorageRequest.notify(handleFinish)
+                        self._predictionStorageRequest.onCancel(handleCancel)
+                        finishedEvent.wait()
+                        
+                    &#47&#47 If we were cancelled, delete the predictions we just started
+                    if not self.predictionStorageEnabled:
+                        self.deleteIfPresent(&quotPredictions/&quot + datasetName)
+                        startProgress = progress[0]
+                        
+                    self._dirtyFlags[Section.Predictions] = False
+
+   </a> def cancel(self):
+        Currently, this only cancels prediction storage.
+        if self._predictionStorageRequest is not None:
+            self.predictionStorageEnabled = False</code></pre>

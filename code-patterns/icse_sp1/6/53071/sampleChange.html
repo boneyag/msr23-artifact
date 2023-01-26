@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        logger_logs[&quotscheduled_sampling_prob&quot] = self.model.ss_prob
+        logger_logs[&quottraining_loss&quot] = loss
+
+        output = {k:<a id="change">v</a> if k == &quotloss&quot else v.data <a id="change">for</a> k,v in <a id="change">model_out.items()</a>}
+        output[&quotlog&quot] = logger_logs
+
+        return output</code></pre><h3>After Change</h3><pre><code class='java'>
+        data_time = self.trainer.profiler.recorded_durations["get_train_batch"][-1]
+        data_time = torch.tensor(data_time)
+
+        logger_logs = <a id="change">model_out.copy()</a>
+        if struc_flag or sc_flag:
+            logger_logs[&quotreward&quot] = model_out[&quotreward&quot].mean()
+            logger_logs[&quotreward_var&quot] = model_out[&quotreward&quot].var(1).mean()
+
+        logger_logs[&quotscheduled_sampling_prob&quot] = torch.tensor(
+            self.model.ss_prob)
+        logger_logs[&quottraining_loss&quot] = loss
+        logger_logs[&quotdata_time&quot] = data_time
+
+        <a id="change">output = {
+            &quotloss&quot: loss,
+            &quotlog&quot: logger_logs,
+            &quotprogress_bar&quot: {&quotdata_time&quot: data_time}
+        }</a>
+
+        return output
+
+    def validation_step(self, data, batch_idx):</code></pre>

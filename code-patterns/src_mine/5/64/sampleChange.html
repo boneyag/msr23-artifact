@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        [router] = ray.get(master.get_router.remote())
+        [http_proxy] = ray.get(master.get_http_proxy.remote())
+        all_handles = [master, router, http_proxy]
+        worker_handle_dict = <a id="change">ray.get(master.get_all_worker_handles.remote())</a>
+        for _, replica_dict in worker_handle_dict.items():
+            all_handles.extend(list(replica_dict.values()))
+
+        return all_handles</code></pre><h3>After Change</h3><pre><code class='java'>
+        [router] = retry_actor_failures(master.get_router)
+        [http_proxy] = retry_actor_failures(master.get_http_proxy)
+        all_handles = [master, router, http_proxy]
+        worker_handle_dict = <a id="change">retry_actor_failures(
+            master.get_all_worker_handles)</a>
+        for _, replica_dict in worker_handle_dict.items():
+            all_handles.extend(list(replica_dict.values()))
+
+        return all_handles</code></pre>

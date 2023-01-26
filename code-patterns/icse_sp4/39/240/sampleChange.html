@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def __init__(self, padding=(1, 1, 1), data_format=&quotdefault&quot, **kwargs):
+        super(ZeroPadding3D, self).__init__(**kwargs)
+        <a id="change">if data_format == &quotdefault&quot:
+            data_format = K.image_data_format()
+       </a> self.padding = tuple(padding)
+        <a id="change">if data_format not in {&quotchannels_last&quot, &quotchannels_first&quot}:
+            raise ValueError(&quotdata_format must be in {"channels_last", "channels_first"}.&quot)
+       </a> <a id="change">self.data_format</a> = data_format
+        self.input_spec = [InputSpec(ndim=5)]
+
+    def get_output_shape_for(self, input_shape):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def __init__(self, padding=(1, 1, 1), data_format=None, **kwargs):
+        super(ZeroPadding3D, self).__init__(**kwargs)
+        <a id="change">self.data_format</a> = <a id="change">conv_utils.normalize_data_format(data_format)</a>
+        if isinstance(padding, int):
+            self.padding = ((padding, padding), (padding, padding), (padding, padding))
+        <a id="change">if hasattr(padding, &quot__len__&quot):
+            if len(padding) != 3:
+                raise ValueError(&quotTODO&quot)
+            dim1_padding = conv_utils.normalize_tuple(padding[0], 2,
+                                                      &quot1st entry of padding&quot)
+            dim2_padding = conv_utils.normalize_tuple(padding[1], 2,
+                                                      &quot2nd entry of padding&quot)
+            dim3_padding = conv_utils.normalize_tuple(padding[2], 2,
+                                                      &quot3rd entry of padding&quot)
+            self.padding = (dim1_padding, dim2_padding, dim3_padding)
+        else:
+            raise ValueError(&quot`padding` should be either an int, &quot
+                             &quota tuple of 3 ints &quot
+                             &quot(symmetric_dim1_pad, symmetric_dim2_pad, symmetric_dim3_pad), &quot
+                             &quotor a tuple of 3 tuples of 2 ints &quot
+                             &quot((left_dim1_pad, right_dim1_pad),&quot
+                             &quot (left_dim2_pad, right_dim2_pad),&quot
+                             &quot (left_dim3_pad, right_dim2_pad)). &quot
+                             &quotFound: &quot + str(padding))
+       </a> self.input_spec = [InputSpec(ndim=5)]
+
+    def get_output_shape_for(self, input_shape):
+        if self.data_format == &quotchannels_first&quot:</code></pre>

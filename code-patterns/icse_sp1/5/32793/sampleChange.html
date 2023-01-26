@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    u = (read_weights + write_weights &gt; self.δ).float()
+
+    &#47&#47 usage before write
+    relevant_usages = T.stack([usage[b][p.data] <a id="change">for</a> b, p in enumerate(read_positions)], 0)
+
+    &#47&#47 indicator of words with minimal memory usage
+    minusage = T.min(relevant_usages, -1)[0].unsqueeze(1)
+    minusage = minusage.expand(relevant_usages.size())
+    I = (relevant_usages == minusage).float().unsqueeze(1)
+
+    &#47&#47 usage after write
+    relevant_usages = (self.timestep - relevant_usages) * u.squeeze() + relevant_usages * (1 - u.squeeze())
+
+    for b, p in enumerate(read_positions):
+      for n, x in enumerate(list(p.data.cpu().numpy())):
+        <a id="change">usage[b, x]</a> = relevant_usages[b, n]
+
+    return usage, I
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    u = (read_weights + write_weights &gt; self.δ).float()
+
+    &#47&#47 usage before write
+    <a id="change">relevant_usages = usage.gather(1, read_positions)</a>
+
+    &#47&#47 indicator of words with minimal memory usage
+    minusage = T.min(relevant_usages, -1)[0].unsqueeze(1)
+    minusage = minusage.expand(relevant_usages.size())
+    I = (relevant_usages == minusage).float().unsqueeze(1)
+
+    &#47&#47 usage after write
+    relevant_usages = (self.timestep - relevant_usages) * u.squeeze() + relevant_usages * (1 - u.squeeze())
+
+    <a id="change">usage.scatter_(1, read_positions, relevant_usages)</a>
+
+    return usage, I
+
+  def read_from_sparse_memory(self, memory, indexes, keys, last_used_mem):</code></pre>

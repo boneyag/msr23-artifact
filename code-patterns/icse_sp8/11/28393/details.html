@@ -1,0 +1,130 @@
+<html><h3>d938f476feee0efd9045bc8f9bb1fe76b9898fae,doc/examples/introduction_to_basic_tracking.py,,,#,32
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+streamlines = list(streamlines)
+
+&#47&#47 Prepare the display objects.
+color = <a id="change">line_colors(streamlines)</a>
+
+if fvtk.have_vtk:
+    streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+from dipy.viz.colormap import line_colors
+
+&#47&#47 Enables/disables interactive visualization
+<a id="change">interactive = False</a>
+
+&#47&#47 Initialization of LocalTracking. The computation happens in the next step.
+streamlines = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
+
+&#47&#47 Compute streamlines and store as a list.
+streamlines = list(streamlines)
+
+&#47&#47 Prepare the display objects.
+color = line_colors(streamlines)
+
+if window.have_vtk:
+    streamlines_actor = actor.line(streamlines, line_colors(streamlines))
+
+    &#47&#47 Create the 3d display.
+    r = <a id="change">window.Renderer()</a>
+    r.add(streamlines_actor)
+
+    &#47&#47 Save still images for this static example. Or for interactivity use
+    window.record(r, n_frames=1, out_path=&quotdeterministic.png&quot, size=(800, 800))
+    <a id="change">if interactive:
+        window.show(r)
+
+</a>
+.. figure:: deterministic.png
+   :align: center
+
+   **Corpus Callosum Deterministic**
+
+We&quotve created a deterministic set of streamlines, so called because if you
+repeat the fiber tracking (keeping all the inputs the same) you will get
+exactly the same set of streamlines. We can save the streamlines as a Trackvis
+file so it can be loaded into other software for visualization or further
+analysis.
+
+
+from dipy.io.trackvis import save_trk
+save_trk("CSA_detr.trk", streamlines, affine, labels.shape)
+
+
+Next let&quots try some probabilistic fiber tracking. For this, we&quotll be using the
+Constrained Spherical Deconvolution (CSD) Model. This model represents each
+voxel in the data set as a collection of small white matter fibers with
+different orientations. The density of fibers along each orientation is known
+as the Fiber Orientation Distribution (FOD). In order to perform probabilistic
+fiber tracking, we pick a fiber from the FOD at random at each new location
+along the streamline. Note: one could use this model to perform deterministic
+fiber tracking by always tracking along the directions that have the most
+fibers.
+
+Let&quots begin probabilistic fiber tracking by fitting the data to the CSD model.
+
+
+from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                   auto_response)
+
+response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+csd_fit = csd_model.fit(data, mask=white_matter)
+
+
+Next we&quotll need to make a ``ProbabilisticDirectionGetter``. Because the CSD
+model represents the FOD using the spherical harmonic basis, we can use the
+``from_shcoeff`` method to create the direction getter. This direction getter
+will randomly sample directions from the FOD each time the tracking algorithm
+needs to take another step.
+
+
+from dipy.direction import ProbabilisticDirectionGetter
+
+prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
+                                                    max_angle=30.,
+                                                    sphere=default_sphere)
+
+
+As with deterministic tracking, we&quotll need to use a tissue classifier to
+restrict the tracking to the white matter of the brain. One might be tempted
+to use the GFA of the CSD FODs to build a tissue classifier, however the GFA
+values of these FODs don&quott classify gray matter and white matter well. We will
+therefore use the GFA from the CSA model which we fit for the first section of
+this example. Alternatively, one could fit a ``TensorModel`` to the data and use
+the fractional anisotropy (FA) to build a tissue classifier.
+
+
+classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+
+
+Next we can pass this direction getter, along with the ``classifier`` and
+``seeds``, to ``LocalTracking`` to get a probabilistic model of the corpus
+callosum.
+
+
+streamlines = LocalTracking(prob_dg, classifier, seeds, affine,
+                            step_size=.5, max_cross=1)
+
+&#47&#47 Compute streamlines and store as a list.
+streamlines = list(streamlines)
+
+if window.have_vtk:
+    streamlines_actor = actor.line(streamlines, line_colors(streamlines))
+
+    &#47&#47 Create the 3d display.
+    r = window.Renderer()
+    r.add(streamlines_actor)
+
+    &#47&#47 Save still images for this static example.
+    window.record(r, n_frames=1, out_path=&quotprobabilistic.png&quot, size=(800, 800))
+    <a id="change">if interactive:
+        window.show(r)
+
+</a>
+.. figure:: probabilistic.png
+   :align: center
+</code></pre><img src="143562974.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/d938f476feee0efd9045bc8f9bb1fe76b9898fae#diff-52470dd55954b3a2b7b7e2b59b0c01041a1cea423bc5e0cb6708a3235fc765d9L101' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: d938f476feee0efd9045bc8f9bb1fe76b9898fae</div><div id='time'> Time: 2018-01-10</div><div id='author'> Author: skab12@gmail.com</div><div id='file'> File Name: doc/examples/introduction_to_basic_tracking.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/c2cfaf314a381e520883eba2d965cd93fd5572e0#diff-1bf666853986a5087ff3afed9e69dc0877ee981842ffe37072d1c1aabc1ca04aL21' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: c2cfaf314a381e520883eba2d965cd93fd5572e0</div><div id='time'> Time: 2019-07-21</div><div id='author'> Author: girard.gabriel@gmail.com</div><div id='file'> File Name: doc/examples/tracking_bootstrap_peaks.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/d938f476feee0efd9045bc8f9bb1fe76b9898fae#diff-52470dd55954b3a2b7b7e2b59b0c01041a1cea423bc5e0cb6708a3235fc765d9L101' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: d938f476feee0efd9045bc8f9bb1fe76b9898fae</div><div id='time'> Time: 2018-01-10</div><div id='author'> Author: skab12@gmail.com</div><div id='file'> File Name: doc/examples/introduction_to_basic_tracking.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/aac7b54c8d6957786a9aa70e896cef10fe0ab9fe#diff-4513880f8be19fce47744e06cb90a15db7e6fa4b64e0a6d6af655a630c18c114L39' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: aac7b54c8d6957786a9aa70e896cef10fe0ab9fe</div><div id='time'> Time: 2019-07-21</div><div id='author'> Author: girard.gabriel@gmail.com</div><div id='file'> File Name: doc/examples/tracking_pft.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

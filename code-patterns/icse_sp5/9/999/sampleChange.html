@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            color = next(colors)
+            ax.set_xlabel(feature1)
+            ax.set_ylabel("Predicted {}".format(class_name))
+            <a id="change">handles</a>, labels = ax.get_legend_handles_labels()
+            ax.legend(handles, labels)
+        return flatten([figure_list, axis_list])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                                  class_col_pairs, with_variance=False):
+        figure_list, axis_list = [], []
+        sd_col = pdp_metadata[&quotsd_col&quot]
+        <a id="change">std_error = pdp.set_index([feature1, feature2])[sd_col].unstack()</a>
+        for class_name, mean_col in class_col_pairs:
+            f = plt.figure()
+            ax = f.add_subplot(111)
+            &#47&#47feature2 is columns
+            &#47&#47feature1 is index
+            plot_data = pdp.set_index([feature1, feature2])[mean_col].unstack()
+            plot_data.plot(ax=ax, color=COLORS)
+
+            if with_variance:
+                colors = cycle(COLORS)
+                <a id="change">binary1_values = plot_data.index.values</a>
+                binary2_values = plot_data.columns.values
+                for binary2_value in binary2_values:
+                    color = next(colors)
+                    <a id="change">yerr</a> = std_error[binary2_value].values
+                    upper_plane = <a id="change">yerr + plot_data[binary2_value].values</a>
+                    lower_plane = <a id="change">plot_data[binary2_value].values - yerr</a>
+                    <a id="change">ax.fill_between(binary1_values, lower_plane, upper_plane,
+                                    color=color,alpha=.2)</a>
+            figure_list.append(f)
+            axis_list.append(ax)
+            ax.set_xlabel(feature1)
+            ax.set_ylabel("Predicted {}".format(class_name))</code></pre>

@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        deg_shape = (ret_shape[0],) + (1,) * (len(ret_shape) - 1)
+        return ret / F.reshape(deg, deg_shape)
+    else:
+        <a id="change">return gspmm_internal(g._graph, op, reduce_op, lhs_data, rhs_data)</a>
+
+
+def _gen_spmm_func(binary_op, reduce_op):
+    name = "u_{}_e_{}".format(binary_op, reduce_op)</code></pre><h3>After Change</h3><pre><code class='java'>
+    deg = g.in_degrees()
+    min_deg = F.as_scalar(F.min(deg, dim=0))
+    if min_deg == 0:
+        <a id="change">non_zero_nids = F.nonzero_1d(deg == 0)</a>
+        if backend_name == &quotpytorch&quot:
+            ret[non_zero_nids] = 0.
+        else:
+            <a id="change">dtype = F.dtype(ret)</a>
+            <a id="change">ctx = F.context(ret)</a>
+            ret = F.scatter_row(ret, non_zero_nids,
+                                F.zeros((len(non_zero_nids),) + F.shape(ret)[1:], dtype, ctx))
+
+    &#47&#47 divide in degrees for mean reducer.
+    if reduce_op == &quotmean&quot:
+        ret_shape = F.shape(ret)
+        if min_deg == 0:
+            dgl_warning(&quotZero-degree nodes encountered in mean reducer. Setting the mean to 0.&quot)
+        deg = F.astype(F.clamp(deg, 1, g.number_of_edges()), F.dtype(ret))
+        deg_shape = (ret_shape[0],) + (1,) * (len(ret_shape) - 1)
+        return ret / F.reshape(deg, deg_shape)
+    else:
+        <a id="change">return ret</a>
+
+
+def _gen_spmm_func(binary_op, reduce_op):
+    name = "u_{}_e_{}".format(binary_op, reduce_op)</code></pre>

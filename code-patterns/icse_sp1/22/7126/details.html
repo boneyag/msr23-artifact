@@ -1,0 +1,179 @@
+<html><h3>165918a4ef7c6394567d77d51ebc56ab140befe4,osmnx/stats.py,,extended_stats,#Any#Any#Any#Any#Any#Any#,232
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+
+    stats = {}
+    <a id="change">full_start_time = time.time()</a>
+
+    &#47&#47 create a DiGraph from the MultiDiGraph, for those metrics that require it
+    G_dir = nx.DiGraph(G)
+
+    &#47&#47 create an undirected Graph from the MultiDiGraph, for those metrics that
+    &#47&#47 require it
+    G_undir = nx.Graph(G)
+
+    &#47&#47 get the largest strongly connected component, for those metrics that
+    &#47&#47 require strongly connected graphs
+    G_strong = utils_graph.get_largest_component(G, strongly=True)
+
+    &#47&#47 average degree of the neighborhood of each node, and average for the graph
+    avg_neighbor_degree = nx.average_neighbor_degree(G)
+    stats[&quotavg_neighbor_degree&quot] = avg_neighbor_degree
+    stats[&quotavg_neighbor_degree_avg&quot] = sum(avg_neighbor_degree.values())/len(avg_neighbor_degree)
+
+    &#47&#47 average weighted degree of the neighborhood of each node, and average for
+    &#47&#47 the graph
+    avg_weighted_neighbor_degree = nx.average_neighbor_degree(G, weight=&quotlength&quot)
+    stats[&quotavg_weighted_neighbor_degree&quot] = avg_weighted_neighbor_degree
+    stats[&quotavg_weighted_neighbor_degree_avg&quot] = sum(avg_weighted_neighbor_degree.values())/len(avg_weighted_neighbor_degree)
+
+    &#47&#47 degree centrality for a node is the fraction of nodes it is connected to
+    degree_centrality = nx.degree_centrality(G)
+    stats[&quotdegree_centrality&quot] = degree_centrality
+    stats[&quotdegree_centrality_avg&quot] = sum(degree_centrality.values())/len(degree_centrality)
+
+    &#47&#47 calculate clustering coefficient for the nodes
+    stats[&quotclustering_coefficient&quot] = nx.clustering(G_undir)
+
+    &#47&#47 average clustering coefficient for the graph
+    stats[&quotclustering_coefficient_avg&quot] = nx.average_clustering(G_undir)
+
+    &#47&#47 calculate weighted clustering coefficient for the nodes
+    stats[&quotclustering_coefficient_weighted&quot] = nx.clustering(G_undir, weight=&quotlength&quot)
+
+    &#47&#47 average clustering coefficient (weighted) for the graph
+    stats[&quotclustering_coefficient_weighted_avg&quot] = nx.average_clustering(G_undir, weight=&quotlength&quot)
+
+    &#47&#47 pagerank: a ranking of the nodes in the graph based on the structure of
+    &#47&#47 the incoming links
+    pagerank = nx.pagerank(G_dir, weight=&quotlength&quot)
+    stats[&quotpagerank&quot] = pagerank
+
+    &#47&#47 node with the highest page rank, and its value
+    pagerank_max_node = max(pagerank, key=lambda x: pagerank[x])
+    stats[&quotpagerank_max_node&quot] = pagerank_max_node
+    stats[&quotpagerank_max&quot] = pagerank[pagerank_max_node]
+
+    &#47&#47 node with the lowest page rank, and its value
+    pagerank_min_node = min(pagerank, key=lambda x: pagerank[x])
+    stats[&quotpagerank_min_node&quot] = pagerank_min_node
+    stats[&quotpagerank_min&quot] = pagerank[pagerank_min_node]
+
+    &#47&#47 if True, calculate node and edge connectivity
+    if connectivity:
+        start_time = time.time()
+
+        &#47&#47 node connectivity is the minimum number of nodes that must be removed
+        &#47&#47 to disconnect G or render it trivial
+        stats[&quotnode_connectivity&quot] = nx.node_connectivity(G_strong)
+
+        &#47&#47 edge connectivity is equal to the minimum number of edges that must be
+        &#47&#47 removed to disconnect G or render it trivial
+        stats[&quotedge_connectivity&quot] = nx.edge_connectivity(G_strong)
+        utils.log(&quotCalculated node and edge connectivity in {:,.2f} seconds&quot.format(time.time() - start_time))
+
+    &#47&#47 if True, calculate average node connectivity
+    if anc:
+        &#47&#47 mean number of internally node-disjoint paths between each pair of
+        &#47&#47 nodes in G, i.e., the expected number of nodes that must be removed to
+        &#47&#47 disconnect a randomly selected pair of non-adjacent nodes
+        start_time = time.time()
+        stats[&quotnode_connectivity_avg&quot] = nx.average_node_connectivity(G)
+        utils.log(&quotCalculated average node connectivity in {:,.2f} seconds&quot.format(time.time() - start_time))
+
+    &#47&#47 if True, calculate shortest paths, eccentricity, and topological metrics
+    &#47&#47 that use eccentricity
+    if ecc:
+        &#47&#47 precompute shortest paths between all nodes for eccentricity-based
+        &#47&#47 stats
+        start_time = time.time()
+        sp = {source:dict(nx.single_source_dijkstra_path_length(G_strong, source, weight=&quotlength&quot)) for source in G_strong.nodes()}
+
+        utils.log(&quotCalculated shortest path lengths in {:,.2f} seconds&quot.format(time.time() - start_time))
+
+        &#47&#47 eccentricity of a node v is the maximum distance from v to all other
+        &#47&#47 nodes in G
+        eccentricity = nx.eccentricity(G_strong, sp=sp)
+        stats[&quoteccentricity&quot] = eccentricity
+
+        &#47&#47 diameter is the maximum eccentricity
+        diameter = nx.diameter(G_strong, e=eccentricity)
+        stats[&quotdiameter&quot] = diameter
+
+        &#47&#47 radius is the minimum eccentricity
+        radius = nx.radius(G_strong, e=eccentricity)
+        stats[&quotradius&quot] = radius
+
+        &#47&#47 center is the set of nodes with eccentricity equal to radius
+        center = nx.center(G_strong, e=eccentricity)
+        stats[&quotcenter&quot] = center
+
+        &#47&#47 periphery is the set of nodes with eccentricity equal to the diameter
+        periphery = nx.periphery(G_strong, e=eccentricity)
+        stats[&quotperiphery&quot] = periphery
+
+    &#47&#47 if True, calculate node closeness centrality
+    if cc:
+        &#47&#47 closeness centrality of a node is the reciprocal of the sum of the
+        &#47&#47 shortest path distances from u to all other nodes
+        <a id="change">start_time = time.time()</a>
+        closeness_centrality = nx.closeness_centrality(G, distance=&quotlength&quot)
+        stats[&quotcloseness_centrality&quot] = closeness_centrality
+        stats[&quotcloseness_centrality_avg&quot] = sum(closeness_centrality.values())/len(closeness_centrality)
+        <a id="change">utils.log(&quotCalculated closeness centrality in {:,.2f} seconds&quot.format(time.time() - start_time))</a>
+
+    &#47&#47 if True, calculate node betweenness centrality
+    if bc:
+        &#47&#47 betweenness centrality of a node is the sum of the fraction of
+        &#47&#47 all-pairs shortest paths that pass through node
+        &#47&#47 networkx 2.4+ implementation cannot run on Multi(Di)Graphs, so use DiGraph
+        start_time = time.time()
+        betweenness_centrality = nx.betweenness_centrality(G_dir, weight=&quotlength&quot)
+        stats[&quotbetweenness_centrality&quot] = betweenness_centrality
+        stats[&quotbetweenness_centrality_avg&quot] = sum(betweenness_centrality.values())/len(betweenness_centrality)
+        utils.log(&quotCalculated betweenness centrality in {:,.2f} seconds&quot.format(time.time() - start_time))
+
+    <a id="change">utils.log(&quotCalculated extended stats in {:,.2f} seconds&quot.format(time.time()-full_start_time))</a>
+    return stats
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 stats
+        sp = {source:dict(nx.single_source_dijkstra_path_length(G_strong, source, weight=&quotlength&quot)) for source in G_strong.nodes()}
+
+        <a id="change">utils.log(&quotCalculated shortest path lengths&quot)</a>
+
+        &#47&#47 eccentricity of a node v is the maximum distance from v to all other
+        &#47&#47 nodes in G
+        eccentricity = nx.eccentricity(G_strong, sp=sp)
+        stats[&quoteccentricity&quot] = eccentricity
+
+        &#47&#47 diameter is the maximum eccentricity
+        diameter = nx.diameter(G_strong, e=eccentricity)
+        stats[&quotdiameter&quot] = diameter
+
+        &#47&#47 radius is the minimum eccentricity
+        radius = nx.radius(G_strong, e=eccentricity)
+        stats[&quotradius&quot] = radius
+
+        &#47&#47 center is the set of nodes with eccentricity equal to radius
+        center = nx.center(G_strong, e=eccentricity)
+        stats[&quotcenter&quot] = center
+
+        &#47&#47 periphery is the set of nodes with eccentricity equal to the diameter
+        periphery = nx.periphery(G_strong, e=eccentricity)
+        stats[&quotperiphery&quot] = periphery
+
+    &#47&#47 if True, calculate node closeness centrality
+    if cc:
+        &#47&#47 closeness centrality of a node is the reciprocal of the sum of the
+        &#47&#47 shortest path distances from u to all other nodes
+        closeness_centrality = nx.closeness_centrality(G, distance=&quotlength&quot)
+        stats[&quotcloseness_centrality&quot] = closeness_centrality
+        stats[&quotcloseness_centrality_avg&quot] = sum(closeness_centrality.values())/len(closeness_centrality)
+        <a id="change">utils.log(&quotCalculated closeness centrality&quot)</a>
+
+    &#47&#47 if True, calculate node betweenness centrality
+    if bc:
+        &#47&#47 betweenness centrality of a node is the sum of the fraction of</code></pre><img src="45435061.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 15</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/gboeing/osmnx/commit/165918a4ef7c6394567d77d51ebc56ab140befe4#diff-4d1cb7a3b92a9723895aff9d49658c8afd9b1c8019b26085baa3d1fbba6537f3L294' target='_blank'>Link</a></div><div id='project'> Project Name: gboeing/osmnx</div><div id='commit'> Commit Name: 165918a4ef7c6394567d77d51ebc56ab140befe4</div><div id='time'> Time: 2020-05-14</div><div id='author'> Author: boeing@usc.edu</div><div id='file'> File Name: osmnx/stats.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: extended_stats</div><BR><BR><div id='link'><a href='https://github.com/gboeing/osmnx/commit/165918a4ef7c6394567d77d51ebc56ab140befe4#diff-4d1cb7a3b92a9723895aff9d49658c8afd9b1c8019b26085baa3d1fbba6537f3L294' target='_blank'>Link</a></div><div id='project'> Project Name: gboeing/osmnx</div><div id='commit'> Commit Name: 165918a4ef7c6394567d77d51ebc56ab140befe4</div><div id='time'> Time: 2020-05-14</div><div id='author'> Author: boeing@usc.edu</div><div id='file'> File Name: osmnx/stats.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: extended_stats</div><BR><BR><div id='link'><a href='https://github.com/gboeing/osmnx/commit/165918a4ef7c6394567d77d51ebc56ab140befe4#diff-25c3d861b2725a6fbabb6479bb832f8f08282bf34553160f15c0847494c68328L244' target='_blank'>Link</a></div><div id='project'> Project Name: gboeing/osmnx</div><div id='commit'> Commit Name: 165918a4ef7c6394567d77d51ebc56ab140befe4</div><div id='time'> Time: 2020-05-14</div><div id='author'> Author: boeing@usc.edu</div><div id='file'> File Name: osmnx/plot.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: save_and_show</div><BR><BR><div id='link'><a href='https://github.com/gboeing/osmnx/commit/165918a4ef7c6394567d77d51ebc56ab140befe4#diff-ccdbe216793e9bfbeac9521807c7f6a82d0d2429bd1094577ea2354680f8c070L162' target='_blank'>Link</a></div><div id='project'> Project Name: gboeing/osmnx</div><div id='commit'> Commit Name: 165918a4ef7c6394567d77d51ebc56ab140befe4</div><div id='time'> Time: 2020-05-14</div><div id='author'> Author: boeing@usc.edu</div><div id='file'> File Name: osmnx/projection.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: project_graph</div><BR>

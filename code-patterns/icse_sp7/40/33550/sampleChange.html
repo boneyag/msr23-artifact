@@ -1,0 +1,117 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            X, y = self.stream.next_sample(self.pretrain_size)
+
+            for i in <a id="change">range(self.n_models)</a>:
+                if <a id="change">self._task_type != constants.REGRESSION and \
+                   self._task_type != constants.MULTI_TARGET_REGRESSION</a>:
+                    self.model[i].partial_fit(X=X, y=y, classes=self.stream.
+                                              target_values)
+                else:
+                    self.model[i].partial_fit(X=X, y=y)
+            self.global_sample_count += self.pretrain_size
+            first_run = False
+        else:
+            logging.info(&quotNo pre-training.&quot)
+
+        update_count = 0
+        logging.info(&quotEvaluating...&quot)
+        while ((self.global_sample_count &lt; self.max_samples) & (end_time - start_time &lt; self.max_time)
+               & (self.stream.has_more_samples())):
+            try:
+                X, y = self.stream.next_sample(self.batch_size)
+
+                if X is not None and y is not None:
+                    &#47&#47 Test
+                    prediction = [[] for _ in range(self.n_models)]
+                    for i in range(self.n_models):
+                        try:
+                            prediction[i].extend(self.model[i].predict(X))
+                        except TypeError:
+                            raise TypeError("Unexpected prediction value from {}"
+                                            .format(type(self.model[i]).__name__))
+                    self.global_sample_count += self.batch_size
+
+                    for j in <a id="change">range(self.n_models)</a>:
+                        for i in range(len(prediction[0])):
+                            <a id="change">if self._task_type == constants.CLASSIFICATION:
+                                self.mean_eval_measurements[j].add_result(y[i], prediction[j][i])
+                                self.current_eval_measurements[j].add_result(y[i], prediction[j][i])
+                            else:
+                                self.mean_eval_measurements[j].add_result(y[i], prediction[j][i])
+                                self.current_eval_measurements[j].add_result(y[i], prediction[j][i])
+                   </a> self._check_progress(logging, n_samples)
+
+                    &#47&#47 Train
+                    if first_run:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            return self.model
+
+    def _train_and_test(<a id="change">self</a>):
+         Method to control the prequential evaluation.
+
+        Returns
+        -------
+        BaseClassifier extension or list of BaseClassifier extensions
+            The trained classifiers.
+
+        Notes
+        -----
+        The classifier parameter should be an extension from the BaseClassifier. In
+        the future, when BaseRegressor is created, it could be an extension from that
+        class as well.
+
+        
+        logging.basicConfig(format=&quot%(message)s&quot, level=logging.INFO)
+        start_time = timer()
+        end_time = timer()
+        logging.info(&quotPrequential Evaluation&quot)
+        logging.info(&quotEvaluating %s target(s).&quot, str(self.stream.n_targets))
+
+        n_samples = self.stream.n_remaining_samples()
+        if n_samples == -1 or n_samples &gt; self.max_samples:
+            n_samples = self.max_samples
+
+        first_run = True
+        if self.pretrain_size &gt; 0:
+            logging.info(&quotPre-training on %s samples.&quot, str(self.pretrain_size))
+
+            X, y = self.stream.next_sample(self.pretrain_size)
+
+            for i in <a id="change">range(self.n_models)</a>:
+                if <a id="change">self._task_type == consta</a>nts.CLASSIFICATION:
+                    self.model[i].partial_fit(X=X, y=y, classes=self.stream.target_values)
+                elif <a id="change">self._task_type == consta</a>nts.MULTI_TARGET_CLASSIFICATION:
+                    <a id="change">self.model[i].partial_fit(X=X, y=y, classes=unique(self.stream.target_values))</a>
+                else:
+                    self.model[i].partial_fit(X=X, y=y)
+            self.global_sample_count += self.pretrain_size
+            first_run = False
+        else:
+            logging.info(&quotNo pre-training.&quot)
+
+        update_count = 0
+        logging.info(&quotEvaluating...&quot)
+        while ((self.global_sample_count &lt; self.max_samples) & (end_time - start_time &lt; self.max_time)
+               & (self.stream.has_more_samples())):
+            try:
+                X, y = self.stream.next_sample(self.batch_size)
+
+                if X is not None and y is not None:
+                    &#47&#47 Test
+                    prediction = [[] for _ in range(self.n_models)]
+                    for i in range(self.n_models):
+                        try:
+                            prediction[i].extend(self.model[i].predict(X))
+                        except TypeError:
+                            raise TypeError("Unexpected prediction value from {}"
+                                            .format(type(self.model[i]).__name__))
+                    self.global_sample_count += self.batch_size
+
+                    for j in <a id="change">range(self.n_models)</a>:
+                        for i in range(len(prediction[0])):
+                            self.mean_eval_measurements[j].add_result(y[i], prediction[j][i])
+                            self.current_eval_measurements[j].add_result(y[i], prediction[j][i])</code></pre>

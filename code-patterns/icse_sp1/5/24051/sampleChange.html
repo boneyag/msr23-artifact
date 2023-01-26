@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        grad_output = grad_output.detach()
+        input, filter = ctx.saved_tensors
+        grad_input = convolve2d(grad_output.numpy(), filter.t().numpy(), mode=&quotfull&quot)
+        grad_filter = convolve2d(input.numpy(), <a id="change">grad_output.numpy()</a>, mode=&quotvalid&quot)
+
+        return grad_output.new_tensor(grad_input), grad_output.new_tensor(grad_filter)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        grad_output = grad_output.detach()
+        input, filter, bias = ctx.saved_tensors
+        grad_output = grad_output.numpy()
+        <a id="change">grad_bias = np.sum(grad_output, keepdims=True)</a>
+        grad_input = convolve2d(grad_output, filter.numpy(), mode=&quotfull&quot)
+        &#47&#47 the previous line can be expressed equivalently as:
+        &#47&#47 grad_input = correlate2d(grad_output, flip(flip(filter.numpy(), axis=0), axis=1), mode=&quotfull&quot)
+        grad_filter = correlate2d(input.numpy(), grad_output, mode=&quotvalid&quot)
+        return torch.from_numpy(grad_input), <a id="change">torch.from_numpy(grad_filter)</a>, <a id="change">torch.from_numpy(grad_bias)</a>
+
+
+class ScipyConv2d(Module):
+    def __init__(self, filter_width, filter_height):</code></pre>

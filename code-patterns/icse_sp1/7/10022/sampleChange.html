@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        sorted_word_lengths.masked_fill_(sorted_word_lengths == 0, 1)
+        sorted_feats = char_embeds[perm_idx].transpose(0, 1).contiguous()
+
+        packed = <a id="change">torch.nn.utils.rnn.pack_padded_sequence(sorted_feats, sorted_word_lengths.tolist())</a>
+        hidden = self.char_comp(packed)
+        hidden = tuple(h[-1, :, :] for h in hidden)
+        results = tuple(h.scatter_(0, perm_idx.unsqueeze(-1).expand_as(h), h) <a id="change">for</a> h in hidden)
+        return results[0].reshape((B, T, -1))
+
+    def get_dsz(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Hotfix for no char spaces.
+        sorted_word_lengths.masked_fill_(sorted_word_lengths == 0, 1)
+        sorted_feats = char_embeds[perm_idx].transpose(0, 1).contiguous()
+        hidden = self.char_comp(<a id="change">(sorted_feats, sorted_word_lengths)</a>)
+        results = hidden.scatter_(0, perm_idx.unsqueeze(-1).expand_as(hidden), hidden)
+        return results.reshape((B, T, -1))
+</code></pre>

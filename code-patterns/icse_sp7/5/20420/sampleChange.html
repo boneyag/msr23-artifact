@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 build target_net
+        self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name=&quots_&quot)
+        <a id="change">with tf.variable_scope(&quottarget_net&quot):
+            self.q_next = self._build_layers(self.s_, self.n_actions, trainable=False)
+
+   </a> def _build_layers(self, inputs, action_size, trainable):
+        layers_output = [inputs]
+        for i, n_unit in enumerate(self.hidden_layers):
+            with tf.variable_scope(&quotlayer%i&quot % i):</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.fake_targets = tf.placeholder(tf.float32, [None, 1], name=&quotfake_targets&quot)  &#47&#47 fake targets
+        self.advantages = tf.placeholder(tf.float32, [None, 1], name="advantages")  &#47&#47 advantages
+
+        <a id="change">l1 = self._add_layer(&quothidden0&quot, self.x_inputs, self.n_features, 10, tf.nn.relu)</a>     &#47&#47 hidden layer 1
+        self.prediction = self._add_layer(&quotoutput&quot, l1, 10, 1, tf.nn.sigmoid)  &#47&#47 predicting for action 0
+        with tf.name_scope(&quotloss&quot):
+            loglik = self.fake_targets*<a id="change">tf.log(self.prediction)</a> + (1 - self.fake_targets)*tf.log(1-self.prediction)  &#47&#47
+            self.loss = -tf.reduce_mean(loglik * self.advantages)
+        with tf.name_scope(&quottrain&quot):
+            self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)</code></pre>

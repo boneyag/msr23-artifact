@@ -1,0 +1,50 @@
+<html><h3>c27dbde9ccec2920f3825538aff07e8533e086ba,catalyst/rl/offpolicy/algorithms/dqn.py,DQN,_categorical_loss,#DQN#Any#Any#Any#Any#Any#,73
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        indices_t = actions_t.repeat(1, self._num_heads, 1, self.num_atoms)
+        &#47&#47 B x num_heads x 1 x num_atoms
+
+        logits_t = <a id="change">self</a>.critic(states_t).gather(-2, indices_t).squeeze(-2)
+        &#47&#47 B x num_heads x num_atoms
+
+        all_logits_tp1 = self.target_critic(states_tp1).detach()</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 B x num_heads x 1 x num_atoms
+        indices_t = actions_t.repeat(1, self._num_heads, 1, self.num_atoms)
+        &#47&#47 B x num_heads x num_actions x num_atoms
+        q_logits_t = <a id="change">self.critic(states_t)</a>
+        &#47&#47 B x num_heads x num_atoms
+        logits_t = q_logits_t.gather(-2, indices_t).squeeze(-2)
+
+        &#47&#47 B x num_heads x num_actions x num_atoms
+        q_logits_tp1 = self.target_critic(states_tp1).detach()
+        q_values_tp1 = torch.sum(
+            torch.softmax(q_logits_tp1, dim=-1) * self.z, dim=-1
+        )
+        &#47&#47 B x num_heads x 1
+        actions_tp1 = torch.argmax(q_values_tp1, dim=-1, keepdim=True)
+        &#47&#47 B x num_heads x 1 x num_atoms
+        indices_tp1 = \
+            actions_tp1.unsqueeze(-1).repeat(1, 1, 1, self.num_atoms)
+        &#47&#47 B x num_heads x num_atoms
+        logits_tp1 = q_logits_tp1.gather(-2, indices_tp1).squeeze(-2)
+
+        atoms_target_t = rewards_t + (1 - done_t) * gammas * self.z
+        value_loss = utils.categorical_loss(
+            logits_t.view(-1, self.num_atoms),
+            logits_tp1.view(-1, self.num_atoms),
+            atoms_target_t.view(-1, self.num_atoms), self.z, self.delta_z,
+            self.v_min, self.v_max
+        )
+
+        if self.entropy_regularization is not None:
+            q_values_t = torch.sum(
+                <a id="change">torch.softmax(q_logits_t, dim=-1) * self.z</a>, dim=-1
+            )
+            <a id="change">value_loss -= \
+                self.entropy_regularization * self._compute_entropy(q_values_t)</a>
+
+        return value_loss
+
+    def _quantile_loss(</code></pre><img src="9080122.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/c27dbde9ccec2920f3825538aff07e8533e086ba#diff-74dc86de78a0451867038185ca255cd987ac4b63e10eb008535d16a1b141a2d2L74' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: c27dbde9ccec2920f3825538aff07e8533e086ba</div><div id='time'> Time: 2019-07-24</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/offpolicy/algorithms/dqn.py</div><div id='class'> Class Name: DQN</div><div id='method'> Method Name: _categorical_loss</div><BR><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/c27dbde9ccec2920f3825538aff07e8533e086ba#diff-74dc86de78a0451867038185ca255cd987ac4b63e10eb008535d16a1b141a2d2L116' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: c27dbde9ccec2920f3825538aff07e8533e086ba</div><div id='time'> Time: 2019-07-24</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/offpolicy/algorithms/dqn.py</div><div id='class'> Class Name: DQN</div><div id='method'> Method Name: _quantile_loss</div><BR><BR><div id='link'><a href='https://github.com/tensorlayer/tensorlayer/commit/8b68349d43621619fe799ab4afc21da7f1fb2515#diff-dddb6cc966e311cee2e9eca4414adb0d05c8fdb6ac8063e99d3ca801f1d7616dL119' target='_blank'>Link</a></div><div id='project'> Project Name: tensorlayer/tensorlayer</div><div id='commit'> Commit Name: 8b68349d43621619fe799ab4afc21da7f1fb2515</div><div id='time'> Time: 2019-06-10</div><div id='author'> Author: 34995488+Tokarev-TT-33@users.noreply.github.com</div><div id='file'> File Name: examples/reinforcement_learning/tutorial_PPO.py</div><div id='class'> Class Name: PPO</div><div id='method'> Method Name: c_train</div><BR>

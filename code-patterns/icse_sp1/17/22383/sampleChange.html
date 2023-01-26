@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            kernel_size=1,
+            name="output/final_conv")
+        x = tf.nn.relu(x, name="output/final_activ")
+        <a id="change">x = tf.layers.average_pooling2d(
+            inputs=x,
+            pool_size=13,
+            strides=1,
+            data_format=&quotchannels_first&quot,
+            name="output/final_pool")</a>
+        x = <a id="change">tf.layers.flatten(x)</a>
+
+        return x
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            in_channels=in_channels,
+            out_channels=self.init_block_channels,
+            kernel_size=self.init_block_kernel_size,
+            data_format=<a id="change">self.data_format</a>,
+            name="features/init_block")
+        in_channels = self.init_block_channels
+        for i, channels_per_stage in enumerate(self.channels):
+            x = maxpool2d(
+                x=x,
+                pool_size=3,
+                strides=2,
+                ceil_mode=True,
+                data_format=self.data_format,
+                name="features/pool{}".format(i + 1))
+            for j, out_channels in enumerate(channels_per_stage):
+                expand_channels = out_channels // 2
+                squeeze_channels = out_channels // 8
+                x = fire_unit(
+                    x=x,
+                    in_channels=in_channels,
+                    squeeze_channels=squeeze_channels,
+                    expand1x1_channels=expand_channels,
+                    expand3x3_channels=expand_channels,
+                    residual=((self.residuals is not None) and (self.residuals[i][j] == 1)),
+                    data_format=<a id="change">self.data_format</a>,
+                    name="features/stage{}/unit{}".format(i + 1, j + 1))
+                in_channels = out_channels
+        x = tf.layers.dropout(
+            inputs=x,
+            rate=0.5,
+            training=training,
+            name="features/dropout")
+
+        x = conv2d(
+            x=x,
+            in_channels=in_channels,
+            out_channels=self.classes,
+            kernel_size=1,
+            data_format=<a id="change">self.data_format</a>,
+            name="output/final_conv")
+        x = tf.nn.relu(x, name="output/final_activ")
+        x = <a id="change">tf.layers.average_pooling2d(
+            inputs=x,
+            pool_size=13,
+            strides=1,
+            data_format=self.data_format,
+            name="output/final_pool")</a>
+        &#47&#47 x = tf.layers.flatten(x)
+        <a id="change">x = flatten(
+            x=x,
+            out_channels=in_channels,
+            data_format=self.data_format)</a>
+
+        return x
+
+</code></pre>

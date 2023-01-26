@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        
+        K = self.kernel(self.X)
+        S = tf.eye(<a id="change">self.X.shape[0]</a>, dtype=self.X.dtype) * self.likelihood.variance
+        L = tf.linalg.cholesky(K + S)
+        m = self.mean_function(self.X)
+        logpdf = multivariate_normal(self.Y, m, L)  &#47&#47 (R,) log-likelihoods for each independent dimension of Y</code></pre><h3>After Change</h3><pre><code class='java'>
+        k_diag = tf.linalg.diag_part(K)
+        s_diag = tf.fill([num_data], self.likelihood.variance)
+        ks = tf.linalg.set_diag(K, k_diag + s_diag)
+        <a id="change">L = tf.linalg.cholesky(ks)</a>
+        m = self.mean_function(x)
+
+        &#47&#47 [R,] log-likelihoods for each independent dimension of Y
+        distr = tfp.distributions.MultivariateNormalTriL(loc=m, scale_tril=L)</code></pre>

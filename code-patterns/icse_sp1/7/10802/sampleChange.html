@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            eta = FGM.generate(x + eta, **fgm_params) - x
+
+            &#47&#47 Clipping perturbation eta to self.ord norm ball
+            <a id="change">if self.ord == np.inf:
+                eta = tf.clip_by_value(eta, -self.eps, self.eps)
+            elif self.ord in [1, 2]:
+                reduc_ind = list(xrange(1, len(eta.get_shape())))
+                if self.ord == 1:
+                    norm = tf.reduce_sum(tf.abs(eta),
+                                         reduction_indices=reduc_ind,
+                                         keep_dims=True)
+                elif self.ord == 2:
+                    norm = tf.sqrt(tf.reduce_sum(tf.square(eta),
+                                                 reduction_indices=reduc_ind,
+                                                 keep_dims=True))
+                eta = eta * self.eps / norm
+
+        &#47&#47 Define adversarial example (and clip if necessary)
+       </a> adv_x = x + eta
+        if self.clip_min is not None and self.clip_max is not None:
+            adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            adv_x = FGM.generate(x + eta, **fgm_params)
+
+            &#47&#47 Clipping perturbation according to clip_min and clip_max
+            <a id="change">if self.clip_min is not None and self.clip_max is not None:
+                adv_x = tf.clip_by_value(adv_x, self.clip_min, self.clip_max)
+
+            &#47&#47 Clipping perturbation eta to self.ord norm ball
+           </a> eta = adv_x - x
+            from cleverhans.utils_tf import clip_eta
+            eta = clip_eta(eta, self.ord, self.eps)
+</code></pre>

@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    file1 = create_file_from_filepath(RESOURCE_PATH / "image10x10x10.mha")
+
+    <a id="change">response = client.post("/cases/uploads/", data={"files": f"{file1.uuid}"})</a>
+    assert response.status_code == 302
+
+    redirect_match = re.search(
+        r"/cases/uploads/(?P&lt;uuid&gt;[^/]+)/?$", response["Location"]</code></pre><h3>After Change</h3><pre><code class='java'>
+    assert RawImageUploadSession.objects.count() == 0
+
+    file1 = create_file_from_filepath(RESOURCE_PATH / "image10x10x10.mha")
+    <a id="change">response = get_view_for_user(
+        data={"files": f"{file1.uuid}"},
+        client=client,
+        viewname="reader-studies:add-images",
+        user=user,
+        reverse_kwargs={"slug": rs.slug},
+        method=client.post,
+    )</a>
+    assert response.status_code == 302
+    assert rs.images.count() == 1
+    sessions = RawImageUploadSession.objects.all()
+    assert len(sessions) == 1</code></pre>

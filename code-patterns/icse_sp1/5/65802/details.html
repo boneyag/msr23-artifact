@@ -1,0 +1,44 @@
+<html><h3>f73cdc286a3e125cf7019336621cb10370ebfd52,tensorflow_transform/tf_utils.py,,_reduce_vocabulary_inputs,#Any#Any#Any#,71
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                                tf.size(input=unique.y))
+  if labels is None:
+    summed_positive_weights = None
+    <a id="change">counts = None</a>
+  else:
+    less_assert = tf.Assert(
+        tf.less_equal(tf.reduce_max(input_tensor=labels), 1), [labels])
+    greater_assert = tf.Assert(
+        tf.greater_equal(tf.reduce_min(input_tensor=labels), 0), [labels])
+    with tf.control_dependencies([less_assert, greater_assert]):
+      labels = tf.identity(labels)
+    positive_weights = (
+        tf.cast(labels, tf.float32) * tf.cast(weights, tf.float32))
+    summed_positive_weights = tf.math.unsorted_segment_sum(
+        positive_weights, unique.idx, tf.size(input=unique.y))
+    counts = unique.count
+
+  <a id="change">return (unique.y, summed_weights, summed_positive_weights, counts)</a>
+
+
+def assert_same_shape(x, y):
+  Asserts two tensors have the same dynamic and static shape.</code></pre><h3>After Change</h3><pre><code class='java'>
+    max_label_value = tf.cast(tf.reduce_max(input_tensor=labels), tf.int32)
+    one_hot_labels = tf.one_hot(labels, max_label_value + 1)
+    broadcast_weights = tf.cast(
+        <a id="change">tf.broadcast_to(tf.reshape(weights, (-1, 1)), tf.shape(one_hot_labels))</a>,
+        dtype=tf.float32)
+    positive_weights = (tf.cast(one_hot_labels, tf.float32) * broadcast_weights)
+    summed_positive_per_value_and_label = tf.math.unsorted_segment_sum(
+        positive_weights, unique_idx, num_x_values)
+  <a id="change">return ReducedVocabBatch(
+      unique_values=unique_x_values,
+      summed_weights_per_value=summed_weights_per_value,
+      summed_positive_per_value_and_label=summed_positive_per_value_and_label,
+      counts_per_value=unique_count)</a>
+
+
+def assert_same_shape(x, y):
+  Asserts two tensors have the same dynamic and static shape.</code></pre><img src="301807852.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/transform/commit/f73cdc286a3e125cf7019336621cb10370ebfd52#diff-3b7abcb5092fe5037819744b605ec88e832de88219a9e94cca7724bd46e2eda7L86' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/transform</div><div id='commit'> Commit Name: f73cdc286a3e125cf7019336621cb10370ebfd52</div><div id='time'> Time: 2019-04-25</div><div id='author'> Author: askerryryan@google.com</div><div id='file'> File Name: tensorflow_transform/tf_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _reduce_vocabulary_inputs</div><BR><BR><div id='link'><a href='https://github.com/matplotlib/matplotlib/commit/deaf966e31e86abc4b2b95a1697c9dd5de8a425f#diff-ef4ebb289f0a0897af6bc9024ed6e3cd568a8edef0b247d0ece9139c0523b607L38' target='_blank'>Link</a></div><div id='project'> Project Name: matplotlib/matplotlib</div><div id='commit'> Commit Name: deaf966e31e86abc4b2b95a1697c9dd5de8a425f</div><div id='time'> Time: 2018-05-08</div><div id='author'> Author: anntzer.lee@gmail.com</div><div id='file'> File Name: examples/misc/demo_ribbon_box.py</div><div id='class'> Class Name: RibbonBox</div><div id='method'> Method Name: get_stretched_image</div><BR><BR><div id='link'><a href='https://github.com/matplotlib/matplotlib/commit/3f59cdec57976ba0564887850541c0bd974c1e10#diff-21a889bd7f4e011757170a6a94b732dc543121b7580141ea5f9e82132c5f1c9fL793' target='_blank'>Link</a></div><div id='project'> Project Name: matplotlib/matplotlib</div><div id='commit'> Commit Name: 3f59cdec57976ba0564887850541c0bd974c1e10</div><div id='time'> Time: 2019-01-19</div><div id='author'> Author: anntzer.lee@gmail.com</div><div id='file'> File Name: lib/mpl_toolkits/mplot3d/art3d.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: zalpha</div><BR>

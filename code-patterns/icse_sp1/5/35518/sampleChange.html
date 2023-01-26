@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    self.write_log(&quotwer&quot,{&quottr_att&quot:cal_er(self.tokenizer,att_output,txt),
+                                          &quottr_ctc&quot:cal_er(self.tokenizer,ctc_output,txt)})
+                &#47&#47 Validation
+                <a id="change">if self.step%self.valid_step == 0:
+                    self.validate()
+
+                &#47&#47 End of step
+               </a> self.step+=1
+                if self.step &gt; self.max_step:break
+
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 Compute all objectives
+                total_loss = 0
+                if ctc_output is not None:
+                    <a id="change">if self.paras.ctc_backend ==&quotcudnn&quot:
+                        ctc_loss = self.ctc_loss(ctc_output.permute(1,0,2).contiguous(), 
+                                                 txt.to_sparse().values().to(device=self.device,dtype=torch.int32),
+                                                 encode_len.to(device=self.device,dtype=torch.int32),
+                                                 txt_len.to(device=self.device,dtype=torch.int32))
+                    else:
+                        ctc_loss = self.ctc_loss(ctc_output.permute(1,0,2).contiguous(), txt, encode_len, txt_len)
+                   </a> total_loss += ctc_loss*self.asr_model.ctc_weight
+                if att_output is not None:
+                    b,t,_ = att_output.shape
+                    att_loss = self.seq_loss(att_output.view(b*t,-1),txt.view(-1))</code></pre>

@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+query_feature = torch.FloatTensor(result[&quotquery_f&quot])
+query_cam = torch.LongTensor(result[&quotquery_cam&quot])[0]
+query_label = torch.LongTensor(result[&quotquery_label&quot])[0]
+gallery_feature = <a id="change">torch.FloatTensor(result[&quotgallery_f&quot])</a>
+gallery_cam = torch.LongTensor(result[&quotgallery_cam&quot])[0]
+gallery_label = torch.LongTensor(result[&quotgallery_label&quot])[0]
+
+CMC = torch.IntTensor()
+&#47&#47print(query_label)
+for i in range(len(query_label)):
+    CMC_tmp = evaluate(query_feature[i],query_label[i],query_cam[i],gallery_feature,gallery_label,gallery_cam)
+    if CMC_tmp[0]==-1:
+        continue
+    CMC = torch.cat((CMC,CMC_tmp.view(1,len(CMC_tmp))), 0)
+    print(i, CMC_tmp[0])
+
+CMC = CMC.float()
+<a id="change">CMC = CMC.mean(dim=0)</a> &#47&#47average CMC
+print(&quottop1:%f top5:%f top10:%f&quot%(CMC[0],CMC[4],CMC[9]))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+gallery_cam = result[&quotgallery_cam&quot][0]
+gallery_label = result[&quotgallery_label&quot][0]
+
+CMC = torch.IntTensor(<a id="change">len(gallery_label)</a>).zero_()
+ap = 0.0
+&#47&#47print(query_label)
+for i in range(len(query_label)):
+    ap_tmp, CMC_tmp = evaluate(query_feature[i],query_label[i],query_cam[i],gallery_feature,gallery_label,gallery_cam)
+    if CMC_tmp[0]==-1:
+        continue
+    CMC = <a id="change">CMC + CMC_tmp</a>
+    ap += ap_tmp
+    print(i, CMC_tmp[0])
+
+CMC = CMC.float()
+<a id="change">CMC = CMC/len(query_label)</a> &#47&#47average CMC
+print(&quottop1:%f top5:%f top10:%f mAP:%f&quot%(CMC[0],CMC[4],CMC[9],ap/len(query_label)))
+</code></pre>

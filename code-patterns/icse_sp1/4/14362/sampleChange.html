@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    self._variational = variational
+    self.embedding = self._create_encoder(encoder_layers, dropout)
+    self.output = self._create_decoder(decoder_layers, dropout)
+    <a id="change">self.set_loss(self._create_loss())</a>
+    self.add_output(self.output)
+
+  def _create_features(self):
+    return layers.Feature(shape=(None, None, len(self._input_tokens)))</code></pre><h3>After Change</h3><pre><code class='java'>
+    global_step = Input(shape=tuple(), dtype=tf.int32)
+    embedding = self.encoder([features, gather_indices])
+    self._embedding = self.encoder([features, gather_indices], training=False)
+    <a id="change">if variational:
+      randomizer = VariationalRandomizer(
+          self._embedding_dimension, annealing_start_step, annealing_final_step)
+      embedding = randomizer([self._embedding, global_step])
+      self._embedding = randomizer(
+          [self._embedding, global_step], training=False)
+   </a> output = self.decoder(embedding)
+    model = tf.keras.Model(
+        inputs=[features, gather_indices, global_step], outputs=output)
+    super(SeqToSeq, self).__init__(model, self._create_loss(), **kwargs)</code></pre>

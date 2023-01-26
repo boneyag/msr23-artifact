@@ -1,0 +1,35 @@
+<html><h3>ca5ec9585e711f63acbe337bc38c37520189b9d7,se3_cnn/convolution.py,SE3KernelCombination,backward,#SE3KernelCombination#Any#,152
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            begin_j = 0
+            for j in range(len(self.multiplicites_in)):
+                b_el = self.kernels[i][j].size(0)
+                basis_kernels_ij = <a id="change">self.kernels[i][j].view(b_el, -1)</a>
+
+                for ii in range(self.multiplicites_out[i]):
+                    si = slice(begin_i + ii * self.dims_out[i], begin_i + (ii + 1) * self.dims_out[i])
+                    for jj in range(self.multiplicites_in[j]):
+                        sj = slice(begin_j + jj * self.dims_in[j], begin_j + (jj + 1) * self.dims_in[j])
+
+                        <a id="change">grad_weight[weight_index : weight_index + b_el] = torch.mm(basis_kernels_ij, grad_kernel[si, sj].contiguous().view(-1, 1)).view(-1)</a>
+                        weight_index += b_el
+
+                begin_j += self.multiplicites_in[j] * self.dims_in[j]
+            begin_i += self.multiplicites_out[i] * self.dims_out[i]</code></pre><h3>After Change</h3><pre><code class='java'>
+            for j, mj in enumerate(self.multiplicites_in):
+                b_el = self.kernels[i][j].size(0)
+                basis_kernels_ij = self.kernels[i][j] &#47&#47 [beta, i, j, x, y, z]
+                <a id="change">basis_kernels_ij = basis_kernels_ij.view(b_el, -1)</a> &#47&#47 [beta, i*j*x*y*z]
+
+                si = slice(begin_i, begin_i + mi * self.dims_out[i])
+                sj = slice(begin_j, begin_j + mj * self.dims_in[j])
+
+                grad = grad_kernel[si, sj] &#47&#47 [I * i, J * j, x, y, z]
+                grad = grad.contiguous().view(mi, self.dims_out[i], mj, self.dims_in[j], -1).transpose(1, 2) &#47&#47 [I, J, i, j, x*y*z]
+                <a id="change">grad = grad.contiguous().view(mi * mj, -1)</a> &#47&#47 [I*J, i*j*x*y*z]
+                <a id="change">grad = torch.mm(grad, basis_kernels_ij.transpose(0, 1))</a> &#47&#47 [I*J, beta]
+
+                grad_weight[weight_index : weight_index + mi * mj * b_el] = grad.view(-1) &#47&#47 [I * J * beta]
+                weight_index += mi * mj * b_el</code></pre><img src="99844851.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mariogeiger/se3cnn/commit/ca5ec9585e711f63acbe337bc38c37520189b9d7#diff-ead31b126abaab6b3c43580555d85e34c5541b19e9665380ca0fcb71b9d3b1edL152' target='_blank'>Link</a></div><div id='project'> Project Name: mariogeiger/se3cnn</div><div id='commit'> Commit Name: ca5ec9585e711f63acbe337bc38c37520189b9d7</div><div id='time'> Time: 2017-08-09</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: se3_cnn/convolution.py</div><div id='class'> Class Name: SE3KernelCombination</div><div id='method'> Method Name: backward</div><BR><BR><div id='link'><a href='https://github.com/batra-mlp-lab/visdial-challenge-starter-pytorch/commit/67addeaef37856340f2d220af9a7cad3c4256235#diff-5fb8bef254641f668f3b055ea01ab95846ce96ce973e6c096a07f8cbcc7beab6L22' target='_blank'>Link</a></div><div id='project'> Project Name: batra-mlp-lab/visdial-challenge-starter-pytorch</div><div id='commit'> Commit Name: 67addeaef37856340f2d220af9a7cad3c4256235</div><div id='time'> Time: 2019-01-03</div><div id='author'> Author: karandesai281196@gmail.com</div><div id='file'> File Name: visdialch/decoders/disc.py</div><div id='class'> Class Name: DiscriminativeDecoder</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/59bcf379c51da12beee63d4fc7913ee74c4f9e8d#diff-2671d243fc184310be73822772f511227e6b44526e8beaa1113efaf6edf97899L113' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 59bcf379c51da12beee63d4fc7913ee74c4f9e8d</div><div id='time'> Time: 2018-02-06</div><div id='author'> Author: s.gehrmann@outlook.com</div><div id='file'> File Name: onmt/modules/CopyGenerator.py</div><div id='class'> Class Name: CopyGeneratorCriterion</div><div id='method'> Method Name: __call__</div><BR>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def get_feature_meta(column, preprocessing_parameters, backend):
+        compute = backend.df_engine.compute
+        if preprocessing_parameters[&quotnormalization&quot] is not None:
+            <a id="change">if preprocessing_parameters[&quotnormalization&quot] == &quotzscore&quot:
+                return {
+                    &quotmean&quot: compute(column.astype(np.float32).mean()),
+                    &quotstd&quot: compute(column.astype(np.float32).std())
+                }
+            elif preprocessing_parameters[&quotnormalization&quot] == &quotminmax&quot:
+                return {
+                    &quotmin&quot: compute(column.astype(np.float32).min()),
+                    &quotmax&quot: compute(column.astype(np.float32).max())
+                }
+            else:
+                logger.info(
+                    &quotCurrently zscore and minmax are the only &quot
+                    &quotnormalization strategies available. No {}&quot.format(
+                        preprocessing_parameters[&quotnormalization&quot])
+                )
+                return {}
+       </a> else:
+            return {}
+
+    @staticmethod</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    @staticmethod
+    def get_feature_meta(column, preprocessing_parameters, backend):
+        numeric_transformer = <a id="change">get_from_registry(
+            preprocessing_parameters.get(&quotnormalization&quot, None),
+            numeric_transformation_registry
+        )</a>
+
+        return numeric_transformer.fit_transform_params(column, backend)
+
+    @staticmethod</code></pre>

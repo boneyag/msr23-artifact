@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        batch_size = indices.size()[0]
+
+        compressed_indices = <a id="change">(indices
+                              .unsqueeze(1)
+                              .expand(batch_size, self.num_hash_functions))</a>
+        masks = self._mask_tensor.expand(batch_size, self.num_hash_functions)
+        <a id="change">compressed_indices = compressed_indices.detach()</a>
+        compressed_indices = Variable((compressed_indices.data * masks.data) %
+                                      self.compressed_num_embeddings)
+
+        return self.embeddings(compressed_indices).mean(1)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 where the embedding indices are already two-dimensional.
+        embedding = self.embeddings(indices * self._masks[0] % self.compressed_num_embeddings)
+
+        <a id="change">for mask in self._masks[1:]:
+            embedding += self.embeddings(indices * mask % self.compressed_num_embeddings)
+
+       </a> embedding /= self.num_hash_functions
+
+        return embedding
+</code></pre>

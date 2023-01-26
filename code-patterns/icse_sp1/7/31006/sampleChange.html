@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Unwrap dicts returned by signatures.
+    if self._is_hub_module_v1:
+      <a id="change">if "default" in result:
+        result = result["default"]
+      else:
+        raise ValueError("Signature does not has an output named `default`.")
+
+    &#47&#47 TODO(b/142213824): Remove setting shapes when shape inference works.
+   </a> result = self._apply_output_shape_if_set(inputs, result)
+    return result
+
+  def _get_callable(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+  def call(self, inputs, training=None):
+    &#47&#47 We basically want to call this...
+    args = []
+    kwargs = <a id="change">self._arguments.copy()</a>
+    if self._signature and isinstance(inputs, dict):
+      kwargs.update(inputs)
+    else:
+      args.append(inputs)
+    <a id="change">f = functools.partial(self._callable, *args, **kwargs)</a>
+    &#47&#47 ...but we may also have to pass a Python boolean for `training`, which
+    &#47&#47 is the logical "and" of this layer&quots trainability and what the surrounding
+    &#47&#47 model is doing (analogous to tf.keras.layers.BatchNormalization in TF2).
+    &#47&#47 For the latter, we have to look in two places: the `training` argument,</code></pre>

@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    print("".join([remap[int(round(x))] for x in img[i*28:i*28+28]]))
+mnist = input_data.read_data_sets(&quotMNIST_data&quot, one_hot=False)
+
+images = tf.placeholder(<a id="change">tf.float32</a>, (None, 28, 28, 1))
+angle = <a id="change">tf.placeholder(tf.float32, [])</a>
+shift_xy = tf.placeholder(tf.float32, [None, 2])
+
+padded = tf.pad(images, [(0, 0), (2, 2), (2, 2), (0, 0)])
+<a id="change">rotated = tf.contrib.image.rotate(padded, angle, &quotBILINEAR&quot)</a>
+shifted = <a id="change">tf</a>.contrib.image.translate(padded, shift_xy, &quotBILINEAR&quot)
+
+def did_extrude(image):
+  image = np.copy(image)</code></pre><h3>After Change</h3><pre><code class='java'>
+    print("".join([remap[int(round(x))] for x in img[i*28:i*28+28]]))
+
+
+<a id="change">with tf.Session() as sess:
+  mnist_model = mnist_model.Model("models/adversarial_bs=256/", sess)
+  tcu_model = tcu_model.TCUWrapper(mnist_model)
+
+  def iterator():
+    which = (mnist.test.labels==7)|(mnist.test.labels==6)
+    for i in range(1):
+      yield mnist.test.images[which][i:i+100].reshape((100,28,28,1)), mnist.test.labels[which][i:i+100]==7
+    
+
+  logits = tcu_model(x_input)
+  def np_tcu_model(x):
+    return sess.run(logits, {x_input: x})
+      
+  eval_with_attacks.evaluate_mnist_tcu_model(np_tcu_model,
+                                             iterator())</a>
+</code></pre>

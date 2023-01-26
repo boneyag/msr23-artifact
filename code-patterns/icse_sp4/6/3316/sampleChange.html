@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    speech_client = speech.Client()
+
+    with io.open(stream_file, &quotrb&quot) as audio_file:
+        audio_sample = <a id="change">speech_client.sample(
+            stream=audio_file,
+            encoding=speech.encoding.Encoding.LINEAR16,
+            sample_rate_hertz=16000)</a>
+        alternatives = audio_sample.streaming_recognize(&quoten-US&quot)
+
+        <a id="change">for alternative in alternatives:
+            print(&quotFinished: {}&quot.format(alternative.is_final))
+            print(&quotStability: {}&quot.format(alternative.stability))
+            print(&quotConfidence: {}&quot.format(alternative.confidence))
+            print(&quotTranscript: {}&quot.format(alternative.transcript))
+
+
+</a>if __name__ == &quot__main__&quot:
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 In practice, stream should be a generator yielding chunks of audio data.
+    stream = [content]
+    requests = (types.StreamingRecognizeRequest(audio_content=chunk)
+                <a id="change">for</a> chunk in stream)
+
+    config = types.RecognitionConfig(
+        encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz=16000,
+        language_code=&quoten-US&quot)
+    streaming_config = types.StreamingRecognitionConfig(config=config)
+
+    &#47&#47 streaming_recognize returns a generator.
+    &#47&#47 [START migration_streaming_response]
+    responses = client.streaming_recognize(streaming_config, requests)
+    &#47&#47 [END migration_streaming_request]
+
+    <a id="change">for response in responses:
+        for result in response.results:
+            print(&quotFinished: {}&quot.format(result.is_final))
+            print(&quotStability: {}&quot.format(result.stability))
+            alternatives = result.alternatives
+            for alternative in alternatives:
+                print(&quotConfidence: {}&quot.format(alternative.confidence))
+                print(&quotTranscript: {}&quot.format(alternative.transcript))
+    &#47&#47 [END migration_streaming_response]
+
+
+</a>if __name__ == &quot__main__&quot:
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)</code></pre>

@@ -1,0 +1,51 @@
+<html><h3>68f970aca1f95cddbc1c5fc4e4c7e6b6bffb2293,models/AttModel.py,AttModel,_forward,#AttModel#Any#Any#Any#Any#,98
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        state = self.init_hidden(batch_size)
+
+        &#47&#47 outputs = []
+        outputs = <a id="change">Variable(fc_feats.data.new(batch_size, seq.size(1) - 1, self.vocab_size+1).zero_())</a>
+
+        fc_feats, att_feats, p_att_feats = self._prepare_feature(fc_feats, att_feats, att_masks)
+
+        for i in range(seq.size(1) - 1):
+            if self.training and i &gt;= 1 and self.ss_prob &gt; 0.0: &#47&#47 otherwiste no need to sample
+                sample_prob = fc_feats.data.new(batch_size).uniform_(0, 1)
+                sample_mask = sample_prob &lt; self.ss_prob
+                if sample_mask.sum() == 0:
+                    it = seq[:, i].clone()
+                else:
+                    sample_ind = sample_mask.nonzero().view(-1)
+                    it = seq[:, i].data.clone()
+                    &#47&#47prob_prev = torch.exp(outputs[-1].data.index_select(0, sample_ind)) &#47&#47 fetch prev distribution: shape Nx(M+1)
+                    &#47&#47it.index_copy_(0, sample_ind, torch.multinomial(prob_prev, 1).view(-1))
+                    &#47&#47 prob_prev = torch.exp(outputs[-1].data) &#47&#47 fetch prev distribution: shape Nx(M+1)
+                    prob_prev = torch.exp(<a id="change">outputs[:, i-1].data</a>) &#47&#47 fetch prev distribution: shape Nx(M+1)
+                    it.index_copy_(0, sample_ind, torch.multinomial(prob_prev, 1).view(-1).index_select(0, sample_ind))
+                    it = Variable(it, requires_grad=False)
+            else:</code></pre><h3>After Change</h3><pre><code class='java'>
+        state = self.init_hidden(batch_size)
+
+        &#47&#47 outputs = []
+        outputs = <a id="change">fc_feats.new_zeros(batch_size, seq.size(1) - 1, self.vocab_size+1)</a>
+
+        fc_feats, att_feats, p_att_feats = self._prepare_feature(fc_feats, att_feats, att_masks)
+
+        for i in range(seq.size(1) - 1):
+            if self.training and i &gt;= 1 and self.ss_prob &gt; 0.0: &#47&#47 otherwiste no need to sample
+                sample_prob = fc_feats.new(batch_size).uniform_(0, 1)
+                sample_mask = sample_prob &lt; self.ss_prob
+                if sample_mask.sum() == 0:
+                    it = seq[:, i].clone()
+                else:
+                    sample_ind = sample_mask.nonzero().view(-1)
+                    it = seq[:, i].data.clone()
+                    &#47&#47prob_prev = torch.exp(outputs[-1].data.index_select(0, sample_ind)) &#47&#47 fetch prev distribution: shape Nx(M+1)
+                    &#47&#47it.index_copy_(0, sample_ind, torch.multinomial(prob_prev, 1).view(-1))
+                    &#47&#47 prob_prev = torch.exp(outputs[-1].data) &#47&#47 fetch prev distribution: shape Nx(M+1)
+                    prob_prev = torch.exp(<a id="change">outputs[:, i-1].detach()</a>) &#47&#47 fetch prev distribution: shape Nx(M+1)
+                    it.index_copy_(0, sample_ind, torch.multinomial(prob_prev, 1).view(-1).index_select(0, sample_ind))
+            else:
+                it = seq[:, i].clone()          </code></pre><img src="305752751.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ruotianluo/self-critical.pytorch/commit/68f970aca1f95cddbc1c5fc4e4c7e6b6bffb2293#diff-19db989ab9f9301d21cdc9066529071818266d09691a8afb0dd298eaded0b467L104' target='_blank'>Link</a></div><div id='project'> Project Name: ruotianluo/self-critical.pytorch</div><div id='commit'> Commit Name: 68f970aca1f95cddbc1c5fc4e4c7e6b6bffb2293</div><div id='time'> Time: 2018-04-26</div><div id='author'> Author: rluo@ttic.edu</div><div id='file'> File Name: models/AttModel.py</div><div id='class'> Class Name: AttModel</div><div id='method'> Method Name: _forward</div><BR><BR><div id='link'><a href='https://github.com/Kaixhin/Rainbow/commit/d4255c9c4d04cf7f09881b272535cfdc155957a7#diff-5f5933f2ca262b18d3bbf61a15941bdcb093728d17eabba09ba2142f6ce9e2deL51' target='_blank'>Link</a></div><div id='project'> Project Name: Kaixhin/Rainbow</div><div id='commit'> Commit Name: d4255c9c4d04cf7f09881b272535cfdc155957a7</div><div id='time'> Time: 2018-04-28</div><div id='author'> Author: design@kaixhin.com</div><div id='file'> File Name: agent.py</div><div id='class'> Class Name: Agent</div><div id='method'> Method Name: learn</div><BR>

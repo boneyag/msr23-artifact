@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  &#47&#47 also compute the gradient
+  W = softmax * ydiff[:, np.newaxis] * (yhat[:, np.newaxis] - y)
+  <a id="change">X_emb_t = A.dot(X.T)</a>
+  grad = 4 * (X_emb_t * W.sum(axis=0) - X_emb_t.dot(W + W.T)).dot(X)
+  return cost, grad.ravel()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def _loss(flatA, X, y):
+  A = flatA.reshape((-1, X.shape[1]))
+  X_embedded = np.dot(X, A.T)
+  dist = <a id="change">pairwise_distances(X_embedded, squared=True)</a>
+  np.fill_diagonal(dist, np.inf)
+  softmax = np.exp(- dist - logsumexp(- dist, axis=1)[:, np.newaxis])
+  yhat = softmax.dot(y)
+  ydiff = yhat - y</code></pre>

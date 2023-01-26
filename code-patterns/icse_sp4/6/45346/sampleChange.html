@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        target_scores = self.target_scores[:, :, 1:]
+
+        <a id="change">weights = keras.backend.sum(target_scores, axis=1)</a>
+
+        weights = keras.backend.sum(target_scores) / keras.backend.maximum(weights, keras.backend.epsilon())
+
+        weights = 1.0 / <a id="change">(1 + keras.backend.exp(-weights))</a>
+
+        &#47&#47 mask out output values where class is different from targetrcnn loss
+        &#47&#47 function
+        a = keras_rcnn.backend.where(keras.backend.equal(target_scores, 1))
+
+        a = keras.backend.cast(a, &quotint32&quot)
+
+        rr = a[:, :2]
+        cc = a[:, 2:]
+
+        indices = [
+            keras.backend.concatenate([rr, cc * 4 + 0], 1),
+            keras.backend.concatenate([rr, cc * 4 + 1], 1),
+            keras.backend.concatenate([rr, cc * 4 + 2], 1),
+            keras.backend.concatenate([rr, cc * 4 + 3], 1)
+        ]
+
+        indices = keras.backend.concatenate(indices, 0)
+
+        weights = keras.backend.sum(target_scores * weights, axis=-1)
+        weights = keras_rcnn.backend.gather_nd(weights, rr)
+
+        weights = keras.backend.reshape(weights, (-1,))
+
+        <a id="change">updates = keras.backend.tile(weights, (4,))</a>
+
+        labels = keras_rcnn.backend.scatter_add_tensor(keras.backend.zeros_like(output_deltas, dtype=&quotfloat32&quot), indices, updates)
+
+        loss = keras_rcnn.backend.smooth_l1(output_deltas * labels, target_deltas * labels, anchored=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        updates = keras.backend.ones_like(indices, dtype=keras.backend.floatx())
+
+        labels = keras_rcnn.backend.scatter_add_tensor(keras.backend.zeros_like(output_deltas, dtype=&quotfloat32&quot), indices, updates[<a id="change">:, 0</a>])
+
+        loss = keras_rcnn.backend.smooth_l1(output_deltas * labels, target_deltas * labels, anchored=True)
+</code></pre>

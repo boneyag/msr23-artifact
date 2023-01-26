@@ -1,0 +1,76 @@
+<html><h3>71621ee79dee937b5a70dc40588342f5a54b60fb,mvpa2/featsel/rfe.py,RFELearner,_train,#RFELearner#Any#,363
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+    def _train(self, dataset):
+        <a id="change">sens_ana = self.clf.get_sensitivity_analyzer(postproc=self.analyzer_postproc)</a>
+        pmeasure = ProxyMeasure(self.clf,
+                                postproc=BinaryFxNode(self.errorfx,
+                                                      self.clf.space),
+                                skip_train=True   &#47&#47 do not train since sens_ana will
+            )
+        rfe = RFE(sens_ana,
+                  pmeasure,
+                  Splitter(&quotpartitions&quot),
+                  fselector=self.fselector,
+                  train_pmeasure=False,
+                  stopping_criterion=None,   &#47&#47 full "track"
+                  update_sensitivity=True,
+                  enable_ca=[&quoterrors&quot, &quotnfeatures&quot])
+
+        errors, nfeatures = [], []
+
+        if __debug__:
+            debug("RFEC", "Starting with the %s", (dataset,))
+
+        for partition in self.partitioner.generate(dataset):
+            rfe.train(partition)
+            errors.append(rfe.ca.errors)
+            nfeatures.append(rfe.ca.nfeatures)
+
+        &#47&#47 mean errors across splits and find optimal number
+        errors_mean = np.mean(errors, axis=0)
+        nfeatures_mean = np.mean(nfeatures, axis=0)
+        &#47&#47 we will take the "mean location" of the min to stay
+        &#47&#47 within the most &quotstable&quot choice
+
+        mins_idx = np.where(errors_mean==np.min(errors_mean))[0]
+        min_idx = mins_idx[int(len(mins_idx)/2)]
+        min_error = errors_mean[min_idx]
+        assert(min_error == np.min(errors_mean))
+        nfeatures_min = nfeatures_mean[min_idx]
+
+        if __debug__:
+            debug("RFEC",
+                  "Choosing among %d choices to have %d features with "
+                  "mean error=%.2g (initial mean error %.2g)",
+                  (len(mins_idx), nfeatures_min, min_error, errors_mean[0]))
+
+        &#47&#47 Now perform 2nd RFE -- until optimal_n
+        &#47&#47 so we should provide an alternative stopping criterion
+        self._mclf = FeatureSelectionClassifier(
+            self.clf,
+            RFE(sens_ana,
+                None, &#47&#47 we do not have anything to transfer to
+                Repeater(2),
+                fselector=self.fselector,
+                train_pmeasure=False,
+                stopping_criterion=None,
+                nfeatures_min=nfeatures_min,
+                update_sensitivity=True,
+                enable_ca=[&quotnfeatures&quot]))
+        <a id="change">self._mclf.train(dataset)</a>
+
+    def _untrain(self):
+        super(RFELearner, self)._untrain()
+        if self._mclf is not None:</code></pre><h3>After Change</h3><pre><code class='java'>
+            debug("RFEC", "Stage 2: running RFE on full training dataset to "
+                  "distil best %d features" % nfeatures_min)
+
+        <a id="change">super</a>(SplitRFE, self)._train(dataset)
+
+
+    def _untrain(self):</code></pre><img src="97583527.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/PyMVPA/PyMVPA/commit/71621ee79dee937b5a70dc40588342f5a54b60fb#diff-f457592ee3ba7a4cc9ed931542bebeaaa8d93d14d018051e8ff986e60649fa95L363' target='_blank'>Link</a></div><div id='project'> Project Name: PyMVPA/PyMVPA</div><div id='commit'> Commit Name: 71621ee79dee937b5a70dc40588342f5a54b60fb</div><div id='time'> Time: 2012-10-31</div><div id='author'> Author: debian@onerussian.com</div><div id='file'> File Name: mvpa2/featsel/rfe.py</div><div id='class'> Class Name: RFELearner</div><div id='method'> Method Name: _train</div><BR><BR><div id='link'><a href='https://github.com/RaRe-Technologies/gensim/commit/4b8a1c0f6439e6acfabb4419d8f4f8842e284106#diff-687a39c1aef17eff6fb1f833ca846b3c653a3dc848862b035c6f3b16b3d1152bL473' target='_blank'>Link</a></div><div id='project'> Project Name: RaRe-Technologies/gensim</div><div id='commit'> Commit Name: 4b8a1c0f6439e6acfabb4419d8f4f8842e284106</div><div id='time'> Time: 2018-01-11</div><div id='author'> Author: mnsn1970@gmail.com</div><div id='file'> File Name: gensim/models/fasttext.py</div><div id='class'> Class Name: FastText</div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/kengz/SLM-Lab/commit/c4c9a3a18d9cd3f0e1cd7e54cf5ac12d6f9d3645#diff-f1cd34d4381d6db094c98a7667e1800e482fc90a25008af5235a18f28b855632L205' target='_blank'>Link</a></div><div id='project'> Project Name: kengz/SLM-Lab</div><div id='commit'> Commit Name: c4c9a3a18d9cd3f0e1cd7e54cf5ac12d6f9d3645</div><div id='time'> Time: 2018-08-17</div><div id='author'> Author: kengzwl@gmail.com</div><div id='file'> File Name: slm_lab/agent/algorithm/actor_critic.py</div><div id='class'> Class Name: ActorCritic</div><div id='method'> Method Name: calc_pdparam</div><BR>

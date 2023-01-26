@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                             1 - self.label_smoothing)
+            target_.masked_fill_(mask, 0)
+            target_feed = target_
+            <a id="change">norm_ = self.normalizing * target.data.ne(self.padding_idx).sum()</a>
+
+        loss = self.criterion(scores, target_feed)
+        loss_data = loss.data.clone() + norm_
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        gtruth = target.view(-1)
+        if self.confidence &lt; 1:
+            <a id="change">tdata = gtruth.data</a>
+            mask = <a id="change">torch.nonzero(tdata.eq(self.padding_idx)).squeeze()</a>
+            likelihood = torch.gather(scores.data, 1, tdata.unsqueeze(1))
+            tmp_ = self.one_hot.repeat(gtruth.size(0), 1)
+            tmp_.scatter_(1, tdata.unsqueeze(1), self.confidence)
+            if mask.dim() &gt; 0:</code></pre>

@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        elif relation[&quottype&quot] == &quotmultiline&quot:
+            print("TODO: multiline relation")
+        elif relation[&quottype&quot] == &quotmultipoint&quot:
+            <a id="change">print("TODO: multipoint relation")</a>
+
+    &#47&#47 Merge &quotosm_way_df&quot and the &quotgdf_relations&quot
+    osm_way_df = osm_way_df.append(gdf_relations)
+    return osm_way_df</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Iterate over relations and extract the items
+    for relation in relations:
+        if relation[&quottags&quot][&quottype&quot] == &quotmultipolygon&quot:
+            <a id="change">try:
+                &#47&#47 Parse member &quotway&quot ids
+                member_way_ids = [member[&quotref&quot] for member in relation[&quotmembers&quot] if member[&quottype&quot] == &quotway&quot]
+                &#47&#47 Extract the ways
+                member_ways = osm_way_df.loc[member_way_ids]
+                &#47&#47 Extract the nodes of those ways
+                member_nodes = list(member_ways[&quotnodes&quot].values)
+                try:
+                    &#47&#47 Create MultiPolygon from geometries (exclude NaNs)
+                    multipoly = MultiPolygon(list(member_ways[&quotgeometry&quot]))
+                except Exception:
+                    multipoly = invalid_multipoly_handler(gdf=member_ways, relation=relation, way_ids=member_way_ids)
+
+                if multipoly:
+                    &#47&#47 Create GeoDataFrame with the tags and the MultiPolygon and its &quotways&quot (ids), and the &quotnodes&quot of those ways
+                    geo = gpd.GeoDataFrame(relation[&quottags&quot], index=[relation[&quotid&quot]])
+                    &#47&#47 Initialize columns (needed for .loc inserts)
+                    geo = geo.assign(geometry=None, ways=None, nodes=None, element_type=None, osmid=None)
+                    &#47&#47 Add attributes
+                    geo.loc[relation[&quotid&quot], &quotgeometry&quot] = multipoly
+                    geo.loc[relation[&quotid&quot], &quotways&quot] = member_way_ids
+                    geo.loc[relation[&quotid&quot], &quotnodes&quot] = member_nodes
+                    geo.loc[relation[&quotid&quot], &quotelement_type&quot] = &quotrelation&quot
+                    geo.loc[relation[&quotid&quot], &quotosmid&quot] = relation[&quotid&quot]
+
+                    &#47&#47 Append to relation GeoDataFrame
+                    gdf_relations = gdf_relations.append(geo)
+                    &#47&#47 Remove such &quotways&quot from &quotosm_way_df&quot that are part of the &quotrelation&quot
+                    osm_way_df = osm_way_df.drop(member_way_ids)
+            except Exception:
+                log("Could not handle OSM &quotrelation&quot: {}".format(relation[&quotid&quot]))
+
+    &#47&#47 Merge &quotosm_way_df&quot and the &quotgdf_relations&quot
+   </a> osm_way_df = osm_way_df.append(gdf_relations)
+    return osm_way_df
+
+def create_poi_gdf(polygon=None, amenities=None, north=None, south=None, east=None, west=None, retain_invalid=False):</code></pre>

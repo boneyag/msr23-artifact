@@ -1,0 +1,37 @@
+<html><h3>a437991e12a334b40b082fdc8b1b6dcf4a68021f,deepchem/models/tensorgraph/layers.py,NeighborList,get_cells_for_atoms,#NeighborList#Any#Any#,965
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Tile both cells and coords to form arrays of size (n_cells*N, ndim)
+    tiled_cells = tf.tile(cells, (N, 1))
+    &#47&#47 N tensors of shape (n_cells, 1)
+    <a id="change">tiled_cells = tf.split(tiled_cells, N)</a>
+
+    &#47&#47 Shape (N*n_cells, 1) after tile
+    tiled_coords = tf.reshape(
+        tf.tile(coords, (1, n_cells)), (n_cells * N, ndim))
+    &#47&#47 List of N tensors of shape (n_cells, 1)
+    tiled_coords = tf.split(tiled_coords, N)
+
+    &#47&#47 Lists of length N 
+    <a id="change">coords_rel = [
+        tf.to_float(coords) - tf.to_float(cells)
+        for (coords, cells) in zip(tiled_coords, tiled_cells)
+    ]</a>
+    coords_norm = <a id="change">[tf.reduce_sum(rel**2, axis=1) for rel in coords_rel]</a>
+
+    &#47&#47 Lists of length n_cells
+    &#47&#47 Get indices of k atoms closest to each cell point
+    closest_inds = [tf.nn.top_k(-norm, k=1)[1] <a id="change">for</a> norm in coords_norm]
+
+    &#47&#47 TODO(rbharath): tf.stack for tf 1.0
+    return tf.stack(closest_inds)</code></pre><h3>After Change</h3><pre><code class='java'>
+    tiled_coords = tf.reshape(
+        tf.tile(coords, (1, n_cells)), (n_cells * N_atoms, ndim))
+    coords_vec = tf.reduce_sum((tiled_coords-tiled_cells)**2, axis=1)
+    <a id="change">coords_norm = tf.reshape(coords_vec, (N_atoms, n_cells))</a>
+
+    closest_inds = tf.nn.top_k(-coords_norm,k=1)[1]
+    return closest_inds
+</code></pre><img src="226328701.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/a437991e12a334b40b082fdc8b1b6dcf4a68021f#diff-972803a74a51af2d54b7671dbbc4d2dd3f051e00445d4a58cf6bdfe53c4008f7L979' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: a437991e12a334b40b082fdc8b1b6dcf4a68021f</div><div id='time'> Time: 2017-04-17</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: deepchem/models/tensorgraph/layers.py</div><div id='class'> Class Name: NeighborList</div><div id='method'> Method Name: get_cells_for_atoms</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/a437991e12a334b40b082fdc8b1b6dcf4a68021f#diff-972803a74a51af2d54b7671dbbc4d2dd3f051e00445d4a58cf6bdfe53c4008f7L1032' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: a437991e12a334b40b082fdc8b1b6dcf4a68021f</div><div id='time'> Time: 2017-04-17</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: deepchem/models/tensorgraph/layers.py</div><div id='class'> Class Name: NeighborList</div><div id='method'> Method Name: get_neighbor_cells</div><BR><BR><div id='link'><a href='https://github.com/dmlc/gluon-cv/commit/447c8e87ea3b270d0b3404ad962032752cfbc0ab#diff-cc621e590a19bfc6d89c413e787cc2f17a349c2dee3f2c69f25614e7a0a59848L35' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-cv</div><div id='commit'> Commit Name: 447c8e87ea3b270d0b3404ad962032752cfbc0ab</div><div id='time'> Time: 2020-04-22</div><div id='author'> Author: zhangz6@cs.washington.edu</div><div id='file'> File Name: gluoncv/nn/splat.py</div><div id='class'> Class Name: SplitAttentionConv</div><div id='method'> Method Name: hybrid_forward</div><BR>

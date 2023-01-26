@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+ 
+    &#47&#47compute kernel stuff
+    num_data = <a id="change">X</a>.shape[0]
+    Kdiag = kern.Kdiag(Xnew)
+    Kmn = kern.K(X, Xnew)
+    Kmm = kern.K(X) + eye(num_data)*1e-4
+    Lm = tf.cholesky(Kmm)
+
+    &#47&#47this is O(N M^2)
+    A = tf.user_ops.triangular_solve(Lm, Kmn, &quotlower&quot)
+
+    &#47&#47construct the mean and variance of q(f)
+    fmean = tf.matmul(tf.transpose(A), q_mu)
+    if q_sqrt.get_shape().ndims==2:
+        &#47&#47we hae a diagonal form for q(v)
+        q_var = np.square(q_sqrt)
+        &#47&#47fvar = Kdiag[:,None] + tf.reduce_sum((tf.square(tf.transpose(A)))[:,:,None] * (q_var[None, :,:] - 1),1)
+        fvar = tf.reshape(Kdiag, (-1,1)) + tf.reduce_sum(tf.reshape(tf.square(tf.transpose(A)), )[:,:,None] * (q_var[None, :,:] - 1),1)
+    elif q_sqrt.get_shape().ndims ==3:
+        &#47&#47 we have the cholesky form for q(v)
+        fvar = <a id="change">Kdiag[:,None]</a> - <a id="change">tf.reduce_sum(np.square(A), 0)[:,None]</a>
+        def f(w):
+            R = tf.triu(w)
+            RA = tf.matmul(R, A)
+            return tf.square(RA).sum(0)</code></pre><h3>After Change</h3><pre><code class='java'>
+        fvar = tf.reshape(Kdiag, (-1,1)) + tf.reduce_sum(tf.reshape(tf.square(tf.transpose(A)), )[:,:,None] * (q_var[None, :,:] - 1),1)
+    elif q_sqrt.get_shape().ndims ==3:
+        &#47&#47 we have the cholesky form for q(v)
+        fvar = Kdiag - <a id="change">tf.reduce_sum(np.square(A), 0)</a>
+        <a id="change">fvar = tf.expand_dims(fvar, 1)</a>
+        def f(w):
+            R = tf.triu(w)
+            RA = tf.matmul(R, A)
+            return tf.square(RA).sum(0)
+        projected_var, _ = theano.scan(f, q_sqrt.swapaxes(0,2))
+        fvar += <a id="change">tf.transpose(projected_var)</a>
+
+    return fmean, fvar
+
+</code></pre>

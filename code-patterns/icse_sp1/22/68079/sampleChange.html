@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    assert conv.__repr__() == &quotDNAConv(32, heads=4, groups=8)&quot
+    assert conv(x, edge_index).size() == (num_nodes, channels)
+    jitcls = conv.jittable(x=x, edge_index=edge_index)
+    <a id="change">jitconv = jitcls(channels, heads=4, groups=8, dropout=0.5)</a>
+    <a id="change">jitconv.load_state_dict(conv.state_dict())</a>
+    jittedconv = torch.jit.script(jitconv)
+    <a id="change">conv.eval()</a>
+    <a id="change">jitconv.eval()</a>
+    <a id="change">jittedconv.eval()</a>
+    assert (torch.abs(conv(x, edge_index) -
+            jitconv(x, edge_index)) &lt; 1e-6).all().item()
+    assert (torch.abs(conv(x, edge_index) -
+            jittedconv(x, edge_index)) &lt; 1e-6).all().item()
+
+    conv = DNAConv(channels, heads=1, groups=1, dropout=0.5)
+    assert conv.__repr__() == &quotDNAConv(32, heads=1, groups=1)&quot
+    assert conv(x, edge_index).size() == (num_nodes, channels)
+    jitcls = conv.jittable(x=x, edge_index=edge_index)
+    <a id="change">jitconv = jitcls(channels, heads=1, groups=1, dropout=0.5)</a>
+    <a id="change">jitconv.load_state_dict(conv.state_dict())</a>
+    jittedconv = torch.jit.script(jitconv)
+    <a id="change">conv.eval()</a>
+    <a id="change">jitconv.eval()</a>
+    <a id="change">jittedconv.eval()</a>
+    assert (torch.abs(conv(x, edge_index) -
+            jitconv(x, edge_index)) &lt; 1e-6).all().item()
+    assert (torch.abs(conv(x, edge_index) -
+            jittedconv(x, edge_index)) &lt; 1e-6).all().item()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    jit_conv = conv.jittable(x=x, edge_index=edge_index)
+    jit_conv = torch.jit.script(jit_conv)
+    <a id="change">assert jit_conv(x, edge_index).tolist() == out.tolist()</a>
+
+    conv = DNAConv(channels, heads=1, groups=1, dropout=0.0)
+    assert conv.__repr__() == &quotDNAConv(32, heads=1, groups=1)&quot
+    out = conv(x, edge_index)</code></pre>

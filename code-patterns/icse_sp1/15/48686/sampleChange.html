@@ -1,0 +1,71 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 next compute the contribution from process noise that is injected at each timestep.
+        &#47&#47 (we need to do a cumulative sum to integrate across time for the z-state contribution)
+        eye = torch.eye(self.state_dim, device=fs_cov.device, dtype=fs_cov.dtype)
+        z_process_covar = <a id="change">self</a>.log_trans_noise_scale_sq.exp() * eye
+        N_trans_obs_shift = torch.cat([self.z_obs_matrix.unsqueeze(0), N_trans_obs[0:-1]])
+        predicted_covar2z = torch.matmul(N_trans_obs_shift.transpose(-1, -2),
+                                         torch.matmul(z_process_covar, N_trans_obs_shift))  &#47&#47 N O O
+
+        predicted_covar = predicted_covar1z + predicted_covar1gp + gp_process_covar + \
+            torch.cumsum(predicted_covar2z, dim=0)
+
+        if include_observation_noise:
+            <a id="change">eye = torch.eye(self.obs_dim, device=fs_cov.device, dtype=fs_cov.dtype)</a>
+            predicted_covar = <a id="change">predicted_covar + self._get_obs_noise_scale().pow(2.0) * eye</a>
+
+        return predicted_mean, predicted_covar
+
+    def forecast(self, targets, N_timesteps):</code></pre><h3>After Change</h3><pre><code class='java'>
+        return self._get_dist().filter(targets)
+
+    @torch.no_grad()
+    def _forecast(<a id="change">self</a>, N_timesteps, filtering_state, include_observation_noise=True):
+        
+        Internal helper for forecasting.
+        
+        dts = torch.arange(N_timesteps, dtype=self.z_trans_matrix.dtype, device=self.z_trans_matrix.device) + 1.0
+        dts = dts.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
+
+        gp_trans_matrix, gp_process_covar = self.kernel.transition_matrix_and_covariance(dt=dts)
+        gp_trans_matrix = block_diag_embed(gp_trans_matrix)
+        gp_process_covar = block_diag_embed(gp_process_covar[..., 0:1, 0:1])
+
+        N_trans_matrix = repeated_matmul(self.z_trans_matrix, N_timesteps)
+        N_trans_obs = torch.matmul(N_trans_matrix, self.z_obs_matrix)
+
+        &#47&#47 z-state contribution + gp contribution
+        predicted_mean1 = torch.matmul(filtering_state.loc[-self.state_dim:].unsqueeze(-2), N_trans_obs).squeeze(-2)
+        predicted_mean2 = torch.matmul(filtering_state.loc[:self.full_gp_state_dim].unsqueeze(-2),
+                                       gp_trans_matrix[..., self.obs_selector]).squeeze(-2)
+        predicted_mean = predicted_mean1 + predicted_mean2
+
+        &#47&#47 first compute the contributions from filtering_state.covariance_matrix: z-space and gp
+        fs_cov = filtering_state.covariance_matrix
+        predicted_covar1z = torch.matmul(N_trans_obs.transpose(-1, -2),
+                                         torch.matmul(fs_cov[self.full_gp_state_dim:, self.full_gp_state_dim:],
+                                         N_trans_obs))  &#47&#47 N O O
+        gp_trans = gp_trans_matrix[..., self.obs_selector]
+        predicted_covar1gp = torch.matmul(gp_trans.transpose(-1, -2),
+                                          torch.matmul(fs_cov[:self.full_gp_state_dim:, :self.full_gp_state_dim],
+                                          gp_trans))
+
+        &#47&#47 next compute the contribution from process noise that is injected at each timestep.
+        &#47&#47 (we need to do a cumulative sum to integrate across time for the z-state contribution)
+        z_process_covar = self.trans_noise_scale_sq.diag_embed()
+        N_trans_obs_shift = torch.cat([self.z_obs_matrix.unsqueeze(0), N_trans_obs[0:-1]])
+        predicted_covar2z = torch.matmul(N_trans_obs_shift.transpose(-1, -2),
+                                         torch.matmul(z_process_covar, N_trans_obs_shift))  &#47&#47 N O O
+
+        predicted_covar = predicted_covar1z + predicted_covar1gp + gp_process_covar + \
+            torch.cumsum(predicted_covar2z, dim=0)
+
+        if include_observation_noise:
+            predicted_covar = predicted_covar + <a id="change">self.obs_noise_scale.pow(2.0).diag_embed()</a>
+
+        return predicted_mean, predicted_covar
+
+    @pyro_method</code></pre>

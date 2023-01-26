@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_random_overdet(self):
+        n = 20
+        m = 15
+        <a id="change">a = random([n,m])</a>
+        for i in range(m):
+            <a id="change">a[i,i]</a> = 20*(.1+a[i,i])
+        for i in range(4):
+            b = <a id="change">random([n,3])</a>
+            x,res,r,s = <a id="change">lstsq(a,b)</a>
+            assert_(r == m, &quotunexpected efficient rank&quot)
+            &#47&#47 XXX: check definition of res
+            <a id="change">assert_array_almost_equal(x,direct_lstsq(a,b))</a>
+
+    def test_random_complex_overdet(self):
+        n = 20
+        m = 15</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def test_random_overdet(self):
+
+        <a id="change">for dtype in REAL_DTYPES:
+            for (n,m) in ((20,15), (200,2)):
+                for lapack_driver in TestLstsq.lapack_drivers:
+                    for overwrite in (True,False):
+                        a = np.asarray(random([n,m]),dtype=dtype)
+                        print(a.dtype)
+                        for i in range(m):
+                            a[i,i] = 20*(.1+a[i,i])
+                        for i in range(4):
+                            b = np.asarray(random([n,3]),dtype=dtype)
+                            &#47&#47 Store values in case they are overwritten
+                            &#47&#47 later
+                            a1 = a.copy()
+                            b1 = b.copy()
+                            out = lstsq(a1,b1,lapack_driver=lapack_driver,
+                                       overwrite_a=overwrite,
+                                       overwrite_b=overwrite)
+                            x = out[0]
+                            r = out[2]
+                            assert_(r == m, &quotunexpected efficient rank&quot)
+                            assert_allclose(x, direct_lstsq(a,b,cmplx=0),
+                                          rtol=25*np.finfo(a1.dtype).eps,
+                                          atol=25*np.finfo(a1.dtype).eps,
+                                          err_msg="driver: %s" % lapack_driver)
+
+   </a> def test_random_complex_overdet(self):
+
+        for dtype in COMPLEX_DTYPES:
+            for (n,m) in ((20,15), (200,2)):</code></pre>

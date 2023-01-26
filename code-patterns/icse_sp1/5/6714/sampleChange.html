@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 store in the required shape, for example as a 4D tensor
+    &#47&#47 with shape: (batch_size,1,height,width)
+    new_shape = tensor.cast(tensor.join(0, batch_size,
+                                        <a id="change">tensor.as_tensor([1] * (leftdims - 1))</a>,
+                                        img_shape), &quotint64&quot)
+    input_ND = GpuReshape(leftdims + rightdims)(input, new_shape)
+    return input_ND</code></pre><h3>After Change</h3><pre><code class='java'>
+    img_shape = input.shape[-rightdims:]
+
+    non_pool_ndim = input.ndim - rightdims
+    <a id="change">if non_pool_ndim &lt; leftdims:
+        &#47&#47 too few dimensions, pad on the left
+        dummy_dims = tensor.as_tensor([1] * (leftdims - non_pool_ndim))
+        new_shape = tensor.join(0, dummy_dims,
+                                input.shape[:non_pool_ndim],
+                                img_shape)
+    else:
+        &#47&#47 too many dimensions, combine the leading dimensions
+        batched_ndim = non_pool_ndim - leftdims + 1
+        batch_size = tensor.prod(input.shape[:batched_ndim])
+        &#47&#47 convert to a vector for tensor.join
+        batch_size = tensor.shape_padright(batch_size, 1)
+        new_shape = tensor.join(0, batch_size,
+                                input.shape[batched_ndim:non_pool_ndim],
+                                img_shape)
+
+    &#47&#47 store in the required shape
+   </a> new_shape = tensor.cast(new_shape, &quotint64&quot)
+    input_ND = GpuReshape(leftdims + rightdims)(input, new_shape)
+    return input_ND
+</code></pre>

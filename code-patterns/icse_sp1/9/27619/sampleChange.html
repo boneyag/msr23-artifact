@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    freq_grid = []
+    for i in irange(ndim):
+        <a id="change">sl = ndim * [None]</a>
+        sl[i] = slice(None)
+        <a id="change">sl = tuple(sl)</a>
+
+        freq_grid_i = _compat._fftfreq(shape[i], chunks=chunks[i])
+        freq_grid_i = freq_grid_i.astype(dtype)
+        <a id="change">freq_grid_i = freq_grid_i[sl]</a>
+
+        for j in itertools.chain(range(i), range(i + 1, ndim)):
+            freq_grid_i = freq_grid_i.repeat(shape[j], axis=j)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    assert (issubclass(dtype, numbers.Real) and
+            not issubclass(dtype, numbers.Integral))
+
+    <a id="change">freq_grid = [
+        dask.array.fft.fftfreq(s, chunks=c).astype(dtype)
+        for s, c in izip(shape, chunks)
+    ]</a>
+    freq_grid = dask.array.meshgrid(*freq_grid, indexing="ij")
+    freq_grid = dask.array.stack(freq_grid)
+
+    return freq_grid</code></pre>

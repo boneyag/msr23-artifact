@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def __call__(self, x: Variable):
+        self.append_input("x", x)
+        <a id="change">return self.exec()</a>
+
+    def exec(self):
+        x = self.inputs["x"]
+        x_shape_dict = x.shape_dict</code></pre><h3>After Change</h3><pre><code class='java'>
+        N = x_shape_dict[Axis.N]
+        H2 = self.outsize[0]
+        W2 = self.outsize[1]
+        C2 = x_shape_dict[<a id="change">Axis.C</a>]
+        y = Variable([N, H2, W2, C2], OrderNHWC)
+        y.change_order(x.order)  &#47&#47 output same order as input to preserve following reshape semantics
+
+        for axis in x.order.axes:
+            <a id="change">if axis == Axis.H or axis == Axis.W:
+                continue
+
+           </a> self.attributes.add(Tensorwise(axis))
+
+        self.append_input("x", x)
+        self.append_output("y", y)</code></pre>

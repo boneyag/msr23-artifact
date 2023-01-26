@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        was_iterable = True
+        if not isinstance(epsilons, Iterable):
+            <a id="change">epsilons = [epsilons]</a>
+            was_iterable = False
+
+        N = len(x)
+        K = len(epsilons)
+
+        &#47&#47 None means: just minimize, no early stopping, no limit on the perturbation size
+        if any(eps is None for eps in epsilons):
+            early_stop = None
+        else:
+            early_stop = min(epsilons)
+        limit_epsilons = <a id="change">[eps if eps is not None else ep.inf for eps in epsilons]</a>
+        del epsilons
+
+        &#47&#47 run the actual attack
+        xp = self.run(model, x, criterion, early_stop=early_stop, **kwargs)
+        &#47&#47 TODO: optionally improve using a binary search?
+        &#47&#47 TODO: optionally reduce size to the different epsilons and recompute is_adv
+
+        is_adv = is_adversarial(xp)
+        assert is_adv.shape == (N,)
+
+        distances = self.distance(x, xp)
+        assert distances.shape == (N,)
+
+        <a id="change">in_limits = ep.stack(
+            [distances &lt;= epsilon for epsilon in limit_epsilons], axis=0
+        )</a>
+        assert in_limits.shape == (K, N)
+
+        success = ep.logical_and(in_limits, is_adv)
+        assert success.shape == (K, N)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 run the actual attack
+        xp = self.run(model, x, criterion, early_stop=early_stop, **kwargs)
+
+        xpcs = <a id="change">[]</a>
+        success = []
+        for epsilon in epsilons:
+            if epsilon is None:
+                xpc = xp
+            else:
+                xpc = self.distance.clip_perturbation(x, xp, epsilon)
+            is_adv = is_adversarial(xpc)
+
+            xpcs.append(xpc)
+            success.append(is_adv)
+
+        success_ = ep.stack(success)
+        assert success_.shape == (K, N)
+
+        xp_ = restore_type(xp)
+        <a id="change">xpcs_ = [restore_type(xpc) for xpc in xpcs]</a>
+
+        if was_iterable:
+            return [xp_] * K, xpcs_, restore_type(success)
+        else:</code></pre>

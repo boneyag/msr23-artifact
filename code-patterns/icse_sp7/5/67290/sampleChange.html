@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        dtype = np.int64
+    else:
+        dtype = np.float64
+    <a id="change">image = image.astype(dtype, order="C", copy=False)</a>
+
+    _local_maxima(image.ravel(), flags.ravel(), neighbor_offsets)
+
+    if allow_borders:</code></pre><h3>After Change</h3><pre><code class='java'>
+    flags = np.zeros(image.shape, dtype=np.uint8)
+    _set_edge_values_inplace(flags, value=3)
+
+    <a id="change">try:
+        _local_maxima(image.ravel(), flags.ravel(), neighbor_offsets)
+    except TypeError:
+        if image.dtype == np.float16:
+            &#47&#47 Provide the user with clearer error message
+            raise TypeError("dtype of `image` is float16 which is not "
+                            "supported, try upcasting to float32")
+        else:
+            raise
+
+   </a> if allow_borders:
+        &#47&#47 Revert padding performed at the beginning of the function
+        flags = crop(flags, 1)
+    else:</code></pre>

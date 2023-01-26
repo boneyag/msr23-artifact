@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        host_dir = os.path.join(self.container_root, host)
+        os.makedirs(host_dir)
+
+        <a id="change">if model_location.startswith(&quots3&quot):
+            container_model_dir = os.path.join(self.container_root, host, &quotmodel&quot)
+            os.makedirs(container_model_dir)
+
+            parsed_uri = urlparse(model_location)
+            filename = os.path.basename(parsed_uri.path)
+            tar_location = os.path.join(container_model_dir, filename)
+            sagemaker.utils.download_file(parsed_uri.netloc, parsed_uri.path, tar_location, self.sagemaker_session)
+
+            if tarfile.is_tarfile(tar_location):
+                with tarfile.open(tar_location) as tar:
+                    tar.extractall(path=container_model_dir)
+            volumes.append(_Volume(container_model_dir, &quot/opt/ml/model&quot))
+        else:
+            volumes.append(_Volume(model_location, &quot/opt/ml/model&quot))
+
+       </a> return volumes
+
+    def _generate_compose_file(self, command, additional_volumes=None, additional_env_vars=None):
+        Writes a config file describing a training/hosting  environment.</code></pre><h3>After Change</h3><pre><code class='java'>
+        host_dir = os.path.join(self.container_root, host)
+        os.makedirs(host_dir)
+
+        <a id="change">model_data_source = sagemaker.local.data.get_data_source_instance(
+            model_location, self.sagemaker_session)</a>
+
+        <a id="change">for filename in model_data_source.get_file_list():
+            if tarfile.is_tarfile(filename):
+                with tarfile.open(filename) as tar:
+                    tar.extractall(path=model_data_source.get_root_dir())
+
+       </a> volumes.append(_Volume(model_data_source.get_root_dir(), &quot/opt/ml/model&quot))
+
+        return volumes
+</code></pre>

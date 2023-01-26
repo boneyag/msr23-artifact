@@ -1,0 +1,46 @@
+<html><h3>1fffcec16578e6bea8de6e685632b3f56713a438,explainshell/matcher.py,matcher,_mergeadjacent,#matcher#Any#,233
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        merged = []
+        resultindex = self._resultindex()
+        it = util.peekable(iter(matches))
+        <a id="change">curr = it.next()</a>
+        while it.hasnext():
+            next = it.peek()
+            &#47&#47 we have to make sure that there&quots no matchresult from another group
+            &#47&#47 between curr and next
+            if curr.text != next.text or (resultindex[curr] != resultindex[next] - 1):
+                merged.append(curr)
+                curr = it.next()
+            else:
+                logger.debug(&quotmerging adjacent identical matches %d and %d&quot, it.index - 1, it.index)
+                del resultindex[curr]
+                newindex = resultindex[next]
+                del resultindex[next]
+                it.next()
+                curr = matchresult(curr.start, next.end, curr.text, <a id="change">curr.match</a>)
+                resultindex[curr] = newindex
+        merged.append(curr)
+        return merged</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _mergeadjacent(self, matches):
+        merged = []
+        resultindex = self._resultindex()
+        <a id="change">sametext = itertools.groupby(matches, lambda m: m.text)</a>
+        <a id="change">for text, ll in sametext:
+            for l in util.groupcontinuous(ll, key=lambda m: resultindex[m]):
+                if len(l) == 1:
+                    merged.append(l[0])
+                else:
+                    start = l[0].start
+                    end = l[-1].end
+                    endindex = resultindex[l[-1]]
+                    for mr in l:
+                        del resultindex[mr]
+                    merged.append(matchresult(start, end, text, None))
+                    resultindex[merged[-1]] = endindex
+       </a> return merged
+
+    def _mergeunknowns(self, matches):
+        merged = []</code></pre><img src="260755082.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/idank/explainshell/commit/1fffcec16578e6bea8de6e685632b3f56713a438#diff-58269a4891fa907828c597e6788b57090f242ba667803b41818af61e4a6c70d3L234' target='_blank'>Link</a></div><div id='project'> Project Name: idank/explainshell</div><div id='commit'> Commit Name: 1fffcec16578e6bea8de6e685632b3f56713a438</div><div id='time'> Time: 2013-09-07</div><div id='author'> Author: idankk86@gmail.com</div><div id='file'> File Name: explainshell/matcher.py</div><div id='class'> Class Name: matcher</div><div id='method'> Method Name: _mergeadjacent</div><BR><BR><div id='link'><a href='https://github.com/GoogleCloudPlatform/PerfKitBenchmarker/commit/df4ac0ed8a1f42b864b49d45056ad8dc95b3510c#diff-c9082b98af81baa005aa6c5cdf982437f27d17cf834b66d28bd9fe37aef83a8cL80' target='_blank'>Link</a></div><div id='project'> Project Name: GoogleCloudPlatform/PerfKitBenchmarker</div><div id='commit'> Commit Name: df4ac0ed8a1f42b864b49d45056ad8dc95b3510c</div><div id='time'> Time: 2015-12-08</div><div id='author'> Author: carlos.torres@rackspace.com</div><div id='file'> File Name: perfkitbenchmarker/providers/openstack/os_disk.py</div><div id='class'> Class Name: OpenStackDisk</div><div id='method'> Method Name: Attach</div><BR><BR><div id='link'><a href='https://github.com/GoogleCloudPlatform/PerfKitBenchmarker/commit/874170dad8d905dcae3513b7a9cf7f95803480a2#diff-c9082b98af81baa005aa6c5cdf982437f27d17cf834b66d28bd9fe37aef83a8cL80' target='_blank'>Link</a></div><div id='project'> Project Name: GoogleCloudPlatform/PerfKitBenchmarker</div><div id='commit'> Commit Name: 874170dad8d905dcae3513b7a9cf7f95803480a2</div><div id='time'> Time: 2015-12-03</div><div id='author'> Author: carlos.torres@rackspace.com</div><div id='file'> File Name: perfkitbenchmarker/providers/openstack/os_disk.py</div><div id='class'> Class Name: OpenStackDisk</div><div id='method'> Method Name: Attach</div><BR>

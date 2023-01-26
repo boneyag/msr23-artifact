@@ -1,0 +1,90 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    E1 + E2*x + E3*x**2
+
+    
+    <a id="change">if type(expr) in (set, list, tuple):
+        renumbered = [constant_renumber(e, variables, newconstants) for e in expr]
+        return type(expr)(renumbered)
+
+    &#47&#47 Symbols in solution but not ODE are constants
+   </a> if variables is not None:
+        variables = set(variables)
+        constantsymbols = list(expr.free_symbols - variables)
+    &#47&#47 Any Cn is a constant...
+    else:
+        variables = set()
+        isconstant = lambda s: s.startswith(&quotC&quot) and s[1:].isdigit()
+        constantsymbols = [sym for sym in expr.free_symbols if isconstant(sym.name)]
+
+    &#47&#47 Find new constants checking that they aren&quott already in the ODE
+    if newconstants is None:
+        iter_constants = numbered_symbols(start=1, prefix=&quotC&quot, exclude=variables)
+    else:
+        iter_constants = (sym for sym in newconstants if sym not in variables)
+
+    &#47&#47 XXX: This global newstartnumber hack should be removed
+    global newstartnumber
+    newstartnumber = 1
+    <a id="change">endnumber = len(constantsymbols)</a>
+    constants_found = [None]*(endnumber + 2)
+
+    &#47&#47 make a mapping to send all constantsymbols to S.One and use
+    &#47&#47 that to make sure that term ordering is not dependent on</code></pre><h3>After Change</h3><pre><code class='java'>
+    else:
+        iter_constants = (sym for sym in newconstants if sym not in variables)
+
+    <a id="change">constants_found = []</a>
+
+    &#47&#47 make a mapping to send all constantsymbols to S.One and use
+    &#47&#47 that to make sure that term ordering is not dependent on
+    &#47&#47 the indexed value of C
+    C_1 = [(ci, S.One) for ci in constantsymbols]
+    sort_key=lambda arg: default_sort_key(arg.subs(C_1))
+
+    def _constant_renumber(expr):
+        r
+        We need to have an internal recursive function
+        
+
+        &#47&#47 For system of expressions
+        if isinstance(expr, Tuple):
+            renumbered = [_constant_renumber(e) for e in expr]
+            return Tuple(*renumbered)
+
+        if isinstance(expr, Equality):
+            return Eq(
+                _constant_renumber(expr.lhs),
+                _constant_renumber(expr.rhs))
+
+        if type(expr) not in (Mul, Add, Pow) and not expr.is_Function and \
+                not expr.has(*constantsymbols):
+            &#47&#47 Base case, as above.  Hope there aren&quott constants inside
+            &#47&#47 of some other class, because they won&quott be renumbered.
+            return expr
+        elif expr.is_Piecewise:
+            return expr
+        elif expr in constantsymbols:
+            if expr not in constants_found:
+                constants_found.append(expr)
+            return expr
+        elif expr.is_Function or expr.is_Pow:
+            return expr.func(
+                *[_constant_renumber(x) for x in expr.args])
+        else:
+            sortedargs = list(expr.args)
+            sortedargs.sort(key=sort_key)
+            return expr.func(*[_constant_renumber(x) for x in sortedargs])
+    expr = _constant_renumber(expr)
+
+    &#47&#47 Don&quott renumber symbols present in the ODE.
+    constants_found = [c for c in constants_found if c not in variables]
+
+    &#47&#47 Renumbering happens here
+    <a id="change">subs_dict = {var: cons for var, cons in zip(constants_found, iter_constants)}</a>
+    expr = expr.subs(subs_dict, simultaneous=True)
+
+    return expr
+</code></pre>

@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 assert x.variable.order == y.variable.order
+
+    <a id="change">meta_injector = MetaInjector()</a>
+    meta_injector.register({
+        "flatten_x_offset": x.offset,
+        "flatten_y_offset": y.offset,
+        "flatten_N": y.variable.size,
+    })
+
+    <a id="change">name_injector = KernelNameInjector(op)</a>
+
+    <a id="change">source = template</a>
+    <a id="change">source</a> = meta_injector.inject(source)
+    source = <a id="change">name_injector.inject(source)</a>
+
+    <a id="change">kernel = Kernel(
+        {name_injector.name: source},
+        name_injector.name,
+        GPUSize(8, 1, 1),
+        GPUSize(1024, 1, 1),
+        meta_injector.buffer
+    )</a>
+
+    return [kernel]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    const int N = %%META_LOAD(flatten_N)%%;
+
+    for (int gid = index; gid &lt; N; gid += n<a id="change">um_threads) {
+        y[gid] = x[gid];
+    }
+}
+
+
+
+def flatten(op: Flatten,
+         </a>   memory_layout: MemoryLayout) -&gt; List[Kernel]:
+    x = memory_layout[op.inputs["x"]]
+    y = memory_layout[op.outputs["y"]]
+
+    &#47&#47 assert x.variable.order =<a id="change">= y.va</a>riable.order
+
+    meta_injector = MetaInject<a id="change">or()
+    meta_injector.register({
+        "flatten_x_off</a>set": x.offset<a id="change">,
+        "flatten_y_offset": y.offset,
+  </a>      <a id="change">"flatten_N": y.variable.size,
+    })
+
+    name_injector = KernelNameInjector(op)
+
+    source = template
+    source =</a> meta_injector.inject(source)
+    source = name_injector.inject(source)
+
+    kernel = Kernel(</code></pre>

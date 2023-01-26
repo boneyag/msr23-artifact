@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            returns = np.concatenate([discount_rewards(trajectory["reward"], config["gamma"]) for trajectory in trajectories])
+            qw_new = self.get_critic_value(all_state)
+
+            <a id="change">self.sess.run([self.critic_train], feed_dict={self.critic_state_in: all_state, self.critic_target: returns})</a>
+            target = np.mean((returns - qw_new) ** 2)
+            self.sess.run([self.actor_train], feed_dict={self.input_state: all_state, self.actions_taken: all_action, self.target: target})
+
+            episode_rewards = np.array([trajectory["reward"].sum() for trajectory in trajectories])  &#47&#47 episode total rewards</code></pre><h3>After Change</h3><pre><code class='java'>
+            episode_rewards = np.array([trajectory["reward"].sum() for trajectory in trajectories])  &#47&#47 episode total rewards
+            episode_lengths = np.array([len(trajectory["reward"]) for trajectory in trajectories])  &#47&#47 episode lengths
+
+            <a id="change">results = self.sess.run([self.summary_op, self.critic_train, self.actor_train], feed_dict={
+                                    self.critic_state_in: all_state,
+                                    self.critic_target: returns,
+                                    self.input_state: all_state,
+                                    self.actions_taken: all_action,
+                                    self.critic_feedback: qw_new,
+                                    self.critic_rewards: returns,
+                                    self.rewards: np.mean(episode_rewards),
+                                    self.episode_lengths: np.mean(episode_lengths)
+                                    })</a>
+            self.writer.add_summary(results[0], iteration)
+            self.writer.flush()
+
+            reporter.print_iteration_stats(iteration, episode_rewards, episode_lengths, total_n_trajectories)</code></pre>

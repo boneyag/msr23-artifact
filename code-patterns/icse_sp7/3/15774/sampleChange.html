@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    for jj in range(self.multiplicites_in[j]):
+                        sj = slice(begin_j + jj * self.dims_in[j], begin_j + (jj + 1) * self.dims_in[j])
+
+                        grad_weight[weight_index : weight_index + b_el] = <a id="change">torch</a>.mm(basis_kernels_ij, grad_kernel[si, sj].contiguous().view(-1, 1)).view(-1)
+                        weight_index += b_el
+
+                begin_j += self.multiplicites_in[j] * self.dims_in[j]</code></pre><h3>After Change</h3><pre><code class='java'>
+                grad = grad_kernel[si, sj] &#47&#47 [I * i, J * j, x, y, z]
+                grad = grad.contiguous().view(mi, self.dims_out[i], mj, self.dims_in[j], -1).transpose(1, 2) &#47&#47 [I, J, i, j, x*y*z]
+                grad = grad.contiguous().view(mi * mj, -1) &#47&#47 [I*J, i*j*x*y*z]
+                grad = <a id="change">torch.mm(grad, basis_kernels_ij.transpose(0, 1))</a> &#47&#47 [I*J, beta]
+
+                <a id="change">grad_weight[weight_index : weight_index + mi * mj * b_el] = grad.view(-1)</a> &#47&#47 [I * J * beta]
+                weight_index += mi * mj * b_el
+
+                begin_j += self.multiplicites_in[j] * self.dims_in[j]</code></pre>

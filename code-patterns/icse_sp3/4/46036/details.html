@@ -1,0 +1,100 @@
+<html><h3>8212e735fd187936161e64026eb46c599e1937d4,dlpy/network.py,Network,load_weights_from_file_with_labels,#Network#Any#Any#Any#Any#Any#Any#,1033
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &quot&quot&quot
+        from dlpy.model_conversion.model_conversion_utils import query_action_parm
+
+        <a id="change">cas_lib_name, file_name, tmp_caslib = caslibify(self.conn, path, task=&quotload&quot)</a>
+
+        has_gpu_model,act_parms = query_action_parm(self.conn, &quotdlImportModelWeights&quot, &quotdeepLearn&quot, &quotgpuModel&quot)
+        if (not has_gpu_model) and use_gpu:
+            raise DLPyError(&quotA GPU model was specified, but your Viya installation does not support&quot</code></pre><h3>After Change</h3><pre><code class='java'>
+        &quot&quot&quot
+        from dlpy.model_conversion.model_conversion_utils import query_action_parm
+
+        <a id="change">with caslibify_context(self.conn, path, task = &quotload&quot) as (cas_lib_name, file_name):
+            has_gpu_model,act_parms = query_action_parm(self.conn, &quotdlImportModelWeights&quot, &quotdeepLearn&quot, &quotgpuModel&quot)
+            if (not has_gpu_model) and use_gpu:
+                raise DLPyError(&quotA GPU model was specified, but your Viya installation does not support&quot
+                                &quotimporting GPU models.&quot)
+
+            if label_file_name:
+                from dlpy.utils import get_user_defined_labels_table
+                label_table = get_user_defined_labels_table(self.conn, label_file_name, label_length)
+            else:
+                from dlpy.utils import get_imagenet_labels_table
+                label_table = get_imagenet_labels_table(self.conn, label_length)
+
+            if data_spec:
+
+                has_data_spec = query_action_parm(self.conn, &quotdlImportModelWeights&quot, &quotdeepLearn&quot, &quotgpuModel&quot)
+
+                if has_data_spec:
+                    &#47&#47 run action with dataSpec option
+                    if has_gpu_model:
+                        with sw.option_context(print_messages = False):
+                            rt = self._retrieve_(&quotdeeplearn.dlimportmodelweights&quot,
+                                                 model=self.model_table,
+                                                 modelWeights=dict(replace=True, name=self.model_name + &quot_weights&quot),
+                                                 dataSpecs=data_spec,
+                                                 gpuModel=use_gpu,
+                                                 formatType=format_type, weightFilePath=file_name, caslib=cas_lib_name,
+                                                 labelTable=label_table)
+                    else:
+                        with sw.option_context(print_messages = False):
+                            rt = self._retrieve_(&quotdeeplearn.dlimportmodelweights&quot,
+                                                 model=self.model_table,
+                                                 modelWeights=dict(replace=True, name=self.model_name + &quot_weights&quot),
+                                                 dataSpecs=data_spec,
+                                                 formatType=format_type, weightFilePath=file_name, caslib=cas_lib_name,
+                                                 labelTable=label_table)
+                else:
+                    if has_gpu_model:
+                        with sw.option_context(print_messages = False):
+                            rt = self._retrieve_(&quotdeeplearn.dlimportmodelweights&quot, model=self.model_table,
+                                                 modelWeights=dict(replace=True, name=self.model_name + &quot_weights&quot),
+                                                 formatType=format_type, weightFilePath=file_name, caslib=cas_lib_name,
+                                                 gpuModel=use_gpu,
+                                                 labelTable=label_table)
+                    else:
+                        with sw.option_context(print_messages = False):
+                            rt = self._retrieve_(&quotdeeplearn.dlimportmodelweights&quot, model=self.model_table,
+                                                 modelWeights=dict(replace=True, name=self.model_name + &quot_weights&quot),
+                                                 formatType=format_type,
+                                                 weightFilePath=file_name,
+                                                 caslib=cas_lib_name,
+                                                 labelTable=label_table)
+
+                &#47&#47 handle error or create necessary attributes
+                if rt.severity &gt; 1:
+                    for msg in rt.messages:
+                        print(msg)
+                    raise DLPyError(&quotCannot import model weights, there seems to be a problem.&quot)
+
+                &#47&#47 create attributes if necessary
+                if not has_data_spec:
+                    from dlpy.attribute_utils import create_extended_attributes
+                    create_extended_attributes(self.conn, self.model_name, self.layers, data_spec)
+
+            else:
+                print("NOTE: no dataspec(s) provided - creating image classification model.")
+                if has_gpu_model:
+                    self._retrieve_(&quotdeeplearn.dlimportmodelweights&quot, model=self.model_table,
+                                    modelWeights=dict(replace=True, name=self.model_name + &quot_weights&quot),
+                                    formatType=format_type, weightFilePath=file_name, caslib=cas_lib_name,
+                                    gpuModel=use_gpu,
+                                    labelTable=label_table,
+                                    )
+                else:
+                    self._retrieve_(&quotdeeplearn.dlimportmodelweights&quot, model=self.model_table,
+                                    modelWeights=dict(replace=True, name=self.model_name + &quot_weights&quot),
+                                    formatType=format_type, weightFilePath=file_name, caslib=cas_lib_name,
+                                    labelTable=label_table,
+                                    )
+
+       </a> self.set_weights(self.model_name + &quot_weights&quot)
+
+    def load_weights_from_table(self, path):
+        &quot&quot&quot</code></pre><img src="214975552.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 5</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/sassoftware/python-dlpy/commit/8212e735fd187936161e64026eb46c599e1937d4#diff-0ab6a98b81b5aec7c758e27d003bcd268643e15af7d645e7efa035bb4431c5aaL1033' target='_blank'>Link</a></div><div id='project'> Project Name: sassoftware/python-dlpy</div><div id='commit'> Commit Name: 8212e735fd187936161e64026eb46c599e1937d4</div><div id='time'> Time: 2019-09-05</div><div id='author'> Author: Wenyu.Shi@sas.com</div><div id='file'> File Name: dlpy/network.py</div><div id='class'> Class Name: Network</div><div id='method'> Method Name: load_weights_from_file_with_labels</div><BR><BR><div id='link'><a href='https://github.com/sassoftware/python-dlpy/commit/8212e735fd187936161e64026eb46c599e1937d4#diff-0ab6a98b81b5aec7c758e27d003bcd268643e15af7d645e7efa035bb4431c5aaL1145' target='_blank'>Link</a></div><div id='project'> Project Name: sassoftware/python-dlpy</div><div id='commit'> Commit Name: 8212e735fd187936161e64026eb46c599e1937d4</div><div id='time'> Time: 2019-09-05</div><div id='author'> Author: Wenyu.Shi@sas.com</div><div id='file'> File Name: dlpy/network.py</div><div id='class'> Class Name: Network</div><div id='method'> Method Name: load_weights_from_table</div><BR><BR><div id='link'><a href='https://github.com/sassoftware/python-dlpy/commit/8212e735fd187936161e64026eb46c599e1937d4#diff-0ab6a98b81b5aec7c758e27d003bcd268643e15af7d645e7efa035bb4431c5aaL1391' target='_blank'>Link</a></div><div id='project'> Project Name: sassoftware/python-dlpy</div><div id='commit'> Commit Name: 8212e735fd187936161e64026eb46c599e1937d4</div><div id='time'> Time: 2019-09-05</div><div id='author'> Author: Wenyu.Shi@sas.com</div><div id='file'> File Name: dlpy/network.py</div><div id='class'> Class Name: Network</div><div id='method'> Method Name: save_weights_csv</div><BR><BR><div id='link'><a href='https://github.com/sassoftware/python-dlpy/commit/8212e735fd187936161e64026eb46c599e1937d4#diff-0ab6a98b81b5aec7c758e27d003bcd268643e15af7d645e7efa035bb4431c5aaL935' target='_blank'>Link</a></div><div id='project'> Project Name: sassoftware/python-dlpy</div><div id='commit'> Commit Name: 8212e735fd187936161e64026eb46c599e1937d4</div><div id='time'> Time: 2019-09-05</div><div id='author'> Author: Wenyu.Shi@sas.com</div><div id='file'> File Name: dlpy/network.py</div><div id='class'> Class Name: Network</div><div id='method'> Method Name: load_weights_from_file</div><BR><BR><div id='link'><a href='https://github.com/sassoftware/python-dlpy/commit/8212e735fd187936161e64026eb46c599e1937d4#diff-0ab6a98b81b5aec7c758e27d003bcd268643e15af7d645e7efa035bb4431c5aaL1330' target='_blank'>Link</a></div><div id='project'> Project Name: sassoftware/python-dlpy</div><div id='commit'> Commit Name: 8212e735fd187936161e64026eb46c599e1937d4</div><div id='time'> Time: 2019-09-05</div><div id='author'> Author: Wenyu.Shi@sas.com</div><div id='file'> File Name: dlpy/network.py</div><div id='class'> Class Name: Network</div><div id='method'> Method Name: save_to_table_with_caslibify</div><BR>

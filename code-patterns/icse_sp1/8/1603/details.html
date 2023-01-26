@@ -1,0 +1,94 @@
+<html><h3>50914556832ada0004e55f004eed2b44f448cac6,train_fixed_dropout.py,,train,#,108
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        validation_log, global_step=step)
+
+                    &#47&#47 train accuracy
+                    <a id="change">train_accuracy, summary_line = sess.run(
+                        [accuracy, accuracy_summary],
+                        feed_dict={keep_prob_: FIXED_KEEP_PROB})</a>
+                    train_log.add_summary(summary_line, global_step=step)
+                    print(&quot%s: train accuracy = %.3f&quot %
+                          (datetime.now(), train_accuracy))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        top_k_op = tf.nn.in_top_k(logits, labels, 1)
+        train_accuracy = tf.reduce_mean(tf.cast(top_k_op, tf.float32))
+        &#47&#47 General validation summary
+        <a id="change">accuracy_value_ = tf.placeholder(tf.float32, shape=())</a>
+        accuracy_summary = tf.scalar_summary(&quotaccuracy&quot, accuracy_value_)
+
+        train_summaries = tf.merge_summary(
+            tf.get_collection_ref(&quottrain_summaries&quot))
+
+        &#47&#47 Build an initialization operation to run below.
+        init = tf.initialize_all_variables()
+
+        &#47&#47 Start running operations on the Graph.
+        with tf.Session(config=tf.ConfigProto(
+                allow_soft_placement=True)) as sess:
+            sess.run(init)
+
+            &#47&#47 Start the queue runners.
+            tf.train.start_queue_runners(sess=sess)
+            train_log = tf.train.SummaryWriter(LOG_DIR + "/train", sess.graph)
+            validation_log = tf.train.SummaryWriter(LOG_DIR + "/validation",
+                                                    sess.graph)
+
+            &#47&#47 Extract previous global step value
+            old_gs = sess.run(global_step)
+
+            &#47&#47 Restart from where we were
+            for step in range(old_gs, MAX_STEPS):
+                start_time = time.time()
+                _, loss_value, summary_lines = sess.run(
+                    [train_op, loss, train_summaries],
+                    feed_dict={keep_prob_: FIXED_KEEP_PROB})
+                duration = time.time() - start_time
+
+                assert not np.isnan(
+                    loss_value), &quotModel diverged with loss = NaN&quot
+
+                &#47&#47 update logs every 10 iterations
+                if step % 10 == 0:
+                    num_examples_per_step = BATCH_SIZE
+                    examples_per_sec = num_examples_per_step / duration
+                    sec_per_batch = float(duration)
+
+                    format_str = (&quot{}: step {}, loss = {:.2f} &quot
+                                  &quot({:.1f} examples/sec; {:.3f} sec/batch)&quot)
+                    print(
+                        format_str.format(datetime.now(), step, loss_value,
+                                          examples_per_sec, sec_per_batch))
+                    &#47&#47 log train values
+                    train_log.add_summary(summary_lines, global_step=step)
+
+                &#47&#47 Save the model checkpoint at the end of every epoch
+                &#47&#47 evaluate train and validation performance
+                if (step &gt; 0 and
+                        step % STEP_PER_EPOCH == 0) or (step + 1) == MAX_STEPS:
+                    checkpoint_path = os.path.join(LOG_DIR, &quotmodel.ckpt&quot)
+                    saver.save(sess, checkpoint_path, global_step=step)
+
+                    &#47&#47 validation accuracy
+                    validation_accuracy_value = evaluate.get_validation_accuracy(
+                        LOG_DIR)
+                    <a id="change">summary_line = sess.run(accuracy_summary,
+                                            feed_dict={
+                                                accuracy_value_:
+                                                validation_accuracy_value
+                                            })</a>
+                    validation_log.add_summary(summary_line, global_step=step)
+                    validation_log.flush()
+
+                    &#47&#47 train accuracy
+                    <a id="change">train_accuracy_value = sess.run(
+                        train_accuracy, feed_dict={keep_prob_: 1.0})</a>
+                    <a id="change">summary_line = sess.run(
+                        accuracy_summary,
+                        feed_dict={accuracy_value_: train_accuracy_value})</a>
+                    train_log.add_summary(summary_line, global_step=step)
+                    train_log.flush()
+                    print(
+                        &quot{}: train accuracy = {:.3f} validation accuracy = {:.3f}&quot.</code></pre><img src="11908420.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/galeone/dynamic-training-bench/commit/50914556832ada0004e55f004eed2b44f448cac6#diff-276aed18096c696147f9ec58dffac0a5f36eba372de28b882b49b161ced3a22fL59' target='_blank'>Link</a></div><div id='project'> Project Name: galeone/dynamic-training-bench</div><div id='commit'> Commit Name: 50914556832ada0004e55f004eed2b44f448cac6</div><div id='time'> Time: 2016-10-25</div><div id='author'> Author: nessuno@nerdz.eu</div><div id='file'> File Name: train_fixed_dropout.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tensorboard/commit/17ba11f67dae7b1fba8d7fb6de65472d328847ff#diff-101b37c28db86ca39eb302fbc2147e63131cb4847b52a1162bd31eeee8b576eeL111' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tensorboard</div><div id='commit'> Commit Name: 17ba11f67dae7b1fba8d7fb6de65472d328847ff</div><div id='time'> Time: 2016-04-01</div><div id='author'> Author: danmane@gmail.com</div><div id='file'> File Name: scripts/generate_testdata.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: WriteImageSeries</div><BR><BR><div id='link'><a href='https://github.com/pmorissette/bt/commit/197a7f917dfc540b59f6f1b5c397c89c05436eb9#diff-2cada72487d55ccb31eb8f6ac8026b95f8eb9dda58c7af407564b0499a8f868fL169' target='_blank'>Link</a></div><div id='project'> Project Name: pmorissette/bt</div><div id='commit'> Commit Name: 197a7f917dfc540b59f6f1b5c397c89c05436eb9</div><div id='time'> Time: 2020-11-05</div><div id='author'> Author: pascal.i.tomecek@jpmorgan.com</div><div id='file'> File Name: tests/test_backtest.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_Results_helper_functions_fi</div><BR>

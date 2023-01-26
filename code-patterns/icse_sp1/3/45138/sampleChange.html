@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def testActorLoss(self):
+    if tf.executing_eagerly():
+      <a id="change">self.skipTest(&quotb/123899715&quot)</a>
+    agent = td3_agent.Td3Agent(
+        self._time_step_spec,
+        self._action_spec,
+        critic_network=self._critic_net,</code></pre><h3>After Change</h3><pre><code class='java'>
+    self.assertAllClose(loss_, expected_loss)
+
+  def testActorLoss(self):
+    <a id="change">with tf.compat.v2.summary.record_if(False):
+      agent = td3_agent.Td3Agent(
+          self._time_step_spec,
+          self._action_spec,
+          critic_network=self._critic_net,
+          actor_network=self._unbounded_actor_net,
+          actor_optimizer=None,
+          critic_optimizer=None)
+
+      observations = [tf.constant([[1, 2], [3, 4]], dtype=tf.float32)]
+      time_steps = ts.restart(observations, batch_size=2)
+
+      expected_loss = 4.0
+      loss = agent.actor_loss(time_steps)
+
+      self.evaluate(tf.compat.v1.global_variables_initializer())
+      loss_ = self.evaluate(loss)
+      self.assertAllClose(loss_, expected_loss)
+
+ </a> def testPolicyProducesBoundedAction(self):
+    agent = td3_agent.Td3Agent(
+        self._time_step_spec,
+        self._action_spec,</code></pre>

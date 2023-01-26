@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            whole dataframe, train part, valid part and infer part
+    
+    df_train = merge_multiple_fold_csv(fold_name="train", paths=in_csv_train)
+    <a id="change">df_valid = merge_multiple_fold_csv(fold_name="valid", paths=in_csv_valid)</a>
+    <a id="change">df_infer = merge_multiple_fold_csv(fold_name="infer", paths=in_csv_infer)</a>
+
+    if args_are_not_none(tag2class, tag_column, class_column):
+        df_train = map_dataframe(df_train, tag_column, class_column, tag2class)
+        <a id="change">df_valid = map_dataframe(df_valid, tag_column, class_column, tag2class)</a>
+        df_infer = map_dataframe(df_infer, tag_column, class_column, tag2class)
+
+    <a id="change">result_dataframe = df_train. \
+        append(df_valid, ignore_index=True). \
+        append(df_infer, ignore_index=True)</a>
+
+    <a id="change">return result_dataframe, df_train, df_valid, df_infer</a>
+
+
+def read_csv_data(
+    in_csv: str = None,</code></pre><h3>After Change</h3><pre><code class='java'>
+        [x is not None for x in (in_csv_train, in_csv_valid, in_csv_infer)]
+    )
+
+    <a id="change">result_df = None</a>
+    <a id="change">fold_dfs = {}</a>
+    <a id="change">for fold_df, fold_name in zip(
+        (in_csv_train, in_csv_valid, in_csv_infer),
+        ("train", "valid", "infer")
+    ):
+        if fold_df is not None:
+            fold_df = merge_multiple_fold_csv(
+                fold_name=fold_name, paths=fold_df
+            )
+            if args_are_not_none(tag2class, tag_column, class_column):
+                fold_df = map_dataframe(
+                    fold_df, tag_column, class_column, tag2class
+                )
+            fold_dfs[fold_name] = fold_df
+
+            result_df = fold_df \
+                if result_df is None \
+                else result_df.append(fold_df, ignore_index=True)
+
+   </a> output = <a id="change">(
+        result_df,
+        fold_dfs.get("train", None),
+        fold_dfs.get("valid", None),
+        fold_dfs.get("infer", None),
+    )</a>
+
+    <a id="change">return output</a>
+
+
+def read_csv_data(
+    in_csv: str = None,</code></pre>

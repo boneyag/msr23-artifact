@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          if memory is None:
+            values = encoded
+          elif tf.contrib.framework.nest.is_sequence(memory):
+            <a id="change">if l &gt;= len(memory):
+              raise ValueError(If the encoder memory is a sequence,
+                               it must contain one memory per decoder layer)
+           </a> values = memory[l]
+          else:
+            values = memory
+          keys = values</code></pre><h3>After Change</h3><pre><code class='java'>
+    for l in range(self.num_layers):
+      with tf.variable_scope("layer_{}".format(l)):
+        with tf.variable_scope("masked_multi_head"):
+          inputs_norm = <a id="change">transformer.norm(inputs)</a>
+          <a id="change">encoded = transformer.multi_head_attention(
+              self.num_heads,
+              inputs_norm,
+              inputs_norm,
+              inputs_norm,
+              mode,
+              values_length=sequence_length,
+              mask_future=True,
+              dropout=self.attention_dropout)</a>
+          encoded = transformer.drop_and_add(
+              inputs,
+              encoded,
+              mode,
+              dropout=self.dropout)
+
+        with tf.variable_scope("multi_head"):
+          values = memory if memory is not None else encoded
+          keys = values
+
+          context = transformer.multi_head_attention(
+              self.num_heads,
+              transformer.norm(encoded),
+              keys,
+              values,
+              mode,
+              values_length=memory_sequence_length,
+              dropout=self.attention_dropout)
+          context = transformer.drop_and_add(
+              encoded,
+              context,
+              mode,
+              dropout=self.dropout)
+
+        with tf.variable_scope("ffn"):
+          transformed = transformer.feed_forward(
+              transformer.norm(context),
+              self.ffn_inner_dim,
+              mode,
+              dropout=self.relu_dropout)
+          transformed = transformer.drop_and_add(
+              context,
+              transformed,
+              mode,
+              dropout=self.dropout)
+
+        inputs = transformed
+
+    <a id="change">outputs = transformer.norm(inputs)</a>
+    return outputs
+
+  def decode(self,
+             inputs,</code></pre>

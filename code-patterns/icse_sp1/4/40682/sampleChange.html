@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        or code_interpreter_constraints.includes_python2()
+    )
+    tool_interpreter_constraints = (
+        <a id="change">PexInterpreterConstraints(mypy.interpreter_constraints)</a>
+        if use_subsystem_constraints
+        else code_interpreter_constraints
+    )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if not mypy.options.is_default("interpreter_constraints"):
+        tool_interpreter_constraints = mypy.interpreter_constraints
+    elif code_interpreter_constraints.requires_python38_or_newer():
+        tool_interpreter_constraints = <a id="change">("CPython&gt;=3.8",)</a>
+    elif code_interpreter_constraints.requires_python37_or_newer():
+        tool_interpreter_constraints = ("CPython&gt;=3.7",)
+    elif code_interpreter_constraints.requires_python36_or_newer():
+        tool_interpreter_constraints = ("CPython&gt;=3.6",)
+    else:
+        tool_interpreter_constraints = mypy.interpreter_constraints
+
+    plugin_sources_request = Get(
+        PythonSourceFiles, PythonSourceFilesRequest(plugin_transitive_targets.closure)
+    )
+    typechecked_sources_request = Get(
+        PythonSourceFiles, PythonSourceFilesRequest(typechecked_transitive_targets.closure)
+    )
+
+    requirements_pex_request = Get(
+        Pex,
+        PexFromTargetsRequest,
+        PexFromTargetsRequest.for_requirements(
+            (field_set.address for field_set in request.field_sets),
+            hardcoded_interpreter_constraints=code_interpreter_constraints,
+            internal_only=True,
+        ),
+    )
+    mypy_pex_request = Get(
+        Pex,
+        PexRequest(
+            output_filename="mypy.pex",
+            internal_only=True,
+            sources=launcher_script,
+            requirements=PexRequirements(
+                itertools.chain(mypy.all_requirements, plugin_requirements)
+            ),
+            interpreter_constraints=<a id="change">PexInterpreterConstraints(tool_interpreter_constraints)</a>,
+            entry_point=PurePath(LAUNCHER_FILE.path).stem,
+        ),
+    )</code></pre>

@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    if self._summarize_grads_and_vars:
+      with tf.name_scope(&quotVariables/&quot):
+        <a id="change">for var in self._actor_network.trainable_weights:
+          tf.compat.v2.summary.histogram(
+              name=var.name.replace(&quot:&quot, &quot_&quot),
+              data=var,
+              step=self.train_step_counter)
+
+   </a> return loss_info
+
+  @eager_utils.future_in_eager_mode
+  def _loss(self, time_steps, actions, returns, weights):</code></pre><h3>After Change</h3><pre><code class='java'>
+                            tf.zeros_like(experience.discount),
+                            experience.observation)
+
+    <a id="change">variables_to_train = self._actor_network.variables</a>
+    with tf.GradientTape() as tape:
+      loss_info = self._loss(time_step,
+                             experience.action,
+                             tf.stop_gradient(returns),
+                             weights=weights)
+      tf.debugging.check_numerics(loss_info.loss, &quotLoss is inf or nan&quot)
+    <a id="change">grads = tape.gradient(loss_info.loss, variables_to_train)</a>
+
+    grads_and_vars = <a id="change">zip(grads, variables_to_train)</a>
+    if self._gradient_clipping:
+      grads_and_vars = eager_utils.clip_gradient_norms(
+          grads_and_vars, self._gradient_clipping)
+
+    if self._summarize_grads_and_vars:
+      eager_utils.add_variables_summaries(
+          grads_and_vars, self.train_step_counter)
+      eager_utils.add_gradients_summaries(
+          grads_and_vars, self.train_step_counter)
+
+    <a id="change">self._optimizer.apply_gradients(
+        grads_and_vars, global_step=self.train_step_counter)</a>
+
+    return tf.nest.map_structure(tf.identity, loss_info)
+
+  def _loss(self, time_steps, actions, returns, weights):</code></pre>

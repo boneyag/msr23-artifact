@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def __init__(self, base_lazy_tensor, constant):
+        if torch.is_tensor(constant):
+            <a id="change">if constant.ndimension() &gt; 1:
+                raise RuntimeError(
+                    "Got a constant with %d dimensions - expected a 0D or 1D tensor" % constant.ndimension()
+                )
+            elif constant.numel() &gt; 1:
+                if not (base_lazy_tensor.ndimension() == 3 and base_lazy_tensor.size(0) == constant.numel()):
+                    numel = constant.numel()
+                    raise RuntimeError(
+                        "A constant with size %d expedts a 3D lazy var. with batch size %d. "
+                        "Got a %dD lazy var. with size %s"
+                        % (numel, numel, base_lazy_tensor.ndimension(), repr(base_lazy_tensor.size()))
+                    )
+
+            elif constant.numel() == 1:
+                constant = constant.squeeze()
+       </a> else:
+            constant = torch.tensor(constant, device=base_lazy_tensor.device, dtype=base_lazy_tensor.dtype)
+
+        super(ConstantMulLazyTensor, self).__init__(base_lazy_tensor, constant)</code></pre><h3>After Change</h3><pre><code class='java'>
+            constant = orig_constant.expand(base_lazy_tensor.batch_shape)
+        except RuntimeError:
+            raise RuntimeError(
+                <a id="change">"ConstantMulLazyTensor of size {} received an invalid constant of size {}.".format(
+                    base_lazy_tensor.shape, orig_constant.shape
+                )</a>
+            )
+
+        super(ConstantMulLazyTensor, self).__init__(base_lazy_tensor, constant)
+        self.base_lazy_tensor = base_lazy_tensor</code></pre>

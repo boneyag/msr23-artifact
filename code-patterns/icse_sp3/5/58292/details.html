@@ -1,0 +1,61 @@
+<html><h3>bd2f006eb0170735290f180dc9a8e95aed72411f,frcnn/rpn.py,RPN,loss,#RPN#Any#,108
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    rpn_cls_target, -1, name=&quotlabels_not_ignored&quot)
+
+                &#47&#47 Flatten rpn_cls_prob (only anchors, not completely).
+                <a id="change">rpn_cls_prob = tf.reshape(
+                    rpn_cls_prob, [-1, 2], name=&quotrpn_cls_prob_flatten&quot)</a>
+
+                &#47&#47 Now we only have the labels we are going to compare with the
+                &#47&#47 cls probability. We need to remove the background.
+                labels = tf.boolean_mask(</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+
+        rpn_cls_prob = prediction_dict[&quotrpn_cls_prob&quot]
+        <a id="change">rpn_cls_score = prediction_dict[&quotrpn_cls_score&quot]</a>
+        rpn_cls_target = prediction_dict[&quotrpn_cls_target&quot]
+
+        rpn_bbox_target = prediction_dict[&quotrpn_bbox_target&quot]
+        rpn_bbox_pred = prediction_dict[&quotrpn_bbox_pred&quot]
+
+        &#47&#47 First, we need to calculate classification loss over `rpn_cls_prob`
+        &#47&#47 and `rpn_cls_target`. Ignoring all anchors where `rpn_cls_target =
+        &#47&#47 -1`.
+
+        &#47&#47 For classification loss we use log loss of two classes. So we need to:
+        &#47&#47 - filter `rpn_cls_prob` that are ignored. We need to reshape both labels and prob
+        &#47&#47 - transform positive and negative `rpn_cls_target` to same shape as `rpn_cls_prob`.
+        &#47&#47 - then we can use `tf.losses.log_loss` which returns a tensor.
+
+        with self._enter_variable_scope():
+            with tf.name_scope(&quotRPNLoss&quot):
+                &#47&#47 Flatten already flat Tensor for usage as boolean mask filter.
+                rpn_cls_target = tf.cast(tf.reshape(
+                    rpn_cls_target, [-1]), tf.int32, name=&quotrpn_cls_target&quot)
+                &#47&#47 Transform to boolean tensor with True only when != -1 (else
+                &#47&#47 == -1 -&gt; False)
+                labels_not_ignored = tf.not_equal(
+                    rpn_cls_target, -1, name=&quotlabels_not_ignored&quot)
+
+                &#47&#47 Now we only have the labels we are going to compare with the
+                &#47&#47 cls probability.
+                labels = tf.boolean_mask(rpn_cls_target, labels_not_ignored)
+                cls_prob = tf.boolean_mask(rpn_cls_prob, labels_not_ignored)
+                cls_score = <a id="change">tf.boolean_mask(rpn_cls_score, labels_not_ignored)</a>
+
+                &#47&#47 We need to transform `labels` to `cls_prob` shape.
+                &#47&#47 convert [1, 0] to [[0, 1], [1, 0]]
+                cls_target = tf.one_hot(labels, depth=2)
+
+                cross_entropy_per_anchor = tf.nn.softmax_cross_entropy_with_logits(
+                    labels=cls_target, logits=cls_score
+                )
+
+                <a id="change">prediction_dict[&quotcross_entropy_per_anchor&quot] = cross_entropy_per_anchor</a>
+
+                &#47&#47 Finally, we need to calculate the regression loss over
+                &#47&#47 `rpn_bbox_target` and `rpn_bbox_pred`.
+                &#47&#47 Since `rpn_bbox_target` is obtained from AnchorTargetLayer then we</code></pre><img src="270003975.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tryolabs/luminoth/commit/bd2f006eb0170735290f180dc9a8e95aed72411f#diff-06572e01dbe1b72141c419c3d49274b0f5bb0c35a339eb2c465a024fb10c089dL127' target='_blank'>Link</a></div><div id='project'> Project Name: tryolabs/luminoth</div><div id='commit'> Commit Name: bd2f006eb0170735290f180dc9a8e95aed72411f</div><div id='time'> Time: 2017-06-28</div><div id='author'> Author: javirey@gmail.com</div><div id='file'> File Name: frcnn/rpn.py</div><div id='class'> Class Name: RPN</div><div id='method'> Method Name: loss</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/fc7cd275980445b8f63bb25ccec51e33577f6c1a#diff-431eab40d13caa5619b02ea0de3c4b77089bcb663b35b3608e186ac42635f7acL85' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: fc7cd275980445b8f63bb25ccec51e33577f6c1a</div><div id='time'> Time: 2020-06-22</div><div id='author'> Author: VoVAllen@users.noreply.github.com</div><div id='file'> File Name: python/dgl/distributed/sampling.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: sample_neighbors</div><BR><BR><div id='link'><a href='https://github.com/GoogleCloudPlatform/cloudml-samples/commit/75f5092acce738243f4d8dd258bbaa56fcb9f816#diff-f4b5241728247609152c9738c0579800f41b3b4a6fb1bbd4a00a6a229153265dL48' target='_blank'>Link</a></div><div id='project'> Project Name: GoogleCloudPlatform/cloudml-samples</div><div id='commit'> Commit Name: 75f5092acce738243f4d8dd258bbaa56fcb9f816</div><div id='time'> Time: 2019-05-20</div><div id='author'> Author: luoshixin@google.com</div><div id='file'> File Name: sklearn/sklearn-template/template/trainer/model.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_estimator</div><BR>

@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    model.eval()
+
+    qf, q_pids, q_camids = [], [], []
+    <a id="change">for batch_idx, (imgs, pids, camids) in enumerate(queryloader):
+        if use_gpu:
+            imgs = imgs.cuda()
+        imgs = Variable(imgs, volatile=True)
+        b, s, c, h, w = imgs.size()
+        imgs = imgs.view(b*s, c, h, w)
+        features = model(imgs)
+        features = features.view(b, s, -1)
+        if pool == &quotavg&quot:
+            features = torch.mean(features, 1)
+        else:
+            features, _ = torch.max(features, 1)
+        features = features.data.cpu()
+        qf.append(features)
+        q_pids.extend(pids)
+        q_camids.extend(camids)
+   </a> qf = torch.cat(qf, 0)
+    q_pids = np.asarray(q_pids)
+    q_camids = np.asarray(q_camids)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def test(model, queryloader, galleryloader, pool, use_gpu, ranks=[1, 5, 10, 20]):
+    model.eval()
+
+    <a id="change">with torch.no_grad():
+        qf, q_pids, q_camids = [], [], []
+        for batch_idx, (imgs, pids, camids) in enumerate(queryloader):
+            if use_gpu: imgs = imgs.cuda()
+            b, s, c, h, w = imgs.size()
+            imgs = imgs.view(b*s, c, h, w)
+            features = model(imgs)
+            features = features.view(b, s, -1)
+            if pool == &quotavg&quot:
+                features = torch.mean(features, 1)
+            else:
+                features, _ = torch.max(features, 1)
+            features = features.data.cpu()
+            qf.append(features)
+            q_pids.extend(pids)
+            q_camids.extend(camids)
+        qf = torch.cat(qf, 0)
+        q_pids = np.asarray(q_pids)
+        q_camids = np.asarray(q_camids)
+
+        print("Extracted features for query set, obtained {}-by-{} matrix".format(qf.size(0), qf.size(1)))
+
+        gf, g_pids, g_camids = [], [], []
+        for batch_idx, (imgs, pids, camids) in enumerate(galleryloader):
+            if use_gpu: imgs = imgs.cuda()
+            b, s, c, h, w = imgs.size()
+            imgs = imgs.view(b*s, c, h, w)
+            features = model(imgs)
+            features = features.view(b, s, -1)
+            if pool == &quotavg&quot:
+                features = torch.mean(features, 1)
+            else:
+                features, _ = torch.max(features, 1)
+            features = features.data.cpu()
+            gf.append(features)
+            g_pids.extend(pids)
+            g_camids.extend(camids)
+        gf = torch.cat(gf, 0)
+        g_pids = np.asarray(g_pids)
+        g_camids = np.asarray(g_camids)
+        sys.exit()
+
+        print("Extracted features for gallery set, obtained {}-by-{} matrix".format(gf.size(0), gf.size(1)))
+    
+   </a> print("Computing distance matrix")
+
+    m, n = qf.size(0), gf.size(0)
+    distmat = torch.pow(qf, 2).sum(dim=1, keepdim=True).expand(m, n) + \</code></pre>

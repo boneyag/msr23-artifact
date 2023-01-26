@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for conf in self.confs:
+      &#47&#47 It&quots important we add the full classpath as an (ordered) unit for code that is classpath
+      &#47&#47 order sensitive
+      compile_classpath.update(<a id="change">map(lambda entry: (conf, entry), ivy_classpath)</a>)
+
+    if self._report:
+      self._generate_ivy_report(relevant_targets)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Record the ordered subset of jars that each jar_library/leaf depends on using
+    &#47&#47 stable symlinks within the working copy.
+    <a id="change">ivy_jar_products = self._generate_ivy_jar_products(relevant_targets)</a>
+    symlink_map = self.context.products.get_data(&quotivy_resolve_symlink_map&quot)
+    for conf in self.confs:
+      ivy_jar_memo = {}
+      <a id="change">ivy_info_list = ivy_jar_products[conf]</a>
+      <a id="change">if not ivy_info_list:
+        continue
+      &#47&#47 TODO: refactor ivy_jar_products to remove list
+     </a> assert len(ivy_info_list) == 1, (
+        &quotThe values in ivy_jar_products should always be length 1,&quot
+        &quot since we no longer have exclusives groups.&quot
+      )
+      ivy_info = ivy_info_list[0]
+      <a id="change">for target in relevant_targets:
+        if not isinstance(target, JarLibrary):
+          continue
+        &#47&#47 Add the artifacts from each dependency module.
+        artifact_paths = []
+        for artifact in ivy_info.get_artifacts_for_jar_library(target, memo=ivy_jar_memo):
+          artifact_paths.append(symlink_map[artifact.path])
+        compile_classpath.add_for_target(target, [(conf, entry) for entry in artifact_paths])
+
+   </a> if self._report:
+      self._generate_ivy_report(relevant_targets)
+    if self.context.products.is_required_data(&quotivy_jar_products&quot):
+      self._populate_ivy_jar_products(relevant_targets, ivy_jar_products)</code></pre>

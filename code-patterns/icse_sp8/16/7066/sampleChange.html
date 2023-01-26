@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        svd_list = self._kron_svd()
+        noise = self._diag_tensor[0, 0]
+        <a id="change">v_matrix = _DiagKroneckerProdLazyTensor(DiagLazyTensor(svd_list[0].S), DiagLazyTensor(svd_list[1].S))</a>
+        <a id="change">q_matrix = KroneckerProductLazyTensor(lazify(svd_list[0].U), lazify(svd_list[1].U))</a>
+        <a id="change">for sub_ind in range(2, len(svd_list)):
+            v_matrix = KroneckerProductLazyTensor(v_matrix, DiagLazyTensor(svd_list[sub_ind].S))
+            q_matrix = KroneckerProductLazyTensor(q_matrix, DiagLazyTensor(svd_list[sub_ind].S))
+
+        &#47&#47 TODO: this could be a memory hog.
+       </a> inv_mat = DiagLazyTensor(v_matrix.diag() + noise)
+
+        res = q_matrix.t().matmul(tensor)
+        res = inv_mat.inverse().matmul(res)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def inv_quad(self, tensor, reduce_inv_quad=True):
+        &#47&#47 TODO: check stability of numerics here
+        svd_list = self._kron_svd
+        <a id="change">v_matrix = KroneckerProductLazyTensor(*[DiagLazyTensor(svd_decomp.S) for svd_decomp in svd_list])</a>
+        q_matrix = KroneckerProductLazyTensor(*[lazify(svd_decomp.U) for svd_decomp in svd_list])
+
+        &#47&#47 TODO: this could be a memory hog.
+        inv_mat = DiagLazyTensor(1.0 / (v_matrix.diag() + self._diag_tensor.diag()))</code></pre>

@@ -1,0 +1,116 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    else:
+        corpus_file = open(args.corpus, &quotr&quot, encoding=&quotutf8&quot)
+
+    <a id="change">marked_corpus_file = open(args.marked_corpus, &quotw&quot, encoding=&quotutf8&quot)</a>
+
+    &#47&#47 spacy NP extractor
+    logger.info(&quotloading spacy&quot)
+    nlp = spacy.load(&quoten_core_web_sm&quot, disable=[&quottextcat&quot, &quotparser&quot &quotner&quot])
+    logger.info(&quotspacy loaded&quot)
+
+    num_lines = sum(1 for line in corpus_file)
+    corpus_file.seek(0)
+    logger.info(&quot%i lines in corpus&quot, num_lines)
+    i = 0
+
+    for doc in nlp.pipe(corpus_file):
+        spans = list()
+        for p in doc.noun_chunks:
+            spans.append(p)
+        i += 1
+        if len(spans) &gt; 0:
+            span = spans.pop(0)
+        else:
+            span = None
+        spanWritten = False
+        for token in doc:
+            if span is None:
+                if len(token.text.strip()) &gt; 0:
+                    marked_corpus_file.write(token.text + &quot &quot)
+            else:
+                if token.idx &lt; span.start_char or token.idx &gt;= span.end_char:  &#47&#47 outside a
+                    &#47&#47 span
+                    if len(token.text.strip()) &gt; 0:
+                        marked_corpus_file.write(token.text + &quot &quot)
+                else:
+                    if not spanWritten:
+                        &#47&#47 mark NP&quots
+                        if len(span.text) &gt; 1 and span.lemma_ != &quot-PRON-&quot:
+                            text = span.text.replace(&quot &quot, args.mark_char) + args.mark_char
+                            marked_corpus_file.write(text + &quot &quot)
+                        else:
+                            marked_corpus_file.write(span.text + &quot &quot)
+                        spanWritten = True
+                    if token.idx + len(token.text) == span.end_char:
+                        if len(spans) &gt; 0:
+                            span = spans.pop(0)
+                        else:
+                            span = None
+                        spanWritten = False
+        marked_corpus_file.write(&quot\n&quot)
+        if i % 500 == 0:
+            logger.info(&quot%i of %i lines&quot, i, num_lines)
+
+    corpus_file.close()
+    <a id="change">marked_corpus_file.flush()</a>
+    marked_corpus_file.close()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    else:
+        corpus_file = open(args.corpus, &quotr&quot, encoding=&quotutf8&quot)
+
+    <a id="change">with open(args.marked_corpus, &quotw&quot, encoding=&quotutf8&quot) as marked_corpus_file:
+
+        &#47&#47 spacy NP extractor
+        logger.info(&quotloading spacy&quot)
+        nlp = spacy.load(&quoten_core_web_sm&quot, disable=[&quottextcat&quot, &quotparser&quot &quotner&quot])
+        logger.info(&quotspacy loaded&quot)
+
+        num_lines = sum(1 for line in corpus_file)
+        corpus_file.seek(0)
+        logger.info(&quot%i lines in corpus&quot, num_lines)
+        i = 0
+
+        for doc in nlp.pipe(corpus_file):
+            spans = list()
+            for p in doc.noun_chunks:
+                spans.append(p)
+            i += 1
+            if len(spans) &gt; 0:
+                span = spans.pop(0)
+            else:
+                span = None
+            spanWritten = False
+            for token in doc:
+                if span is None:
+                    if len(token.text.strip()) &gt; 0:
+                        marked_corpus_file.write(token.text + &quot &quot)
+                else:
+                    if token.idx &lt; span.start_char or token.idx &gt;= span.end_char:  &#47&#47 outside a
+                        &#47&#47 span
+                        if len(token.text.strip()) &gt; 0:
+                            marked_corpus_file.write(token.text + &quot &quot)
+                    else:
+                        if not spanWritten:
+                            &#47&#47 mark NP&quots
+                            if len(span.text) &gt; 1 and span.lemma_ != &quot-PRON-&quot:
+                                text = span.text.replace(&quot &quot, args.mark_char) + args.mark_char
+                                marked_corpus_file.write(text + &quot &quot)
+                            else:
+                                marked_corpus_file.write(span.text + &quot &quot)
+                            spanWritten = True
+                        if token.idx + len(token.text) == span.end_char:
+                            if len(spans) &gt; 0:
+                                span = spans.pop(0)
+                            else:
+                                span = None
+                            spanWritten = False
+            marked_corpus_file.write(&quot\n&quot)
+            if i % 500 == 0:
+                logger.info(&quot%i of %i lines&quot, i, num_lines)
+
+   </a> corpus_file.close()
+</code></pre>

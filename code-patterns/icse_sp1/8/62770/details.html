@@ -1,0 +1,53 @@
+<html><h3>41ec94b758aac39c13f59e694fba5ed096a51ba9,src/python/pants/backend/python/rules/run_setup_py.py,,get_sources,#Any#,466
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+async def get_sources(request: SetupPySourcesRequest) -&gt; SetupPySources:
+    targets = request.targets
+    stripped_srcs_list = await MultiGet(
+        <a id="change">Get(
+            SourceRootStrippedSources,
+            StripSourcesFieldRequest(
+                target.get(Sources),
+                for_sources_types=(PythonSources, ResourcesSources),
+                enable_codegen=True,
+            ),
+        )</a>
+        for target in targets
+    )
+
+    &#47&#47 Create a chroot with all the sources, and any ancestor __init__.py files that might be needed
+    &#47&#47 for imports to work.  Note that if a repo has multiple exported targets under a single ancestor
+    &#47&#47 package, then that package must be a namespace package, which in Python 3 means it must not
+    &#47&#47 have an __init__.py. We don&quott validate this here, because it would require inspecting *all*
+    &#47&#47 targets, whether or not they are in the target set for this run - basically the entire repo.
+    &#47&#47 So it&quots the repo owners&quot responsibility to ensure __init__.py hygiene.
+    stripped_srcs_digests = [
+        stripped_sources.snapshot.digest <a id="change">for</a> stripped_sources in stripped_srcs_list
+    ]
+    ancestor_init_pys = await Get(AncestorInitPyFiles, Targets, targets)
+    <a id="change">sources_digest = await Get(
+        Digest, MergeDigests((*stripped_srcs_digests, *ancestor_init_pys.digests))
+    )</a>
+    init_py_digest_contents = await Get(
+        DigestContents, DigestSubset(sources_digest, PathGlobs(["**/__init__.py"]))
+    )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            targets=request.targets, include_resources=False, include_files=False
+        ),
+    )
+    <a id="change">all_sources = await Get(
+        StrippedPythonSources,
+        StrippedPythonSourcesRequest(
+            targets=request.targets, include_resources=True, include_files=True
+        ),
+    )</a>
+
+    python_files = set(python_sources.snapshot.files)
+    all_files = set(<a id="change">all_sources.snapshot.files</a>)
+    <a id="change">resource_files = all_files - python_files</a>
+
+    init_py_digest_contents = await Get(
+        DigestContents, DigestSubset(python_sources.snapshot.digest, PathGlobs(["**/__init__.py"]))
+    )</code></pre><img src="288820533.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/41ec94b758aac39c13f59e694fba5ed096a51ba9#diff-9ec62dde1692b8bb93af99ef3f6b943cc34a93f0d442f734e3896eea296f9afcL463' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 41ec94b758aac39c13f59e694fba5ed096a51ba9</div><div id='time'> Time: 2020-08-01</div><div id='author'> Author: benjyw@gmail.com</div><div id='file'> File Name: src/python/pants/backend/python/rules/run_setup_py.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_sources</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/500e1268ceddfe67674ae2a3b741f1ea199046c0#diff-3b4714753b09baf636b3f5e80d5f5a262b2654681865963333944ea9dadf7e36L32' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 500e1268ceddfe67674ae2a3b741f1ea199046c0</div><div id='time'> Time: 2020-09-21</div><div id='author'> Author: benjyw@gmail.com</div><div id='file'> File Name: src/python/pants/backend/python/goals/run_python_binary.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: create_python_binary_run_request</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/500e1268ceddfe67674ae2a3b741f1ea199046c0#diff-1b7f93f0ab590073097440b2da8501078dc5534fb5ebc5c7ef7ae2b5866eef39L81' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 500e1268ceddfe67674ae2a3b741f1ea199046c0</div><div id='time'> Time: 2020-09-21</div><div id='author'> Author: benjyw@gmail.com</div><div id='file'> File Name: src/python/pants/backend/python/goals/create_python_binary.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: create_python_binary</div><BR>

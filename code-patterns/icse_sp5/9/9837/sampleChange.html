@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 get_params() methods returned empty dicts.
+
+    cv_addition_params = ["n_alphas", "eps", "cv", "alpha_min"]
+    <a id="change">for model in [SmoothLassoClassifier, TVl1Classifier,
+                  TVl1Regressor, SmoothLassoRegressor]:
+        kwargs = {}
+        if model.__name__.endswith(&quotCV&quot):
+            kwargs[&quotalphas&quot] = np.logspace(-3, 1, num=5)
+        for param in ["max_iter", "alpha", "l1_ratio", "verbose",
+                      "tol", "mask", "memory", "copy_data",
+                      "fit_intercept", "alphas"] + [
+            [], cv_addition_params][model.__name__.endswith("CV")]:
+            if model.__name__.endswith("CV"):
+                if param == "alpha":
+                    continue
+            elif param == "alphas":
+                continue
+
+            m = model(**kwargs)
+
+            try:
+                params = m.get_params()
+            except AttributeError:
+                if "get_params" in traceback.format_exc():
+                    params = m._get_params()
+                else:
+                    raise
+
+            assert_true(param in params,
+                        msg="Class &quot%s&quot doesn&quott have parameter &quot%s&quot." % (
+                    model.__name__, param))</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Issue &#47&#4712 (on github) reported that our objects
+    &#47&#47 get_params() methods returned empty dicts.
+
+    <a id="change">for penalty in ["smooth-lasso", "tvl1"]:
+        for classif in [True, False]:
+            kwargs = {}
+            for param in ["max_iter", "alpha", "l1_ratio", "verbose",
+                          "tol", "mask", "memory", "copy_data",
+                          "fit_intercept", "alphas"]:
+                m = SpaceNet(penalty=penalty, classif=classif, **kwargs)
+                try:
+                    params = m.get_params()
+                except AttributeError:
+                    if "get_params" in traceback.format_exc():
+                        params = m._get_params()
+                    else:
+                        raise
+
+                assert_true(param in params,
+                            msg="%s doesn&quott have parameter &quot%s&quot." % (
+                        m, param))</a>
+</code></pre>

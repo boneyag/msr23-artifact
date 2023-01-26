@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 generate a queue with a given file name
+    filename_queue = tf.train.string_input_producer([filename])
+    reader = tf.TFRecordReader()
+    <a id="change">_</a>, serialized_example = reader.read(filename_queue)  &#47&#47 return the file and the name of file
+    features = tf.parse_single_example(
+        serialized_example,  &#47&#47 see parse_single_sequence_example for sequence example
+        features={</code></pre><h3>After Change</h3><pre><code class='java'>
+&#47&#47 use shuffle and batch
+def read_and_decode(filename):
+    &#47&#47 generate a queue with a given file name
+    raw_dataset = <a id="change">tf</a>.data.TFRecordDataset([filename]).shuffle(<a id="change">1000</a>).batch(4)
+    <a id="change">for serialized_example in raw_dataset:
+        features = tf.io.parse_example(
+            serialized_example,
+            features={
+                &quotlabel&quot: tf.io.FixedLenFeature([], tf.int64),
+                &quotimg_raw&quot: tf.io.FixedLenFeature([], tf.string),
+            }
+        )
+        &#47&#47 You can do more image distortion here for training data
+        img_batch = tf.io.decode_raw(features[&quotimg_raw&quot], tf.uint8)
+        img_batch = tf.reshape(img_batch, [4, 224, 224, 3])
+        &#47&#47 img = tf.cast(img, tf.float32) * (1. / 255) - 0.5
+        label_batch = tf.cast(features[&quotlabel&quot], tf.int32)
+        yield img_batch, label_batch
+
+
+</a>img_batch, label_batch = next(read_and_decode("train.tfrecords"))
+print("img_batch   : %s" % img_batch.shape)
+print("label_batch : %s" % label_batch.shape)
+tl.visualize.images2d(img_batch, second=1, saveable=False, name=&quotbatch&quot, dtype=None, fig_idx=2020121)</code></pre>

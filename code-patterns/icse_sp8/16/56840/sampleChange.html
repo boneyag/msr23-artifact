@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 An outline provides context around the data.
+    outlineData = vtk.vtkOutlineFilter()
+    &#47&#47 outlineData.SetInputConnection(im.GetOutputPort())
+    <a id="change">outlineData.SetInput(im)</a>
+    mapOutline = vtk.vtkPolyDataMapper()
+    mapOutline.SetInputConnection(outlineData.GetOutputPort())
+    outline = vtk.vtkActor()
+    outline.SetMapper(mapOutline)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 An outline provides context around the data.
+    outlineData = vtk.vtkOutlineFilter()
+    &#47&#47 outlineData.SetInputConnection(im.GetOutputPort())
+    <a id="change">if major_version &lt;= 5:
+        outlineData.SetInput(im)
+    else:
+        outlineData.SetInputData(im)
+   </a> mapOutline = vtk.vtkPolyDataMapper()
+    mapOutline.SetInputConnection(outlineData.GetOutputPort())
+    outline = vtk.vtkActor()
+    outline.SetMapper(mapOutline)
+    outline.GetProperty().SetColor(1, 0, 0)
+
+    &#47&#47 Now we are creating three orthogonal planes passing through the
+    &#47&#47 volume. Each plane uses a different texture map and therefore has
+    &#47&#47 diferent coloration.
+
+    &#47&#47 Start by creatin a black/white lookup table.
+    lut = vtk.vtkLookupTable()
+    lut.SetTableRange(vol.min(), vol.max())
+    lut.SetSaturationRange(0, 0)
+    lut.SetHueRange(0, 0)
+    lut.SetValueRange(0, 1)
+    lut.SetRampToLinear()
+    lut.Build()
+
+    x1, x2, y1, y2, z1, z2 = im.GetExtent()
+
+    &#47&#47 print x1,x2,y1,y2,z1,z2
+
+    &#47&#47 Create the first of the three planes. The filter vtkImageMapToColors
+    &#47&#47 maps the data through the corresponding lookup table created above.
+    &#47&#47 The vtkImageActor is a type of vtkProp and conveniently displays an
+    &#47&#47 image on a single quadrilateral plane. It does this using texture
+    &#47&#47 mapping and as a result is quite fast. (Note: the input image has to
+    &#47&#47 be unsigned char values, which the vtkImageMapToColors produces.)
+    &#47&#47 Note also that by specifying the DisplayExtent, the pipeline
+    &#47&#47 requests data of this extent and the vtkImageMapToColors only
+    &#47&#47 processes a slice of data.
+    planeColors = vtk.vtkImageMapToColors()
+    &#47&#47 saggitalColors.SetInputConnection(im.GetOutputPort())
+    <a id="change">if major_version &lt;= 5:
+        planeColors.SetInput(im)
+    else:
+        planeColors.SetInputData(im)
+   </a> planeColors.SetLookupTable(lut)
+    planeColors.Update()
+
+    saggitals = []</code></pre>

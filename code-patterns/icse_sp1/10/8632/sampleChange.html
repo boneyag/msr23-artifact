@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    )
+
+    ce = tf.reshape(ce, tf.shape(tgt_seq))
+    <a id="change">loss = tf.reduce_sum(ce * tgt_mask) / tf.reduce_sum(tgt_mask)</a>
+
+    return loss
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    src_mask = tf.sequence_mask(src_len,
+                                maxlen=tf.shape(features["source"])[1],
+                                dtype=tf.float32)
+    <a id="change">tgt_mask</a> = tf.sequence_mask(tgt_len,
+                                maxlen=tf.shape(features["target"])[1],
+                                dtype=tf.float32)
+
+    src_embedding, tgt_embedding, weights = get_weights(params)
+    bias = tf.get_variable("bias", [hidden_size])
+
+    &#47&#47 id =&gt; embedding
+    &#47&#47 src_seq: [batch, max_src_length]
+    &#47&#47 tgt_seq: [batch, max_tgt_length]
+    inputs = tf.gather(src_embedding, src_seq) * (hidden_size ** 0.5)
+    targets = tf.gather(tgt_embedding, tgt_seq) * (hidden_size ** 0.5)
+    inputs = inputs * tf.expand_dims(src_mask, -1)
+    targets = targets * tf.expand_dims(tgt_mask, -1)
+
+    &#47&#47 Preparing encoder & decoder input
+    encoder_input = tf.nn.bias_add(inputs, bias)
+    encoder_input = layers.attention.add_timing_signal(encoder_input)
+    enc_attn_bias = layers.attention.attention_bias(src_mask, "masking")
+    dec_attn_bias = layers.attention.attention_bias(tf.shape(targets)[1],
+                                                    "casual")
+
+    &#47&#47 Shift left
+    decoder_input = tf.pad(targets, [[0, 0], [1, 0], [0, 0]])[:, :-1, :]
+    decoder_input = layers.attention.add_timing_signal(decoder_input)
+
+    if params.residual_dropout:
+        keep_prob = 1.0 - params.residual_dropout
+        encoder_input = tf.nn.dropout(encoder_input, keep_prob)
+        decoder_input = tf.nn.dropout(decoder_input, keep_prob)
+
+    encoder_output = transformer_encoder(encoder_input, enc_attn_bias, params)
+    decoder_output = transformer_decoder(decoder_input, encoder_output,
+                                         dec_attn_bias, enc_attn_bias, params)
+
+    &#47&#47 inference mode, take the last position
+    if mode == "infer":
+        decoder_output = decoder_output[:, -1, :]
+        logits = tf.matmul(decoder_output, weights, False, True)
+
+        return logits
+
+    &#47&#47 [batch, length, channel] =&gt; [batch * length, vocab_size]
+    decoder_output = tf.reshape(decoder_output, [-1, hidden_size])
+    logits = tf.matmul(decoder_output, weights, False, True)
+
+    &#47&#47 label smoothing
+    ce = layers.nn.smoothed_softmax_cross_entropy_with_logits(
+        logits=logits,
+        labels=labels,
+        smoothing=params.label_smoothing,
+        normalize=True
+    )
+
+    ce = tf.reshape(ce, tf.shape(tgt_seq))
+    <a id="change">loss = get_loss(features, params, ce, tgt_mask)</a>
+
+    return loss
+
+</code></pre>

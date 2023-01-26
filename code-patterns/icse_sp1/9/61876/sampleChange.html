@@ -1,0 +1,64 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        from ..codegen.runtime.GSLcython_rt import GSLCythonCodeObject
+
+        device = get_device()
+        <a id="change">if isinstance(device, CPPStandaloneDevice):
+            from ..devices.cpp_standalone.GSLcodeobject import GSLCPPStandaloneCodeObject
+            &#47&#47 In runtime mode (i.e. weave and Cython), the compiler settings are
+            &#47&#47 added for each `CodeObject` (only the files that use the GSL are
+            &#47&#47 linked to the GSL). However, in C++ standalone mode, there are global
+            &#47&#47 compiler settings that are used for all files (stored in the
+            &#47&#47 `CPPStandaloneDevice`). Furthermore, header file includes are directly
+            &#47&#47 inserted into the template instead of added during the compilation
+            &#47&#47 phase (as done in weave). Therefore, we have to add the options here
+            &#47&#47 instead of in `GSLCPPStandaloneCodeObject`
+            &#47&#47 Add the GSL library if it has not yet been added
+            if &quotgsl&quot not in device.libraries:
+                device.libraries += [&quotgsl&quot, &quotgslcblas&quot]
+                device.headers += [&quot&lt;stdio.h&gt;&quot, &quot&lt;stdlib.h&gt;&quot,
+                                   &quot&lt;gsl/gsl_odeiv2.h&gt;&quot,
+                                   &quot&lt;gsl/gsl_errno.h&gt;&quot,
+                                   &quot&lt;gsl/gsl_matrix.h&gt;&quot]
+                if sys.platform == &quotwin32&quot:
+                    device.define_macros += [(&quotWIN32&quot, &quot1&quot),
+                                             (&quotGSL_DLL&quot, &quot1&quot)]
+                if prefs.GSL.directory is not None:
+                    device.include_dirs += [prefs.GSL.directory]
+            return GSLCPPStandaloneCodeObject
+
+       </a> if prefs.codegen.target == &quotauto&quot:
+            target_name = auto_target().class_name
+        else:
+            target_name = prefs.codegen.target
+
+        if target_name == &quotcython&quot:
+            return GSLCythonCodeObject
+        elif target_name == &quotweave&quot:
+            return GSLWeaveCodeObject
+        else:
+            <a id="change">raise NotImplementedError(("Selected stateupdater is GSL stateupdater, while "
+                                       "target language is {language} (either selected or only "
+                                       "one available): GSL was not implemented for {language}."
+                                       "\nSet target language to weave or cython, or device "
+                                       "to cpp_standalone in order to use GSL "
+                                       "integration").format(language=prefs.codegen.target))</a>
+
+    def __call__(self, obj):
+        &quot&quot&quot
+        Transfer the code object class saved in self to the object sent as an argument.</code></pre><h3>After Change</h3><pre><code class='java'>
+            device_name = [name for name, dev in all_devices.iteritems()
+                           if dev is device]
+            assert len(device_name) == 1
+            <a id="change">raise NotImplementedError(("GSL integration has not been implemented for "
+                                       "for the &quot{device}&quot device."
+                                       "\nUse either the &quotcpp_standalone&quot device, "
+                                       "or the runtime device with target language "
+                                       "&quotweave&quot or &quotcython&quot."
+                                       ).format(device=device_name[0]))</a>
+
+    def __call__(self, obj):
+        &quot&quot&quot
+        Transfer the code object class saved in self to the object sent as an argument.</code></pre>

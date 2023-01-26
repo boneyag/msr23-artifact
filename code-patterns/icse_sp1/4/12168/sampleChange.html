@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def batch_all(self, batch_size):
+        &#47&#47 Create the queue operations
+        <a id="change">suffixes = map(lambda f: f.__name__, all_filters_with_base_args)</a>
+        input_key, input_tensor, target_key, target_tensor = \
+            queue_paired_images_from_folders(&quot~/imagenet/resized&quot,
+                                             &quot~/imagenet/filtered&quot, suffixes)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                [f.__name__ for f in all_filters_with_base_args])
+
+        &#47&#47 TODO Feature extraction
+        <a id="change">input_embedding = tf.random_normal([100])</a>
+
+        &#47&#47 Create a writer to write the images
+        writer = ImagePairRecordWriter(
+            join(self.records_dir, &quotimages.tfrecord&quot))
+
+        &#47&#47 Start a new session to run the operations
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            sess.run(tf.local_variables_initializer())
+
+            &#47&#47 Coordinate the loading of image files.
+            coord = tf.train.Coordinator()
+            threads = tf.train.start_queue_runners(coord=coord)
+            count = 0
+            start_time = time.time()
+
+            &#47&#47 These are the only lines where something happens:
+            &#47&#47 we execute the operations to get the image pair, compute the
+            &#47&#47 embedding and write everythin in the TFRecord
+            try:
+                while not coord.should_stop():
+                    in_key, in_img, in_emb, tar_key, tar_img = <a id="change">sess.run(
+                        [input_key, input_tensor, input_embedding, target_key,
+                         target_tensor])</a>
+                    writer.write_image_pair(in_key, in_img, in_emb, tar_key,
+                                            tar_img)
+                    print(&quotWritten&quot, in_key, tar_key)
+                    count += 1</code></pre>

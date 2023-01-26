@@ -1,0 +1,77 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if flake8.options.skip:
+        return LintResult.noop()
+
+    <a id="change">adaptor_with_origin = flake8_target.adaptor_with_origin</a>
+    adaptor = adaptor_with_origin.adaptor
+
+    &#47&#47 NB: Flake8 output depends upon which Python interpreter version it&quots run with. We ensure that
+    &#47&#47 each target runs with its own interpreter constraints. See
+    &#47&#47 http://flake8.pycqa.org/en/latest/user/invocation.html.
+    interpreter_constraints = PexInterpreterConstraints.create_from_adaptors(
+        adaptors=<a id="change">[</a>adaptor] if <a id="change">isinstance(adaptor, PythonTargetAdaptor)</a> else [],
+        python_setup=python_setup,
+    )
+    requirements_pex = await Get[Pex](</code></pre><h3>After Change</h3><pre><code class='java'>
+    if flake8.options.skip:
+        return LintResult.noop()
+
+    <a id="change">adaptors_with_origins = targets.adaptors_with_origins</a>
+
+    &#47&#47 NB: Flake8 output depends upon which Python interpreter version it&quots run with. We ensure that
+    &#47&#47 each target runs with its own interpreter constraints. See
+    &#47&#47 http://flake8.pycqa.org/en/latest/user/invocation.html.
+    <a id="change">interpreter_constraints = PexInterpreterConstraints.create_from_adaptors(
+        (adaptor_with_origin.adaptor for adaptor_with_origin in adaptors_with_origins),
+        python_setup=python_setup,
+    )</a>
+    requirements_pex = await Get[Pex](
+        CreatePex(
+            output_filename="flake8.pex",
+            requirements=PexRequirements(requirements=tuple(flake8.get_requirement_specs())),
+            interpreter_constraints=interpreter_constraints,
+            entry_point=flake8.get_entry_point(),
+        )
+    )
+
+    config_path: Optional[str] = flake8.options.config
+    config_snapshot = await Get[Snapshot](
+        PathGlobs(
+            globs=tuple([config_path] if config_path else []),
+            glob_match_error_behavior=GlobMatchErrorBehavior.error,
+            description_of_origin="the option `--flake8-config`",
+        )
+    )
+
+    all_source_files = await Get[SourceFiles](
+        AllSourceFilesRequest(
+            <a id="change">adaptor_with_origin.adaptor</a> for adaptor_with_origin in adaptors_with_origins
+        )
+    )
+    specified_source_files = await Get[SourceFiles](
+        SpecifiedSourceFilesRequest(adaptors_with_origins)
+    )
+
+    merged_input_files = await Get[Digest](
+        DirectoriesToMerge(
+            directories=(
+                all_source_files.snapshot.directory_digest,
+                requirements_pex.directory_digest,
+                config_snapshot.directory_digest,
+            )
+        ),
+    )
+
+    address_references = <a id="change">", ".join(
+        sorted(
+            adaptor_with_origin.adaptor.address.reference()
+            for adaptor_with_origin in adaptors_with_origins
+        )
+    )</a>
+
+    request = requirements_pex.create_execute_request(
+        python_setup=python_setup,
+        subprocess_encoding_environment=subprocess_encoding_environment,</code></pre>

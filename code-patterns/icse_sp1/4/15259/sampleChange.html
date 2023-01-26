@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def execute(self):
+    with self.context.new_workunit(name=&quotdx-compile&quot, labels=[WorkUnit.MULTITOOL]):
+      targets = <a id="change">self.context.targets(self.is_dextarget)</a>
+      with self.invalidated(targets) as invalidation_check:
+        invalid_targets = []
+        for vt in invalidation_check.invalid_vts:
+          invalid_targets.extend(vt.targets)
+        for target in invalid_targets:
+          outdir = self.dx_out(target)
+          safe_mkdir(outdir)
+          classes_by_target = self.context.products.get_data(&quotclasses_by_target&quot)
+          classes = []
+
+          def add_to_dex(tgt):
+            target_classes = classes_by_target.get(tgt)
+            if target_classes:
+
+              def add_classes(target_products):
+                for _, products in target_products.abs_paths():
+                  for prod in products:
+                    classes.append(prod)
+
+              add_classes(target_classes)
+
+          target.walk(add_to_dex)
+          if not classes:
+            raise TaskError("No classes were found for {0!r}.".format(target))
+          args = self._render_args(outdir, classes)
+          self._compile_dex(args, target.build_tools_version)
+      <a id="change">for target in targets:
+        self.context.products.get(&quotdex&quot).add(target, self.dx_out(target)).append(self.DEX_NAME)
+
+ </a> def dx_jar_tool(self, build_tools_version):
+    Return the appropriate dx.jar.
+
+    :param string build_tools_version: The Android build-tools version number (e.g. &quot19.1.0&quot).</code></pre><h3>After Change</h3><pre><code class='java'>
+    targets = self.context.targets(self.is_android_binary)
+
+    with self.invalidated(targets) as invalidation_check:
+      <a id="change">for vt in invalidation_check.all_vts:
+        if not vt.valid:
+          classes = self._gather_classes(vt.target)
+          if not classes:
+            raise self.EmptyDexError("No classes were found for {}.".format(vt.target))
+
+          args = self._render_args(vt.results_dir, classes)
+          self._compile_dex(args, vt.target.build_tools_version)
+        self.context.products.get(&quotdex&quot).add(vt.target, vt.results_dir).append(self.DEX_NAME)
+
+ </a> def dx_jar_tool(self, build_tools_version):
+    Return the appropriate dx.jar.
+
+    :param string build_tools_version: The Android build-tools version number (e.g. &quot19.1.0&quot).</code></pre>

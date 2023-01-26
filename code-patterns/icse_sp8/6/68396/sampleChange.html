@@ -1,0 +1,94 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                     np.array([Diso, 0, Diso, 0, 0, Diso]))),
+                       -1)  &#47&#47 Only free water
+    S0 = S0.reshape(data.shape[:-1])
+    <a id="change">return fw_params, S0</a>
+
+
+def lower_triangular_to_cholesky(tensor_elements):
+     Perfoms Cholesky decompostion of the diffusion tensor</code></pre><h3>After Change</h3><pre><code class='java'>
+                     -1)
+    else:
+        S0f = S0.copy()
+        <a id="change">S0f = S0f.ravel()</a>
+
+    fw_params_p = fw_paramsc[~cond, :]
+    S0_p = S0f[~cond]
+
+    for vox in range(flat_data_p.shape[0]):
+        if np.all(flat_data_p[vox] == 0):
+            raise ValueError("The data in this voxel contains only zeros")
+
+        params = fw_params_p[vox]
+
+        &#47&#47 converting evals and evecs to diffusion tensor elements
+        evals = params[:3]
+        evecs = params[3:12].reshape((3, 3))
+        dt = lower_triangular(vec_val_vect(evecs, evals))
+        s0 = S0_p[vox]
+
+        &#47&#47 Cholesky decomposition if requested
+        if cholesky:
+            dt = lower_triangular_to_cholesky(dt)
+
+        &#47&#47 f transformation if requested
+        if f_transform:
+            f = np.arcsin(2*params[12] - 1) + np.pi/2
+        else:
+            f = params[12]
+
+        &#47&#47 Use the Levenberg-Marquardt algorithm wrapped in opt.leastsq
+        start_params = np.concatenate((dt, [-np.log(s0), f]), axis=0)
+        if jac:
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
+                                              args=(design_matrix,
+                                                    flat_data[vox],
+                                                    Diso,
+                                                    weighting,
+                                                    sigma,
+                                                    cholesky,
+                                                    f_transform),
+                                              Dfun=_nlls_jacobian_func)
+        else:
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params[:8],
+                                              args=(design_matrix,
+                                                    flat_data[vox],
+                                                    Diso,
+                                                    weighting,
+                                                    sigma,
+                                                    cholesky,
+                                                    f_transform))
+
+
+        &#47&#47 Invert the cholesky decomposition if this was requested
+        if cholesky:
+            this_tensor[:6] = cholesky_to_lower_triangular(this_tensor[:6])
+
+        &#47&#47 Invert f transformation if this was requested
+        if f_transform:
+            this_tensor[7] = 0.5 * (1 + np.sin(this_tensor[7] - np.pi/2))
+
+        &#47&#47 The parameters are the evals and the evecs:
+        fw_params_p[vox, 12] = this_tensor[7]
+        S0_p[vox] = np.exp(-this_tensor[6])
+        evals, evecs = decompose_tensor(from_lower_triangular(this_tensor[:6]))
+        fw_params_p[vox, :3] = evals
+        fw_params_p[vox, 3:12] = evecs.ravel()
+
+    fw_paramsc[~cond, :] = fw_params_p
+    fw_paramsc[cond, 12] = 1  &#47&#47 Only free water
+    fw_paramsc = fw_paramsc.reshape((data.shape[:-1]) + (14,))
+    S0f[~cond] = S0_p
+    S0f[cond] = np.mean(data[cond, :] / 
+                        np.exp(np.dot(design_matrix[..., :6],
+                                      np.array([Diso, 0, Diso, 0, 0, Diso]))),
+                        -1)  &#47&#47 Only free water
+    S0f = S0f.reshape(data.shape[:-1])
+    <a id="change">return fw_paramsc, S0f</a>
+
+
+def lower_triangular_to_cholesky(tensor_elements):
+     Perfoms Cholesky decompostion of the diffusion tensor</code></pre>

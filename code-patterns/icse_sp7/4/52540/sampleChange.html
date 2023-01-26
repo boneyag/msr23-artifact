@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 moving average operation
+            variable_averages = tf.train.ExponentialMovingAverage(0.9)
+            trainables = tf.trainable_variables()
+            moving_ave_op = <a id="change">variable_averages.apply(trainables)</a>
+
+            &#47&#47 training operation
+            if self.is_training:
+                <a id="change">updates_op = [moving_ave_op]</a>
+                updates_op.extend(bn_ops) if bn_ops is not None else None
+                with graph.control_dependencies(updates_op):
+                    <a id="change">averaged_grads = gradients_collector.average_gradients()</a>
+                    self.app.set_network_update_op(averaged_grads)
+
+            &#47&#47 assigning output variables back to each application
+            self.app.set_all_output_ops([net_outputs, tf.global_variables()])</code></pre><h3>After Change</h3><pre><code class='java'>
+                if not mva_op.type == "NoOp":
+                    updates_op.extend(mva_op)
+                &#47&#47 batch normalisation moving averages operation
+                if bn_ops is not None and <a id="change">len(bn_ops)</a> &gt; 0:
+                    updates_op.extend(bn_ops)
+                &#47&#47 combine them with model parameter updating operation
+                with graph.control_dependencies(updates_op):</code></pre>

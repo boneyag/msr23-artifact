@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for i, mi in enumerate(self.multiplicities_out):
+            begin_j = 0
+            for j, mj in enumerate(self.multiplicities_in):
+                si = <a id="change">slice(begin_i, begin_i + mi * self.dims_out[i])</a>
+                sj = slice(begin_j, begin_j + mj * self.dims_in[j])
+
+                kij = getattr(self, "kernel_{}_{}".format(i, j))  &#47&#47 [beta, i, j, x, y, z]
+                if kij is not None:
+                    b_el = kij.size(0)
+
+                    w = weight[weight_index: weight_index + mi * mj * b_el].view(mi, mj, b_el)  &#47&#47 [u, v, beta]
+                    weight_index += mi * mj * b_el
+
+                    ker = torch.einsum("uvb,bijxyz-&gt;uivjxyz", (w, kij)).contiguous()  &#47&#47 [u, i, v, j, x, y, z]
+                    <a id="change">kernel[si, sj] = ker.view_as(kernel[si, sj])</a>
+                else:
+                    kernel[si, sj] = 0
+
+                begin_j += mj * self.dims_in[j]</code></pre><h3>After Change</h3><pre><code class='java'>
+            i_diff = mi * self.dims_out[i]
+            si = slice(begin_i, begin_i + i_diff)
+            begin_j = 0
+            <a id="change">sj_kernels = []</a>
+            for j, mj in enumerate(self.multiplicities_in):
+                j_diff = mj * self.dims_in[j]
+                sj = slice(begin_j, begin_j + j_diff)
+
+                kij = getattr(self, "kernel_{}_{}".format(i, j))  &#47&#47 [beta, i, j, x, y, z]
+                if kij is not None:
+                    b_el = kij.size(0)
+
+                    w = weight[weight_index: weight_index + mi * mj * b_el].view(mi, mj, b_el)  &#47&#47 [u, v, beta]
+                    weight_index += mi * mj * b_el
+
+                    ker = torch.einsum("uvb,bijxyz-&gt;uivjxyz", (w, kij)).contiguous()  &#47&#47 [u, i, v, j, x, y, z]
+                else:
+                    ker = torch.tensor(0.)
+
+                ker = ker.view(i_diff, j_diff, self.size, self.size, self.size)
+
+                sj_kernels.append(ker)
+                begin_j += mj * self.dims_in[j]
+
+            <a id="change">si_kernels.append(torch.cat(sj_kernels, dim=1))</a>
+            begin_i += mi * self.dims_out[i]
+
+        kernel = torch.cat(si_kernels, dim=0)
+</code></pre>

@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    num_heads = 1
+    dim = 4
+    num_random_features = 350
+    query = <a id="change">tf.ones([batch_size, length, num_heads, dim])</a>
+    key = tf.ones([batch_size, length, num_heads, dim])
+    value = tf.ones([batch_size, length, num_heads, dim])
+    kernel_transformation = fast_attention.softmax_kernel_transformation
+    projection_matrix = fast_attention.create_projection_matrix(</code></pre><h3>After Change</h3><pre><code class='java'>
+    query = tf.multiply(query, 1.0 / math.sqrt(float(dim)))
+    attention_scores = tf.einsum("BXHD,BYHD-&gt;BXYH", query, key)
+    attention_scores = tf.nn.softmax(attention_scores, axis=2)
+    <a id="change">exact_attention_block_output = tf.einsum("BXYH,BYHD-&gt;BXHD",
+                                             attention_scores, value)</a>
+    max_error = 2.0
+    <a id="change">error = tf.math.abs(
+        (exact_attention_block_output - attention_block_output) /
+        exact_attention_block_output)</a>
+    self.assertLess(tf.math.reduce_max(tf.math.abs(error)), max_error)
+
+  def test_fast_attention(self):
+    hidden_size = 64</code></pre>

@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def _convert_max_pooling2d(converter: KerasConverter, k_op: "keras.layers.AveragePooling2D"):
+    x = converter.get_variable(converter.get_input_tensor(k_op)[0])
+
+    <a id="change">if k_op.data_format == "channels_first":
+        x.order.unify(OrderNCHW)
+
+    elif k_op.data_format == "channels_last":
+        x.order.unify(OrderNHWC)
+
+    else:
+        raise ValueError(f"[KerasConverter] Unknown data format: {k_op.data_format}")
+
+   </a> ksize = tuple(k_op.pool_size)
+    stride = tuple(k_op.strides)
+    if k_op.padding == "valid":
+        padding = (0, 0)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+@KerasConverter.register_handler("MaxPooling2D")
+def _convert_max_pooling2d(converter: KerasConverter, k_op: "keras.layers.MaxPooling2D"):
+    <a id="change">x</a> = converter.get_variable(converter.get_input_tensor(k_op)[0])
+    <a id="change">check_data_format(x, k_op.data_format)</a>
+
+    ksize = tuple(k_op.pool_size)
+    stride = tuple(k_op.strides)
+    if k_op.padding == "valid":</code></pre>

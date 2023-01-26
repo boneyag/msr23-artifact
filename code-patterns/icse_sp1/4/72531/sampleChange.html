@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    Numerically stable version of ``(x.log() @ y.log()).exp()``.
+    
+    x_shift = <a id="change">x.max(-1, keepdim=True)[0]</a>
+    y_shift = y.max(-2, keepdim=True)[0]
+    xy = torch.matmul((x - x_shift).exp(), (y - y_shift).exp()).log()
+    return xy + x_shift + y_shift
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    Numerically stable version of ``(x.log() @ y.log()).exp()``.
+    
+    finfo = <a id="change">torch.finfo(x.dtype)</a>  &#47&#47 avoid nan due to -inf - -inf
+    x_shift = x.max(-1, keepdim=True).values.clamp(min=<a id="change">finfo.min</a>)
+    y_shift = y.max(-2, keepdim=True).values.clamp(min=finfo.min)
+    xy = safe_log(torch.matmul((x - x_shift).exp(), (y - y_shift).exp()))
+    return xy + x_shift + y_shift</code></pre>

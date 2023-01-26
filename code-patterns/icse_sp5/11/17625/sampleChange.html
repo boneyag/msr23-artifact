@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            Fstar_mean_1, Fstar_var_1 = GPflow.conditionals.gaussian_gp_predict_whitened(self.Xs, self.X, self.k, self.mu, self.sqrt, self.num_latent)
+            Fstar_mean_2, Fstar_var_2 = GPflow.conditionals.gaussian_gp_predict_whitened(self.Xs, self.X, self.k, self.mu, self.chol, self.num_latent)
+
+        <a id="change">mean_diff = tf.Session().run(Fstar_mean_1 - Fstar_mean_2, feed_dict=self.feed_dict)</a>
+        <a id="change">var_diff = tf.Session().run(Fstar_var_1 - Fstar_var_2, feed_dict=self.feed_dict)</a>
+
+        self.assertTrue(np.allclose(mean_diff, 0))
+        self.assertTrue(np.allclose(var_diff, 0))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.chol = tf.transpose(self.chol, perm=[1,2,0])
+
+    def test_whiten(self):
+        <a id="change">with self.test_session() as sess, self.k.tf_mode():
+            Fstar_mean_1, Fstar_var_1 = GPflow.conditionals.gaussian_gp_predict_whitened(
+                self.Xs, self.X, self.k, self.mu, self.sqrt, self.num_latent)
+            Fstar_mean_2, Fstar_var_2 = GPflow.conditionals.gaussian_gp_predict_whitened(
+                self.Xs, self.X, self.k, self.mu, self.chol, self.num_latent)
+
+            mean_diff = sess.run(Fstar_mean_1 - Fstar_mean_2, feed_dict=self.feed_dict)
+            self.assertTrue(np.allclose(mean_diff, 0))
+
+            var_diff = sess.run(Fstar_var_1 - Fstar_var_2, feed_dict=self.feed_dict)
+            self.assertTrue(np.allclose(var_diff, 0))
+
+   </a> def test_nonwhiten(self):
+        with self.test_session() as sess, self.k.tf_mode():
+            Fstar_mean_1, Fstar_var_1 = GPflow.conditionals.gaussian_gp_predict(self.Xs, self.X, self.k, self.mu, self.sqrt, self.num_latent)
+            Fstar_mean_2, Fstar_var_2 = GPflow.conditionals.gaussian_gp_predict(self.Xs, self.X, self.k, self.mu, self.chol, self.num_latent)</code></pre>

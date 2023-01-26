@@ -1,0 +1,73 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        eopatch.timestamp = dates
+        eopatch[(FeatureType.DATA, self.feature_name)] = np.asarray(arrays)
+        <a id="change">eopatch[(FeatureType.SCALAR, &quotnorm_factor&quot)] = np.asarray(norm_factor)[:,np.newaxis]</a>
+
+        return eopatch
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        dates = wfs.get_dates()
+
+        <a id="change">if len(dates) &lt;= 1:
+            return dates
+
+       </a> sorted_dates = sorted(dates)
+
+        separate_dates = [sorted_dates[0]]
+        for curr_date in sorted_dates[1:]:
+            if curr_date - separate_dates[-1] &gt; self.time_difference:
+                separate_dates.append(curr_date)
+
+        dates = separate_dates
+
+        &#47&#47 iter_pairs = ((d1, d2) for d1, d2 in zip(sorted_dates[:-1], sorted_dates[1:]))
+
+        &#47&#47 ------------------- build request -------------------
+
+        responses = [
+            SentinelHubOutputResponse(&quotdefault&quot, &quotimage/tiff&quot),
+            SentinelHubOutputResponse(&quotuserdata&quot, &quotapplication/json&quot)
+        ]
+
+        body = SentinelHubRequest(
+            bounds=SentinelHubBounds(crs=self.bbox.crs.opengis_string, bbox=list(self.bbox)),
+            data=[SentinelHubData(data_type=&quotS2L1C&quot)],
+            output=SentinelHubOutput(size_x=self.size_x, size_y=self.size_y, responses=responses),
+            evalscript=EVALSCRIPT
+        )
+
+        request = SentinelHubWrapper(
+            body=body, headers={"accept": "application/tar", &quotcontent-type&quot: &quotapplication/json&quot}
+        )
+
+        &#47&#47 ------------------- map dates to the built request -------------------
+
+        requests = [(copy_format_request(request, date), date) for date in dates]
+
+        &#47&#47 ------------------- map dates to the built request -------------------
+
+        client = SentinelhubClient(cache_dir=&quotcache_dir&quot)
+        images = [(date, client.get(req, decoder=tar_to_numpy)) for req, date in requests]
+
+        images = [(date, img) for date, img in images if img is not None]
+        dates = [date for date, img in images]
+
+        if eopatch is None:
+            eopatch = EOPatch()
+
+        &#47&#47 norm_factor = [img[1][1] for img in images]
+        &#47&#47 arrays = [img[1][0] for img in images]
+
+        &#47&#47 eopatch.timestamp = dates
+        &#47&#47 eopatch[(FeatureType.DATA, self.feature_name)] = np.asarray(arrays)
+        &#47&#47 eopatch[(FeatureType.SCALAR, &quotnorm_factor&quot)] = np.asarray(norm_factor)[:,np.newaxis]
+
+        arrays = [<a id="change">(img * norm_factor).astype(np.float32)</a> for date, (img, norm_factor) in images]
+        eopatch[(FeatureType.DATA, self.feature_name)] = np.asarray(arrays)
+
+        return eopatch</code></pre>

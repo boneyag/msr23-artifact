@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        x = inputs
+        dim = x.get_shape()[-1]
+        <a id="change">x_0 = K.reshape(x,[-1,dim, 1])</a>
+        x_l = x_0
+        for i in range(self.layer_num):
+            dot_ = tf.matmul(x_0, tf.transpose(x_l, [0, 2, 1]))  &#47&#47 K.dot(x_0,K.transpose(x_l))
+            dot_ = <a id="change">K.dot(dot_, self.kernels[i])</a>
+            &#47&#47x_l = K.bias_add(dot_+ x_l,self.bias[i]) &#47&#47 K.bias_add(dot_, self.bias)
+            x_l = dot_ + x_l + self.bias[i]&#47&#47K.reshape(self.bias[i],[1,dim,1])
+        x_l = K.reshape(x_l, [-1, dim])
+        return x_l</code></pre><h3>After Change</h3><pre><code class='java'>
+        x_l = x_0
+        for i in range(self.layer_num):
+            xl_w = tf.tensordot(tf.transpose(x_l,[0,2,1]),self.kernels[i],axes=(-1,0))
+            dot_ = <a id="change">tf.matmul(x_0,xl_w)</a>
+            x_l = dot_ + x_l + self.bias[i]
+        x_l = tf.squeeze(x_l,axis=2)
+        return x_l
+</code></pre>

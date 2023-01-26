@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def run_many(self, positions, use_random_symmetry=True):
+        fts = functools.partial(features.extract_features, features=features.NEW_FEATURES)
+        processed = <a id="change">list(map(fts, positions))</a>
+        if use_random_symmetry:
+            syms_used, processed = features.randomize_symmetries_feat(processed)
+        <a id="change">probabilities, value = self.session.run(
+            [self.policy_output, self.value_output],
+            feed_dict={self.x: processed,
+                       self.train_mode: False})</a>
+        if use_random_symmetry:
+            probabilities = features.invert_symmetries_pi(syms_used, probabilities)
+        return probabilities, value
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        return probs[0], values[0]
+
+    def run_many(self, positions, use_random_symmetry=True):
+        <a id="change">processed = list(map(features.extract_features, positions))</a>
+        if use_random_symmetry:
+            syms_used, processed = symmetries.randomize_symmetries_feat(processed)
+        outputs = self.sess.run(self.inference_output,
+            feed_dict={self.inference_input[&quotpos_tensor&quot]: processed})
+        <a id="change">probabilities, value = outputs[&quotpolicy_output&quot], outputs[&quotvalue_output&quot]</a>
+        if use_random_symmetry:
+            probabilities = symmetries.invert_symmetries_pi(syms_used, probabilities)
+        return probabilities, value
+</code></pre>

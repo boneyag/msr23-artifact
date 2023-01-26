@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    self.online_net.zero_grad()
+    (weights * loss).mean().backward()  &#47&#47 Importance weight losses
+    self.optimiser.step()
+    loss *= <a id="change">100 if self.quantile else 1</a>  &#47&#47 Heuristic for prioritised replay
+
+    mem.update_priorities(idxs, loss.detach())  &#47&#47 Update priorities of sampled transitions
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    self.online_net.zero_grad()
+    (weights * loss).mean().backward()  &#47&#47 Importance weight losses
+    self.optimiser.step()
+    <a id="change">if self.quantile:
+      loss = (self.atoms * loss).clamp(max=5)  &#47&#47 Heuristic for prioritised replay
+
+   </a> mem.update_priorities(idxs, loss.detach())  &#47&#47 Update priorities of sampled transitions
+
+  def update_target_net(self):
+    self.target_net.load_state_dict(self.online_net.state_dict())</code></pre>

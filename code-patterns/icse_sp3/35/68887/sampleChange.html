@@ -1,0 +1,68 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    except ApiException as e:
+        _logger.error(&quotCould not start the experiment, please check your polyaxon spec.&quot,
+                      exc_info=True)
+        <a id="change">experiment.set_status(
+            ExperimentLifeCycle.FAILED,
+            message=&quotCould not start the experiment, encountered a Kubernetes ApiException.&quot)</a>
+        return
+    except VolumeNotFoundError as e:
+        _logger.error(&quotCould not start the experiment, please check your volume definitions.&quot,
+                      exc_info=True)
+        experiment.set_status(
+            ExperimentLifeCycle.FAILED,
+            message=&quotCould not start the experiment, &quot
+                    &quotencountered a volume definition problem. %s&quot % e)
+        return False
+    except Exception as e:
+        _logger.error(&quotCould not start the experiment, please check your polyaxon spec&quot,
+                      exc_info=True)
+        <a id="change">experiment.set_status(
+            ExperimentLifeCycle.FAILED,
+            message=&quotCould not start the experiment encountered an {} exception.&quot.format(
+                e.__class__.__name__
+            ))</a>
+        return
+
+    handle_experiment(experiment=experiment, spawner=spawner, response=response)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                            job_docker_image=job_docker_image,
+                            use_sidecar=True,
+                            sidecar_config=config.get_requested_params(to_str=True))
+    <a id="change">error = {}</a>
+    try:
+        response = spawner.start_experiment()
+        handle_experiment(experiment=experiment, spawner=spawner, response=response)
+    except ApiException as e:
+        _logger.error(&quotCould not start the experiment, please check your polyaxon spec.&quot,
+                      exc_info=True)
+        <a id="change">error = {
+            &quotraised&quot: True,
+            &quottraceback&quot: traceback.format_exc(),
+            &quotmessage&quot: &quotCould not start the experiment, encountered a Kubernetes ApiException.&quot
+        }</a>
+    except VolumeNotFoundError as e:
+        _logger.error(&quotCould not start the experiment, please check your volume definitions.&quot,
+                      exc_info=True)
+        <a id="change">error = {
+            &quotraised&quot: True,
+            &quottraceback&quot: traceback.format_exc(),
+            &quotmessage&quot: &quotCould not start the experiment, &quot
+                       &quotencountered a volume definition problem, %s.&quot % e
+        }</a>
+    except Exception as e:
+        _logger.error(&quotCould not start the experiment, please check your polyaxon spec&quot,
+                      exc_info=True)
+        <a id="change">error = {
+            &quotraised&quot: True,
+            &quottraceback&quot: traceback.format_exc(),
+            &quotmessage&quot: &quotCould not start the experiment encountered an {} exception.&quot.format(
+                e.__class__.__name__)
+        }</a>
+    finally:
+        if error.get(&quotraised&quot):
+            experiment.set_status(
+                ExperimentLifeCycle.FAILED,</code></pre>

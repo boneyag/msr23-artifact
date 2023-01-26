@@ -1,0 +1,45 @@
+<html><h3>d4a5d09dab446fd9c962c80c87bc7a29f3d8b5cd,python/ray/serve/http_proxy.py,HTTPProxy,__call__,#HTTPProxy#Any#Any#Any#,105
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        )
+
+        retries = 0
+        <a id="change">while retries &lt;= MAX_ACTOR_DEAD_RETRIES:
+            try:
+                result = await self.router_handle.enqueue_request.remote(
+                    request_metadata, scope, http_body_bytes)
+                if not isinstance(result, ray.exceptions.RayActorError):
+                    await Response(result).send(scope, receive, send)
+                    break
+                logger.warning("Got RayActorError: {}".format(str(result)))
+                await asyncio.sleep(0.1)
+            except Exception as e:
+                error_message = "Internal Error. Traceback: {}.".format(e)
+                await error_sender(error_message, 500)
+                break
+        else:
+            logger.debug("Maximum actor death retries exceeded")
+            await error_sender(
+                "Internal Error. Maximum actor death retries exceeded", 500)
+
+
+</a>@ray.remote
+class HTTPProxyActor:
+    async def __init__(self, host, port, instance_name=None):
+        serve.init(name=instance_name)</code></pre><h3>After Change</h3><pre><code class='java'>
+        result = await self.router.enqueue_request(request_metadata, scope,
+                                                   http_body_bytes)
+
+        <a id="change">if isinstance(result, RayTaskError):
+            error_message = "Task Error. Traceback: {}.".format(result)
+            await error_sender(error_message, 500)
+        else:
+            await Response(result).send(scope, receive, send)
+
+
+</a>@ray.remote
+class HTTPProxyActor:
+    async def __init__(self, host, port, instance_name=None):
+        serve.init(name=instance_name)</code></pre><img src="5392627.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/d4a5d09dab446fd9c962c80c87bc7a29f3d8b5cd#diff-0cecf0e10da08576350a91545d152d04ff49b06108147c7a9493d952b9ee3fb9L105' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: d4a5d09dab446fd9c962c80c87bc7a29f3d8b5cd</div><div id='time'> Time: 2020-07-10</div><div id='author'> Author: simon.mo@hey.com</div><div id='file'> File Name: python/ray/serve/http_proxy.py</div><div id='class'> Class Name: HTTPProxy</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/e24625095a33a5c9a2d016018203938e9bb2ccbf#diff-ed1178f3a38747717b4f5d25ca681329e55794e6a03ce198cd1c59a80c443dc7L1334' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: e24625095a33a5c9a2d016018203938e9bb2ccbf</div><div id='time'> Time: 2018-04-14</div><div id='author'> Author: nisargjhaveri@users.noreply.github.com</div><div id='file'> File Name: keras/backend/cntk_backend.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: rnn</div><BR><BR><div id='link'><a href='https://github.com/keras-team/autokeras/commit/16474aee0c575e615c78d32f2a170c3d7f8f0082#diff-c5c31de724f6d82045a7f0cc212b41d3e5c7c6b858cd144a19ac734502da62cfL76' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/autokeras</div><div id='commit'> Commit Name: 16474aee0c575e615c78d32f2a170c3d7f8f0082</div><div id='time'> Time: 2017-12-30</div><div id='author'> Author: jhfjhfj1@gmail.com</div><div id='file'> File Name: autokeras/graph.py</div><div id='class'> Class Name: Graph</div><div id='method'> Method Name: produce_model</div><BR>

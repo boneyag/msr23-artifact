@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def main(args):
+    if args.mode == &quottrain&quot:
+        load_version = 0 if args.resume else None
+        <a id="change">logger = TestTubeLogger(save_dir=args.exp_dir, name=args.exp, version=load_version)</a>
+        <a id="change">trainer = create_trainer(args, logger)</a>
+        model = UnetMRIModel(args)
+        <a id="change">trainer.fit(model)</a>
+    else:  &#47&#47 args.mode == &quottest&quot
+        assert args.checkpoint is not None
+        model = UnetMRIModel.load_from_checkpoint(str(args.checkpoint))
+        model.hparams.sample_rate = 1.</code></pre><h3>After Change</h3><pre><code class='java'>
+        trainer.test(model)
+
+def main(args=None):
+    <a id="change">parser = Args()</a>
+    <a id="change">parser.add_argument(&quot--mode&quot, choices=[&quottrain&quot, &quottest&quot, &quotchallenge&quot], default=&quottrain&quot)</a>
+    <a id="change">parser.add_argument(&quot--num-epochs&quot, type=int, default=50, help=&quotNumber of training epochs&quot)</a>
+    <a id="change">parser.add_argument(&quot--gpus&quot, type=int, default=1)</a>
+    parser.add_argument(&quot--nodes&quot, type=int, default=1)
+    <a id="change">parser.add_argument(&quot--exp-dir&quot, type=pathlib.Path, default=&quotexperiments&quot,
+                        help=&quotPath where model and results should be saved&quot)</a>
+    <a id="change">parser.add_argument(&quot--exp&quot, type=str, help=&quotName of the experiment&quot)</a>
+    parser.add_argument(&quot--checkpoint&quot, type=pathlib.Path,
+                        help=&quotPath to pre-trained model. Use with --mode {test,challenge}&quot)
+    parser = UnetMRIModel.add_model_specific_args(parser)
+    if args is not None:
+        parser.set_defaults(**args)
+
+    <a id="change">args, _ = parser.parse_known_args()</a>
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    run(args)</code></pre>

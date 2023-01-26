@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        gt_avg = RunningAverage()
+        for sample in input.samples:
+            log_avg.add(sample.log_reward)
+            <a id="change">weight = (
+                sample.tgt_action_probabilities[sample.log_action]
+                / sample.log_action_probabilities[sample.log_action]
+            )</a>
+            weight = self._weight_clamper(weight)
+            dm_action_reward, dm_reward = self._calc_dm_reward(
+                input.action_space, sample
+            )
+            <a id="change">tgt_avg.add((sample.log_reward - dm_action_reward) * weight + dm_reward)</a>
+            gt_avg.add(sample.ground_truth_reward)
+        return EstimatorResult(
+            log_avg.average, tgt_avg.average, gt_avg.average, tgt_avg.count
+        )</code></pre><h3>After Change</h3><pre><code class='java'>
+        log_avg = RunningAverage()
+        logged_vals = []
+        tgt_avg = RunningAverage()
+        <a id="change">tgt_vals = []</a>
+        gt_avg = RunningAverage()
+        for sample in input.samples:
+            log_avg.add(sample.log_reward)
+            logged_vals.append(sample.log_reward)
+            dm_action_reward, dm_reward = self._calc_dm_reward(
+                input.action_space, sample
+            )
+            tgt_result = 0.0
+            weight = 0.0
+            if sample.log_action is not None:
+                weight = <a id="change">(
+                    0.0
+                    if sample.log_action_probabilities[sample.log_action]
+                    &lt; PROPENSITY_THRESHOLD
+                    else sample.tgt_action_probabilities[sample.log_action]
+                    / sample.log_action_probabilities[sample.log_action]
+                )</a>
+                weight = self._weight_clamper(weight)
+                assert dm_action_reward is not None
+                assert dm_reward is not None
+                tgt_result += (
+                    sample.log_reward - dm_action_reward
+                ) * weight + dm_reward
+            else:
+                <a id="change">tgt_result = dm_reward</a>
+            tgt_avg.add(tgt_result)
+            <a id="change">tgt_vals.append(tgt_result)</a>
+            gt_avg.add(sample.ground_truth_reward)
+        (
+            tgt_score,
+            tgt_score_normalized,</code></pre>

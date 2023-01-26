@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            squares = [tensor.sqr(gradient) for gradient in gradients]
+            sums = [tensor.sum(square) for square in squares]
+            total_sum = sum(sums)  &#47&#47 sum over parameter variables
+            <a id="change">norm = tensor.sqrt(total_sum)</a>
+            target_norm = <a id="change">tensor.clip(norm, 0.0, max_norm)</a>
+            gradients = [gradient * target_norm / (epsilon + norm)
+                         for gradient in gradients]
+
+        <a id="change">self._gradient_exprs = gradients</a>
+        self.gradient_update_function = \
+            theano.function([self.network.minibatch_input,
+                             self.network.minibatch_mask],
+                            cost,</code></pre><h3>After Change</h3><pre><code class='java'>
+                       for name, value in self.param_init_values.items()}
+
+        &#47&#47 numerical stability / smoothing term to prevent divide-by-zero
+        <a id="change">if not &quotepsilon&quot in optimization_options:
+            raise ValueError("Epsilon is not given in optimization options.")
+       </a> self._epsilon = optimization_options[&quotepsilon&quot]
+
+        &#47&#47 maximum norm for parameter updates
+        <a id="change">if &quotmax_gradient_norm&quot in optimization_options:
+            self._max_gradient_norm = optimization_options[&quotmax_gradient_norm&quot]
+        else:
+            self._max_gradient_norm = None
+
+        &#47&#47 Derive the symbolic expression for log probability of each word.
+       </a> logprobs = tensor.log(self.network.prediction_probs)
+        &#47&#47 Set the log probability to 0, if the next input word (the one
+        &#47&#47 predicted) is masked out.
+        logprobs = logprobs * self.network.minibatch_mask[1:]</code></pre>

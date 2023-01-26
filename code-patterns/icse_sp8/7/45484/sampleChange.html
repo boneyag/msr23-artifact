@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return ValueError()
+
+    &#47&#47 Append undirected edges.
+    edges = torch.cat(<a id="change">(edges, edges.index_select(1, torch.LongTensor([1, 0])))</a>)
+
+    &#47&#47 Sort the adjacencies row-wise.
+    edges = edges.t()
+    sorted, indices = torch.sort(edges[0], 0)
+    edges = torch.cat((sorted, edges[1][indices])).view(2, -1)
+    <a id="change">return edges</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Build directed adjacency matrix.
+    adj = torch.sparse.FloatTensor(edges.t(),
+                                   torch.ones(edges.size(0)),
+                                   torch.Size(<a id="change">[n, n]</a>))
+
+    &#47&#47 Convert to undirected adjacency matrix.
+    <a id="change">adj = adj + adj.t()</a>
+
+    &#47&#47 Remove duplicate indices.
+    &#47&#47 NOTE: This doesn&quott work if transpose(...) is removed.
+    adj = adj.transpose(0, 1).coalesce()
+    <a id="change">return adj._indices()</a>
+</code></pre>

@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 generate mask
+        mask = th.zeros(batch_size, max_len_x, max_len_mem).to(e.device)
+        for i in <a id="change">range(batch_size)</a>:
+            mask[i, :lengths_x[i], :lengths_mem[i]].fill_(1)
+        mask = mask.unsqueeze(1)
+        e.masked_fill_(mask == 0, -float(&quotinf&quot))</code></pre><h3>After Change</h3><pre><code class='java'>
+        max_len_x = max(lengths_x)
+        max_len_mem = max(lengths_mem)
+        device = x.device
+        lengths_x = th.tensor(lengths_x, dtype=<a id="change">th.int64</a>, device=device)
+        <a id="change">lengths_mem = th.tensor(lengths_mem, dtype=th.int64, device=device)</a>
+
+        queries = self.proj_q(x).view(-1, self.num_heads, self.d_head)
+        keys = self.proj_k(mem).view(-1, self.num_heads, self.d_head)
+        values = self.proj_v(mem).view(-1, self.num_heads, self.d_head)
+
+        &#47&#47 padding to (B, max_len_x/mem, num_heads, d_head)
+        queries = F.pad_packed_tensor(queries, lengths_x, 0)
+        keys = F.pad_packed_tensor(keys, lengths_mem, 0)
+        values = F.pad_packed_tensor(values, lengths_mem, 0)
+
+        &#47&#47 attention score with shape (B, num_heads, max_len_x, max_len_mem)
+        e = th.einsum(&quotbxhd,byhd-&gt;bhxy&quot, queries, keys)
+        &#47&#47 normalize
+        e = e / np.sqrt(self.d_head)
+
+        &#47&#47 generate mask
+        mask = _gen_mask(lengths_x, lengths_mem, max_len_x, max_len_mem)
+        <a id="change">e = e.masked_fill(mask == 0, -float(&quotinf&quot))</a>
+
+        &#47&#47 apply softmax
+        alpha = th.softmax(e, dim=-1)
+        &#47&#47 the following line addresses the NaN issue, see
+        &#47&#47 https://github.com/dmlc/dgl/issues/2657
+        <a id="change">alpha = alpha.masked_fill(mask == 0, 0.)</a>
+
+        &#47&#47 sum of value weighted by alpha
+        out = th.einsum(&quotbhxy,byhd-&gt;bxhd&quot, alpha, values)
+        &#47&#47 project to output</code></pre>

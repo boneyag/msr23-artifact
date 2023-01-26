@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        unknown_token = vocab_dict.get(&quotunknown_token&quot)
+        bert_vocab = cls(unknown_token=unknown_token)
+        <a id="change">bert_vocab._idx_to_token = vocab_dict.get(&quotidx_to_token&quot)</a>
+        bert_vocab._token_to_idx = vocab_dict.get(&quottoken_to_idx&quot)
+        if unknown_token:
+            bert_vocab._token_to_idx = DefaultLookupDict(bert_vocab._token_to_idx[unknown_token],
+                                                         bert_vocab._token_to_idx)</code></pre><h3>After Change</h3><pre><code class='java'>
+        token_to_idx = vocab_dict.get(&quottoken_to_idx&quot)
+        unknown_token = vocab_dict.get(&quotunknown_token&quot)
+        reserved_tokens = vocab_dict.get(&quotreserved_tokens&quot)
+        <a id="change">identifiers_to_tokens = vocab_dict.get(&quotidentifiers_to_tokens&quot, dict())</a>
+
+        special_tokens = {unknown_token}
+
+        &#47&#47 Backward compatibility for explicit serialization of padding_token,
+        &#47&#47 bos_token, eos_token, mask_token, sep_token, cls_token handling in
+        &#47&#47 the json string as done in older versions of GluonNLP.
+        deprecated_arguments = [
+            &quotpadding_token&quot, &quotbos_token&quot, &quoteos_token&quot, &quotmask_token&quot, &quotsep_token&quot, &quotcls_token&quot
+        ]
+        <a id="change">for token_name in deprecated_arguments:
+            token = vocab_dict.get(token_name)
+            if token is not None:
+                assert token_name not in identifiers_to_tokens, &quotInvalid json string. &quot \
+                    &quot{} was serialized twice.&quot.format(token_name)
+                identifiers_to_tokens[token_name] = token
+
+        &#47&#47 Separate reserved from special tokens
+       </a> special_tokens.update(identifiers_to_tokens.values())
+        if reserved_tokens is not None:
+            reserved_tokens = [
+                t for t in reserved_tokens if t not in special_tokens</code></pre>

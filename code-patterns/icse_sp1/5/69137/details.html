@@ -1,0 +1,22 @@
+<html><h3>91cb347719da745fe0bd309607ce1c272604acdb,examples/pytorch/diffpool/model/dgl_layers/gnn.py,DiffPoolBatchedGraphLayer,forward,#DiffPoolBatchedGraphLayer#Any#Any#,103
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        assign_tensor_masks = []
+        batch_size = len(g.batch_num_nodes())
+        for g_n_nodes in g.batch_num_nodes():
+            <a id="change">mask = torch.ones((g_n_nodes,
+                               int(assign_tensor.size()[1] / batch_size)))</a>
+            assign_tensor_masks.append(mask)
+        
+        The first pooling layer is computed on batched graph.
+        We first take the adjacency matrix of the batched graph, which is block-wise diagonal.</code></pre><h3>After Change</h3><pre><code class='java'>
+        device = feat.device
+        assign_tensor = self.pool_gc(g, h)  &#47&#47 size = (sum_N, N_a), N_a is num of nodes in pooled graph.
+        assign_tensor = F.softmax(assign_tensor, dim=1)
+        assign_tensor = <a id="change">torch.split(assign_tensor, g.batch_num_nodes().tolist())</a>
+        assign_tensor = torch.block_diag(*assign_tensor)  &#47&#47 size = (sum_N, batch_size * N_a)
+
+        h = torch.matmul(torch.t(assign_tensor), feat)
+        adj = g.adjacency_matrix(transpose=False, ctx=device)</code></pre><img src="317407418.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/91cb347719da745fe0bd309607ce1c272604acdb#diff-84de8ae73218f7b51fd73c7f4a2ff6d65dd61c7f3191bd6e2a8452899c25a079L105' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: 91cb347719da745fe0bd309607ce1c272604acdb</div><div id='time'> Time: 2021-03-09</div><div id='author'> Author: lygztq@gmail.com</div><div id='file'> File Name: examples/pytorch/diffpool/model/dgl_layers/gnn.py</div><div id='class'> Class Name: DiffPoolBatchedGraphLayer</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/62555a6f72e014341a1d85fccba799e7f35b4d63#diff-4cbf756a27a7645bb965260664fbe4be9dbd9b9ebe1379be06dd503fb135ffd8L127' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 62555a6f72e014341a1d85fccba799e7f35b4d63</div><div id='time'> Time: 2017-01-11</div><div id='author'> Author: alerer@fb.com</div><div id='file'> File Name: OpenNMT/train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: memoryEfficientLoss</div><BR>

@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            result = self.prepare_mathics(result)
+            result = from_sympy(result)
+            &#47&#47 evaluate leaves to convert e.g. Plus[2, I] -&gt; Complex[2, 1]
+            <a id="change">result = result.evaluate_leaves(evaluation)</a>
+        elif mpmath_function is not None:
+            prec = min_prec(*args)
+            with mpmath.workprec(prec):
+                sympy_args = [x.to_sympy() for x in args]
+                if None in sympy_args:
+                    return
+                mpmath_args = [sympy2mpmath(x, prec) for x in sympy_args]
+                if None in mpmath_args:
+                    return
+                <a id="change">try:
+                    result = self.get_mpmath_function(mpmath_args)(*mpmath_args)
+                    result = from_sympy(mpmath2sympy(result, prec))
+                except ValueError as exc:
+                    text = str(exc)
+                    if text == &quotgamma function pole&quot:
+                        return Symbol(&quotComplexInfinity&quot)
+                    else:
+                        raise
+                except ZeroDivisionError:
+                    return
+                except SpecialValueError as exc:
+                    return Symbol(exc.name)
+
+       </a> return result
+
+
+class _MPMathMultiFunction(_MPMathFunction):</code></pre><h3>After Change</h3><pre><code class='java'>
+        if any(arg.is_machine_precision() for arg in args):
+            &#47&#47 if any argument has machine precision then the entire calculation
+            &#47&#47 is done with machine precision.
+            <a id="change">float_args = [arg.get_float_value(n_evaluation=evaluation, permit_complex=True) for arg in args]</a>
+            if None in float_args:
+                return
+
+            result = self.call_mpmath(mpmath_function, float_args)</code></pre>

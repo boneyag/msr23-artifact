@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        agg_logging_output = self.criterion.__class__.aggregate_logging_outputs(logging_outputs)
+
+        &#47&#47 update loss meters for validation
+        <a id="change">if &quotloss&quot in agg_logging_output:
+            self.meters[&quotvalid_loss&quot].update(agg_logging_output[&quotloss&quot], grad_denom)
+        &#47&#47 criterions can optionally log the NLL loss too
+       </a> if &quotnll_loss&quot in agg_logging_output:
+            self.meters[&quotvalid_nll_loss&quot].update(agg_logging_output[&quotnll_loss&quot], ntokens)
+
+        return agg_logging_output</code></pre><h3>After Change</h3><pre><code class='java'>
+        with torch.no_grad():
+            sample = self._prepare_sample(sample)
+            if sample is None:
+                sample = <a id="change">self._prepare_sample(self._dummy_batch)</a>
+            <a id="change">_loss, sample_size, logging_output = self.task.get_loss(
+                self.model, self.criterion, sample,
+            )</a>
+
+        &#47&#47 gather logging outputs from all replicas
+        if self.args.distributed_world_size &gt; 1:
+            logging_output, sample_size = zip(*distributed_utils.all_gather_list(</code></pre>

@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+              &quotmemcached_server_size&quot: FLAGS.memcached_size_mb,
+              &quotmemcached_server_threads&quot: FLAGS.memcached_num_threads}
+
+  <a id="change">logging.info(&quotStart benchmarking memcached using memtier.&quot)</a>
+  samples = memtier.Run(client, server_ip, memcached_server.MEMCACHED_PORT)
+  for sample in samples:
+    sample.metadata.update(metadata)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  client = benchmark_spec.vm_groups[&quotclient&quot][0]
+  server = benchmark_spec.vm_groups[&quotserver&quot][0]
+  server_ip = server.internal_ip
+  <a id="change">samples = []</a>
+  metadata = {&quotmemcached_version&quot: memcached_server.GetVersion(server),
+              &quotmemcached_server_size&quot: FLAGS.memcached_size_mb,
+              &quotmemcached_server_threads&quot: FLAGS.memcached_num_threads}
+
+  for pipeline in FLAGS.memtier_pipeline:
+    for client_thread in FLAGS.memtier_threads:
+      logging.info(
+          &quotStart benchmarking memcached using memtier:\n&quot
+          &quot\tmemtier threads: %s&quot
+          &quot\tmemtier pipeline, %s&quot
+          &quot\tmemtier connection, %s&quot,
+          client_thread, pipeline, FLAGS.memtier_pipeline)
+      tmp_samples = memtier.Run(
+          client, server_ip, memcached_server.MEMCACHED_PORT,
+          client_thread, pipeline)
+      for sample in tmp_samples:
+        sample.metadata.update(metadata)
+      <a id="change">samples.extend(tmp_samples)</a>
+  return samples
+
+
+def Cleanup(unused_benchmark_spec):</code></pre>

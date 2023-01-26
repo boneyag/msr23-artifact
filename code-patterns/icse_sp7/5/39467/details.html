@@ -1,0 +1,30 @@
+<html><h3>ecfc31e21d0c30b1f543aacb8619582b60a1bef7,gluoncv/model_zoo/mask_rcnn/rcnn_target.py,MaskTargetGenerator,hybrid_forward,#MaskTargetGenerator#Any#Any#Any#Any#Any#,30
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            pooled_mask = pooled_mask.reshape((-3, 0, 0))
+            &#47&#47 duplicate to C * (N, MS, MS)
+            mask_target = []
+            mask_mask = <a id="change">[]</a>
+            for cid in range(1, self._num_classes + 1):
+                &#47&#47 boolean array (N,) -&gt; (N, 1, 1)
+                same_cid = (cls_target == cid).reshape((-1, 1, 1))
+                &#47&#47 keep orig targets
+                mask_target.append(pooled_mask)
+                &#47&#47 but mask out the one not belong to this class [N, MS, MS]
+                mask_mask.append(F.broadcast_mul(F.ones_like(pooled_mask), same_cid))
+            &#47&#47 (C, N, MS, MS) -&gt; (N, C, MS, MS)
+            mask_targets.append(F.stack(*mask_target, axis=0).transpose((1, 0, 2, 3)))
+            mask_masks.append(<a id="change">F</a>.stack(*mask_mask, axis=0).transpose((1, 0, 2, 3)))
+
+        &#47&#47 B * (N, C, MS, MS) -&gt; (B, N, C, MS, MS)
+        mask_targets = F.stack(*mask_targets, axis=0)</code></pre><h3>After Change</h3><pre><code class='java'>
+            pooled_mask = pooled_mask.reshape((-3, 0, 0))
+
+            &#47&#47 (N,) -&gt; (C, 1) -&gt; (C, N, 1, 1)
+            <a id="change">cls_target = F.expand_dims(cls_target, 0)</a>
+            same_cids = F.broadcast_equal(cls_target, cids)
+            same_cids = same_cids.reshape((-2, 1, 1))
+
+            &#47&#47 (N, MS, MS) -&gt; (C, N, 1, 1) -&gt; (C, N, MS, MS)</code></pre><img src="189074916.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/gluon-cv/commit/ecfc31e21d0c30b1f543aacb8619582b60a1bef7#diff-5493eaf8ad06dd980acf15704a23177ef41e6f43fa32909ae37a1b94042e3755L30' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-cv</div><div id='commit'> Commit Name: ecfc31e21d0c30b1f543aacb8619582b60a1bef7</div><div id='time'> Time: 2019-08-29</div><div id='author'> Author: spanev@nvidia.com</div><div id='file'> File Name: gluoncv/model_zoo/mask_rcnn/rcnn_target.py</div><div id='class'> Class Name: MaskTargetGenerator</div><div id='method'> Method Name: hybrid_forward</div><BR><BR><div id='link'><a href='https://github.com/tensorpack/tensorpack/commit/82a8953e5cc49d98826f9a621c7bc8f13d8314b7#diff-ad5b713950dfaa18eba23aa762b30171befca189f80154ac49e9ba5a346eb358L150' target='_blank'>Link</a></div><div id='project'> Project Name: tensorpack/tensorpack</div><div id='commit'> Commit Name: 82a8953e5cc49d98826f9a621c7bc8f13d8314b7</div><div id='time'> Time: 2019-08-26</div><div id='author'> Author: ppwwyyxx@users.noreply.github.com</div><div id='file'> File Name: examples/FasterRCNN/modeling/model_frcnn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: fastrcnn_losses</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/ac2a794577087259da7200eefc792dbba40f8600#diff-fae108a7448e4d739fe38f81d75f274751bd4bbfbda5fbfe6c29c945d4c3802eL65' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: ac2a794577087259da7200eefc792dbba40f8600</div><div id='time'> Time: 2017-11-02</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/contrib/sampler_pairwise/sampler_pairwise.py</div><div id='class'> Class Name: PairwiseSampler</div><div id='method'> Method Name: layer_op</div><BR>

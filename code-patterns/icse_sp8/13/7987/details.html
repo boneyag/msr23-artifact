@@ -1,0 +1,29 @@
+<html><h3>348122d499073a7a58b21d6e5544bc4b47a9ee94,gpytorch/lazy/kronecker_product_added_diag_lazy_tensor.py,KroneckerProductAddedDiagLazyTensor,inv_quad,#KroneckerProductAddedDiagLazyTensor#Any#Any#,115
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def inv_quad(self, tensor, reduce_inv_quad=True):
+        &#47&#47 TODO: check stability of numerics here
+
+        <a id="change">svd_list = self._kron_svd()</a>
+        noise = self._diag_tensor[0, 0]
+        v_matrix = _DiagKroneckerProdLazyTensor(DiagLazyTensor(<a id="change">svd_list[0].S</a>), DiagLazyTensor(svd_list[1].S))
+        <a id="change">q_matrix = KroneckerProductLazyTensor(lazify(svd_list[0].U), lazify(svd_list[1].U))</a>
+        <a id="change">for sub_ind in range(2, len(svd_list)):
+            v_matrix = KroneckerProductLazyTensor(v_matrix, DiagLazyTensor(svd_list[sub_ind].S))
+            q_matrix = KroneckerProductLazyTensor(q_matrix, DiagLazyTensor(svd_list[sub_ind].S))
+
+        &#47&#47 TODO: this could be a memory hog.
+       </a> inv_mat = DiagLazyTensor(v_matrix.diag() + noise)
+
+        res = q_matrix.t().matmul(tensor)
+        res = inv_mat.inverse().matmul(res)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def inv_quad(self, tensor, reduce_inv_quad=True):
+        &#47&#47 TODO: check stability of numerics here
+
+        <a id="change">q_matrix = KroneckerProductLazyTensor(*[lazify(eig_decomp[1]) for eig_decomp in self._eig_cache])</a>
+        inv_mat = DiagLazyTensor(1.0 / (self._kron_eigenvalues.diag() + self._diag_tensor.diag()))
+
+        res = q_matrix.t().matmul(tensor)
+        res = inv_mat.inverse().matmul(res)</code></pre><img src="51742341.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/348122d499073a7a58b21d6e5544bc4b47a9ee94#diff-0f50cb4e0b4cf9c73183d596ab2cb722f4c2449c8ff5dd220f4262f778146078L115' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 348122d499073a7a58b21d6e5544bc4b47a9ee94</div><div id='time'> Time: 2020-06-26</div><div id='author'> Author: wjm363@nyu.edu</div><div id='file'> File Name: gpytorch/lazy/kronecker_product_added_diag_lazy_tensor.py</div><div id='class'> Class Name: KroneckerProductAddedDiagLazyTensor</div><div id='method'> Method Name: inv_quad</div><BR><BR><div id='link'><a href='https://github.com/markovmodel/PyEMMA/commit/e1adf9416201a9debe4036f1f1ceb83caf6f962a#diff-35dd762e3cdbe556f27af9ba2587b4f694afb77e8f0fe9051818063075594b35L61' target='_blank'>Link</a></div><div id='project'> Project Name: markovmodel/PyEMMA</div><div id='commit'> Commit Name: e1adf9416201a9debe4036f1f1ceb83caf6f962a</div><div id='time'> Time: 2018-02-04</div><div id='author'> Author: fabian.paul@mpikg.mpg.de</div><div id='file'> File Name: pyemma/coordinates/tests/test_vamp.py</div><div id='class'> Class Name: TestVAMPSelfConsitency</div><div id='method'> Method Name: test</div><BR><BR><div id='link'><a href='https://github.com/scikit-learn-contrib/DESlib/commit/bba1901f835525551dde9ec1537d041abc88d293#diff-f88c933ac981834e02cfa7eab72b3b9fc8b40e68d76fefc3a5a9c6aa1745d533L91' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-learn-contrib/DESlib</div><div id='commit'> Commit Name: bba1901f835525551dde9ec1537d041abc88d293</div><div id='time'> Time: 2021-04-08</div><div id='author'> Author: rafaelmenelau@gmail.com</div><div id='file'> File Name: deslib/static/oracle.py</div><div id='class'> Class Name: Oracle</div><div id='method'> Method Name: predict</div><BR>

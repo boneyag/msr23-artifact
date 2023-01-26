@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        sentence = nest.flatten(x)[0].numpy().decode(&quotutf-8&quot)
+        data = self.vectorizer.transform([sentence]).toarray()
+        if self.selector:
+            data = <a id="change">self.selector.transform(data).astype(&quotfloat32&quot)</a>
+        <a id="change">return data[0]</a>
+
+    def output_types(self):
+        return (tf.float32,)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Calculate tf at doc level
+        tf = np.zeros(len(self.vocabulary), dtype=int)
+        x = nest.flatten(x)[0].numpy().decode(&quotutf-8&quot)
+        <a id="change">token_pattern = re.compile(r"(?u)\b\w\w+\b")</a>
+        tokens = self._word_ngram(token_pattern.findall(x.lower()))
+
+        <a id="change">for feature in tokens:
+            if feature in self.vocabulary:
+                feature_idx = self.vocabulary[feature]
+                tf[feature_idx] += 1
+       </a> result = tf * self.k_best_idf_values
+        result = normalize([result], norm=self.norm, copy=False)[0]
+        return result
+</code></pre>

@@ -1,0 +1,54 @@
+<html><h3>83af0d9266d3650c0260faf8c6d9a4b97389d75b,deepplantphenomics/classification_model.py,ClassificationModel,forward_pass_with_file_inputs,#ClassificationModel#Any#,261
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with self._graph.as_default():
+            total_outputs = np.empty([1, self._last_layer().output_size])
+
+            <a id="change">num_batches = len(x) // self._batch_size</a>
+            remainder = len(x) % self._batch_size
+
+            if <a id="change">remainder != 0:
+   </a>             num_batches += 1
+                <a id="change">remainder = self._batch_size - remainder</a>
+
+            &#47&#47 self.load_images_from_list(x) no longer calls following 2 lines so we needed to force them here
+            images = x
+            self._parse_images(images)
+
+            x_test = <a id="change">tf.train.batch([self._all_images], batch_size=self._batch_size, num_threads=self._num_threads)</a>
+            <a id="change">x_test = tf.reshape(x_test, shape=[-1, self._image_height, self._image_width, self._image_depth])</a>
+
+            if self._load_from_saved:
+                self.load_state()
+            <a id="change">self._initialize_queue_runners()</a>
+            &#47&#47 Run model on them
+            x_pred = self.forward_pass(x_test, deterministic=True)
+
+            for i in range(int(num_batches)):
+                xx = self._session.run(x_pred)
+                for img in np.array_split(xx, self._batch_size):
+                    total_outputs = np.append(total_outputs, img, axis=0)
+
+            &#47&#47 delete weird first row
+            total_outputs = np.delete(total_outputs, 0, 0)
+
+            &#47&#47 delete any outputs which are overruns from the last batch
+            <a id="change">if remainder != 0:
+                for i in range(remainder):
+                    total_outputs = np.delete(total_outputs, -1, 0)
+
+       </a> return total_outputs
+
+    def forward_pass_with_interpreted_outputs(self, x):
+        &#47&#47 Perform forward pass of the network to get raw outputs and apply a softmax</code></pre><h3>After Change</h3><pre><code class='java'>
+            self._parse_images(images)
+            &#47&#47 x_test = tf.train.batch([self._all_images], batch_size=self._batch_size, num_threads=self._num_threads)
+            &#47&#47 x_test = tf.reshape(x_test, shape=[-1, self._image_height, self._image_width, self._image_depth])
+            im_data = <a id="change">self._all_images.batch(self._batch_size).prefetch(1)</a>
+            <a id="change">x_test = im_data.make_one_shot_iterator().get_next()</a>
+
+            if self._load_from_saved:
+                self.load_state()
+            &#47&#47 self._initialize_queue_runners()</code></pre><img src="69005469.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 32</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/p2irc/deepplantphenomics/commit/83af0d9266d3650c0260faf8c6d9a4b97389d75b#diff-cdf034591d4b69b4f1802121b1646e8091b8de36c0ec2b4b9c01575996cd8db6L261' target='_blank'>Link</a></div><div id='project'> Project Name: p2irc/deepplantphenomics</div><div id='commit'> Commit Name: 83af0d9266d3650c0260faf8c6d9a4b97389d75b</div><div id='time'> Time: 2019-09-26</div><div id='author'> Author: dbl599@mail.usask.ca</div><div id='file'> File Name: deepplantphenomics/classification_model.py</div><div id='class'> Class Name: ClassificationModel</div><div id='method'> Method Name: forward_pass_with_file_inputs</div><BR><BR><div id='link'><a href='https://github.com/p2irc/deepplantphenomics/commit/b0acdf5e8a149fb7369f4fd0c87fc62f06786426#diff-ce86cf318966ecc668bcfa1cb3abbeb24c57b19ccbfa96d4ab86b4a9f7112fcdL306' target='_blank'>Link</a></div><div id='project'> Project Name: p2irc/deepplantphenomics</div><div id='commit'> Commit Name: b0acdf5e8a149fb7369f4fd0c87fc62f06786426</div><div id='time'> Time: 2019-09-27</div><div id='author'> Author: dbl599@mail.usask.ca</div><div id='file'> File Name: deepplantphenomics/regression_model.py</div><div id='class'> Class Name: RegressionModel</div><div id='method'> Method Name: forward_pass_with_file_inputs</div><BR><BR><div id='link'><a href='https://github.com/p2irc/deepplantphenomics/commit/8d46871931696970ef63cc621341b8b8f5b0f543#diff-887fa427c81c9f9afb428035199b78053fccbd11e105a2af53f212bd525310e4L646' target='_blank'>Link</a></div><div id='project'> Project Name: p2irc/deepplantphenomics</div><div id='commit'> Commit Name: 8d46871931696970ef63cc621341b8b8f5b0f543</div><div id='time'> Time: 2019-09-30</div><div id='author'> Author: dbl599@mail.usask.ca</div><div id='file'> File Name: deepplantphenomics/object_detection_model.py</div><div id='class'> Class Name: ObjectDetectionModel</div><div id='method'> Method Name: forward_pass_with_file_inputs</div><BR><BR><div id='link'><a href='https://github.com/p2irc/deepplantphenomics/commit/83af0d9266d3650c0260faf8c6d9a4b97389d75b#diff-cdf034591d4b69b4f1802121b1646e8091b8de36c0ec2b4b9c01575996cd8db6L261' target='_blank'>Link</a></div><div id='project'> Project Name: p2irc/deepplantphenomics</div><div id='commit'> Commit Name: 83af0d9266d3650c0260faf8c6d9a4b97389d75b</div><div id='time'> Time: 2019-09-26</div><div id='author'> Author: dbl599@mail.usask.ca</div><div id='file'> File Name: deepplantphenomics/classification_model.py</div><div id='class'> Class Name: ClassificationModel</div><div id='method'> Method Name: forward_pass_with_file_inputs</div><BR>

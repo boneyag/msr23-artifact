@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      the beam width to use for searching.  Set to 1 to use a simple greedy search.
+    
+    result = []
+    <a id="change">with self._get_tf("Graph").as_default():
+      for batch in self._batch_elements(sequences):
+        feed_dict = {}
+        feed_dict[self._features] = self._create_input_array(batch)
+        feed_dict[self._gather_indices] = [(i, len(batch[i])
+                                            if i &lt; len(batch) else 0)
+                                           for i in range(self.batch_size)]
+        feed_dict[self._training_placeholder] = 0.0
+        for initial, zero in zip(self.rnn_initial_states, self.rnn_zero_states):
+          feed_dict[initial] = zero
+        probs = self.session.run(self.output, feed_dict=feed_dict)
+        for i in range(len(batch)):
+          result.append(self._beam_search(probs[i], beam_width))
+   </a> return result
+
+  def predict_from_embeddings(self, embeddings, beam_width=5):
+    Given a set of embedding vectors, predict the output sequences.</code></pre><h3>After Change</h3><pre><code class='java'>
+    result = []
+    for batch in self._batch_elements(sequences):
+      features = self._create_input_array(batch)
+      indices = <a id="change">np.array([(i, len(batch[i]) if i &lt; len(batch) else 0)
+                          for i in range(self.batch_size)])</a>
+      <a id="change">probs = self.predict_on_generator([[(features, indices,
+                                           self.get_global_step()), None,
+                                          None]])</a>
+      for i in range(len(batch)):
+        result.append(self._beam_search(probs[i], beam_width))
+    return result
+</code></pre>

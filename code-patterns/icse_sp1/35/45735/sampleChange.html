@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if self.isTrain:
+            use_sigmoid = opt.no_lsgan
+            <a id="change">self.netD</a> = networks.define_D(opt.input_nc + opt.output_nc, opt.ndf,
+                                          opt.which_model_netD,
+                                          opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
+
+        if not self.isTrain or opt.continue_train:
+            <a id="change">self.load_network(self.netG, &quotG&quot, opt.which_epoch)</a>
+            if self.isTrain:
+                self.load_network(<a id="change">self.netD</a>, &quotD&quot, opt.which_epoch)
+
+        if self.isTrain:
+            self.fake_AB_pool = ImagePool(opt.pool_size)
+            &#47&#47 define loss functions
+            self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan, tensor=self.Tensor)
+            self.criterionL1 = torch.nn.L1Loss()
+
+            &#47&#47 initialize optimizers
+            self.schedulers = []
+            self.optimizers = []
+            self.optimizer_G = torch.optim.Adam(self.netG.parameters(),
+                                                lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizer_D = torch.optim.Adam(self.netD.parameters(),
+                                                lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizers.append(self.optimizer_G)
+            self.optimizers.append(self.optimizer_D)
+            for optimizer in self.optimizers:
+                self.schedulers.append(networks.get_scheduler(optimizer, opt))
+
+        print(&quot---------- Networks initialized -------------&quot)
+        networks.print_network(<a id="change">self.netG</a>, opt.verbose)
+        <a id="change">if self.isTrain:
+            networks.print_network(self.netD, opt.verbose)
+       </a> print(&quot-----------------------------------------------&quot)
+
+    def set_input(self, input):
+        AtoB = self.opt.which_direction == &quotAtoB&quot</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def initialize(self, opt):
+        BaseModel.initialize(self, opt)
+        <a id="change">self.isTrain</a> = opt.isTrain
+        &#47&#47 specify the training losses you want to print out. The program will call base_model.get_current_errors
+        <a id="change">self.loss_names</a> = <a id="change">[&quotG_GAN&quot, &quotG_L1&quot, &quotD_real&quot, &quotD_fake&quot]</a>
+        &#47&#47 specify the images you want to save/display. The program will call base_model.get_current_visuals
+        <a id="change">self.visual_names</a> = <a id="change">[&quotreal_A&quot, &quotfake_B&quot, &quotreal_B&quot]</a>
+        &#47&#47 specify the models you want to save to the disk. The program will call base_model.save
+        <a id="change">if self.isTrain:
+            self.model_names = [&quotG&quot, &quotD&quot]
+        else:  &#47&#47 during test time, only load Gs
+            self.model_names = [&quotG&quot]
+        &#47&#47 load/define networks
+       </a> self.netG = networks.define_G(opt.input_nc, opt.output_nc, opt.ngf,
+                                      opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
+
+        if self.isTrain:</code></pre>

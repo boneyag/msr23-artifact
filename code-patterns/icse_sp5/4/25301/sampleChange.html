@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 This makes the index global (e.g. best beams for the second
+            &#47&#47 batch example is in [K, 2*K)).
+            offsets = np.arange(bsz) * self.K
+            offset_beams = <a id="change">tf.cast(best_beams, tf.int64)</a> + tf.expand_dims(offsets, -1)
+            flat_beams = tf.reshape(offset_beams, [bsz * self.K])
+            &#47&#47 Select the paths to extend based on the best beams
+            flat_paths = tf.reshape(paths, [bsz * self.K, -1])</code></pre><h3>After Change</h3><pre><code class='java'>
+                done_mask = tf.expand_dims(done_mask, -1)
+                &#47&#47 Can creating this mask be moved out of the loop? It never changes but we don&quott have V
+                &#47&#47 This mask selects the EOS token
+                eos_mask = tf.cast(tf.zeros((1, 1, V)) + tf.reshape(tf.cast(<a id="change">tf.range(V)</a> == Offsets.EOS, tf.float32), (1, 1, V)), done_mask.dtype)
+                &#47&#47 eos_mask[:, :, Offsets.EOS] = 1
+                &#47&#47 This mask selects the EOS token of only the beams that are done.
+                mask = done_mask & eos_mask</code></pre>

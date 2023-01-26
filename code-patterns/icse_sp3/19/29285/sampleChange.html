@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if mask is not None:
+            correct *= mask.view(-1, 1)
+            <a id="change">self.total_count</a> += mask.sum()
+        else:
+            self.total_count += gold_labels.numel()
+        <a id="change">self.correct_count</a> += correct.sum()
+
+        if is_distributed():
+            <a id="change">_correct_count = torch.tensor(self.correct_count).to(device)</a>
+            <a id="change">_total_count = torch.tensor(self.total_count).to(device)</a>
+            dist.all_reduce(_correct_count, op=dist.ReduceOp.SUM)
+            <a id="change">dist.all_reduce(_total_count, op=dist.ReduceOp.SUM)</a>
+            self.correct_count = <a id="change">_correct_count.item()</a>
+            self.total_count = <a id="change">_total_count.item()</a>
+
+    def get_metric(self, reset: bool = False):
+        
+        &#47&#47 Returns</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if is_distributed():
+            dist.all_reduce(correct_count_diff, op=dist.ReduceOp.SUM)
+            <a id="change">dist.all_reduce(total_count_diff, op=dist.ReduceOp.SUM)</a>
+            self.correct_count += correct_count_diff.item()
+            <a id="change">self.total_count += total_count_diff.item()</a>
+        else:
+            self.correct_count += correct_count_diff
+            self.total_count += total_count_diff
+</code></pre>

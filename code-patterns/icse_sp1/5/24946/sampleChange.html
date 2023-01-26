@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    wexog = wexog / weights
+    
+    dep = wdep
+    exog = <a id="change">pd.DataFrame(wexog, columns=mod.exog.vars)</a>
+    
+    ols = IV2SLS(dep, exog, None, None, weights=weights)
+    ols_res = ols.fit(&quotunadjusted&quot)
+    assert_results_equal(res, ols_res)</code></pre><h3>After Change</h3><pre><code class='java'>
+    mod = BetweenOLS(missing_data.y, missing_data.x, weights=missing_data.w)
+    res = mod.fit(reweight=True)
+
+    weights = <a id="change">mod.weights.dataframe.groupby(level=0).sum()</a>
+    weights = weights.reindex(mod.dependent.entities)
+    
+    dep = mod.dependent.dataframe * mod.weights.dataframe.values
+    dep = dep.groupby(level=0).sum()
+    dep = dep.reindex(mod.dependent.entities)
+    dep = dep / weights.values
+
+    exog = mod.weights.dataframe.values * mod.exog.dataframe
+    exog = exog.groupby(level=0).sum()
+    exog = exog.reindex(mod.dependent.entities)
+    <a id="change">exog = (1.0 / weights.values) * exog</a>
+
+    ols = IV2SLS(dep, exog, None, None, weights=weights)
+    ols_res = ols.fit(&quotunadjusted&quot)
+    assert_results_equal(res, ols_res)</code></pre>

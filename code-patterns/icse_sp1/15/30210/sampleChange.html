@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+@KerasConverter.register_handler("AveragePooling2D")
+def _convert_max_pooling2d(converter: KerasConverter, k_op: "keras.layers.AveragePooling2D"):
+    x = converter.get_variable(converter.get_input_tensor(k_op)[0])
+    <a id="change">x</a>, padding = convolution_handler_preprocess(x, ksize=k_op.pool_size, padding=k_op.padding, dilation_rate=(1, 1),
+                                                data_format=k_op.data_format)
+    if any(p &gt; 0 for p in padding):
+        console.warning(</code></pre><h3>After Change</h3><pre><code class='java'>
+
+@KerasConverter.register_handler("AveragePooling2D")
+def _convert_max_pooling2d(converter: KerasConverter, k_op: "keras.layers.AveragePooling2D"):
+    <a id="change">x</a> = converter.get_variable(converter.get_input_tensor(k_op)[0])
+    check_data_format(x, k_op.data_format)
+
+    <a id="change">paddings = (
+        parse_padding(k_op.padding, k_op.pool_size[0], 1),
+        parse_padding(k_op.padding, k_op.pool_size[1], 1)
+    )</a>
+    <a id="change">x, paddings = convert_odd_padding_to_concat(x, paddings=paddings)</a>
+
+    if any(p &gt; 0 for p in paddings):
+        console.warning(
+            "[KerasConverter] keras.layers.AveragePooling computes average by dividing number of valid elements in window "</code></pre>

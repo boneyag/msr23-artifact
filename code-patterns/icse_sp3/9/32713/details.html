@@ -1,0 +1,76 @@
+<html><h3>96342cc6b3f9424cd48b746e72d790b883aad958,mlflow/_spark_autologging.py,,autolog,#,150
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    wrap_patch(SparkSession, "__init__", __init__)
+
+    active_session = _get_active_spark_session()
+    <a id="change">if active_session is not None:
+        &#47&#47 We know SparkContext exists here already, so get it
+        sc = SparkContext.getOrCreate()
+
+        _listen_for_spark_activity(sc)
+
+
+</a>def _get_repl_id():
+    
+    Get a unique REPL ID for a PythonSubscriber instance. This is used to distinguish between
+    REPLs in multitenant, REPL-aware environments where multiple Python processes may share the</code></pre><h3>After Change</h3><pre><code class='java'>
+def autolog():
+    Implementation of Spark datasource autologging
+    global _spark_table_info_listener
+    <a id="change">if _get_current_listener() is None:
+        active_session = _get_active_spark_session()
+        if active_session is None:
+            raise MlflowException(
+                "No active SparkContext found, refusing to enable Spark datasource "
+                "autologging. Please create a SparkSession e.g. via "
+                "SparkSession.builder.getOrCreate() (see API docs at "
+                "https://spark.apache.org/docs/latest/api/python/"
+                "pyspark.sql.html&#47&#47pyspark.sql.SparkSession) "
+                "before attempting to enable autologging"
+            )
+        &#47&#47 We know SparkContext exists here already, so get it
+        sc = SparkContext.getOrCreate()
+        if _get_spark_major_version(sc) &lt; 3:
+            raise MlflowException("Spark autologging unsupported for Spark versions &lt; 3")
+        gw = active_session.sparkContext._gateway
+        params = gw.callback_server_parameters
+        callback_server_params = CallbackServerParameters(
+            address=params.address,
+            port=params.port,
+            daemonize=True,
+            daemonize_connections=True,
+            eager_load=params.eager_load,
+            ssl_context=params.ssl_context,
+            accept_timeout=params.accept_timeout,
+            read_timeout=params.read_timeout,
+            auth_token=params.auth_token,
+        )
+        gw.start_callback_server(callback_server_params)
+
+        event_publisher = _get_jvm_event_publisher()
+        try:
+            event_publisher.init(1)
+            _spark_table_info_listener = PythonSubscriber()
+            _spark_table_info_listener.register()
+        except Exception as e:
+            raise MlflowException(
+                "Exception while attempting to initialize JVM-side state for "
+                "Spark datasource autologging. Please ensure you have the "
+                "mlflow-spark JAR attached to your Spark session as described "
+                "in http://mlflow.org/docs/latest/tracking.html&#47&#47"
+                "automatic-logging-from-spark-experimental. Exception:\n%s" % e
+            )
+
+        &#47&#47 Register context provider for Spark autologging
+        from mlflow.tracking.context.registry import _run_context_provider_registry
+
+        _run_context_provider_registry.register(SparkAutologgingContext)
+
+
+</a>def _get_repl_id():
+    
+    Get a unique REPL ID for a PythonSubscriber instance. This is used to distinguish between
+    REPLs in multitenant, REPL-aware environments where multiple Python processes may share the</code></pre><img src="161149082.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mlflow/mlflow/commit/96342cc6b3f9424cd48b746e72d790b883aad958#diff-69b327a004089c5308df27e31d361c7ab8eb82c0b7bc04b4d54b2b83fd9c8f4fL95' target='_blank'>Link</a></div><div id='project'> Project Name: mlflow/mlflow</div><div id='commit'> Commit Name: 96342cc6b3f9424cd48b746e72d790b883aad958</div><div id='time'> Time: 2020-10-20</div><div id='author'> Author: 39497902+dbczumar@users.noreply.github.com</div><div id='file'> File Name: mlflow/_spark_autologging.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: autolog</div><BR><BR><div id='link'><a href='https://github.com/mlflow/mlflow/commit/9abf61cedb2d84b200eec76d8e036d8c92243e94#diff-3590e953f533663d826ec731cc97a600a69cbd9a45a38ae83f82cdb0b97099e2L551' target='_blank'>Link</a></div><div id='project'> Project Name: mlflow/mlflow</div><div id='commit'> Commit Name: 9abf61cedb2d84b200eec76d8e036d8c92243e94</div><div id='time'> Time: 2020-07-13</div><div id='author'> Author: hkawamura0130@gmail.com</div><div id='file'> File Name: mlflow/store/model_registry/sqlalchemy_store.py</div><div id='class'> Class Name: SqlAlchemyStore</div><div id='method'> Method Name: transition_model_version_stage</div><BR><BR><div id='link'><a href='https://github.com/mlflow/mlflow/commit/4f9fc9b8698c84f7a7281a2692657a2f1c1368d6#diff-f2f15b1115e44883a1b7952a5367f516f040c4282822945d6219abcadff14e01L364' target='_blank'>Link</a></div><div id='project'> Project Name: mlflow/mlflow</div><div id='commit'> Commit Name: 4f9fc9b8698c84f7a7281a2692657a2f1c1368d6</div><div id='time'> Time: 2020-06-30</div><div id='author'> Author: 52183359+ankitmathur-db@users.noreply.github.com</div><div id='file'> File Name: mlflow/utils/search_utils.py</div><div id='class'> Class Name: SearchUtils</div><div id='method'> Method Name: _parse_order_by_string</div><BR>

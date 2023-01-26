@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    denominator = tf.sqrt(x_var)
+    cond = tf.not_equal(denominator, 0)
+    if elementwise and isinstance(x, tf.Tensor):
+      <a id="change">cond = tf.tile(tf.expand_dims(cond, 0), [tf.shape(numerator)[0], 1])</a>
+
+    deviation_values = tf.where(cond, tf.divide(numerator, denominator),
+                                numerator)
+    return compose_result_fn(deviation_values)</code></pre><h3>After Change</h3><pre><code class='java'>
+    if elementwise and isinstance(x, tf.Tensor):
+      &#47&#47 Repeats cond when necessary across the batch dimension for it to be
+      &#47&#47 compatible with the shape of numerator.
+      <a id="change">cond = tf.cast(
+          tf.zeros_like(numerator) + tf.cast(cond, numerator.dtype),
+          dtype=tf.bool)</a>
+
+    deviation_values = tf.where(cond, tf.divide(numerator, denominator),
+                                numerator)
+    return compose_result_fn(deviation_values)</code></pre>

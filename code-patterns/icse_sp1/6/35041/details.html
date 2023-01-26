@@ -1,0 +1,25 @@
+<html><h3>1b305c86dc2ff6b3461c42f4428460b66a8bff8b,calamari_ocr/ocr/backends/tensorflow_backend/tensorflow_model.py,TensorflowModel,predict_dataset,#TensorflowModel#Any#,350
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            dataset_gen,
+        )
+        for softmax, params, output_seq_len in zip(*out):
+            softmax = <a id="change">np.roll(softmax, 1, axis=1)</a>  &#47&#47 fix bla
+            &#47&#47 decode encoded params from json. On python&lt;=3.5 this are bytes, else it already is a str
+            enc_param = params[0]
+            enc_param = json.loads(enc_param.decode("utf-8") if isinstance(enc_param, bytes) else enc_param)
+            <a id="change">decoded = self.ctc_decoder.decode(softmax[:output_seq_len[0]])</a>
+            &#47&#47 return prediction result
+            yield NetworkPredictionResult(softmax=softmax,
+                                          output_length=output_seq_len,
+                                          decoded=decoded,</code></pre><h3>After Change</h3><pre><code class='java'>
+    def predict_dataset(self, dataset) -&gt; Generator[NetworkPredictionResult, None, None]:
+        dataset_gen = self.create_dataset_inputs(dataset, self.batch_size, self.network_proto.features, self.network_proto.backend.shuffle_buffer_size,
+                                                 mode=&quottest&quot)
+        <a id="change">out = sum([list(zip(self.predict_raw_batch(d[0][&quotinput_data&quot], d[0][&quotinput_sequence_length&quot]), d[0][&quotinput_data_params&quot])) for d in dataset_gen], [])</a>
+        for pred, params in out:
+            enc_param = params[0].numpy()
+            pred.params = json.loads(enc_param.decode("utf-8") if isinstance(enc_param, bytes) else enc_param)
+            yield pred</code></pre><img src="171675547.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/Calamari-OCR/calamari/commit/1b305c86dc2ff6b3461c42f4428460b66a8bff8b#diff-67dee263d92122e3df5fcab4a073ad78f77652585f119e053bc4f8d4cb388b77L350' target='_blank'>Link</a></div><div id='project'> Project Name: Calamari-OCR/calamari</div><div id='commit'> Commit Name: 1b305c86dc2ff6b3461c42f4428460b66a8bff8b</div><div id='time'> Time: 2020-01-31</div><div id='author'> Author: wick.chr.info@gmail.com</div><div id='file'> File Name: calamari_ocr/ocr/backends/tensorflow_backend/tensorflow_model.py</div><div id='class'> Class Name: TensorflowModel</div><div id='method'> Method Name: predict_dataset</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/1b8ca89144d2eb858ef0763a6f9b272619b7ee59#diff-0c7f73065c983e1399967780d4bfbd9b418611313f61d9adc6988ec157739b17L420' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: 1b8ca89144d2eb858ef0763a6f9b272619b7ee59</div><div id='time'> Time: 2020-10-28</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: api-examples/transformer_utils.py</div><div id='class'> Class Name: NextTurnPredictionFileLoader</div><div id='method'> Method Name: process_line</div><BR><BR><div id='link'><a href='https://github.com/PacktPublishing/Deep-Reinforcement-Learning-Hands-On/commit/1a89404a84393211c7b370077fafe536a8f44762#diff-f0bf571463d6a24e7ec7c08e3b48b5dea2f2559833e5c8491ce3a32a1e0aab1bL67' target='_blank'>Link</a></div><div id='project'> Project Name: PacktPublishing/Deep-Reinforcement-Learning-Hands-On</div><div id='commit'> Commit Name: 1a89404a84393211c7b370077fafe536a8f44762</div><div id='time'> Time: 2018-03-02</div><div id='author'> Author: max.lapan@gmail.com</div><div id='file'> File Name: ch17/lib/common.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: iterate_batches</div><BR>

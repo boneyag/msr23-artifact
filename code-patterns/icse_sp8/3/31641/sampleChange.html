@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    &#47&#47 repeat coords along channel dim if not given that way
+    if coords.dim() == 2:
+        coords = coords.unsqueeze(0).repeat(<a id="change">input.size(0)</a>,1,1)
+
+    &#47&#47 take clamp of coords so they&quotre in the image bounds
+    xc = torch.clamp(coords[:,:,0], 0, input.size(1)-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+    coords[:,1] = torch.clamp(coords[:,1], 0, input.size(2)-1).round()
+    coords[:,2] = torch.clamp(coords[:,2], 0, input.size(3)-1).round()
+
+    stride = <a id="change">torch</a>.LongTensor(input.stride())[1:].float()
+    idx = coords.mv(stride)
+
+    input_flat = th_flatten(input)
+
+    <a id="change">mapped_vals = input_flat[idx.long()]</a>
+
+    return mapped_vals.view_as(input)
+
+</code></pre>

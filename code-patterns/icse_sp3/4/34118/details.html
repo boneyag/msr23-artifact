@@ -1,0 +1,106 @@
+<html><h3>69638edca8afc4fef18c77c78171a808a7d359d6,trunk/SUAVE/Methods/Performance/estimate_take_off_field_length.py,,estimate_take_off_field_length,#Any#Any#Any#Any#,31
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 ==============================================
+    &#47&#47 Getting engine thrust
+    &#47&#47 ==============================================    
+    <a id="change">state = Data()</a>
+    state.conditions = Aerodynamics() 
+    state.numerics   = Numerics()
+    conditions = state.conditions
+
+    conditions.freestream.dynamic_pressure = np.array(np.atleast_1d(0.5 * rho * speed_for_thrust**2))
+    conditions.freestream.gravity          = np.array([np.atleast_1d(sea_level_gravity)])
+    conditions.freestream.velocity         = np.array(np.atleast_1d(speed_for_thrust))
+    conditions.freestream.mach_number      = np.array(np.atleast_1d(speed_for_thrust/ a))
+    conditions.freestream.speed_of_sound   = np.array(a)
+    conditions.freestream.temperature      = np.array(np.atleast_1d(T))
+    conditions.freestream.pressure         = np.array(np.atleast_1d(p))
+    conditions.propulsion.throttle         = np.array(np.atleast_1d(1.))
+    
+    results = vehicle.propulsors.evaluate_thrust(state) &#47&#47 total thrust
+    
+    thrust = results.thrust_force_vector
+
+    &#47&#47 ==============================================
+    &#47&#47 Calculate takeoff distance
+    &#47&#47 ==============================================
+
+    &#47&#47 Defining takeoff distance equations coefficients
+    try:
+        takeoff_constants = vehicle.takeoff_constants &#47&#47 user defined
+    except:  &#47&#47 default values
+        takeoff_constants = np.zeros(3)
+        if engine_number == 2:
+            takeoff_constants[0] = 857.4
+            takeoff_constants[1] =   2.476
+            takeoff_constants[2] =   0.00014
+        elif engine_number == 3:
+            takeoff_constants[0] = 667.9
+            takeoff_constants[1] =   2.343
+            takeoff_constants[2] =   0.000093
+        elif engine_number == 4:
+            takeoff_constants[0] = 486.7
+            takeoff_constants[1] =   2.282
+            takeoff_constants[2] =   0.0000705
+        elif engine_number &gt;  4:
+            takeoff_constants[0] = 486.7
+            takeoff_constants[1] =   2.282
+            takeoff_constants[2] =   0.0000705
+            print(&quotThe vehicle has more than 4 engines. Using 4 engine correlation. Result may not be correct.&quot)
+        else:
+            takeoff_constants[0] = 857.4
+            takeoff_constants[1] =   2.476
+            takeoff_constants[2] =   0.00014
+            print(&quotIncorrect number of engines: {0:.1f}. Using twin engine correlation.&quot.format(engine_number))
+
+    &#47&#47 Define takeoff index   (V2^2 / (T/W)
+    takeoff_index = V2_speed**2. / (thrust[0][0] / weight)
+    &#47&#47 Calculating takeoff field length
+    takeoff_field_length = 0.
+    for idx,constant in enumerate(takeoff_constants):
+        takeoff_field_length += constant * takeoff_index**idx
+    takeoff_field_length = takeoff_field_length * Units.ft
+    
+    &#47&#47 calculating second segment climb gradient, if required by user input
+    if compute_2nd_seg_climb:
+        &#47&#47 Getting engine thrust at V2 (update only speed related conditions)
+        state.conditions.freestream.dynamic_pressure = np.array(np.atleast_1d(0.5 * rho * V2_speed**2))
+        state.conditions.freestream.velocity         = np.array(np.atleast_1d(V2_speed))
+        state.conditions.freestream.mach_number      = np.array(np.atleast_1d(V2_speed/ a))
+        results = vehicle.propulsors[&quotturbofan&quot].engine_out(state)
+        thrust = results.thrust_force_vector[0][0]
+
+        &#47&#47 Compute windmilling drag
+        windmilling_drag_coefficient = windmilling_drag(vehicle,state)
+
+        &#47&#47 Compute asymmetry drag   
+        asymmetry_drag_coefficient = asymmetry_drag(state, vehicle, windmilling_drag_coefficient)
+           
+        &#47&#47 Compute l over d ratio for takeoff condition, NO engine failure
+        l_over_d = estimate_2ndseg_lift_drag_ratio(vehicle) 
+        
+        &#47&#47 Compute L over D ratio for takeoff condition, WITH engine failure
+        clv2 = maximum_lift_coefficient / (V2_VS_ratio) **2
+        cdv2_all_engine = clv2 / l_over_d
+        cdv2 = cdv2_all_engine + asymmetry_drag_coefficient + windmilling_drag_coefficient
+        l_over_d_v2 = clv2 / cdv2
+    
+        &#47&#47 Compute 2nd segment climb gradient
+        second_seg_climb_gradient = thrust / (weight*sea_level_gravity) - 1. / l_over_d_v2
+
+        <a id="change">return takeoff_field_length, second_seg_climb_gradient</a>
+
+    else:
+        &#47&#47 return only takeoff_field_length
+        return takeoff_field_length</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Compute 2nd segment climb gradient
+        second_seg_climb_gradient = thrust / (weight*sea_level_gravity) - 1. / l_over_d_v2
+
+        <a id="change">return takeoff_field_length[0][0], second_seg_climb_gradient[0][0]</a>
+
+    else:
+        &#47&#47 return only takeoff_field_length
+        return takeoff_field_length[0][0]</code></pre><img src="167365193.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/suavecode/SUAVE/commit/69638edca8afc4fef18c77c78171a808a7d359d6#diff-7555e7f5cc77573c4323f8c75e278b50b3f2307806b2087eac84ef2ecd5a2e79L128' target='_blank'>Link</a></div><div id='project'> Project Name: suavecode/SUAVE</div><div id='commit'> Commit Name: 69638edca8afc4fef18c77c78171a808a7d359d6</div><div id='time'> Time: 2020-04-14</div><div id='author'> Author: ebotero@stanford.edu</div><div id='file'> File Name: trunk/SUAVE/Methods/Performance/estimate_take_off_field_length.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: estimate_take_off_field_length</div><BR><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/5718673905b27722d458f70de66d8556f369e341#diff-3e1f02e77d7e2f9234f742bd053d63ba6c25c504920b7c4180266f05ea485e7fL28' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: 5718673905b27722d458f70de66d8556f369e341</div><div id='time'> Time: 2018-04-19</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: torch_geometric/data/in_memory_dataset.py</div><div id='class'> Class Name: InMemoryDataset</div><div id='method'> Method Name: get_data</div><BR><BR><div id='link'><a href='https://github.com/suavecode/SUAVE/commit/5678e66aaa00587902c71449bf87270e9d07384f#diff-2703b18aa5b9a6f87137f5598e29a8660b3fdba629ddbc48ab79c93c61819992L41' target='_blank'>Link</a></div><div id='project'> Project Name: suavecode/SUAVE</div><div id='commit'> Commit Name: 5678e66aaa00587902c71449bf87270e9d07384f</div><div id='time'> Time: 2019-03-16</div><div id='author'> Author: mclarke2@stanford.edu</div><div id='file'> File Name: trunk/SUAVE/Methods/Aerodynamics/XFOIL/compute_airfoil_polars.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: read_airfoil_polars</div><BR>

@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        model = TorchModel()
+        config_list = [{&quotsparsity&quot: 0.2, &quotop_types&quot: [&quotConv2d&quot], &quotop_names&quot: [&quotconv1&quot]},
+                       {&quotsparsity&quot: 0.6, &quotop_types&quot: [&quotConv2d&quot], &quotop_names&quot: [&quotconv2&quot]}]
+        <a id="change">pruner = torch_compressor.L1FilterPruner(model, config_list)</a>
+
+        model.conv1.weight.data = torch.tensor(w).float()
+        model.conv2.weight.data = torch.tensor(w).float()
+        layer1 = torch_compressor.compressor.LayerInfo(&quotconv1&quot, model.conv1)
+        <a id="change">mask1 = pruner.calc_mask(layer1, config_list[0], if_calculated=torch.tensor(0))</a>
+        layer2 = torch_compressor.compressor.LayerInfo(&quotconv2&quot, model.conv2)
+        <a id="change">mask2 = pruner.calc_mask(layer2, config_list[1], if_calculated=torch.tensor(0))</a>
+        assert all(torch.sum(mask1[&quotweight&quot], (1, 2, 3)).numpy() == np.array([0., 27., 27., 27., 27.]))
+        assert all(torch.sum(mask2[&quotweight&quot], (1, 2, 3)).numpy() == np.array([0., 0., 0., 27., 27.]))
+
+    def test_torch_slim_pruner(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+        w = np.array([np.zeros((3, 3, 3)), np.ones((3, 3, 3)), np.ones((3, 3, 3)) * 2,
+                      np.ones((3, 3, 3)) * 3, np.ones((3, 3, 3)) * 4])
+        model = TorchModel()
+        <a id="change">optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.5)</a>
+        config_list = [{&quotsparsity&quot: 0.2, &quotop_types&quot: [&quotConv2d&quot], &quotop_names&quot: [&quotconv1&quot]},
+                       {&quotsparsity&quot: 0.6, &quotop_types&quot: [&quotConv2d&quot], &quotop_names&quot: [&quotconv2&quot]}]
+        <a id="change">pruner</a> = torch_compressor.L1FilterPruner(model, config_list, optimizer)
+
+        model.conv1.module.weight.data = torch.tensor(w).float()
+        model.conv2.module.weight.data = torch.tensor(w).float()
+        <a id="change">mask1 = pruner.calc_mask(model.conv1)</a>
+        <a id="change">mask2 = pruner.calc_mask(model.conv2)</a>
+        assert all(torch.sum(mask1[&quotweight_mask&quot], (1, 2, 3)).numpy() == np.array([0., 27., 27., 27., 27.]))
+        assert all(torch.sum(mask2[&quotweight_mask&quot], (1, 2, 3)).numpy() == np.array([0., 0., 0., 27., 27.]))
+
+    def test_torch_slim_pruner(self):</code></pre>

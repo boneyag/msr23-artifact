@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        )
+
+    def build(self, inputs):
+        if <a id="change">inputs.get_shape().ndims</a> != 2:
+            raise Exception("The input dimension must be rank 2, please reshape or flatten it")
+
+        if self.use_gemm:
+            raise Exception("TODO. The current version use tf.matmul for inferencing.")
+
+        n_in = <a id="change">int(inputs.get_shape()[-1])</a>
+
+        <a id="change">self.W = tf.compat.v1.get_variable(
+            name=self.name + &quot\W&quot, shape=(n_in, self.n_units), initializer=self.W_init, dtype=LayersConfig.tf_dtype,
+            **self.W_init_args
+        )</a>
+
+        <a id="change">if self.b_init is not None:
+            try:
+                self.b = tf.compat.v1.get_variable(
+                    name=self.name + &quot\b&quot, shape=(self.n_units), initializer=self.b_init, dtype=LayersConfig.tf_dtype,
+                    **self.b_init_args
+                )
+            except Exception:  &#47&#47 If initializer is a constant, do not specify shape.
+                self.b = tf.compat.v1.get_variable(
+                    name=self.name + &quot\b&quot, initializer=self.b_init, dtype=LayersConfig.tf_dtype, **self.b_init_args
+                )
+            self.add_weights([self.W, self.b])
+        else:
+            self.add_weights(self.W)
+
+   </a> def forward(self, inputs):
+
+        inputs = quantize_active_overflow(inputs, self.bitA)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            (self.name, n_units, self.act.__name__ if self.act is not None else &quotNo Activation&quot)
+        )
+
+    def build(<a id="change">self</a>, inputs_shape):
+        &#47&#47 if inputs.get_shape().ndims != 2:
+        if <a id="change">len(inputs_shape)</a> != 2:
+            raise Exception("The input dimension must be rank 2, please reshape or flatten it")
+
+        if self.use_gemm:
+            raise Exception("TODO. The current version use tf.matmul for inferencing.")
+
+        n_in = <a id="change">inputs_shape[-1]</a>
+
+        &#47&#47 self.W = tf.compat.v1.get_variable(
+        &#47&#47     name=self.name + &quot\W&quot, shape=(n_in, self.n_units), initializer=self.W_init, dtype=LayersConfig.tf_dtype,
+        &#47&#47     **self.W_init_args
+        &#47&#47 )
+        <a id="change">self._add_weight(scope_name=self.name, var_name="weights", shape=(n_in, self.n_units), init=self.W_init, init_args=self.W_init_args)</a>
+        <a id="change">if self.b_init is not None:
+            self._add_weight(scope_name=self.name, var_name="biases", shape=int(self.n_units), init=self.b_init, init_args=self.b_init_args)
+        &#47&#47     try:
+        &#47&#47         self.b = tf.compat.v1.get_variable(
+        &#47&#47             name=self.name + &quot\b&quot, shape=(self.n_units), initializer=self.b_init, dtype=LayersConfig.tf_dtype,
+        &#47&#47             **self.b_init_args
+        &#47&#47         )
+        &#47&#47     except Exception:  &#47&#47 If initializer is a constant, do not specify shape.
+        &#47&#47         self.b = tf.compat.v1.get_variable(
+        &#47&#47             name=self.name + &quot\b&quot, initializer=self.b_init, dtype=LayersConfig.tf_dtype, **self.b_init_args
+        &#47&#47         )
+        &#47&#47     self.add_weights([self.W, self.b])
+        &#47&#47 else:
+        &#47&#47     self.add_weights(self.W)
+
+   </a> def forward(self, inputs):
+
+        inputs = quantize_active_overflow(inputs, self.bitA)
+</code></pre>

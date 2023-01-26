@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    parent_tensor = inputs[0]
+    if len(parent_tensor.get_shape()) == 3:
+      parent_tensor = tf.expand_dims(parent_tensor, 3)
+    <a id="change">for reuse in (self._reuse, False):
+      try:
+        if tf.executing_eagerly():
+          if not self._built:
+            self._layer = self._build_layer(False)
+            self._non_pickle_fields.append(&quot_layer&quot)
+          layer = self._layer
+        else:
+          layer = self._build_layer(reuse)
+        out_tensor = layer(parent_tensor)
+        if self.normalizer_fn is not None:
+          out_tensor = self.normalizer_fn(out_tensor)
+        break
+      except ValueError:
+        if reuse:
+          &#47&#47 This probably means the variable hasn&quott been created yet, so try again
+          &#47&#47 with reuse set to false.
+          continue
+        raise
+   </a> if set_tensors:
+      <a id="change">self._record_variable_scope(self.scope_name)</a>
+      <a id="change">self.out_tensor</a> = out_tensor
+    if tf.executing_eagerly() and not self._built:
+      self._built = True
+      <a id="change">self.variables = self._layer.variables</a>
+    return out_tensor
+
+
+class Conv3D(SharedVariableScope):</code></pre><h3>After Change</h3><pre><code class='java'>
+        bias_initializer=self.biases_initializer(),
+        kernel_initializer=self.weights_initializer())
+
+  def create_tensor(<a id="change">self</a>, in_layers=None, set_tensors=True, **kwargs):
+    inputs = self._get_input_tensors(in_layers)
+    parent_tensor = inputs[0]
+    if len(parent_tensor.get_shape()) == 3:
+      parent_tensor = tf.expand_dims(parent_tensor, 3)
+    <a id="change">layer = self._get_layer(set_tensors)</a>
+    <a id="change">out_tensor = layer(parent_tensor)</a>
+    if self.normalizer_fn is not None:
+      out_tensor = self.normalizer_fn(out_tensor)
+    if set_tensors:
+      <a id="change">self.out_tensor</a> = out_tensor
+      <a id="change">self.trainable_variables = layer.trainable_variables</a>
+    if tf.executing_eagerly() and not self._built:
+      self._built = True
+      <a id="change">self.trainable_variables = layer.trainable_variables</a>
+    return out_tensor
+
+
+class Conv3D(SharedLayer):</code></pre>

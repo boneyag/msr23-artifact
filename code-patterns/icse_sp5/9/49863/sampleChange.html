@@ -1,0 +1,68 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def comicmain(request, page_title=""):
+     show content as main page item. Loads pages from the main project 
+    challenge_short_name = settings.MAIN_PROJECT_NAME
+    <a id="change">if Challenge.objects.filter(short_name=challenge_short_name).count() == 0:
+        link = reverse("challenges:create")
+        link = link + "?short_name=%s" % challenge_short_name
+        link_html = create_HTML_a(
+            link, "Create project &quot%s&quot" % challenge_short_name
+        )
+        html = I&quotm trying to show the first page for main project &quot%s&quot here,
+        but &quot%s&quot does not exist. %s. % (
+            challenge_short_name,
+            challenge_short_name,
+            link_html,
+        )
+        p = create_temp_page(title="no_pages_found", html=html)
+        return render(
+            request, "temppage.html", {"site": p.challenge, "currentpage": p}
+        )
+
+   </a> pages = getPages(challenge_short_name)
+    if pages.count() == 0:
+        link = reverse("pages:list", args=[challenge_short_name])
+        link_html = create_HTML_a(link, "admin interface")
+        html = I&quotm trying to show the first page for main project &quot%s&quot here,
+        but &quot%s&quot contains no pages. Please add
+        some in the %s. % (
+            challenge_short_name,
+            challenge_short_name,
+            link_html,
+        )
+        p = create_temp_page(title="no_pages_found", html=html)
+        return render(
+            request, "temppage.html", {"site": p.challenge, "currentpage": p}
+        )
+
+    elif page_title == "":
+        &#47&#47 if no page title is given, just use the first page found
+        p = pages[0]
+        p.html = renderTags(request, p)
+    else:
+        try:
+            p = Page.objects.get(
+                challenge__short_name=challenge_short_name,
+                title__iexact=page_title,
+            )
+        except Page.DoesNotExist:
+            <a id="change">raise Http404</a>
+
+    p.html = renderTags(request, p)
+    &#47&#47 render page contents using django template system
+    &#47&#47 This makes it possible to use tags like &quot{% dataset %}&quot in page</code></pre><h3>After Change</h3><pre><code class='java'>
+    if page_title:
+        pages = [p for p in pages if p.title.lower() == page_title.lower()]
+
+        <a id="change">if len(pages) != 1:
+            raise ValueError(
+                f"More than 1 page with title {page_title} was found for {site}"
+            )
+
+   </a> page = pages[0]
+    page.html = renderTags(request, page)
+
+    return render(request, "page.html", {"currentpage": page})</code></pre>

@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    pytest.importorskip(&quotbokeh&quot)
+    from distributed.bokeh.worker import BokehWorker
+    services = {(&quotbokeh&quot, 0): BokehWorker}
+    <a id="change">for host in [&quottcp://0.0.0.0&quot, &quottcp://127.0.0.2&quot]:
+        w = Worker(s.address, services=services)
+        yield w._start(host)
+
+        sock = first(w.services[&quotbokeh&quot].server._http._sockets.values())
+        assert sock.getsockname()[0] == host.split(&quot://&quot)[1]
+        yield w._close()
+
+
+</a>@gen_test()
+def test_scheduler_file():
+    with tmpfile() as fn:
+        s = Scheduler(scheduler_file=fn)</code></pre><h3>After Change</h3><pre><code class='java'>
+    assert sock.getsockname()[0] in (&quot::&quot, &quot0.0.0.0&quot)
+    yield w._close()
+
+    <a id="change">w = Worker(s.address, services={(&quotbokeh&quot, &quot:0&quot): BokehWorker})</a>
+    yield w._start(&quottcp://127.0.0.1&quot)
+    <a id="change">sock = first(w.services[&quotbokeh&quot].server._http._sockets.values())</a>
+    assert sock.getsockname()[0] in (&quot::&quot, &quot0.0.0.0&quot)
+    yield w._close()
+
+    w = Worker(s.address, services={(&quotbokeh&quot, 0): BokehWorker})</code></pre>

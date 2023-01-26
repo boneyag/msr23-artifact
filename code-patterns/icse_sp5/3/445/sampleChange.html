@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        for ax, obs in zip(self._ax_lst, self._obs_lst):
+            observations = np.tile(obs[None], (actions.shape[0], 1))
+            Q_np = self._Q.predict(<a id="change">(observations, actions)</a>)
+            Q_np = np.reshape(Q_np, xgrid.shape)
+
+            cs = ax.contour(xgrid, ygrid, Q_np, 20)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Copy default values along the first axis and replace nans with
+        &#47&#47 the mesh grid points.
+        actions = np.tile(<a id="change">self._default_action.astype(np.float32)</a>, (N, 1))
+        actions[:, self._var_inds[0]] = xgrid.ravel()
+        actions[:, self._var_inds[1]] = ygrid.ravel()
+
+        for ax, obs in zip(self._ax_lst, self._obs_lst):
+            observations = np.tile(
+                obs[None].astype(np.float32), (actions.shape[0], 1))
+
+            if self.Q_op is None:
+                &#47&#47 TODO(hartikainen)
+                &#47&#47 We need to manually run the Q_op (instead of Q.predict)
+                &#47&#47 since tf.keras.Sequential.predict does not support multiple
+                &#47&#47 inputs.
+                self.Q_op = self._Q(self._Q.inputs)
+
+            <a id="change">Q_np = tf.keras.backend.get_session().run(
+                self.Q_op, feed_dict={
+                    self._Q.inputs[0]: observations,
+                    self._Q.inputs[1]: actions,
+                })</a>
+            &#47&#47 Q_np = self._Q.predict((observations, actions))
+            Q_np = np.reshape(Q_np, xgrid.shape)
+
+            cs = ax.contour(xgrid, ygrid, Q_np, 20)</code></pre>

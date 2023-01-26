@@ -1,0 +1,71 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 Build input queue
+            src_inputs = get_dataset(params.input[0])
+            tgt_inputs = get_dataset(params.input[1])
+            inputs = <a id="change">[src_inputs, tgt_inputs]</a>
+            features = dataset.get_training_input(inputs, params)
+        else:
+            features = record.get_input_features(
+                os.path.join(params.record, "*train*"), "train", params
+            )
+
+        &#47&#47 Build model
+        initializer = get_initializer(params)
+        regularizer = tf.contrib.layers.l1_l2_regularizer(
+            scale_l1=params.scale_l1, scale_l2=params.scale_l2)
+        model = model_cls(params)
+        &#47&#47 Create global step
+        global_step = tf.train.get_or_create_global_step()
+
+        training_func = model.get_training_func(initializer, regularizer)
+        loss = training_func(features)
+        loss = loss + tf.losses.get_regularization_loss()
+
+        &#47&#47 Print parameters
+        all_weights = {v.name: v for v in tf.trainable_variables()}
+        total_size = 0
+
+        for v_name in sorted(list(all_weights)):
+            v = all_weights[v_name]
+            tf.logging.info("%s\tshape    %s", v.name[:-2].ljust(80),
+                            str(v.shape).ljust(20))
+            v_size = np.prod(np.array(v.shape.as_list())).tolist()
+            total_size += v_size
+        tf.logging.info("Total trainable variables size: %d", total_size)
+
+        learning_rate = get_learning_rate_decay(params.learning_rate,
+                                                global_step, params)
+        learning_rate = tf.convert_to_tensor(learning_rate, dtype=tf.float32)
+        tf.summary.scalar("learning_rate", learning_rate)
+
+        &#47&#47 Create optimizer
+        if params.optimizer == "Adam":
+            opt = tf.train.AdamOptimizer(learning_rate,
+                                         beta1=params.adam_beta1,
+                                         beta2=params.adam_beta2,
+                                         epsilon=params.adam_epsilon)
+            opt = hvd.DistributedOptimizer(opt)
+        elif params.optimizer == "LazyAdam":
+            opt = tf.contrib.opt.LazyAdamOptimizer(learning_rate,
+                                                   beta1=params.adam_beta1,
+                                                   beta2=params.adam_beta2,
+                                                   epsilon=params.adam_epsilon)
+            opt = hvd.DistributedOptimizer(opt)
+        else:
+            raise RuntimeError("Optimizer %s not supported" % params.optimizer)
+
+        <a id="change">train_op = opt.minimize(loss, global_step=global_step)</a>
+        restore_op = restore_variables(args.checkpoint)
+
+        &#47&#47 Validation
+        if params.validation and params.references[0]:</code></pre><h3>After Change</h3><pre><code class='java'>
+    override_parameters(params, args)
+
+    &#47&#47 Export all parameters and model specific parameters
+    if <a id="change">hvd.rank()</a> == 0:
+        export_params(params.output, "params.json", params)
+        export_params(
+            params.output,</code></pre>

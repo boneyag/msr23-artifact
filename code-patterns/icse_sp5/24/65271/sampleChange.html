@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        last_probs = preds[(range(nb_instances),original_labels)]
+
+        n_dims = np.prod(x[0].shape)
+        <a id="change">if self.max_iter &gt; n_dims:
+            self.max_iter = n_dims
+            logger.info(&quot`max_iter` was reset to %d because it needs to be &#47&#47pixels x &#47&#47channels or less&quot, n_dims)
+
+       </a> indices = self._block_order(x.shape[2], 3, initial_size=self.freq_dim, stride=self.stride)[:self.max_iter]
+        trans = lambda z: self._block_idct(z, block_size=x.shape[2])
+
+        clip_min = -np.inf</code></pre><h3>After Change</h3><pre><code class='java'>
+        params = {&quotmax_iter&quot: max_iter, &quotepsilon&quot: epsilon, &quotfreq_dim&quot: freq_dim, &quotstride&quot: stride, &quotdelta&quot: delta, &quoteps&quot: eps, &quotnorm&quot: norm, &quotbatch_size&quot: batch_size}
+        self.set_params(**params)
+
+    def generate(<a id="change">self</a>, x, y=None, **kwargs):
+        
+        Generate adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y: An array with the original labels to be predicted.
+        :type y: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        
+        x = x.astype(ART_NUMPY_DTYPE)
+        nb_instances = x.shape[0]
+        preds = self.classifier.predict(x, batch_size=self.batch_size)
+        if y is None:
+            y = np.argmax(preds, axis=1)
+        original_labels = y
+        current_labels = original_labels
+        last_probs = preds[(range(nb_instances),original_labels)]
+
+        n_dims = np.prod(x[0].shape)
+
+        indices = self._block_order(x.shape[2], 3, initial_size=self.freq_dim, stride=self.stride)[:self.max_iter]
+        <a id="change">indices_size = len(indices)</a>
+        <a id="change">while indices_size &lt; self.max_iter:
+            tmp_indices = self._block_order(x.shape[2], 3, initial_size=self.freq_dim, stride=self.stride)
+            indices = np.hstack((indices, tmp_indices))[:self.max_iter]
+            indices_size = len(indices)
+        
+       </a> trans = lambda z: self._block_idct(z, block_size=x.shape[2])
+
+        clip_min = -np.inf
+        clip_max = np.inf </code></pre>

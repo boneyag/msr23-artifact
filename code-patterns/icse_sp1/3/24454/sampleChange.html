@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            V = GPflow.slinalg.Solve(&quotlower_triangular&quot)(L, self.F)
+            Li = GPflow.slinalg.Solve(&quotlower_triangular&quot)(L, eye(3))
+            V_var = (Li.dot(tf.diag(self.F_sqrt.flatten()**2)).dot(Li.T))
+            V_sqrt = GPflow.slinalg.cholesky(V_var)[<a id="change">:,:,None</a>]
+
+            Fstar_mean, Fstar_var = GPflow.conditionals.gaussian_gp_predict(self.Xs, self.X, self.k, self.F, self.F_sqrt)
+            Fstar_w_mean, Fstar_w_var = GPflow.conditionals.gaussian_gp_predict_whitened(self.Xs, self.X, self.k, V, V_sqrt)</code></pre><h3>After Change</h3><pre><code class='java'>
+            V = tf.user_ops.triangular_solve(L, self.F, &quotlower&quot)
+            Li = tf.user_ops.triangular_solve(L, eye(3), &quotlower&quot)
+            V_var = tf.matmul( tf.matmul(Li, tf.diag(tf.square(tf.reshape(self.F_sqrt, (-1,))))), tf.transpose(Li))
+            <a id="change">V_sqrt = tf.expand_dims(tf.cholesky(V_var) ,2)</a>
+
+            Fstar_mean, Fstar_var = GPflow.conditionals.gaussian_gp_predict(self.Xs, self.X, self.k, self.F, self.F_sqrt)
+            Fstar_w_mean, Fstar_w_var = GPflow.conditionals.gaussian_gp_predict_whitened(self.Xs, self.X, self.k, V, V_sqrt)
+</code></pre>

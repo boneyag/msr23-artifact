@@ -1,0 +1,65 @@
+<html><h3>981e4266d4ea816b08a762193bd52f40cd1a3242,examples/mnist/keras/mnist_inference.py,,inference,#Any#Any#Any#,26
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  util.single_node_env()
+
+  &#47&#47 load saved_model using default tag and signature
+  <a id="change">sess = tf.Session()</a>
+  tf.saved_model.loader.load(sess, [&quotserve&quot], args.export)
+
+  &#47&#47 parse function for TFRecords
+  def parse_tfr(example_proto):
+    feature_def = {"label": tf.FixedLenFeature(10, tf.int64),
+                   "image": tf.FixedLenFeature(IMAGE_PIXELS * IMAGE_PIXELS, tf.int64)}
+    features = tf.parse_single_example(example_proto, feature_def)
+    norm = tf.constant(255, dtype=tf.float32, shape=(784,))
+    image = tf.div(tf.to_float(features[&quotimage&quot]), norm)
+    label = tf.to_float(features[&quotlabel&quot])
+    return (image, label)
+
+  &#47&#47 define a new tf.data.Dataset (for inferencing)
+  ds = tf.data.Dataset.list_files("{}/part-*".format(args.images_labels))
+  ds = ds.shard(num_workers, worker_num)
+  ds = ds.interleave(tf.data.TFRecordDataset, cycle_length=1)
+  ds = ds.map(parse_tfr).batch(10)
+  iterator = ds.make_one_shot_iterator()
+  image_label = iterator.get_next(name=&quotinf_image&quot)
+
+  &#47&#47 create an output file per spark worker for the predictions
+  tf.gfile.MakeDirs(args.output)
+  output_file = tf.gfile.GFile("{}/part-{:05d}".format(args.output, worker_num), mode=&quotw&quot)
+
+  while True:
+    <a id="change">try:
+      &#47&#47 get images and labels from tf.data.Dataset
+      img, lbl = sess.run([&quotinf_image:0&quot, &quotinf_image:1&quot])
+
+      &#47&#47 inference by feeding these images and labels into the input tensors
+      &#47&#47 you can view the exported model signatures via:
+      &#47&#47     saved_model_cli show --dir &lt;export_dir&gt; --all
+
+      &#47&#47 note that we feed directly into the graph tensors (bypassing the exported signatures)
+      &#47&#47 these tensors will be shown in the "name" field of the signature definitions
+
+      outputs = sess.run([&quotdense_2/Softmax:0&quot], feed_dict={&quotPlaceholder:0&quot: img})
+      for p in outputs[0]:
+        output_file.write("{}\n".format(np.argmax(p)))
+    except tf.errors.OutOfRangeError:
+      break
+
+ </a> output_file.close()
+
+
+if __name__ == &quot__main__&quot:</code></pre><h3>After Change</h3><pre><code class='java'>
+    predictions = predict(conv2d_input=batch[0])
+    labels = np.reshape(batch[1], -1).astype(np.int)
+    preds = np.argmax(predictions[&quotdense_1&quot], axis=1)
+    <a id="change">for x in zip(labels, preds):
+      output_file.write("{} {}\n".format(x[0], x[1]))
+
+ </a> output_file.close()
+
+
+if __name__ == &quot__main__&quot:</code></pre><img src="104575387.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/yahoo/TensorFlowOnSpark/commit/981e4266d4ea816b08a762193bd52f40cd1a3242#diff-7857eb2c64f2736ea05c2ed40163537d6773d61a7cc0c45005baa8ca2a0bb565L36' target='_blank'>Link</a></div><div id='project'> Project Name: yahoo/TensorFlowOnSpark</div><div id='commit'> Commit Name: 981e4266d4ea816b08a762193bd52f40cd1a3242</div><div id='time'> Time: 2019-08-07</div><div id='author'> Author: leewyang@verizonmedia.com</div><div id='file'> File Name: examples/mnist/keras/mnist_inference.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: inference</div><BR><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/eba587e7549e252036f2500e9a3b3a18a778b335#diff-09f3d6d8059370385bbd0e49bbd5256a8a9c1f02b71b648651b91e4440f407ebL259' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: eba587e7549e252036f2500e9a3b3a18a778b335</div><div id='time'> Time: 2017-11-17</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: dataset/batch_image.py</div><div id='class'> Class Name: ImagesBatch</div><div id='method'> Method Name: assemble</div><BR><BR><div id='link'><a href='https://github.com/dmlc/gluon-cv/commit/4b8716fd4bd6f462a9db9eee958f2508576ec019#diff-4c9ef61d1317e4b9ff5c6d9c7791c0309add3024cfdea6085a14821df7a18ca0L32' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-cv</div><div id='commit'> Commit Name: 4b8716fd4bd6f462a9db9eee958f2508576ec019</div><div id='time'> Time: 2018-06-15</div><div id='author'> Author: cheungchih@gmail.com</div><div id='file'> File Name: gluoncv/utils/metrics/coco_detection.py</div><div id='class'> Class Name: COCODetectionMetric</div><div id='method'> Method Name: __init__</div><BR>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        loss = 0
+        if self._sample is not None:
+            self._sample = self.criterion.prepare(self.model, self._sample)
+            <a id="change">net_output = self.model(**self._sample[&quotnet_input&quot])</a>
+            loss_ = self.criterion(net_output, self._sample)
+            if grad_denom is not None:
+                loss_ /= grad_denom
+            <a id="change">loss_.backward()</a>
+            loss = loss_.data[0]
+
+        &#47&#47 flatten grads into a contiguous block of memory
+        if self.flat_grads is None:
+            self.flat_grads = self._flatten_grads_(self.model)
+
+        &#47&#47 all-reduce grads
+        nccl.all_reduce(self.flat_grads)
+
+        &#47&#47 clip grads
+        grad_norm = self._clip_grads_(self.flat_grads, self.args.clip_norm)
+
+        &#47&#47 take an optimization step
+        self.optimizer.step()
+
+        return <a id="change">loss</a>, grad_norm
+
+    def _flatten_grads_(self, model):
+        num_params = sum(p.data.numel() for p in model.parameters())</code></pre><h3>After Change</h3><pre><code class='java'>
+        loss_dict = {}
+        if self._sample is not None:
+            loss_dict = self.criterion(self.model, self._sample, grad_denom)
+            <a id="change">loss_dict[&quotloss&quot].backward()</a>
+            loss = loss_dict[&quotloss&quot].data[0]
+
+        &#47&#47 flatten grads into a contiguous block of memory
+        if self.flat_grads is None:</code></pre>

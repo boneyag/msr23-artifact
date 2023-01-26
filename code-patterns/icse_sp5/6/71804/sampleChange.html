@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+
+    self.is_internal_only = <a id="change">self.get_options().internal_only</a>
+    self.is_external_only = self.get_options().external_only
+    if self.is_internal_only and self.is_external_only:
+      raise TaskError(&quotAt most one of --internal-only or --external-only can be selected.&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    super().__init__(*args, **kwargs)
+    opts = self.get_options()
+    type_configured = not opts.is_default("type")
+    <a id="change">if type_configured:
+      self.dependency_type = opts.type
+      return
+    else:
+      if opts.internal_only and opts.external_only:
+        raise TaskError(&quotAt most one of --internal-only or --external-only can be selected.&quot)
+      if opts.internal_only:
+        self.dependency_type = DependencyType.SOURCE
+      elif opts.external_only:
+        self.dependency_type = DependencyType.THIRD_PARTY
+      else:
+        self.dependency_type = DependencyType.SOURCE_AND_THIRD_PARTY
+
+ </a> def console_output(self, unused_method_argument):
+    opts = self.get_options()
+    deprecated_conditional(
+      lambda: opts.is_default("type") and not opts.internal_only and not opts.external_only,</code></pre>

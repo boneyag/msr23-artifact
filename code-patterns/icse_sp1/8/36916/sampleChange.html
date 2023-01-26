@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def collect(self, record):
+        partitions = self._partition_func.partition(record,
+                                                    len(self._channel_ids))
+        <a id="change">serialized_message = pickle.dumps(record)</a>
+        for partition_index in partitions:
+            self._writer.write(self._channel_ids[partition_index],
+                               serialized_message)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        python_buffer = None
+        cross_lang_buffer = None
+        for partition_index in partitions:
+            <a id="change">if self._target_languages[partition_index] == \
+                    function.Language.PYTHON:
+                &#47&#47 avoid repeated serialization
+                if python_buffer is None:
+                    python_buffer = self.python_serializer.serialize(record)
+                self._writer.write(
+                    self._channel_ids[partition_index],
+                    serialization._PYTHON_TYPE_ID + python_buffer)
+            else:
+                &#47&#47 avoid repeated serialization
+                if cross_lang_buffer is None:
+                    cross_lang_buffer = self.cross_lang_serializer.serialize(
+                        record)
+                self._writer.write(
+                    self._channel_ids[partition_index],
+                    serialization._CROSS_LANG_TYPE_ID + cross_lang_buffer)</a>
+</code></pre>

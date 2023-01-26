@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      &#47&#47   the number of boundary samples increases.
+      if weights is not None:
+        error *= weights
+      loss = <a id="change">tf.reduce_mean(input_tensor=error)</a>
+
+      <a id="change">with tf.name_scope(&quotLosses/&quot):
+        tf.compat.v2.summary.scalar(
+            name=&quotloss&quot, data=loss, step=self.train_step_counter)
+
+     </a> if self._summarize_grads_and_vars:
+        with tf.name_scope(&quotVariables/&quot):
+          for var in self._cloning_network.trainable_weights:
+            tf.compat.v2.summary.histogram(</code></pre><h3>After Change</h3><pre><code class='java'>
+      &#47&#47   their contribution in the loss. Think about what would happen as
+      &#47&#47   the number of boundary samples increases.
+
+      <a id="change">agg_loss</a> = <a id="change">common.aggregate_losses(
+          per_example_loss=error,
+          sample_weight=weights,
+          regularization_loss=self._cloning_network.losses)</a>
+      <a id="change">total_loss = agg_loss.total_loss</a>
+
+      <a id="change">dict_losses = {&quotloss&quot: agg_loss.weighted,
+                     &quotreg_loss&quot: agg_loss.regularization,
+                     &quottotal_loss&quot: total_loss}</a>
+
+      <a id="change">common.summarize_scalar_dict(dict_losses,
+                                   step=self.train_step_counter,
+                                   name_scope=&quotLosses/&quot)</a>
+
+      if self._summarize_grads_and_vars:
+        with tf.name_scope(&quotVariables/&quot):
+          for var in self._cloning_network.trainable_weights:</code></pre>

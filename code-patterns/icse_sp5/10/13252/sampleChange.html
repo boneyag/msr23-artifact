@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return all(graph[inp].attr.get(&quotdata_format&quot) == &quotNHWC&quot for inp in
+            node.inputs[:-1])
+    if node in ELEMENTWISE_OPS:
+        return all(<a id="change">graph</a>[inp].attr.get(&quotdata_format&quot) == &quotNHWC&quot <a id="change">for</a> inp in
+            node.inputs)
+    return False
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            [graph[inp].attr.get(&quotdata_format&quot, None) == &quotNHWC_format_inserted&quot for inp in node.inputs])
+
+        if NHWC_parent:
+            <a id="change">for inp in node.inputs:
+                parent_node = graph[inp]
+                if parent_node.attr.get(&quotdata_format&quot, None) == &quotNHWC_format_inserted&quot:
+                    continue
+                elif parent_node.value is not None:
+                    &#47&#47 check that the input is a constant and a vector (rank 1)
+                    val = np.array(parent_node.value.val)
+                    if len(val.shape) == 1 and builtins.is_tensor(parent_node.datatype) and len(parent_node.outputs) == 1:
+                        continue
+                    else:
+                        return False
+                else:
+                    return False
+           </a> return True
+
+    return False
+</code></pre>

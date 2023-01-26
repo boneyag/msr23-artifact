@@ -1,0 +1,69 @@
+<html><h3>d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d,contents/10_A3C/A3C_continuous_action.py,ACNet,__init__,#ACNet#Any#Any#,45
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if scope == GLOBAL_NET_SCOPE:   &#47&#47 get global network
+            with tf.variable_scope(scope):
+                <a id="change">self.s = tf.placeholder(tf.float32, [None, N_S], &quotS&quot)</a>
+                <a id="change">self._build_net()</a>
+                <a id="change">self.a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/actor&quot)</a>
+                <a id="change">self.c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/critic&quot)</a>
+        else:   &#47&#47 local net, calculate losses
+            with tf.variable_scope(scope):
+                self.s = tf.placeholder(tf.float32, [None, N_S], &quotS&quot)
+                self.a_his = tf.placeholder(tf.float32, [None, N_A], &quotA&quot)
+                self.v_target = tf.placeholder(tf.float32, [None, 1], &quotVtarget&quot)
+
+                mu, sigma, self.v = self._build_net()
+
+                td = tf.subtract(self.v_target, self.v, name=&quotTD_error&quot)
+                with tf.name_scope(&quotc_loss&quot):
+                    self.c_loss = tf.reduce_mean(tf.square(td))
+
+                with tf.name_scope(&quotwrap_a_out&quot):
+                    mu, sigma = mu * A_BOUND[1], sigma + 1e-4
+
+                normal_dist = tf.contrib.distributions.Normal(mu, sigma)
+
+                with tf.name_scope(&quota_loss&quot):
+                    log_prob = normal_dist.log_prob(self.a_his)
+                    exp_v = log_prob * td
+                    entropy = tf.stop_gradient(normal_dist.entropy())  &#47&#47 encourage exploration
+                    self.exp_v = ENTROPY_BETA * entropy + exp_v
+                    self.a_loss = tf.reduce_mean(-self.exp_v)
+
+                with tf.name_scope(&quotchoose_a&quot):  &#47&#47 use local params to choose action
+                    self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=0), A_BOUND[0], A_BOUND[1])
+                with tf.name_scope(&quotlocal_grad&quot):
+                    <a id="change">self.a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/actor&quot)</a>
+                    <a id="change">self.c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/critic&quot)</a>
+                    <a id="change">self.a_grads</a> = tf.gradients(self.a_loss, self.a_params)
+                    self.c_grads = tf.gradients(self.c_loss, self.c_params)
+
+            with tf.name_scope(&quotsync&quot):
+                with tf.name_scope(&quotpull&quot):
+                    <a id="change">self.pull_a_params_op</a> = [l_p.assign(g_p) for l_p, g_p in zip(self.a_params, globalAC.a_params)]
+                    <a id="change">self.pull_c_params_op</a> = [l_p.assign(g_p) for l_p, g_p in zip(self.c_params, globalAC.c_params)]
+                with tf.name_scope(&quotpush&quot):
+                    <a id="change">self.update_a_op</a> = OPT_A.apply_gradients(zip(self.a_grads, globalAC.a_params))
+                    <a id="change">self.update_c_op</a> = OPT_C.apply_gradients(zip(self.c_grads, globalAC.c_params))
+
+    def _build_net(self):
+        w_init = tf.random_normal_initializer(0., .1)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if scope == GLOBAL_NET_SCOPE:   &#47&#47 get global network
+            with tf.variable_scope(scope):
+                <a id="change">self.s = tf.placeholder(tf.float32, [None, N_S], &quotS&quot)</a>
+                <a id="change">self.a_params, self.c_params = self._build_net(scope)[-2:]</a>
+        else:   &#47&#47 local net, calculate losses
+            with tf.variable_scope(scope):
+                self.s = tf.placeholder(tf.float32, [None, N_S], &quotS&quot)
+                self.a_his = tf.placeholder(tf.float32, [None, N_A], &quotA&quot)
+                self.v_target = tf.placeholder(tf.float32, [None, 1], &quotVtarget&quot)
+
+                mu, sigma, self.v, self.a_params, <a id="change">self.c_params</a> = self._build_net(scope)
+
+                td = tf.subtract(self.v_target, self.v, name=&quotTD_error&quot)
+                with tf.name_scope(&quotc_loss&quot):</code></pre><img src="272447869.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 41</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/commit/d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d#diff-50f8d206bd929924ae7b626b133492fb3556c336f9c7af89e6c1394f15356ea3L45' target='_blank'>Link</a></div><div id='project'> Project Name: MorvanZhou/Reinforcement-learning-with-tensorflow</div><div id='commit'> Commit Name: d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d</div><div id='time'> Time: 2017-08-13</div><div id='author'> Author: morvanzhou@gmail.com</div><div id='file'> File Name: contents/10_A3C/A3C_continuous_action.py</div><div id='class'> Class Name: ACNet</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/commit/d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d#diff-85439004591bdd2efb70b08946f875bdaadb34c76f9ae8d486a2463cf928faa5L43' target='_blank'>Link</a></div><div id='project'> Project Name: MorvanZhou/Reinforcement-learning-with-tensorflow</div><div id='commit'> Commit Name: d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d</div><div id='time'> Time: 2017-08-13</div><div id='author'> Author: morvanzhou@gmail.com</div><div id='file'> File Name: contents/10_A3C/A3C_discrete_action.py</div><div id='class'> Class Name: ACNet</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/commit/d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d#diff-c6751cb820fadef672034f3a8172e7f689c80fa71d4074c450de74fc6e757511L45' target='_blank'>Link</a></div><div id='project'> Project Name: MorvanZhou/Reinforcement-learning-with-tensorflow</div><div id='commit'> Commit Name: d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d</div><div id='time'> Time: 2017-08-13</div><div id='author'> Author: morvanzhou@gmail.com</div><div id='file'> File Name: contents/10_A3C/A3C_RNN.py</div><div id='class'> Class Name: ACNet</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/commit/d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d#diff-50f8d206bd929924ae7b626b133492fb3556c336f9c7af89e6c1394f15356ea3L45' target='_blank'>Link</a></div><div id='project'> Project Name: MorvanZhou/Reinforcement-learning-with-tensorflow</div><div id='commit'> Commit Name: d22bf94eddbff3cfc6ceb7bf3ac8cb4c5ac83c5d</div><div id='time'> Time: 2017-08-13</div><div id='author'> Author: morvanzhou@gmail.com</div><div id='file'> File Name: contents/10_A3C/A3C_continuous_action.py</div><div id='class'> Class Name: ACNet</div><div id='method'> Method Name: __init__</div><BR>

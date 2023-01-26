@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            selec = np.zeros(gt_bbox_l.shape[0], dtype=bool)
+
+            for bb in pred_bbox_l:
+                <a id="change">if len(gt_bbox_l) &gt; 0:
+                    iou = bbox_iou(gt_bbox_l, bb[np.newaxis])
+                    gt_idx = iou.argmax()
+                    iou = iou[gt_idx]
+                else:
+                    iou = -np.inf
+
+               </a> if iou &gt;= iou_thresh:
+                    if gt_difficult_l[gt_idx]:
+                        match[l].append(-1)
+                    else:</code></pre><h3>After Change</h3><pre><code class='java'>
+            n_pos[l] += np.logical_not(gt_difficult_l).sum()
+            score[l].extend(pred_score_l)
+
+            if <a id="change">len(pred_bbox_l)</a> == 0:
+                continue
+            if len(gt_bbox_l) == 0:
+                match[l].extend((0,) * pred_bbox_l.shape[0])
+                continue
+
+            &#47&#47 VOC evaluation follows integer typed bounding boxes.
+            pred_bbox_l = pred_bbox_l.copy()
+            pred_bbox_l[:, 2:] += 1
+            gt_bbox_l = gt_bbox_l.copy()
+            gt_bbox_l[:, 2:] += 1
+
+            iou = <a id="change">bbox_iou(pred_bbox_l, gt_bbox_l)</a>
+            gt_index = iou.argmax(axis=1)
+            match_ = <a id="change">iou.max(axis=1) &gt;= i</a>ou_thresh
+            del iou
+
+            selec = np.zeros(gt_bbox_l.shape[0], dtype=bool)
+            <a id="change">for gt_idx, mc in six.moves.zip(gt_index, match_):
+                if mc:
+                    if gt_difficult_l[gt_idx]:
+                        match[l].append(-1)
+                    else:
+                        if not selec[gt_idx]:
+                            match[l].append(1)
+                        else:
+                            match[l].append(0)
+                    selec[gt_idx] = True
+                else:
+                    match[l].append(0)
+
+   </a> for iter_ in (
+            pred_bboxes, pred_labels, pred_scores,
+            gt_bboxes, gt_labels, gt_difficults):
+        if next(iter_, None) is not None:</code></pre>

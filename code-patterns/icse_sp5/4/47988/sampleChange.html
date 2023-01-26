@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 eliminate duplicate prereqs if there is more then one
+            &#47&#47 empty ordering
+            for (node, prereqs) in iteritems(ords):
+                <a id="change">ords[node] = list(OrderedSet(prereqs))</a>
+        return ords
+
+    def check_integrity(self):
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+
+        
+        assert isinstance(self._features, list)
+        <a id="change">all_orderings = []</a>
+
+        for feature in self._features:
+            if hasattr(feature, &quotorderings&quot):
+                orderings = feature.orderings(self)
+                if not isinstance(orderings, OrderedDict):
+                    raise TypeError("Non-deterministic return value from " +
+                                    str(feature.orderings) +
+                                    ". Nondeterministic object is " +
+                                    str(orderings))
+                if len(orderings) &gt; 0:
+                    all_orderings.append(orderings)
+                    for node, prereqs in iteritems(orderings):
+                        if not isinstance(prereqs, (list, OrderedSet)):
+                            raise TypeError(
+                                "prereqs must be a type with a "
+                                "deterministic iteration order, or toposort "
+                                " will be non-deterministic.")
+        if len(all_orderings) == 1:
+            &#47&#47 If there is only 1 ordering, we reuse it directly.
+            return all_orderings[0]
+        else:
+            &#47&#47 If there is more than 1 ordering, combine them.
+            ords = OrderedDict()
+            <a id="change">for orderings in all_orderings:
+                for node, prereqs in iteritems(orderings):
+                    ords.setdefault(node, []).extend(prereqs)
+           </a> return ords
+
+    def check_integrity(self):
+        </code></pre>

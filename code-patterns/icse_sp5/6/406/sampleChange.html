@@ -1,0 +1,107 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        operates on 1D blobs. An &quotout_edge e(u,v)&quot means u operates on 1D
+        blobs, but v operates on non-1D blobs. 
+        
+        in_edges = <a id="change">[]</a>
+        for layer in self.layer_list: 
+            if not self.is_1d_layer(layer):
+                continue
+            preds = self.get_predecessors(layer)
+            if len(preds) == 0:
+                in_edges.append((None, layer))
+            else: 
+                &#47&#47 because 1D layers are all 1-input, 
+                &#47&#47 there should only be 1 predecessor
+                u, v = preds[0], layer
+                while (u != None) and (self.is_activation(u) or type(u) in \
+                        _KERAS_NORMALIZATION_LAYERS):
+                    preds = self.get_predecessors(u)
+                    v = u
+                    u = preds[0] if len(preds) &gt; 0 else None
+                if u is None or (not self.is_1d_layer(u)):
+                    in_edges.append((u, v))
+
+        <a id="change">out_edges = []</a>
+        for layer in self.layer_list:
+            if not self.is_1d_layer(layer):
+                continue
+            &#47&#47 cases for 1d-&gt;output
+            if layer in self.output_layers:
+                out_edges.append((layer, None))
+            
+            succs = self.get_successors(layer)
+            if len(succs) &gt; 0:
+                &#47&#47 this should be handled in 1d-&gt;output already
+                if not self.is_activation(succs[0]):
+                    for succ in succs: 
+                        if not self.is_1d_layer(succ):
+                            out_edges.append((layer, succ))
+                else: 
+                    act_layer = succs[0]
+                    succs = self.get_successors(act_layer)
+                    if len(succs) == 0:
+                        out_edges.append((act_layer, None))
+                    else: 
+                        for succ in succs: 
+                            if not self.is_1d_layer(succ):
+                                out_edges.append((act_layer, succ))
+
+        <a id="change">return in_edges, out_edges</a>
+    
+    def insert_1d_permute_layers(self):
+        
+        Insert permutation layers before a 1D start point or after 1D end point </code></pre><h3>After Change</h3><pre><code class='java'>
+        operates on 1D blobs. An &quotout_edge e(u,v)&quot means u operates on 1D
+        blobs, but v operates on non-1D blobs. 
+        
+        <a id="change">in_edges = set()</a>
+        for layer in self.layer_list:
+            if not self.is_1d_layer(layer):
+                continue
+            preds = self.get_predecessors(layer)
+            if len(preds) == 0:
+                in_edges.add((None, layer))
+            else:
+                &#47&#47 because 1D layers are all 1-input, 
+                &#47&#47 there should only be 1 predecessor
+                u, v = preds[0], layer
+                while u and (self.is_activation(u) or type(u) in _KERAS_NORMALIZATION_LAYERS):
+                    preds = self.get_predecessors(u)
+                    v = u
+                    u = preds[0] if len(preds) &gt; 0 else None
+                if u is None or (not self.is_1d_layer(u)):
+                    in_edges.add((u, v))
+
+        out_edges = set()
+        for layer in self.layer_list:
+            if not self.is_1d_layer(layer):
+                continue
+            &#47&#47 cases for 1d-&gt;output
+            if layer in self.output_layers:
+                out_edges.add((layer, None))
+
+            succs = self.get_successors(layer)
+            if len(succs) &gt; 0:
+                &#47&#47 this should be handled in 1d-&gt;output already
+                if not self.is_activation(succs[0]):
+                    for succ in succs:
+                        if not self.is_1d_layer(succ):
+                            out_edges.add((layer, succ))
+                else:
+                    act_layer = succs[0]
+                    succs = self.get_successors(act_layer)
+                    if len(succs) == 0:
+                        out_edges.add((act_layer, None))
+                    else:
+                        for succ in succs:
+                            if not self.is_1d_layer(succ):
+                                out_edges.add((act_layer, succ))
+
+        <a id="change">return list(in_edges), list(out_edges)</a>
+
+    def insert_1d_permute_layers(self):
+        
+        Insert permutation layers before a 1D start point or after 1D end point </code></pre>

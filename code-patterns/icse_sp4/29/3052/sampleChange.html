@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            tensor = tensor.astype(dtype)
+            summed = hvd.allreduce(tensor, average=False, name=str(count))
+            multiplied = tensor * size
+            <a id="change">max_difference = mx.nd.max(mx.nd.subtract(summed, multiplied))</a>
+            count += 1
+
+            &#47&#47 Threshold for floating point equality depends on number of
+            &#47&#47 ranks, since we&quotre comparing against precise multiplication.
+            if size &lt;= 3 or dtype in [&quotint32&quot, &quotint64&quot]:
+                threshold = 0
+            elif size &lt; 10:
+                threshold = 1e-4
+            elif size &lt; 15:
+                threshold = 5e-4
+            else:
+                break
+
+            <a id="change">if max_difference &gt; threshold:
+                print("allreduce", count, dtype, dim, max_difference,
+                      threshold)
+                print("tensor", hvd.rank(), tensor)
+                print("summed", hvd.rank(), summed)
+                print("multiplied", hvd.rank(), multiplied)
+           </a> <a id="change">assert max_difference &lt;= threshold, &quothvd.allreduce produces \
+                                                 incorrect results&quot</a>
+
+    def test_horovod_allreduce_average(self):
+        Test that the allreduce correctly sums 1D, 2D, 3D tensors.
+        hvd.init()</code></pre><h3>After Change</h3><pre><code class='java'>
+            else:
+                break
+
+            <a id="change">assert almost_equal(summed.asnumpy(), multiplied.asnumpy(), atol=threshold), \
+                f&quothvd.allreduce produces incorrect results: {hvd.rank()} {count} {dtype} {dim}&quot</a>
+
+    def test_horovod_allreduce_average(self):
+        Test that the allreduce correctly sums 1D, 2D, 3D tensors.
+        hvd.init()</code></pre>

@@ -1,0 +1,110 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            )
+
+        if self.add_indicator:
+            <a id="change">self.indicator_ = MissingIndicator(
+                missing_values=self.missing_values, error_on_new=False)</a>
+            <a id="change">X_trans_indicator = self.indicator_.fit_transform(X)</a>
+        else:
+            self.indicator_ = None
+
+        if self.estimator is None:
+            from ..linear_model import BayesianRidge
+            self._estimator = BayesianRidge()
+        else:
+            self._estimator = clone(self.estimator)
+
+        self.imputation_sequence_ = []
+
+        if hasattr(self._estimator, &quotrandom_state&quot):
+            self._estimator.random_state = self.random_state_
+
+        self._min_value = -np.inf if self.min_value is None else self.min_value
+        self._max_value = np.inf if self.max_value is None else self.max_value
+
+        self.initial_imputer_ = None
+        X, Xt, mask_missing_values = self._initial_imputation(X)
+        if self.max_iter == 0 or np.all(mask_missing_values):
+            self.n_iter_ = 0
+            return Xt
+
+        &#47&#47 Edge case: a single feature. We return the initial ...
+        if Xt.shape[1] == 1:
+            self.n_iter_ = 0
+            return Xt
+
+        &#47&#47 order in which to impute
+        &#47&#47 note this is probably too slow for large feature data (d &gt; 100000)
+        &#47&#47 and a better way would be good.
+        &#47&#47 see: https://goo.gl/KyCNwj and subsequent comments
+        ordered_idx = self._get_ordered_idx(mask_missing_values)
+        self.n_features_with_missing_ = len(ordered_idx)
+
+        abs_corr_mat = self._get_abs_corr_mat(Xt)
+
+        n_samples, n_features = Xt.shape
+        if self.verbose &gt; 0:
+            print("[IterativeImputer] Completing matrix with shape %s"
+                  % (X.shape,))
+        start_t = time()
+        if not self.sample_posterior:
+            Xt_previous = Xt.copy()
+            normalized_tol = self.tol * np.max(np.abs(X[~mask_missing_values]))
+        for self.n_iter_ in range(1, self.max_iter + 1):
+            if self.imputation_order == &quotrandom&quot:
+                ordered_idx = self._get_ordered_idx(mask_missing_values)
+
+            for feat_idx in ordered_idx:
+                neighbor_feat_idx = self._get_neighbor_feat_idx(n_features,
+                                                                feat_idx,
+                                                                abs_corr_mat)
+                Xt, estimator = self._impute_one_feature(
+                    Xt, mask_missing_values, feat_idx, neighbor_feat_idx,
+                    estimator=None, fit_mode=True)
+                estimator_triplet = _ImputerTriplet(feat_idx,
+                                                    neighbor_feat_idx,
+                                                    estimator)
+                self.imputation_sequence_.append(estimator_triplet)
+
+            if self.verbose &gt; 1:
+                print(&quot[IterativeImputer] Ending imputation round &quot
+                      &quot%d/%d, elapsed time %0.2f&quot
+                      % (self.n_iter_, self.max_iter, time() - start_t))
+
+            if not self.sample_posterior:
+                inf_norm = np.linalg.norm(Xt - Xt_previous, ord=np.inf,
+                                          axis=None)
+                if self.verbose &gt; 0:
+                    print(&quot[IterativeImputer] &quot
+                          &quotChange: {}, scaled tolerance: {} &quot.format(
+                            inf_norm, normalized_tol))
+                if inf_norm &lt; normalized_tol:
+                    if self.verbose &gt; 0:
+                        print(&quot[IterativeImputer] Early stopping criterion &quot
+                              &quotreached.&quot)
+                    break
+                Xt_previous = Xt.copy()
+        else:
+            if not self.sample_posterior:
+                warnings.warn("[IterativeImputer] Early stopping criterion not"
+                              " reached.", ConvergenceWarning)
+        Xt[~mask_missing_values] = X[~mask_missing_values]
+
+        if self.add_indicator:
+            Xt = np.hstack((Xt, X_trans_indicator))
+        <a id="change">return Xt</a>
+
+    def transform(self, X):
+        Imputes all missing values in X.
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        X, Xt, mask_missing_values = self._initial_imputation(X)
+        if self.max_iter == 0 or np.all(mask_missing_values):
+            self.n_iter_ = 0
+            <a id="change">return super()._concatenate_indicator(Xt, X_indicator)</a>
+
+        &#47&#47 Edge case: a single feature. We return the initial ...
+        if Xt.shape[1] == 1:
+            self.n_iter_ = 0</code></pre>

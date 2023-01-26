@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Reset invalid scores to 0 based on mask.
+        scores_mask = tf.gather(
+            tf.expand_dims(self._indices_mask, 2),
+            tf.zeros(<a id="change">[tf.shape(input=scores)[2]]</a>, tf.int32),
+            axis=2)
+        scores = tf.compat.v1.where(scores_mask, scores, tf.zeros_like(scores))
+        &#47&#47 Scatter scores from [batch_size, num_groups, logits_size] to
+        &#47&#47 [batch_size, list_size].
+        <a id="change">logits = tf.scatter_nd(self._score_scatter_indices, scores,
+                               [batch_size, list_size])</a>
+        counts = tf.scatter_nd(self._score_scatter_indices,
+                               tf.cast(scores_mask, tf.float32),
+                               [batch_size, list_size])
+        &#47&#47 Use average.
+        <a id="change">logits = tf.compat.v1.div_no_nan(logits, counts)</a>
+    return logits
+
+
+def _make_model_fn(ranking_model, ranking_head):</code></pre><h3>After Change</h3><pre><code class='java'>
+          task_logits = tf.compat.v1.div_no_nan(task_logits, counts)
+          return task_logits
+
+        <a id="change">if isinstance(scores, dict):
+          logits = {}
+          for name, task_scores in six.iteritems(scores):
+            logits[name] = _accumulate_scores(task_scores)
+        else:
+          logits = _accumulate_scores(scores)
+
+   </a> return logits
+
+
+def _make_model_fn(ranking_model, ranking_head):</code></pre>

@@ -1,0 +1,92 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    for q_idx in range(num_q):
+        qimg_path, qpid, qcamid = query[q_idx]
+        <a id="change">num_cols = topk + 1</a>
+        grid_img = 255 * np.ones((height, num_cols*width+topk*GRID_SPACING+QUERY_EXTRA_SPACING, 3), dtype=np.uint8)
+        qimg_path_name = qimg_path[0] if isinstance(qimg_path, tuple) or isinstance(qimg_path, list) else qimg_path
+        
+        if data_type == &quotimage&quot:
+            qimg = cv2.imread(qimg_path)
+            qimg = cv2.resize(qimg, (width, height))
+            qimg = cv2.copyMakeBorder(qimg, BW, BW, BW, BW, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+            qimg = cv2.resize(qimg, (width, height)) &#47&#47 resize twice to ensure that the border width is consistent across images
+            grid_img[:, :width, :] = qimg
+        else:
+            qdir = osp.join(save_dir, osp.basename(osp.splitext(qimg_path_name)[0]))
+            mkdir_if_missing(qdir)
+            _cp_img_to(qimg_path, qdir, rank=0, prefix=&quotquery&quot)
+
+        rank_idx = 1
+        for g_idx in indices[q_idx,:]:
+            gimg_path, gpid, gcamid = gallery[g_idx]
+            invalid = (qpid == gpid) & (qcamid == gcamid)
+            
+            if not invalid:
+                matched = gpid==qpid
+                if data_type == &quotimage&quot:
+                    border_color = GREEN if matched else RED
+                    gimg = cv2.imread(gimg_path)
+                    gimg = cv2.resize(gimg, (width, height))
+                    gimg = cv2.copyMakeBorder(gimg, BW, BW, BW, BW, cv2.BORDER_CONSTANT, value=border_color)
+                    gimg = cv2.resize(gimg, (width, height))
+                    start = rank_idx*width + rank_idx*GRID_SPACING + QUERY_EXTRA_SPACING
+                    end = (rank_idx+1)*width + rank_idx*GRID_SPACING + QUERY_EXTRA_SPACING
+                    grid_img[:, start: end, :] = gimg
+                else:
+                    _cp_img_to(gimg_path, qdir, rank=rank_idx, prefix=&quotgallery&quot, matched=matched)
+                
+                rank_idx += 1
+                if rank_idx &gt; topk:
+                    break
+
+        <a id="change">imname = osp.basename(osp.splitext(qimg_path_name)[0])</a>
+        <a id="change">cv2.imwrite(osp.join(save_dir, imname+&quot.jpg&quot), grid_img)</a>
+
+        if (q_idx+1) % 100 == 0:
+            print(&quot- done {}/{}&quot.format(q_idx+1, num_q))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            qimg = cv2.copyMakeBorder(qimg, BW, BW, BW, BW, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+            &#47&#47 resize twice to ensure that the border width is consistent across images
+            qimg = cv2.resize(qimg, (width, height))
+            <a id="change">num_cols = topk + 1</a>
+            grid_img = 255 * np.ones((height, num_cols*width+topk*GRID_SPACING+QUERY_EXTRA_SPACING, 3), dtype=np.uint8)
+            grid_img[:, :width, :] = qimg
+        else:
+            qdir = osp.join(save_dir, osp.basename(osp.splitext(qimg_path_name)[0]))
+            mkdir_if_missing(qdir)
+            _cp_img_to(qimg_path, qdir, rank=0, prefix=&quotquery&quot)
+
+        rank_idx = 1
+        for g_idx in indices[q_idx,:]:
+            gimg_path, gpid, gcamid = gallery[g_idx]
+            invalid = (qpid == gpid) & (qcamid == gcamid)
+            
+            if not invalid:
+                matched = gpid==qpid
+                if data_type == &quotimage&quot:
+                    border_color = GREEN if matched else RED
+                    gimg = cv2.imread(gimg_path)
+                    gimg = cv2.resize(gimg, (width, height))
+                    gimg = cv2.copyMakeBorder(gimg, BW, BW, BW, BW, cv2.BORDER_CONSTANT, value=border_color)
+                    gimg = cv2.resize(gimg, (width, height))
+                    start = rank_idx*width + rank_idx*GRID_SPACING + QUERY_EXTRA_SPACING
+                    end = (rank_idx+1)*width + rank_idx*GRID_SPACING + QUERY_EXTRA_SPACING
+                    grid_img[:, start: end, :] = gimg
+                else:
+                    _cp_img_to(gimg_path, qdir, rank=rank_idx, prefix=&quotgallery&quot, matched=matched)
+                
+                rank_idx += 1
+                if rank_idx &gt; topk:
+                    break
+
+        if data_type == &quotimage&quot:
+            <a id="change">imname = osp.basename(osp.splitext(qimg_path_name)[0])</a>
+            <a id="change">cv2.imwrite(osp.join(save_dir, imname+&quot.jpg&quot), grid_img)</a>
+
+        if (q_idx+1) % 100 == 0:
+            print(&quot- done {}/{}&quot.format(q_idx+1, num_q))
+</code></pre>

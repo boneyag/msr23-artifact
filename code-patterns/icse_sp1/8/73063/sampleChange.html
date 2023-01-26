@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      the beam width to use for searching.  Set to 1 to use a simple greedy search.
+    
+    result = []
+    <a id="change">with self._get_tf("Graph").as_default():
+      for batch in self._batch_elements(embeddings):
+        embedding_array = np.zeros(
+            (self.batch_size, self._embedding_dimension), dtype=np.float32)
+        for i, e in enumerate(batch):
+          embedding_array[i] = e
+        feed_dict = {}
+        feed_dict[self.embedding] = embedding_array
+        feed_dict[self._training_placeholder] = 0.0
+        for initial, zero in zip(self.rnn_initial_states, self.rnn_zero_states):
+          feed_dict[initial] = zero
+        probs = self.session.run(self.output, feed_dict=feed_dict)
+        for i in range(len(batch)):
+          result.append(self._beam_search(probs[i], beam_width))
+   </a> return result
+
+  def predict_embeddings(self, sequences):
+    Given a set of input sequences, compute the embedding vectors.</code></pre><h3>After Change</h3><pre><code class='java'>
+        embedding_array[i] = e
+      probs = self.decoder(embedding_array, training=False)
+      if tf.executing_eagerly():
+        <a id="change">probs = probs.numpy()</a>
+      else:
+        probs = probs.eval(session=self.session)
+      for i in range(len(batch)):
+        result.append(self._beam_search(probs[i], beam_width))</code></pre>

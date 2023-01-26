@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          "CONSTANT",
+      )
+
+    output = <a id="change">tf.nn.bias_add(
+        tf.nn.conv1d(
+            value=x, filters=self.W, stride=1, padding=self.conv_padding,
+        ),
+        self.b,
+    )</a>
+
+    if self.decode_padding and self.kernel_width &gt; 1:
+      output = output[:, 0:-self.kernel_width + 1, :]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    output = tf.nn.conv1d(value=x, filters=self.W, stride=1, padding=self.conv_padding)
+
+    if self.b is not None:
+      output = <a id="change">tf.nn.bias_add(output, self.b)</a>
+
+    if self.decode_padding and self.kernel_width &gt; 1:
+      output = output[:, 0:-self.kernel_width + 1, :]
+
+    if self.apply_batch_norm:
+      &#47&#47 trick to make batchnorm work for mixed precision training.
+      &#47&#47 To-Do check if batchnorm works smoothly for &gt;4 dimensional tensors
+      output = tf.expand_dims(output, axis=1)  &#47&#47 NWC --&gt; NHWC
+      output = tf.layers.batch_normalization(
+        name="batch_norm_" + str(self.layer_id),
+        inputs=output,
+        &#47&#47gamma_regularizer=regularizer,
+        training=self.mode == &quottrain&quot,
+        axis=-1,
+        momentum=0.99,
+        epsilon=1e-4,
+      )
+      output = <a id="change">tf.squeeze(output, axis=1)</a>
+
+    output = self.act_func(output)
+    return output
+</code></pre>

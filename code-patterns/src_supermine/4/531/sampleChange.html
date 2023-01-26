@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        num_units=self._hparams.embedding.dim,
+                        causality=False,
+                        scope=&quotmultihead_attention&quot)
+                    enc = <a id="change">tf.layers.dropout(
+                        enc,
+                        rate=self._hparams.dropout,
+                        training=context.is_train())</a>
+                    self.enc += enc
+                poswise_network = FeedForwardNetwork(hparams=self._hparams[&quotposwise_feedforward&quot])
+                with tf.variable_scope(poswise_network.variable_scope):
+                    enc = layers.layer_normalize(self.enc)
+                    enc = poswise_network(enc)
+                    enc = tf.layers.dropout(
+                        enc,
+                        rate=self._hparams.dropout,
+                        training=context.is_train())
+                    <a id="change">self.enc += enc</a>
+
+        if not self._built:
+            self._add_internal_trainable_variables()
+            self._built = True</code></pre><h3>After Change</h3><pre><code class='java'>
+                        causality=False,
+                        scope=&quotmultihead_attention&quot
+                    )
+                    self.enc = self.enc + <a id="change">tf.layers.dropout(
+                        selfatt_output,
+                        rate=self._hparams.dropout,
+                        training=context.is_train()
+                    )</a>
+                poswise_network = FeedForwardNetwork(hparams=self._hparams[&quotposwise_feedforward&quot])
+                with tf.variable_scope(poswise_network.variable_scope):
+                    sub_output = tf.layers.dropout(
+                        poswise_network(layers.layer_normalize(self.enc)),
+                        rate=self._hparams.dropout,
+                        training=context.is_train())
+                    <a id="change">self.enc = self.enc + sub_output</a>
+
+        self.enc = layers.layer_normalize(self.enc)
+        if not self._built:
+            self._add_internal_trainable_variables()</code></pre>

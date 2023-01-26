@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 since SENTENCE_BOUNDARY_REGEX doesnt account
+        &#47&#47 for trailing whitespaces \s* is used as suffix
+        &#47&#47 to keep non-destructive text after segments joins
+        sent_spans = set((match.group(), match.start(), <a id="change">match.end()</a>) for sent in sentences
+                for match in re.finditer(&quot{0}\s*&quot.format(re.escape(sent)),
+                self.original_text))
+        sorted_spans = sorted(sent_spans, key=lambda x: x[1])</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 to keep non-destructive text after segments joins
+        sent_spans = []
+        prior_start_char_idx = 0
+        <a id="change">for sent in sentences:
+            for match in re.finditer(r&quot{0}\s*&quot.format(re.escape(sent)), self.original_text):
+                match_str = match.group()
+                match_start_idx, match_end_idx = match.span()
+                if match_start_idx &gt;= prior_start_char_idx:
+                    &#47&#47 making sure if curren sentence and its span
+                    &#47&#47 is either first sentence along with its char spans
+                    &#47&#47 or current sent spans adjacent to prior sentence spans
+                    sent_spans.append(
+                        TextSpan(match_str, match_start_idx, match_end_idx))
+                    prior_start_char_idx = match_start_idx
+                    break
+       </a> return sent_spans
+
+    def segment(self, text):
+        self.original_text = text</code></pre>

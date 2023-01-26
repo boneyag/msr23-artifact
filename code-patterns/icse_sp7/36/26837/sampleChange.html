@@ -1,0 +1,84 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                ve += categorical_error(vpred.d, vlabel.d)
+            monitor_verr.add(i, ve / args.val_iter)
+        if i % args.model_save_interval == 0:
+            <a id="change">nn.save_parameters(os.path.join(
+                args.model_save_path, &quotparams_%06d.h5&quot % i))</a>
+        &#47&#47 Training forward
+        image.d, label.d = data.next()
+        solver.zero_grad()
+        loss.forward(clear_no_need_grad=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Create Solver. If training from checkpoint, load the info.
+    solver = S.Adam(args.learning_rate)
+    solver.set_parameters(nn.get_parameters())
+    <a id="change">start_point = 0</a>
+
+    <a id="change">if args.checkpoint is not None:
+        &#47&#47 load weights and solver state info from specified checkpoint file.
+        start_point = load_checkpoint(args.checkpoint, solver)
+
+    &#47&#47 Create monitor.
+   </a> from nnabla.monitor import Monitor, MonitorSeries, MonitorTimeElapsed
+    monitor = Monitor(args.monitor_path)
+    monitor_loss = MonitorSeries("Training loss", monitor, interval=10)
+    monitor_err = MonitorSeries("Training error", monitor, interval=10)
+    monitor_time = MonitorTimeElapsed("Training time", monitor, interval=100)
+    monitor_verr = MonitorSeries("Test error", monitor, interval=10)
+
+    &#47&#47 save_nnp
+    <a id="change">contents = save_nnp({&quotx&quot: vimage}, {&quoty&quot: vpred}, args.batch_size)</a>
+    <a id="change">save.save(os.path.join(args.model_save_path,
+                           &quot{}_result_epoch0.nnp&quot.format(args.net)), contents)</a>
+
+    &#47&#47 Initialize DataIterator for MNIST.
+    from numpy.random import RandomState
+    data = data_iterator_mnist(args.batch_size, True, rng=RandomState(1223))
+    vdata = data_iterator_mnist(args.batch_size, False)
+    &#47&#47 Training loop.
+    for i in range(start_point, args.max_iter):
+        if i % args.val_interval == 0:
+            &#47&#47 Validation
+            ve = 0.0
+            for j in range(args.val_iter):
+                vimage.d, vlabel.d = vdata.next()
+                vpred.forward(clear_buffer=True)
+                vpred.data.cast(np.float32, ctx)
+                ve += categorical_error(vpred.d, vlabel.d)
+            monitor_verr.add(i, ve / args.val_iter)
+        if i % args.model_save_interval == 0:
+            &#47&#47 save checkpoint file
+            <a id="change">save_checkpoint(args.model_save_path, i, solver)</a>
+        &#47&#47 Training forward
+        image.d, label.d = data.next()
+        solver.zero_grad()
+        loss.forward(clear_no_need_grad=True)
+        loss.backward(clear_buffer=True)
+        solver.weight_decay(args.weight_decay)
+        solver.update()
+        loss.data.cast(np.float32, ctx)
+        pred.data.cast(np.float32, ctx)
+        e = categorical_error(pred.d, label.d)
+        monitor_loss.add(i, loss.d.copy())
+        monitor_err.add(i, e)
+        monitor_time.add(i)
+
+    ve = 0.0
+    for j in range(args.val_iter):
+        vimage.d, vlabel.d = vdata.next()
+        vpred.forward(clear_buffer=True)
+        ve += categorical_error(vpred.d, vlabel.d)
+    monitor_verr.add(i, ve / args.val_iter)
+
+    parameter_file = os.path.join(
+        args.model_save_path, &quot{}_params_{:06}.h5&quot.format(args.net, args.max_iter))
+    nn.save_parameters(parameter_file)
+
+    &#47&#47 save_nnp_lastepoch
+    <a id="change">contents = save_nnp({&quotx&quot: vimage}, {&quoty&quot: vpred}, args.batch_size)</a>
+    save.save(os.path.join(args.model_save_path,
+                           &quot{}_result.nnp&quot.format(args.net)), contents)
+
+</code></pre>

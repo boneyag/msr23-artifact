@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 The case in which layer_dict represents an "atomic" layer
+        layer_dict.pop(&quotname&quot)
+        if &quotparameters&quot in layer_dict:
+            <a id="change">params = layer_dict.get(&quotparameters&quot)</a>
+            layer_dict.pop(&quotparameters&quot)
+            hasParams = True
+
+        for k, v in layer_dict.items():
+            &#47&#47 For now, this can only happen for regularizers and constraints
+            if isinstance(v, dict):
+                vname = v.get(&quotname&quot)
+                v.pop(&quotname&quot)
+                if vname in [x for x, y in inspect.getmembers(constraints, predicate=inspect.isclass)]:
+                    layer_dict[k] = constraints.get(vname, v)
+                if vname in [x for x, y in inspect.getmembers(regularizers, predicate=inspect.isclass)]:
+                    layer_dict[k] = regularizers.get(vname, v)
+
+        base_layer = get_layer(name, layer_dict)
+        if hasParams:
+            shaped_params = []
+            <a id="change">for param in params:
+                data = np.asarray(param.get(&quotdata&quot))
+                shape = tuple(param.get(&quotshape&quot))
+                shaped_params.append(data.reshape(shape))
+           </a> base_layer.set_weights(shaped_params)
+        return base_layer
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def container_from_config(original_layer_dict):
+    <a id="change">layer_dict = copy.deepcopy(original_layer_dict)</a>
+    name = layer_dict.get(&quotname&quot)
+
+    if name == &quotMerge&quot:
+        mode = layer_dict.get(&quotmode&quot)</code></pre>

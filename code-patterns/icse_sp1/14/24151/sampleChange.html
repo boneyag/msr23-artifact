@@ -1,0 +1,76 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+opt = parser.parse_args()
+
+model_infos = [utils.pickle_load(open(&quotlog_%s/infos_%s-best.pkl&quot %(id, id))) for id in opt.ids]
+<a id="change">model_paths = [&quotlog_%s/model-best.pth&quot %(id) for id in opt.ids]</a>
+
+&#47&#47 Load one infos
+infos = model_infos[0]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+model_infos = []
+model_paths = []
+<a id="change">for id in opt.ids:
+    if &quot-&quot in id:
+        id, app = id.split(&quot-&quot)
+        app = &quot-&quot+app
+    else:
+        app = &quot&quot
+    model_infos.append(utils.pickle_load(open(&quotlog_%s/infos_%s%s.pkl&quot %(id, id, app))))
+    model_paths.append(&quotlog_%s/model%s.pth&quot %(id,app))
+
+&#47&#47 Load one infos
+</a>infos = model_infos[0]
+
+&#47&#47 override and collect parameters
+replace = [&quotinput_fc_dir&quot, &quotinput_att_dir&quot, &quotinput_box_dir&quot, &quotinput_label_h5&quot, &quotinput_json&quot, &quotbatch_size&quot, &quotid&quot]
+for k in replace:
+    setattr(opt, k, getattr(opt, k) or getattr(infos[&quotopt&quot], k, &quot&quot))
+
+vars(opt).update({k: vars(infos[&quotopt&quot])[k] for k in vars(infos[&quotopt&quot]).keys() if k not in vars(opt)}) &#47&#47 copy over options from model
+
+
+opt.use_box = max([getattr(infos[&quotopt&quot], &quotuse_box&quot, 0) for infos in model_infos])
+assert max([getattr(infos[&quotopt&quot], &quotnorm_att_feat&quot, 0) for infos in model_infos]) == max([getattr(infos[&quotopt&quot], &quotnorm_att_feat&quot, 0) for infos in model_infos]), &quotNot support different norm_att_feat&quot
+assert max([getattr(infos[&quotopt&quot], &quotnorm_box_feat&quot, 0) for infos in model_infos]) == max([getattr(infos[&quotopt&quot], &quotnorm_box_feat&quot, 0) for infos in model_infos]), &quotNot support different norm_box_feat&quot
+
+vocab = infos[&quotvocab&quot] &#47&#47 ix -&gt; word mapping
+
+&#47&#47 Setup the model
+from models.AttEnsemble import AttEnsemble
+
+_models = []
+for i in range(len(model_infos)):
+    model_infos[i][&quotopt&quot].start_from = None
+    model_infos[i][&quotopt&quot].vocab = vocab
+    tmp = models.setup(model_infos[i][&quotopt&quot])
+    tmp.load_state_dict(torch.load(model_paths[i]))
+    _models.append(tmp)
+
+if opt.weights is not None:
+    opt.weights = [float(_) for _ in opt.weights]
+model = AttEnsemble(_models, weights=opt.weights)
+model.seq_length = opt.max_length
+model.cuda()
+model.eval()
+crit = utils.LanguageModelCriterion()
+
+&#47&#47 Create the Data Loader instance
+if len(opt.image_folder) == 0:
+  loader = DataLoader(opt)
+else:
+  loader = DataLoaderRaw({&quotfolder_path&quot: opt.image_folder, 
+                            &quotcoco_json&quot: opt.coco_json,
+                            &quotbatch_size&quot: opt.batch_size,
+                            &quotcnn_model&quot: opt.cnn_model})
+&#47&#47 When eval using provided pretrained model, the vocab may be different from what you have in your cocotalk.json
+&#47&#47 So make sure to use the vocab in infos file.
+loader.ix_to_word = infos[&quotvocab&quot]
+
+<a id="change">opt.id</a> = &quot+&quot.join([_+str(__) for _,__ in zip(opt.ids, opt.weights)])
+&#47&#47 Set sample options
+loss, split_predictions, lang_stats = eval_utils.eval_split(model, crit, loader, 
+    vars(opt))</code></pre>

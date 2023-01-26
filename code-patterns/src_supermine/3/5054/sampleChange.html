@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.best_hp = best_trial.hyperparameters
+        preprocess_graph, keras_graph, model = self.get_best_models()[0]
+        preprocess_graph.save(self.best_preprocess_graph_path)
+        <a id="change">keras_graph.save(self.best_keras_graph_path)</a>
+
+        &#47&#47 Fully train the best model with original callbacks.
+        if not any([isinstance(callback, tf.keras.callbacks.EarlyStopping)
+                    for callback in callbacks]) or self.fit_on_val_data:</code></pre><h3>After Change</h3><pre><code class='java'>
+        is injected to accelerate the search process. At the end of the search, the
+        best model will be fully trained with the specified number of epochs.
+        
+        <a id="change">if self._finished:
+            return
+        &#47&#47 Insert early-stopping for acceleration.
+       </a> if not callbacks:
+            callbacks = []
+        new_callbacks = self._deepcopy_callbacks(callbacks)
+        if not any([isinstance(callback, tf.keras.callbacks.EarlyStopping)
+                    for callback in callbacks]):
+            new_callbacks.append(tf.keras.callbacks.EarlyStopping(patience=10))
+
+        super().search(callbacks=new_callbacks, **fit_kwargs)
+
+        &#47&#47 Fully train the best model with original callbacks.
+        if not any([isinstance(callback, tf.keras.callbacks.EarlyStopping)
+                    for callback in callbacks]) or self.fit_on_val_data:
+            best_trial = self.oracle.get_best_trials(1)[0]
+            best_hp = best_trial.hyperparameters
+            <a id="change">preprocess_graph</a>, keras_graph = self.hyper_graph.build_graphs(best_hp)
+            fit_kwargs[&quotcallbacks&quot] = self._deepcopy_callbacks(callbacks)
+            self._prepare_run(preprocess_graph, fit_kwargs, fit=True)
+            if self.fit_on_val_data:</code></pre>

@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    control_flow_ops.Assert(
+        condition, ["Input values must be in the range 0 &lt;= values &lt; max_tokens"
+                    " with max_tokens={}".format(out_depth)])
+    <a id="change">if self.sparse:
+      return sparse_bincount(inputs, out_depth, binary_output, count_weights)
+    else:
+      return dense_bincount(inputs, out_depth, binary_output, count_weights)
+
+
+</a>class _CategoryEncodingAccumulator(
+    collections.namedtuple("Accumulator", ["data", "per_doc_count_dict"])):
+  pass
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    control_flow_ops.Assert(
+        condition, ["Input values must be in the range 0 &lt;= values &lt; max_tokens"
+                    " with max_tokens={}".format(out_depth)])
+    <a id="change">if self._sparse:
+      result = bincount_ops.sparse_bincount(
+          inputs,
+          weights=count_weights,
+          minlength=out_depth,
+          maxlength=out_depth,
+          axis=-1,
+          binary_output=binary_output)
+      result = math_ops.cast(result, K.floatx())
+      batch_size = array_ops.shape(result)[0]
+      result = sparse_tensor.SparseTensor(
+          indices=result.indices,
+          values=result.values,
+          dense_shape=[batch_size, out_depth])
+      return result
+    else:
+      result = bincount_ops.bincount(
+          inputs,
+          weights=count_weights,
+          minlength=out_depth,
+          maxlength=out_depth,
+          dtype=K.floatx(),
+          axis=-1,
+          binary_output=binary_output)
+      result.set_shape(tensor_shape.TensorShape((None, out_depth)))
+      return result
+
+
+</a>class _CategoryEncodingAccumulator(
+    collections.namedtuple("Accumulator", ["data", "per_doc_count_dict"])):
+  pass
+</code></pre>

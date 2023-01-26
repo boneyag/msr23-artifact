@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  transformed = []
+  for kernel, preimg in zip(cdna_kerns, prev_images):
+    kernel = tf.squeeze(kernel)
+    if <a id="change">len(kernel.get_shape())</a> == 3:
+      kernel = tf.expand_dims(kernel, -1)
+    transformed.append(
+        tf.nn.depthwise_conv2d(preimg, kernel, [1, 1, 1, 1], &quotSAME&quot))</code></pre><h3>After Change</h3><pre><code class='java'>
+    List of images transformed by the predicted CDNA kernels.
+  
+  batch_size = int(cdna_input.get_shape()[0])
+  <a id="change">height = int(prev_image.get_shape()[1])</a>
+  width = int(prev_image.get_shape()[2])
+
+  &#47&#47 Predict kernels using linear function of last hidden layer.
+  cdna_kerns = slim.layers.fully_connected(
+      cdna_input,
+      DNA_KERN_SIZE * DNA_KERN_SIZE * num_masks,
+      scope=&quotcdna_params&quot,
+      activation_fn=None)
+
+  &#47&#47 Reshape and normalize.
+  cdna_kerns = tf.reshape(
+      cdna_kerns, [batch_size, DNA_KERN_SIZE, DNA_KERN_SIZE, 1, num_masks])
+  cdna_kerns = tf.nn.relu(cdna_kerns - RELU_SHIFT) + RELU_SHIFT
+  norm_factor = tf.reduce_sum(cdna_kerns, [1, 2, 3], keep_dims=True)
+  cdna_kerns /= norm_factor
+
+  &#47&#47 Treat the color channel dimension as the batch dimension since the same
+  &#47&#47 transformation is applied to each color channel.
+  &#47&#47 Treat the batch dimension as the channel dimension so that
+  &#47&#47 depthwise_conv2d can apply a different transformation to each sample.
+  cdna_kerns = tf.transpose(cdna_kerns, [1, 2, 0, 4, 3])
+  cdna_kerns = tf.reshape(cdna_kerns, [DNA_KERN_SIZE, DNA_KERN_SIZE, batch_size, num_masks])
+  &#47&#47 Swap the batch and channel dimensions.
+  <a id="change">prev_image = tf.transpose(prev_image, [3, 1, 2, 0])</a>
+
+  &#47&#47 Transform image.
+  transformed = tf.nn.depthwise_conv2d(prev_image, cdna_kerns, [1, 1, 1, 1], &quotSAME&quot)
+
+  &#47&#47 Transpose the dimensions to where they belong.
+  <a id="change">transformed = tf.reshape(transformed, [color_channels, height, width, batch_size, num_masks])</a>
+  transformed = tf.transpose(transformed, [3, 1, 2, 0, 4])
+  transformed = tf.unstack(transformed, axis=-1)
+  return transformed
+</code></pre>

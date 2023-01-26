@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Evaluate fant x train and fant x fant covariance matrices, leave train x train unevaluated.
+        fant_fant_covar = full_covar[..., num_train:, num_train:]
+        fant_mean = full_mean[..., num_train:]
+        mvn = <a id="change">self.likelihood(MultivariateNormal(fant_mean, fant_fant_covar), inputs)</a>
+        fant_fant_covar = mvn.covariance_matrix
+
+        fant_train_covar = delazify(full_covar[..., num_train:, :num_train])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Evaluate fant x train and fant x fant covariance matrices, leave train x train unevaluated.
+        fant_fant_covar = full_covar[..., num_train:, num_train:]
+        fant_mean = full_mean[..., num_train:]
+        mvn = <a id="change">MultivariateNormal(fant_mean, fant_fant_covar)</a>
+        self.likelihood.fantasize(**kwargs)
+        if "noise" in kwargs:
+            mvn_obs = self.likelihood(mvn, inputs, observation_noise=kwargs.get("noise"))
+        else:
+            mvn_obs = <a id="change">self.likelihood(mvn, inputs)</a>
+
+        fant_fant_covar = mvn_obs.covariance_matrix
+        fant_train_covar = delazify(full_covar[..., num_train:, :num_train])
+</code></pre>

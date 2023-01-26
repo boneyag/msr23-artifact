@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        vectors are discarded here to save space.
+
+        
+        <a id="change">all_ngrams = []</a>
+        wv.vectors = np.zeros((len(wv.vocab), wv.vector_size), dtype=REAL)
+
+        for w, vocab in wv.vocab.items():
+            all_ngrams += _compute_ngrams(w, wv.min_n, wv.max_n)
+            wv.vectors[vocab.index] += np.array(wv.vectors_ngrams[vocab.index])
+
+        all_ngrams = set(all_ngrams)
+        wv.num_ngram_vectors = len(all_ngrams)
+        ngram_indices = []
+        <a id="change">for i, ngram in enumerate(all_ngrams):
+            ngram_hash = _ft_hash(ngram)
+            ngram_indices.append(len(wv.vocab) + ngram_hash % self.bucket)
+            wv.ngrams[ngram] = i
+       </a> wv.vectors_ngrams = wv.vectors_ngrams.take(ngram_indices, axis=0)
+
+        ngram_weights = wv.vectors_ngrams
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        ngram_indices = []
+        wv.num_ngram_vectors = 0
+        <a id="change">for word in wv.vocab.keys():
+            for ngram in _compute_ngrams(word, wv.min_n, wv.max_n):
+                ngram_hash = _ft_hash(ngram) % self.bucket
+                if ngram_hash in wv.hash2index:
+                    continue
+                wv.hash2index[ngram_hash] = len(ngram_indices)
+                ngram_indices.append(len(wv.vocab) + ngram_hash)
+       </a> wv.num_ngram_vectors = len(ngram_indices)
+        wv.vectors_ngrams = wv.vectors_ngrams.take(ngram_indices, axis=0)
+
+        ngram_weights = wv.vectors_ngrams
+
+        logger.info(
+            "loading weights for %s words for fastText model from %s",
+            len(wv.vocab), file_name
+        )
+
+        for w, vocab in wv.vocab.items():
+            word_ngrams = _compute_ngrams(w, wv.min_n, wv.max_n)
+            for word_ngram in word_ngrams:
+                <a id="change">vec_idx = wv.hash2index[_ft_hash(word_ngram) % self.bucket]</a>
+                wv.vectors[vocab.index] += np.array(ngram_weights[vec_idx])
+
+            wv.vectors[vocab.index] /= (len(word_ngrams) + 1)
+        logger.info(</code></pre>

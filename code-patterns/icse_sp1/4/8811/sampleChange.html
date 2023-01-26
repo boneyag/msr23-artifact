@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Get all traces for var
+        x = np.array(mtrace.get_values(var, combine=False))
+
+        <a id="change">try:
+            n_eff[var] = calc_n_eff(x)
+        except ValueError:
+            n_eff[var] = [calc_n_eff(y.transpose()) for y in x.transpose()]
+
+   </a> return n_eff
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        _n_eff = np.zeros(x.shape[:-2])
+
+        &#47&#47 iterate over tuples of indices of the shape of var
+        inds = [<a id="change">y</a>.ravel().tolist() for y in np.indices(x.shape[:-2])]
+        <a id="change">for tup in zip(*inds):  &#47&#47 iterate with zip
+            _n_eff[tup] = get_neff(x[tup], Vhat[tup])
+
+        &#47&#47 we could be using np.squeeze here, but I don&quott want to squeeze
+        &#47&#47 out dummy dimensions that a user inputs
+       </a> if is_scalar:
+            n_eff[var] = _n_eff[0]
+        else:
+            &#47&#47 make sure to transpose the dims back</code></pre>

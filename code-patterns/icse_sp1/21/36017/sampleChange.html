@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            kwargs[&quotbatch_norm&quot] = batch_norm
+
+        with tf.variable_scope(&quotUNet&quot):
+            <a id="change">x = self.input_block(dim, inputs[&quotimages&quot], filters, **kwargs)</a>
+
+            layers_filters = 2 ** np.arange(num_blocks) * filters * 2
+            x = self.body(dim, x, layers_filters, **kwargs)
+            output = <a id="change">self.head(dim, x, filters, num_classes, **kwargs)</a>
+
+            logits = tf.identity(output, &quotpredictions&quot)
+            <a id="change">tf.nn.softmax(logits, name=&quotpredicted_proba&quot)</a>
+
+    @classmethod
+    def body(cls, dim, inputs, filters, **kwargs):
+         UNet body</code></pre><h3>After Change</h3><pre><code class='java'>
+        number of downsampling/upsampling blocks (4 by default)
+    
+
+    def _build(<a id="change">self</a>):
+        names = [&quotimages&quot, &quotmasks&quot]
+        _, inputs = self._make_inputs(names)
+
+        num_classes = self.num_classes(&quotmasks&quot)
+        data_format = self.data_format(&quotimages&quot)
+        dim = self.spatial_dim(&quotimages&quot)
+        batch_norm = self.get_from_config(&quotbatch_norm&quot, {&quotmomentum&quot: 0.1})
+        filters = self.get_from_config(&quotfilters&quot, 64)
+        num_blocks = self.get_from_config(&quotnum_blocks&quot, 4)
+
+        input_block_config = <a id="change">self.get_from_config(&quotinput_block&quot, {&quotfilters&quot: filters})</a>
+        layers_filters = 2 ** np.arange(num_blocks) * filters * 2
+        <a id="change">body_config = self.get_from_config(&quotbody&quot, {&quotfilters&quot: layers_filters})</a>
+        head_config = self.get_from_config(&quothead&quot, <a id="change">{&quotfilters&quot: filters}</a>)
+        head_config[&quotnum_classes&quot] = num_classes
+
+        kwargs = {&quotdata_format&quot: data_format, &quottraining&quot: self.is_training}
+        if batch_norm:
+            kwargs[&quotbatch_norm&quot] = batch_norm
+
+        with tf.variable_scope(&quotUNet&quot):
+            <a id="change">x = self.input_block(dim, inputs[&quotimages&quot], **{**kwargs, **input_block_config})</a>
+            x = self.body(dim, x, **{**kwargs, **body_config})
+            <a id="change">output = self.head(dim, x, **{**kwargs, **head_config})</a>
+
+        logits = tf.identity(output, &quotpredictions&quot)
+        <a id="change">tf.nn.softmax(logits, name=&quotpredicted_proba&quot)</a>
+
+    @classmethod
+    def body(cls, dim, inputs, filters, **kwargs):
+         UNet body</code></pre>

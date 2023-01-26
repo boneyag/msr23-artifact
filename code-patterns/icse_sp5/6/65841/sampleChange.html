@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            max_tgt_chr_name_len = max(map(len, target_chroms))
+            chroms_to_skip = [c for c in untgt_chroms
+                              if len(c) &gt; max_tgt_chr_name_len]
+        <a id="change">for untgt_chr in chroms_to_skip:
+            logging.info("Skipping untargeted chromosome %s", untgt_chr)
+            del access_chroms[untgt_chr]
+   </a> else:
+        &#47&#47 Chromosome accessible sequence regions not known -- use heuristics
+        &#47&#47 (chromosome length is endpoint of last probe; skip initial
+        &#47&#47 &lt;magic number&gt; of bases that are probably telomeric)</code></pre><h3>After Change</h3><pre><code class='java'>
+    if access_bed:
+        &#47&#47 Chromosomes&quot accessible sequence regions are given -- use them
+        accessible = tabio.read_auto(access_bed)
+        <a id="change">access_chroms = set(accessible.chromosome.unique())</a>
+        if access_chroms and access_chroms.isdisjoint(target_chroms):
+            raise ValueError("Chromosome names in the accessible regions file "
+                             "%s %r do not match those in targets %s %r"
+                             % (access_bed, tuple(sorted(access_chroms)[:3]),
+                                target_bed, tuple(sorted(target_chroms)[:3])))
+        &#47&#47 But filter out untargeted alternative contigs and mitochondria
+        untgt_chroms = access_chroms - target_chroms
+        &#47&#47 Autosomes typically have numeric names, allosomes are X and Y
+        is_canonical = re.compile(r"(chr)?(\d+|[XYxy])$")
+        if any(is_canonical.match(c) for c in target_chroms):
+            chroms_to_skip = [c for c in untgt_chroms
+                              if not is_canonical.match(c)]
+        else:
+            &#47&#47 Alternative contigs have longer names -- skip them
+            max_tgt_chr_name_len = max(map(len, target_chroms))
+            chroms_to_skip = [c for c in untgt_chroms
+                              if len(c) &gt; max_tgt_chr_name_len]
+        if chroms_to_skip:
+            logging.info("Skipping untargeted chromosomes %s",
+                         &quot &quot.join(sorted(chroms_to_skip)))
+            skip_idx = accessible.chromosome.isin(chroms_to_skip)
+            accessible = accessible[~skip_idx]
+    else:
+        &#47&#47 Chromosome accessible sequence regions not known -- use heuristics
+        &#47&#47 (chromosome length is endpoint of last probe; skip initial
+        &#47&#47 &lt;magic number&gt; of bases that are probably telomeric)
+        TELOMERE_SIZE = 150000
+        accessible = guess_chromosome_regions(targets, TELOMERE_SIZE)
+
+    pad_size = 2 * INSERT_SIZE
+    <a id="change">bg_arr = (accessible.resize_ranges(-pad_size)
+              .subtract(targets.resize_ranges(pad_size)))</a>
+    bg_arr = bg_arr.subdivide(avg_bin_size, min_bin_size)
+    bg_arr[&quotgene&quot] = &quotBackground&quot
+    return bg_arr
+</code></pre>

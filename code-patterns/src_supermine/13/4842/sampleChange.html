@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+         params_as_tensors_for(feat):
+
+        N = tf.shape(Xmu)[0]
+        <a id="change">op = tf.expand_dims(Xmu, 2) * tf.expand_dims(Xmu, 1) + Xcov</a>  &#47&#47 NxDxD
+        <a id="change">return lin_kern.variance * tf.matmul(tf.tile(tf.expand_dims(feat.Z, 0), (N, 1, 1)), op)</a>
+
+
+@dispatch(Gaussian, (mean_functions.Linear, mean_functions.Constant), type(None), type(None), type(None))
+def _expectation(p, mean, none1, none2, none3):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    with params_as_tensors_for(kern), params_as_tensors_for(feat):
+        N = tf.shape(Xmu)[0]
+        <a id="change">var_Z = kern.variance * feat.Z</a>  &#47&#47 MxD
+        tiled_Z = tf.tile(tf.expand_dims(var_Z, 0), (N, 1, 1))  &#47&#47 NxMxD
+        <a id="change">return tf.matmul(tiled_Z, Xcov + (Xmu[..., None] * Xmu[:, None, :]))</a>
+
+
+@dispatch(MarkovGaussian, kernels.Linear, InducingPoints, mean_functions.Identity, type(None))
+def _expectation(p, kern, feat, mean, none):</code></pre>

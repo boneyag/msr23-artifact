@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            base_samples = Variable(self._mean.data.new(covar_root.size(0), covar_root.size(-1), n_samples).normal_())
+        else:
+            base_samples = Variable(self._mean.data.new(covar_root.size(-1), n_samples).normal_())
+        samples = <a id="change">covar_root.matmul(base_samples)</a>
+        <a id="change">samples = samples + self._mean.unsqueeze(-1)</a>
+        return samples
+
+    def var(self):
+        return self._covar.diag()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def sample(self, n_samples):
+        covar = self.covar()
+        <a id="change">if not isinstance(covar, LazyVariable):
+            covar = NonLazyVariable(covar)
+       </a> return covar.zero_mean_mvn_samples(n_samples) + self._mean.unsqueeze(-1)
+
+    def var(self):
+        return self._covar.diag()</code></pre>

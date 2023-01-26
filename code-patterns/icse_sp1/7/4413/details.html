@@ -1,0 +1,116 @@
+<html><h3>360f6e8aee7989b7e649c21883026612964b9cf7,ludwig/models/model.py,Model,batch_evaluation,#Model#Any#Any#Any#Any#Any#Any#Any#Any#Any#,983
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        )
+
+        if &quotcombined&quot in output_stats and LOSS in output_stats[&quotcombined&quot]:
+            regularization = <a id="change">session</a>.run(
+                [self.regularization_loss],
+                feed_dict={self.regularization_lambda: regularization_lambda}
+            )[0]
+            <a id="change">output_stats[&quotcombined&quot][LOSS] += regularization</a>
+
+        &#47&#47 todo: tf2 debugging
+        fake_stats = OrderedDict(
+            [(&quoty&quot, OrderedDict([(&quotloss&quot, [9489.847173455057]),</code></pre><h3>After Change</h3><pre><code class='java'>
+        )
+
+        &#47&#47 todo tf2: hardcoding for a single output feature - need to generalize
+        <a id="change">of_name = self.hyperparameters[&quotoutput_features&quot][0][&quotname&quot]</a>
+        <a id="change">output_feature = self.output_features[of_name]</a>
+
+        if is_on_master():
+            progress_bar = tqdm(
+                desc=&quotEvaluation&quot if name is None
+                else &quotEvaluation {0: &lt;5.5}&quot.format(name),
+                total=batcher.steps_per_epoch,
+                file=sys.stdout,
+                disable=is_progressbar_disabled()
+            )
+
+        while not batcher.last_batch():
+            batch = batcher.next_batch()
+
+            &#47&#47 todo: tf2 clean up  code
+            &#47&#47 result = session.run(
+            &#47&#47     output_nodes,
+            &#47&#47     feed_dict=self.feed_dict(
+            &#47&#47         batch,
+            &#47&#47         regularization_lambda=regularization_lambda,
+            &#47&#47         dropout_rate=0.0,
+            &#47&#47         is_training=is_training
+            &#47&#47     )
+            &#47&#47 )
+
+            &#47&#47 todo: tf2 need to rationalize to reduce redundant code
+            &#47&#47 create array for predictors
+            &#47&#47 todo: tf2 need to handle case of single predictor, e.g., image
+            predictors = reduce(lambda x, y: np.vstack((x, y)),
+                                [batch[f[&quotname&quot]] for f in
+                                 self.hyperparameters[&quotinput_features&quot]]).T
+
+            &#47&#47 create array for target
+            &#47&#47 is there more than one target
+            if len(self.hyperparameters[&quotoutput_features&quot]) &gt; 1:
+                target = reduce(lambda x, y: np.vstack((x, y)),
+                                [batch[f[&quotname&quot]] for f in
+                                 self.hyperparameters[&quotoutput_features&quot]]).T
+            else:
+                of_name = self.hyperparameters[&quotoutput_features&quot][0][&quotname&quot]
+                output_feature = self.output_features[of_name]
+                target = batch[
+                    self.hyperparameters[&quotoutput_features&quot][0][&quotname&quot]]
+
+            result = self.evaluation_step(
+                self.keras_model,
+                output_feature,
+                predictors,
+                target
+            )
+
+            &#47&#47 output_stats, seq_set_size = self.update_output_stats_batch(
+            &#47&#47     output_stats,
+            &#47&#47     seq_set_size,
+            &#47&#47     collect_predictions,
+            &#47&#47     only_predictions,
+            &#47&#47     result
+            &#47&#47 )
+            if is_on_master():
+                progress_bar.update(1)
+
+        if is_on_master():
+            progress_bar.close()
+
+        &#47&#47 if self.horovod:
+        &#47&#47     output_stats, seq_set_size = self.merge_workers_outputs(
+        &#47&#47         output_stats,
+        &#47&#47         seq_set_size
+        &#47&#47     )
+        &#47&#47
+        &#47&#47 output_stats = self.update_output_stats(
+        &#47&#47     output_stats,
+        &#47&#47     set_size,
+        &#47&#47     seq_set_size,
+        &#47&#47     collect_predictions,
+        &#47&#47     only_predictions
+        &#47&#47 )
+
+        &#47&#47 if &quotcombined&quot in output_stats and LOSS in output_stats[&quotcombined&quot]:
+        &#47&#47     regularization = session.run(
+        &#47&#47         [self.regularization_loss],
+        &#47&#47         feed_dict={self.regularization_lambda: regularization_lambda}
+        &#47&#47     )[0]
+        &#47&#47     output_stats[&quotcombined&quot][LOSS] += regularization
+
+        &#47&#47 todo: tf2 debugging
+        template = f&quotDataset {name}:&quot
+        <a id="change">for measure, measure_fn in output_feature.measure_functions.items():
+            if measure_fn is not None:  &#47&#47 todo tf2 test is needed only during development
+                template += f&quot {measure}: {measure_fn.result()}&quot
+
+       </a> print(template)
+
+        fake_stats = OrderedDict(
+            [(&quoty&quot, OrderedDict([(&quotloss&quot, [9489.847173455057]),</code></pre><img src="28498642.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/uber/ludwig/commit/360f6e8aee7989b7e649c21883026612964b9cf7#diff-0430a392e9085e176481b29638139e95cc3aedd1f022c681ab601d7ad3840d61L984' target='_blank'>Link</a></div><div id='project'> Project Name: uber/ludwig</div><div id='commit'> Commit Name: 360f6e8aee7989b7e649c21883026612964b9cf7</div><div id='time'> Time: 2020-03-06</div><div id='author'> Author: jimthompson5802@aol.com</div><div id='file'> File Name: ludwig/models/model.py</div><div id='class'> Class Name: Model</div><div id='method'> Method Name: batch_evaluation</div><BR><BR><div id='link'><a href='https://github.com/deepfakes/faceswap/commit/acc6553f80d17469bedfdcdab2ea676478a49d9d#diff-bf5d73997cd5e5ad1a2958c3514d7e6cc3834e967d3d0c521ae3941cc56ed5fbL379' target='_blank'>Link</a></div><div id='project'> Project Name: deepfakes/faceswap</div><div id='commit'> Commit Name: acc6553f80d17469bedfdcdab2ea676478a49d9d</div><div id='time'> Time: 2019-07-04</div><div id='author'> Author: 36920800+torzdf@users.noreply.github.com</div><div id='file'> File Name: tools/effmpeg.py</div><div id='class'> Class Name: Effmpeg</div><div id='method'> Method Name: get_info</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/7fa458e2c4c5df5a9d2cc4e66b2472cd9f3377a8#diff-2261db4cb5c6ed80ee042535fd66b2760f341b82fc7491f119587558a50d4f99L207' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: 7fa458e2c4c5df5a9d2cc4e66b2472cd9f3377a8</div><div id='time'> Time: 2018-09-17</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: python/baseline/model.py</div><div id='class'> Class Name: Tagger</div><div id='method'> Method Name: predict_text</div><BR>

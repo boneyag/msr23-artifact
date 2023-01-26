@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                                     subscription_id)
+        samples.create_occurrence_subscription(subscription_id, PROJECT_ID)
+        tries = 0
+        <a id="change">success = False</a>
+        <a id="change">while not success and tries &lt; TRY_LIMIT:
+            print(tries)
+            tries += 1
+            receiver = samples.MessageReceiver()
+            client.subscribe(subscription_name, receiver.pubsub_callback)
+
+            &#47&#47 test adding 3 more occurrences
+            total_created = 3
+            for _ in range(total_created):
+                occ = samples.create_occurrence(self.image_url,
+                                                self.note_id,
+                                                PROJECT_ID,
+                                                PROJECT_ID)
+                sleep(SLEEP_TIME)
+                samples.delete_occurrence(basename(occ.name), PROJECT_ID)
+                sleep(SLEEP_TIME)
+            print(&quotdone. msg_count = {}&quot.format(receiver.msg_count))
+            success = receiver.msg_count == total_created
+       </a> assert receiver.msg_count == total_created
+        &#47&#47 clean up
+        client.delete_subscription(subscription_name)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 the server started to dedup?
+        message_count = 1
+        try:
+            <a id="change">job_done = threading.Event()</a>
+            receiver = MessageReceiver(message_count, job_done)
+            client.subscribe(subscription_name, receiver.pubsub_callback)
+
+            for i in range(message_count):
+                occ = samples.create_occurrence(
+                    self.image_url, self.note_id, PROJECT_ID, PROJECT_ID)
+                time.sleep(SLEEP_TIME)
+                samples.delete_occurrence(basename(occ.name), PROJECT_ID)
+                time.sleep(SLEEP_TIME)
+            <a id="change">job_done.wait(timeout=60)</a>
+            print(&quotdone. msg_count = {}&quot.format(receiver.msg_count))
+            assert message_count &lt;= receiver.msg_count
+        finally:
+            &#47&#47 clean up</code></pre>

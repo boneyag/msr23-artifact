@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    change_calculator = ChangeCalculator(session, symbol_table, scm) if scm else None
+
+    if change_calculator and changed_request.is_actionable():
+      <a id="change">if spec_roots:
+        &#47&#47 We&quotve been provided spec roots (e.g. `./pants list ::`) AND a changed request. Error out.
+        raise InvalidSpecConstraint(&quotcannot provide changed parameters and target specs!&quot)
+
+      &#47&#47 We&quotve been provided no spec roots (e.g. `./pants list`) AND a changed request. Compute
+      &#47&#47 alternate target roots.
+     </a> changed_addresses = change_calculator.changed_target_addresses(changed_request)
+      logger.debug(&quotchanged addresses: %s&quot, changed_addresses)
+      return TargetRoots(tuple(SingleAddress(a.spec_path, a.target_name) for a in changed_addresses))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    changed_request = ChangedRequest.from_options(changed_options)
+
+    &#47&#47 Determine the `--owner-of=` arguments provided from the global options
+    <a id="change">owned_files = options.for_global_scope().owner_of</a>
+
+    logger.debug(&quotspec_roots are: %s&quot, spec_roots)
+    logger.debug(&quotchanged_request is: %s&quot, changed_request)
+    logger.debug(&quotowned_files are: %s&quot, owned_files)
+    scm = get_scm()
+    change_calculator = ChangeCalculator(session, symbol_table, scm) if scm else None
+    owner_calculator = OwnerCalculator(session, symbol_table) if owned_files else None
+    targets_specified = sum(1 for item
+                         in (changed_request.is_actionable(), owned_files, spec_roots)
+                         if item)
+
+    if targets_specified &gt; 1:
+      &#47&#47 We&quotve been provided a more than one of: a change request, an owner request, or spec roots.
+      raise InvalidSpecConstraint(
+        &quotMultiple target selection methods provided. Please use only one of &quot
+        &quot--changed-*, --owner-of, or target specs&quot
+      )
+
+    if change_calculator and changed_request.is_actionable():
+      &#47&#47 We&quotve been provided no spec roots (e.g. `./pants list`) AND a changed request. Compute
+      &#47&#47 alternate target roots.
+      changed_addresses = change_calculator.changed_target_addresses(changed_request)
+      logger.debug(&quotchanged addresses: %s&quot, changed_addresses)
+      return TargetRoots(tuple(SingleAddress(a.spec_path, a.target_name) for a in changed_addresses))
+
+    <a id="change">if owner_calculator and owned_files:
+      &#47&#47 We&quotve been provided no spec roots (e.g. `./pants list`) AND a owner request. Compute
+      &#47&#47 alternate target roots.
+      owner_addresses = owner_calculator.owner_target_addresses(owned_files)
+      logger.debug(&quotowner addresses: %s&quot, owner_addresses)
+      return TargetRoots(tuple(SingleAddress(a.spec_path, a.target_name) for a in owner_addresses))
+
+   </a> return TargetRoots(spec_roots)
+
+
+class ChangeCalculator(object):</code></pre>

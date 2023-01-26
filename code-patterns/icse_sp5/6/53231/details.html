@@ -1,0 +1,35 @@
+<html><h3>1775e89f262111791fabfd40f80a24f74738fe54,rllib/models/tf/tf_action_dist.py,MultiActionDistribution,logp,#MultiActionDistribution#Any#,371
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if isinstance(distribution, Categorical):
+                split_list[i] = tf.cast(
+                    tf.squeeze(split_list[i], axis=-1), tf.int32)
+        <a id="change">log_list = [
+            distribution.logp(split_x) for distribution, split_x in zip(
+                self.child_distributions, split_list)
+        ]</a>
+        return functools.reduce(lambda a, b: a + b, log_list)
+
+    @override(ActionDistribution)
+    def kl(self, other):</code></pre><h3>After Change</h3><pre><code class='java'>
+            split_x = tf.split(x, split_indices, axis=1)
+        &#47&#47 Structured or flattened (by single action component) input.
+        else:
+            split_x = <a id="change">tree.flatten(x)</a>
+
+        def map_(val, dist):
+            &#47&#47 Remove extra categorical dimension.
+            if isinstance(dist, Categorical):
+                val = tf.cast(tf.squeeze(val, axis=-1), tf.int32)
+            return dist.logp(val)
+
+        &#47&#47 Remove extra categorical dimension and take the logp of each
+        &#47&#47 component.
+        <a id="change">flat_logps = tree.map_structure(map_, split_x,
+                                        self.flat_child_distributions)</a>
+
+        return functools.reduce(lambda a, b: a + b, flat_logps)
+
+    @override(ActionDistribution)</code></pre><img src="247226205.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/1775e89f262111791fabfd40f80a24f74738fe54#diff-06e969c95eb9be1ac4a78cb2c5df65e92287cf77e1a84ed54b00f3314b5c85aeL371' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 1775e89f262111791fabfd40f80a24f74738fe54</div><div id='time'> Time: 2020-04-28</div><div id='author'> Author: sven@anyscale.io</div><div id='file'> File Name: rllib/models/tf/tf_action_dist.py</div><div id='class'> Class Name: MultiActionDistribution</div><div id='method'> Method Name: logp</div><BR><BR><div id='link'><a href='https://github.com/explosion/thinc/commit/29c3e05a7a8909ef4e182a016b9d2563dafac061#diff-ceb21bb0e0b81a1a9f8b2daf1817bd7e293a023b96c8b684a082c9c34bcde2dcL16' target='_blank'>Link</a></div><div id='project'> Project Name: explosion/thinc</div><div id='commit'> Commit Name: 29c3e05a7a8909ef4e182a016b9d2563dafac061</div><div id='time'> Time: 2016-12-28</div><div id='author'> Author: honnibal+gh@gmail.com</div><div id='file'> File Name: thinc/util.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: score_model</div><BR><BR><div id='link'><a href='https://github.com/asyml/texar/commit/47c71c0524c7804863f2f4bcffdef5a873d84a55#diff-5915cc72e738b7fcf9c5c81ff1b04b1201b16a4efed688e76f6bc25a20f42382L47' target='_blank'>Link</a></div><div id='project'> Project Name: asyml/texar</div><div id='commit'> Commit Name: 47c71c0524c7804863f2f4bcffdef5a873d84a55</div><div id='time'> Time: 2017-10-16</div><div id='author'> Author: junxianh2@gmail.com</div><div id='file'> File Name: txtgen/modules/connectors/connectors.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _mlp_transform</div><BR>

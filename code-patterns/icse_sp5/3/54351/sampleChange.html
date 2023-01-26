@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def evaluate_l2(fmodel, inputs, labels, *, attacks, epsilons):
+    x = ep.astensor(inputs)
+    y = <a id="change">ep.astensor(labels)</a>
+
+    attack_success = np.zeros((len(attacks), len(epsilons), len(x)), dtype=np.float32)
+
+    for i, attack in enumerate(attacks):
+        attack = attack(fmodel)
+        sig = signature(attack.__call__)
+        minimizing = "epsilon" not in sig.parameters
+
+        if minimizing:
+            &#47&#47 TODO: support hyperparameters
+            xp = ep.astensor(attack(x.tensor, y.tensor))
+            logits = fmodel(xp)
+            predictions = logits.argmax(axis=-1)
+            correct = (predictions == labels).float32().numpy().astype(np.bool)
+            perturbations = xp - x
+            norms = flatten(perturbations).square().sum(axis=-1).sqrt().numpy()
+            for j, epsilon in enumerate(epsilons):
+                attack_success[i, j] = np.logical_and(
+                    np.logical_not(correct), norms &lt;= epsilon
+                )
+        else:
+            for j, epsilon in enumerate(epsilons):
+                xp = ep.astensor(attack(x.tensor, y.tensor, epsilon=epsilon))
+                logits = fmodel(<a id="change">xp.tensor</a>)
+                predictions = logits.argmax(axis=-1)
+                correct = (predictions == labels).float32().numpy().astype(np.bool)
+                perturbations = xp - x</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def evaluate_l2(fmodel, inputs, labels, *, attacks, epsilons):
+    <a id="change">inputs</a>, labels = wrap_(inputs, labels)
+    x = inputs
+    y = labels
+</code></pre>

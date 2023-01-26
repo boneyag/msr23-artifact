@@ -1,0 +1,73 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                 loc_initialW=None, score_initialW=None,
+                 proposal_creator_params={}
+                 ):
+        <a id="change">if n_fg_class is None:
+            if pretrained_model not in self._models:
+                raise ValueError(
+                    &quotThe n_fg_class needs to be supplied as an argument&quot)
+            n_fg_class = self._models[pretrained_model][&quotn_fg_class&quot]
+
+       </a> if loc_initialW is None:
+            loc_initialW = chainer.initializers.Normal(0.001)
+        if score_initialW is None:
+            score_initialW = chainer.initializers.Normal(0.01)
+        if rpn_initialW is None:
+            rpn_initialW = chainer.initializers.Normal(0.01)
+        if vgg_initialW is None and pretrained_model:
+            vgg_initialW = chainer.initializers.constant.Zero()
+
+        extractor = VGG16(initialW=vgg_initialW)
+        extractor.pick = &quotconv5_3&quot
+        &#47&#47 Delete all layers after conv5_3.
+        extractor.remove_unused()
+        rpn = RegionProposalNetwork(
+            512, 512,
+            ratios=ratios,
+            anchor_scales=anchor_scales,
+            feat_stride=self.feat_stride,
+            initialW=rpn_initialW,
+            proposal_creator_params=proposal_creator_params,
+        )
+        head = VGG16RoIHead(
+            n_fg_class + 1,
+            roi_size=7, spatial_scale=1. / self.feat_stride,
+            vgg_initialW=vgg_initialW,
+            loc_initialW=loc_initialW,
+            score_initialW=score_initialW
+        )
+
+        super(FasterRCNNVGG16, self).__init__(
+            extractor,
+            rpn,
+            head,
+            mean=np.array([122.7717, 115.9465, 102.9801],
+                          dtype=np.float32)[:, None, None],
+            min_size=min_size,
+            max_size=max_size
+        )
+
+        <a id="change">if pretrained_model in self._models:
+            path = download_model(self._models[pretrained_model][&quoturl&quot])
+            chainer.serializers.load_npz(path, self)
+        elif pretrained_model == &quotimagenet&quot:
+            self._copy_imagenet_pretrained_vgg16()
+        elif pretrained_model:
+            chainer.serializers.load_npz(pretrained_model, self)
+
+   </a> def _copy_imagenet_pretrained_vgg16(self):
+        pretrained_model = VGG16(pretrained_model=&quotimagenet&quot)
+        self.extractor.conv1_1.copyparams(pretrained_model.conv1_1)
+        self.extractor.conv1_2.copyparams(pretrained_model.conv1_2)</code></pre><h3>After Change</h3><pre><code class='java'>
+                 loc_initialW=None, score_initialW=None,
+                 proposal_creator_params={}
+                 ):
+        <a id="change">n_fg_class, path = prepare_link_initialization(
+            n_fg_class, pretrained_model, self._models, True)</a>
+
+        if loc_initialW is None:
+            loc_initialW = chainer.initializers.Normal(0.001)
+        if score_initialW is None:</code></pre>

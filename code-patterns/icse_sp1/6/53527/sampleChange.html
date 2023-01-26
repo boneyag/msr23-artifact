@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if not ok:
+                return
+
+            <a id="change">trajectories_rewards = []</a>
+
+            for i in range(len(self.seeds)):
+                trajectory, trajectory_info = self._run_trajectory_loop()
+                trajectories_rewards.append(trajectory_info["reward"])
+                trajectory_info.pop("raw_trajectory", None)
+                self._log_to_console(**trajectory_info)
+                self._log_to_tensorboard(**trajectory_info)
+                self._log_to_wandb(
+                    step=self.trajectory_index, **trajectory_info)
+                self.trajectory_index += 1
+
+                if self.trajectory_index % self._gc_period == 0:
+                    gc.collect()
+
+            if self.logger is not None:
+                self.logger.add_scalar(
+                    "trajectory/_mean_valid_reward",
+                    np.mean(trajectories_rewards),
+                    self.db_server.epoch
+                )
+            self._log_to_wandb(
+                step=self.db_server.epoch, **{
+                    "trajectory/_mean_valid_reward":
+                        <a id="change">np.mean(trajectories_rewards)</a>
+                }
+            )
+
+            self.checkpoint["rewards"] = trajectories_rewards</code></pre><h3>After Change</h3><pre><code class='java'>
+                if self.trajectory_index % self._gc_period == 0:
+                    gc.collect()
+
+            <a id="change">loop_metrics = {
+                "trajectory/_mean_valid_reward":
+                    self.rewards2metric(trajectories_reward),
+                "trajectory/_mean_valid_raw_reward":
+                    self.rewards2metric(trajectories_raw_reward),
+            }</a>
+
+            if self.logger is not None:
+                for key, value in loop_metrics.items():
+                    self.logger.add_scalar(key, value, self.db_server.epoch)</code></pre>

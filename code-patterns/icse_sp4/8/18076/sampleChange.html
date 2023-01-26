@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_multivariate_normal_correlated_sampels(self, cuda=False):
+        device = torch.device("cuda") if cuda else torch.device("cpu")
+        mean = torch.tensor([[0, 1], [2, 3]], dtype=torch.float, device=device)
+        <a id="change">variance = 1 + torch.arange(4, dtype=torch.float, device=device)</a>
+        covmat = <a id="change">torch.diag(variance)</a>
+        mtmvn = MultitaskMultivariateNormal(mean=mean, covariance_matrix=covmat)
+
+        <a id="change">base_samples = mtmvn.get_base_samples(torch.Size((3, 4)))</a>
+        self.assertTrue(mtmvn.sample(base_samples=base_samples).shape == torch.Size([3, 4, 2, 2]))
+
+        base_samples = mtmvn.get_base_samples()
+        self.assertTrue(mtmvn.sample(base_samples=base_samples).shape == torch.Size([2, 2]))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def test_multivariate_normal_correlated_sampels(self, cuda=False):
+        device = torch.device("cuda") if cuda else torch.device("cpu")
+        <a id="change">for dtype in (torch.float, torch.double):
+            mean = torch.tensor([[0, 1], [2, 3]], dtype=dtype, device=device)
+            variance = torch.tensor([[1, 2], [3, 4]], dtype=dtype, device=device)
+            covmat = variance.view(-1).diag()
+            mtmvn = MultitaskMultivariateNormal(mean=mean, covariance_matrix=covmat)
+            base_samples = mtmvn.get_base_samples(torch.Size([3, 4]))
+            self.assertTrue(mtmvn.sample(base_samples=base_samples).shape == torch.Size([3, 4, 2, 2]))
+            base_samples = mtmvn.get_base_samples()
+            self.assertTrue(mtmvn.sample(base_samples=base_samples).shape == torch.Size([2, 2]))
+
+   </a> def test_multivariate_normal_correlated_sampels_cuda(self):
+        if torch.cuda.is_available():
+            with least_used_cuda_device():
+                self.test_multivariate_normal_correlated_sampels(cuda=True)</code></pre>

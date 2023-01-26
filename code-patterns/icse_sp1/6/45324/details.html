@@ -1,0 +1,77 @@
+<html><h3>3b1bf154144ca1c637471605384c5a438ee6f659,deeplearning/clgen/corpuses/corpuses.py,Corpus,Create,#Corpus#,200
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Nothing to do for already-encoded databases.
+    &#47&#47 TODO(github.com/ChrisCummins/clgen/issues/130): Refactor this after
+    &#47&#47 splitting out Corpus class.
+    if <a id="change">self.config.HasField(&quotpre_encoded_corpus_url&quot)</a>:
+      return
+
+    preprocessed_lock_path = pathlib.Path(</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Nothing to do for already-encoded databases.
+    &#47&#47 TODO(github.com/ChrisCummins/clgen/issues/130): Refactor this after
+    &#47&#47 splitting out Corpus class.
+    <a id="change">if self.config.HasField(&quotpre_encoded_corpus_url&quot):
+      with self.dashboard_db.Session(commit=True) as session:
+        config_to_store = corpus_pb2.Corpus()
+        config_to_store.CopyFrom(self.config)
+        &#47&#47 Clear the contentfiles field, since we use the content_id to uniquely
+        &#47&#47 identify the input files. This means that corpuses with the same content
+        &#47&#47 files delivered through different means (e.g. two separate but identical
+        &#47&#47 directories) have the same hash.
+        config_to_store.ClearField(&quotcontentfiles&quot)
+        corpus = session.GetOrAdd(
+            dashboard_db.Corpus,
+            config_proto_sha1=crypto.sha1(config_to_store.SerializeToString()),
+            config_proto=str(config_to_store),
+            preprocessed_url=&quot&quot,
+            encoded_url=self.encoded.url,
+            summary=self.GetShortSummary(),
+        )
+        session.flush()
+        self._dashboard_db_id = corpus.id
+      return
+
+   </a> preprocessed_lock_path = pathlib.Path(
+        self.preprocessed.url[len(&quotsqlite:///&quot):]).parent / &quotLOCK&quot
+    with lockfile.LockFile(preprocessed_lock_path):
+      self.preprocessed.Create(self.config)
+    if not self.preprocessed.size:
+      raise errors.EmptyCorpusException(
+          f"Pre-processed corpus contains no files: &quot{self.preprocessed.url}&quot")
+    encoded_lock_path = pathlib.Path(
+        self.encoded.url[len(&quotsqlite:///&quot):]).parent / &quotLOCK&quot
+    with lockfile.LockFile(encoded_lock_path):
+      start_time = time.time()
+      atomizer = self.atomizer
+      app.Log(1, &quot%s: %s tokens in %s ms&quot,
+              type(atomizer).__name__, humanize.Commas(atomizer.vocab_size),
+              humanize.Commas(int((time.time() - start_time) * 1000)))
+      self.encoded.Create(self.preprocessed, atomizer,
+                          self.config.contentfile_separator)
+
+    &#47&#47 Add entry to dashboard database
+    with self.dashboard_db.Session(commit=True) as session:
+      config_to_store = corpus_pb2.Corpus()
+      config_to_store.CopyFrom(self.config)
+      &#47&#47 Clear the contentfiles field, since we use the content_id to uniquely
+      &#47&#47 identify the input files. This means that corpuses with the same content
+      &#47&#47 files delivered through different means (e.g. two separate but identical
+      &#47&#47 directories) have the same hash.
+      config_to_store.ClearField(&quotcontentfiles&quot)
+      corpus = session.GetOrAdd(
+          dashboard_db.Corpus,
+          config_proto_sha1=crypto.sha1(config_to_store.SerializeToString()),
+          config_proto=str(config_to_store),
+          preprocessed_url=self.preprocessed.url,
+          encoded_url=self.encoded.url,
+          summary=self.GetShortSummary(),
+      )
+      session.flush()
+      <a id="change">self._dashboard_db_id = corpus.id</a>
+
+  @property
+  def dashboard_db_id(self) -&gt; int:
+    if not self._created:</code></pre><img src="211697782.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ChrisCummins/clgen/commit/3b1bf154144ca1c637471605384c5a438ee6f659#diff-8847c3cd5a9ee9508e28f92dd5bfdf029002238429b84c7cbc813aa044c27aacL206' target='_blank'>Link</a></div><div id='project'> Project Name: ChrisCummins/clgen</div><div id='commit'> Commit Name: 3b1bf154144ca1c637471605384c5a438ee6f659</div><div id='time'> Time: 2019-08-21</div><div id='author'> Author: chrisc.101@gmail.com</div><div id='file'> File Name: deeplearning/clgen/corpuses/corpuses.py</div><div id='class'> Class Name: Corpus</div><div id='method'> Method Name: Create</div><BR><BR><div id='link'><a href='https://github.com/ChrisCummins/clgen/commit/85a68b6d960009e2e0231cbeb950fee31d34aa51#diff-c9a56c3916a0402fa5e8a1c82990f0b1d2ec6aa0251907e96b581709d12f1493L91' target='_blank'>Link</a></div><div id='project'> Project Name: ChrisCummins/clgen</div><div id='commit'> Commit Name: 85a68b6d960009e2e0231cbeb950fee31d34aa51</div><div id='time'> Time: 2018-05-30</div><div id='author'> Author: chrisc.101@gmail.com</div><div id='file'> File Name: deeplearning/clgen/models/builders.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: BuildOptimizer</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tensorboard/commit/cbffc29e630a2183dd75ee64b5d159d60901c781#diff-9deb77f0bca8b67e75b4bffde60e0fb4a3ffcad939655406479bfc49977a3ffdL287' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tensorboard</div><div id='commit'> Commit Name: cbffc29e630a2183dd75ee64b5d159d60901c781</div><div id='time'> Time: 2017-06-21</div><div id='author'> Author: danmane@gmail.com</div><div id='file'> File Name: tensorboard/backend/event_processing/event_accumulator.py</div><div id='class'> Class Name: EventAccumulator</div><div id='method'> Method Name: _ProcessEvent</div><BR>

@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return scale, trans
+
+    def forward(self, x, inverse=False, jacobian=False):
+        x_0 = x[<a id="change">:, :</a>self.masked_features]
+        x_1 = x[:, self.masked_features:]
+        scale, trans = self._scale_translation(x_0)
+
+        if jacobian is False:
+            if inverse:
+                <a id="change">x_1 = (x_1 - trans) * torch.exp(-scale)</a>
+            else:
+                x_1 = x_1 * torch.exp(scale) + trans
+            <a id="change">output = torch.cat((x_0, x_1), dim=-1)</a>
+
+        else:
+            output = torch.sum(scale, dim=-1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def forward(self, x, inverse=False, jacobian=False):
+        if inverse is False:
+            <a id="change">_flows = self.flows</a>
+        else:
+            _flows = self.flows[::-1]
+
+        if jacobian is False:
+            for flow in _flows:
+                x = flow(x, inverse=inverse)
+            output = x
+
+        else:
+            <a id="change">logdet_jacobian = 0</a>
+            <a id="change">for flow in _flows:
+                x, _logdet_jacobian = flow(x,
+                                           inverse=inverse,
+                                           jacobian=jacobian)
+                logdet_jacobian += _logdet_jacobian
+           </a> output = logdet_jacobian
+
+        return output
+</code></pre>

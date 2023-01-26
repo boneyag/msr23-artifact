@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                new_best = (
+                    norms &lt; best_advs_norms
+                ).float32() * found_advs_iter.float32()
+                new_best = <a id="change">atleast_kd(new_best, best_advs.ndim)</a>
+                best_advs = new_best * x + (1 - new_best) * best_advs
+                best_advs_norms = ep.minimum(norms, best_advs_norms)
+
+            upper_bounds = np.where(found_advs, consts, upper_bounds)</code></pre><h3>After Change</h3><pre><code class='java'>
+                closer = norms &lt; best_advs_norms
+                new_best = closer.float32() * found_advs_iter.float32()
+
+                <a id="change">best_advs = (
+                    atleast_kd(new_best, best_advs.ndim) * perturbed
+                    + (1 - atleast_kd(new_best, best_advs.ndim)) * best_advs
+                )</a>
+                best_advs_norms = new_best * norms + (1 - new_best) * best_advs_norms
+
+            upper_bounds = np.where(found_advs, consts, upper_bounds)
+            lower_bounds = np.where(found_advs, lower_bounds, consts)</code></pre>

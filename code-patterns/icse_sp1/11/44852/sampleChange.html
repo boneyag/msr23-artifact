@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _get_mxts_increments_for_inputs(self):
+        if (max_pool_deeplift_mode==MaxPoolDeepLiftMode.all_or_none):
+            <a id="change">return super(MaxPool2D, self)._get_mxts_increments_for_inputs()</a>
+        else:
+            raise RuntimeError("Unsupported max_pool_deeplift_mode: "+
+                               str(self.max_pool_deeplift_mode))
+            </code></pre><h3>After Change</h3><pre><code class='java'>
+                      "single kernel don&quott have approx even default vals ")
+
+    def _get_mxts_increments_for_inputs(self):
+        <a id="change">if (max_pool_deeplift_mode==MaxPoolDeepLiftMode.gradient):
+            return (self.
+                    _get_input_grads_given_outgrads(out_grad=self.get_mxts()))
+        elif (max_pool_deeplift_mode==MaxPoolDeepLiftMode.scaled_gradient):
+            grad_times_diff_def = self._get_input_grads_given_outgrads(
+                   out_grad=self.get_mxts()*self._get_diff_from_default_vars()) 
+            pcd_input_diff_default = (pseudocount_near_zero(
+                                     self._get_input_diff_from_default_vars()))
+            return grad_times_diff_def/pcd_input_diff_default
+        elif (max_pool_deeplift_mode==
+              MaxPoolDeepLiftMode.partial_credit_softmax):
+            &#47&#47should be able to handle ignore_border=False but haven&quott yet
+            assert self.ignore_border==True,\
+            "Current implementation assumes ignore_border is True"
+            &#47&#47assert that strides divides pool_size...otherwise would
+            &#47&#47need to modify the implementation 
+            for (size, stride) in zip(self.pool_size, self.strides):
+                assert size%stride==0,\
+                 "This implementation assumes stride divides pool size" 
+            inp_def_act = self._get_input_default_activation_vars()
+            total_multipliers
+        &#47&#47    &#47&#47create reshaped thing of zeros to add multipliers to
+&#47&#47rows x cols
+&#47&#47rows x col_stride_no x col_within_kernel
+&#47&#47row_stride_no x row_within_kernel x col_stride_no x col_within_kernel
+        &#47&#47    &#47&#47iterate over stride number
+                 &#47&#47compute the "stations"
+                 &#47&#47station = max( max(default &lt; output activation),
+                 &#47&#47               max(activation &lt; output activation)) 
+        &#47&#47        &#47&#47subset the touchpoints corresponding to stride
+        &#47&#47        &#47&#47reshape subset of self.input_act_vars accordingly
+        &#47&#47        &#47&#47reshape subset of self.default_act_vars accordingly
+        &#47&#47        &#47&#47reshape subset of self.diff-from-default accordingly
+        &#47&#47        &#47&#47do arithmetic with touchpoints for stride to find the fractional contribs
+        &#47&#47        &#47&#47multiply maxpool diff-from-def by fractional contrib to get each positions actual contribs
+        &#47&#47        &#47&#47divide by each position&quots diff-from-default to get multipliers
+        &#47&#47        &#47&#47add multipliers to running sum
+
+        &#47&#47    &#47&#47reshape multipliers back into input shape
+        else:
+            raise RuntimeError("Unsupported max_pool_deeplift_mode: "+
+                               str(self.max_pool_deeplift_mode))
+            
+
+</a>class AvgPool2D(Pool2D):
+
+    def __init__(self, avg_pool_deeplift_mode, **kwargs):
+        super(AvgPool2D, self).__init__(pool_mode=B.PoolMode.avg, **kwargs) </code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    &#47&#47 performs softmax if required
+                    if self._softmax:
+                        pred_b = tf.cast(pred_b, dtype=tf.float32)
+                        <a id="change">pred_b = tf.nn.softmax(pred_b)</a>
+
+                    &#47&#47 reshape pred, ground_truth, weight_map to the same
+                    &#47&#47 size: (n_voxels, num_classes)
+                    &#47&#47 if the ground_truth has only one channel, the shape
+                    &#47&#47 becomes: (n_voxels,)
+                    spatial_shape = pred_b.get_shape().as_list()[:-1]
+                    ref_shape = spatial_shape + [-1]
+                    ground_truth_b = tf.reshape(ground_truth[b_ind], ref_shape)
+                    <a id="change">if ground_truth_b.get_shape().as_list()[-1] == 1:
+                        ground_truth_b = tf.squeeze(ground_truth_b, axis=-1)
+                   </a> if weight_map is not None:
+                        weight_b = tf.reshape(weight_map[b_ind], ref_shape)
+                        if weight_b.get_shape().as_list()[-1] == 1:
+                            weight_b = tf.squeeze(weight_b, axis=-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                    pred_b = tf.reshape(pred_b, [-1, self._num_classes])
+                    if self._softmax:
+                        pred_b = <a id="change">tf.nn.softmax(
+                            tf.cast(pred_b, dtype=tf.float32))</a>
+                    ground_truth_b = ground_truth[b_ind]
+                    weight_b = None if weight_map is None else weight_map[b_ind]
+
+                    loss_params = {</code></pre>

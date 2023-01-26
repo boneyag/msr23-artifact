@@ -1,0 +1,66 @@
+<html><h3>d323c65240afc7a47c7c42fdcadb57d70fab1157,src/python/pants/backend/python/tasks/pytest_run.py,PytestRun,_maybe_shard,#PytestRun#,173
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      return
+
+    components = shard_spec.split(&quot/&quot, 1)
+    <a id="change">if len(components) != 2:
+      raise self.InvalidShardSpecification("Invalid shard specification &quot{}&quot, should be of form: "
+                                           "[shard index]/[total shards]".format(shard_spec))
+
+   </a> def ensure_int(item):
+      try:
+        return int(item)
+      except ValueError:
+        raise self.InvalidShardSpecification("Invalid shard specification &quot{}&quot, item {} is not an "
+                                             "int".format(shard_spec, item))
+
+    shard = ensure_int(components[0])
+    total = ensure_int(components[1])
+    <a id="change">if not (0 &lt;= shard and shard &lt; total):
+      raise self.InvalidShardSpecification("Invalid shard specification &quot{}&quot, shard must "
+                                           "be &gt;= 0 and &lt; {}".format(shard_spec, total))
+   </a> if total &lt; 2:
+      yield []
+      return
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      yield []
+      return
+
+    <a id="change">try:
+      sharder = Sharder(shard_spec)
+
+      if sharder.nshards &lt; 2:
+        yield []
+        return
+
+      with temporary_dir() as tmp:
+        path = os.path.join(tmp, &quotconftest.py&quot)
+        with open(path, &quotw&quot) as fp:
+          fp.write(dedent(
+            def pytest_report_header(config):
+              return &quotshard: {shard} of {nshards} (0-based shard numbering)&quot
+
+
+            def pytest_collection_modifyitems(session, config, items):
+              total_count = len(items)
+              removed = 0
+              for i, item in enumerate(list(items)):
+                if i % {nshards} != {shard}:
+                  del items[i - removed]
+                  removed += 1
+              reporter = config.pluginmanager.getplugin(&quotterminalreporter&quot)
+              reporter.write_line(&quotOnly executing {{}} of {{}} total tests in shard {shard} of &quot
+                                  &quot{nshards}&quot.format(total_count - removed, total_count),
+                                  bold=True, invert=True, yellow=True)
+          .format(shard=sharder.shard, nshards=sharder.nshards)))
+        yield [path]
+    except Sharder.InvalidShardSpec as e:
+      raise self.InvalidShardSpecification(e)
+
+ </a> @contextmanager
+  def _maybe_emit_junit_xml(self, targets):
+    args = []
+    xml_base = self.get_options().junit_xml_dir</code></pre><img src="62969472.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/d323c65240afc7a47c7c42fdcadb57d70fab1157#diff-1d8327590734f1c8075bfe16cbbcb452d213aea5fabbc6ce2757db242200b791L173' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: d323c65240afc7a47c7c42fdcadb57d70fab1157</div><div id='time'> Time: 2016-03-14</div><div id='author'> Author: benjyw@gmail.com</div><div id='file'> File Name: src/python/pants/backend/python/tasks/pytest_run.py</div><div id='class'> Class Name: PytestRun</div><div id='method'> Method Name: _maybe_shard</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/d71bc3c8b533c319e49cf6b347d13c48c925ea93#diff-b280f574be6e0b61768206593dc10514fad27a04ebb71f2909ca837f25b52c77L17' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: d71bc3c8b533c319e49cf6b347d13c48c925ea93</div><div id='time'> Time: 2019-03-18</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/utils/getitem.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _compute_getitem_size</div><BR><BR><div id='link'><a href='https://github.com/stanford-mast/nn_dataflow/commit/4fb88fdc63292d93ce2fdbbf77a4043f18b2c769#diff-8555ab44b623a44fff3ccdca4ea561304d0c5a59b3dfb4240ce879e3a32a58f1L89' target='_blank'>Link</a></div><div id='project'> Project Name: stanford-mast/nn_dataflow</div><div id='commit'> Commit Name: 4fb88fdc63292d93ce2fdbbf77a4043f18b2c769</div><div id='time'> Time: 2017-05-03</div><div id='author'> Author: mgao12@stanford.edu</div><div id='file'> File Name: nn_dataflow/Network.py</div><div id='class'> Class Name: Network</div><div id='method'> Method Name: _merge_symbol</div><BR><BR><div id='link'><a href='https://github.com/polyaxon/polyaxon/commit/8d4140e264a0a47d3d690a5adc6386c027e2f8e2#diff-c361665c0422f1a19db4625d1e67e3c0893c2b65fd59fa431b3b305f63ab88b7L95' target='_blank'>Link</a></div><div id='project'> Project Name: polyaxon/polyaxon</div><div id='commit'> Commit Name: 8d4140e264a0a47d3d690a5adc6386c027e2f8e2</div><div id='time'> Time: 2019-07-13</div><div id='author'> Author: mouradmourafiq@gmail.com</div><div id='file'> File Name: polystores/stores/gcs_store.py</div><div id='class'> Class Name: GCSStore</div><div id='method'> Method Name: parse_gcs_url</div><BR>

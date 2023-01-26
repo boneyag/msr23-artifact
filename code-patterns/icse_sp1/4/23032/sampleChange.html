@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            res = log_likelihood - kl_divergence
+            for _, prior, closure, _ in self.named_priors():
+                res.add_(prior.log_prob(closure()).sum().div(self.num_data))
+            <a id="change">return res</a>
+        else:
+            log_prior = torch.zeros_like(log_likelihood)
+            for _, prior, closure, _ in self.named_priors():
+                log_prior.add_(prior.log_prob(closure()).sum())</code></pre><h3>After Change</h3><pre><code class='java'>
+        kl_divergence = kl_divergence.div(self.num_data)
+
+        &#47&#47 Add any additional registered loss terms
+        <a id="change">added_loss = torch.zeros_like(kl_divergence)</a>
+        had_added_losses = False
+        for added_loss_term in self.model.added_loss_terms():
+            <a id="change">added_loss.add_(added_loss_term.loss())</a>
+            had_added_losses = True
+
+        if self.combine_terms:
+            res = log_likelihood - kl_divergence
+            for _, prior, closure, _ in self.named_priors():
+                res.add_(prior.log_prob(closure()).sum().div(self.num_data))
+            return res + added_loss
+        else:
+            log_prior = torch.zeros_like(log_likelihood)
+            for _, prior, closure, _ in self.named_priors():
+                log_prior.add_(prior.log_prob(closure()).sum())
+            if had_added_losses:
+                <a id="change">return log_likelihood, kl_divergence, log_prior.div(self.num_data), added_loss</a>
+            else:
+                return log_likelihood, kl_divergence, log_prior.div(self.num_data)
+
+</code></pre>

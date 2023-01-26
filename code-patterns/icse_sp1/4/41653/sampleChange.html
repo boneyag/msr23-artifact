@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  for client_count in FLAGS.memtier_clients:
+    vm.RemoteCommand(&quotrm -f {0}&quot.format(MEMTIER_RESULTS))
+    <a id="change">vm.RemoteCommand(
+        &quotmemtier_benchmark &quot
+        &quot-s {server_ip} &quot
+        &quot-p {server_port} &quot
+        &quot-P {protocol} &quot
+        &quot--run-count {run_count} &quot
+        &quot--requests {requests} &quot
+        &quot--clients {clients} &quot
+        &quot--threads {threads} &quot
+        &quot--ratio {ratio} &quot
+        &quot--data-size {data_size} &quot
+        &quot--key-pattern {key_pattern} &quot
+        &quot--pipeline {pipeline} &quot
+        &quot--key-minimum 1 &quot
+        &quot--key-maximum {requests} &quot
+        &quot--random-data &gt; {output_file}&quot.format(
+            server_ip=server_ip,
+            server_port=server_port,
+            protocol=FLAGS.memtier_protocol,
+            run_count=FLAGS.memtier_run_count,
+            requests=FLAGS.memtier_requests,
+            clients=client_count,
+            threads=FLAGS.memtier_threads,
+            ratio=memtier_ratio,
+            data_size=FLAGS.memtier_data_size,
+            key_pattern=FLAGS.memtier_key_pattern,
+            pipeline=FLAGS.memtier_pipeline,
+            output_file=MEMTIER_RESULTS))</a>
+
+    results, _ = vm.RemoteCommand(&quotcat {0}&quot.format(MEMTIER_RESULTS))
+    metadata = GetMetadata()
+    metadata[&quotmemtier_clients&quot] = client_count</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  for client_count in FLAGS.memtier_clients:
+    vm.RemoteCommand(&quotrm -f {0}&quot.format(MEMTIER_RESULTS))
+    <a id="change">cmd = [
+        &quotmemtier_benchmark&quot,
+        &quot-s&quot, server_ip,
+        &quot-p&quot, str(server_port),
+        &quot-P&quot, FLAGS.memtier_protocol,
+        &quot--run-count&quot, str(FLAGS.memtier_run_count),
+        &quot--clients&quot, str(client_count),
+        &quot--threads&quot, str(FLAGS.memtier_threads),
+        &quot--ratio&quot, memtier_ratio,
+        &quot--data-size&quot, str(FLAGS.memtier_data_size),
+        &quot--key-pattern&quot, FLAGS.memtier_key_pattern,
+        &quot--pipeline&quot, str(FLAGS.memtier_pipeline),
+        &quot--key-minimum&quot, &quot1&quot,
+        &quot--key-maximum&quot, str(FLAGS.memtier_requests),
+        &quot--random-data&quot]</a>
+    if FLAGS.memtier_run_duration:
+      cmd.extend([&quot--test-time&quot, str(FLAGS.memtier_run_duration)])
+    else:
+      cmd.extend([&quot--requests&quot, str(FLAGS.memtier_requests)])
+    <a id="change">cmd.extend([&quot&gt;&quot, MEMTIER_RESULTS])</a>
+    vm.RemoteCommand(&quot &quot.join(cmd))
+
+    results, _ = vm.RemoteCommand(&quotcat {0}&quot.format(MEMTIER_RESULTS))
+    metadata = GetMetadata()</code></pre>

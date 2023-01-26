@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+with open(args.outf, &quotw&quot) as outf:
+    for i in range(args.words):
+        output, hidden = learner.module_(input, hidden)
+        <a id="change">word_weights = output.squeeze().data.div(args.temperature).exp().cpu()</a>
+        word_idx = torch.multinomial(word_weights, 1)[0]
+        input.data.fill_(word_idx)
+        word = corpus.dictionary.idx2word[word_idx]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        word_idx, hidden = learner.sample(input=input,
+                                          temperature=args.temperature,
+                                          hidden=hidden)
+        <a id="change">input = inferno.utils.to_var(torch.LongTensor([[word_idx]]),
+                                     use_cuda=args.cuda)</a>
+
+        word = corpus.dictionary.idx2word[word_idx]
+        outf.write(word + (&quot\n&quot if i % 20 == 19 else &quot &quot))
+</code></pre>

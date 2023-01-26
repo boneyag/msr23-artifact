@@ -1,0 +1,42 @@
+<html><h3>9708a6eaeed14443c9ccf26594155767fcbf83d6,gpytorch/models/exact_gp.py,ExactGP,__call__,#ExactGP#,57
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if not isinstance(test_test_covar, LazyVariable):
+                    test_test_covar = NonLazyVariable(test_test_covar)
+                covar_correction = test_train_covar.matmul(self.chol)
+                predictive_covar = test_test_covar + <a id="change">CholLazyVariable(covar_correction).mul(-1)</a>
+            else:
+                if isinstance(train_test_covar, LazyVariable):
+                    train_test_covar = train_test_covar.evaluate()
+                if isinstance(test_train_covar, LazyVariable):</code></pre><h3>After Change</h3><pre><code class='java'>
+                init_vector /= torch.norm(init_vector, 2, 0)
+                q_mat, t_mat = lq_object.lanczos_batch(train_train_matmul, init_vector)
+                self.low_rank_left = Variable(q_mat[0].matmul(t_mat[0].inverse()))
+                <a id="change">self.low_rank_right = Variable(q_mat[0].transpose(-1, -2))</a>
+                self.has_computed_low_rank = True
+
+            &#47&#47 Calculate mean
+            if isinstance(full_covar, InterpolatedLazyVariable):
+                left_interp_indices = test_train_covar.left_interp_indices
+                left_interp_values = test_train_covar.left_interp_values
+                predictive_mean = left_interp(left_interp_indices, left_interp_values, self.alpha) + test_mean
+            elif isinstance(test_train_covar, LazyVariable):
+                predictive_mean = test_train_covar.matmul(self.alpha) + test_mean
+            else:
+                predictive_mean = torch.addmv(test_mean, test_train_covar, self.alpha)
+
+            &#47&#47 Calculate covar
+            if gpytorch.functions.fast_pred_var:
+                if not isinstance(test_test_covar, LazyVariable):
+                    test_test_covar = NonLazyVariable(test_test_covar)
+                covar_correction_left = test_train_covar.matmul(self.low_rank_left)
+                covar_correction_right = test_train_covar.matmul(self.low_rank_right.transpose(-1, -2))
+                <a id="change">covar_correction_right = covar_correction_right.transpose(-1, -2)</a>
+                covar_correction = MatmulLazyVariable(covar_correction_left, covar_correction_right).mul(-1)
+                predictive_covar = <a id="change">test_test_covar + covar_correction</a>
+            else:
+                if isinstance(train_test_covar, LazyVariable):
+                    train_test_covar = train_test_covar.evaluate()
+                if isinstance(test_train_covar, LazyVariable):</code></pre><img src="76752656.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/9708a6eaeed14443c9ccf26594155767fcbf83d6#diff-e8cf0c678e229cca6860b6c6247b0233e3a97e45b818aa007fc8b435958988eeL57' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 9708a6eaeed14443c9ccf26594155767fcbf83d6</div><div id='time'> Time: 2018-01-24</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/models/exact_gp.py</div><div id='class'> Class Name: ExactGP</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/b4117ffdb90db3de7fa079d2e66a39d404a1a1a9#diff-feae13b905f96963db6b0f5ec891a6f30e752d52eac3492263b481e9e94a0265L89' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: b4117ffdb90db3de7fa079d2e66a39d404a1a1a9</div><div id='time'> Time: 2017-09-22</div><div id='author'> Author: ruihan.wu14@gmail.com</div><div id='file'> File Name: test/lazy/mul_lazy_variable_test.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_trace_log_det_quad_form</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/b4117ffdb90db3de7fa079d2e66a39d404a1a1a9#diff-feae13b905f96963db6b0f5ec891a6f30e752d52eac3492263b481e9e94a0265L58' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: b4117ffdb90db3de7fa079d2e66a39d404a1a1a9</div><div id='time'> Time: 2017-09-22</div><div id='author'> Author: ruihan.wu14@gmail.com</div><div id='file'> File Name: test/lazy/mul_lazy_variable_test.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_exact_gp_mll</div><BR>

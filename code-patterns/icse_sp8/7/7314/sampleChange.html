@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                interp_data_data_var = interp_data_data_var_plus_mean_diff_inv_quad[..., :-1]
+                mean_diff_inv_quad = interp_data_data_var_plus_mean_diff_inv_quad[..., -1]
+            elif beta_features.diagonal_correction.on():
+                <a id="change">interp_data_data_var = induc_induc_covar.inv_quad(induc_data_covar, reduce_inv_quad=False)</a>
+
+            &#47&#47 Compute predictive mean
+            predictive_mean = torch.add(
+                test_mean,
+                induc_induc_covar.inv_matmul(mean_diff, left_tensor=induc_data_covar.transpose(-1, -2)).squeeze(-1),
+            )
+
+            &#47&#47 Compute the predictive covariance
+            is_root_lt = isinstance(variational_dist.lazy_covariance_matrix, RootLazyTensor)
+            is_repeated_root_lt = isinstance(
+                variational_dist.lazy_covariance_matrix, BatchRepeatLazyTensor
+            ) and isinstance(variational_dist.lazy_covariance_matrix.base_lazy_tensor, RootLazyTensor)
+            if is_root_lt:
+                predictive_covar = RootLazyTensor(
+                    induc_data_covar.transpose(-1, -2) @ variational_dist.lazy_covariance_matrix.root.evaluate()
+                )
+            elif is_repeated_root_lt:
+                predictive_covar = RootLazyTensor(
+                    induc_data_covar.transpose(-1, -2)
+                    @ variational_dist.lazy_covariance_matrix.root_decomposition().root.evaluate()
+                )
+            else:
+                predictive_covar = MatmulLazyTensor(
+                    induc_data_covar.transpose(-1, -2), predictive_covar @ induc_data_covar
+                )
+
+            if beta_features.diagonal_correction.on():
+                diag_correction = (data_data_covar.diag() - interp_data_data_var).clamp(0, math.inf)
+                <a id="change">predictive_covar = DiagLazyTensor(predictive_covar.diag() + diag_correction)</a>
+
+            &#47&#47 Save the logdet, mean_diff_inv_quad, prior distribution for the ELBO
+            if self.training:
+                self._memoize_cache["prior_distribution_memo"] = MultivariateNormal(induc_mean, induc_induc_covar)</code></pre><h3>After Change</h3><pre><code class='java'>
+                    induc_data_covar.transpose(-1, -2), predictive_covar @ induc_data_covar
+                )
+
+            <a id="change">if self.training:
+                data_covariance = DiagLazyTensor((data_data_covar.diag() - interp_data_data_var).clamp(0, math.inf))
+            else:
+                neg_induc_data_data_covar = induc_induc_covar.inv_matmul(
+                    induc_data_covar, left_tensor=induc_data_covar.transpose(-1, -2).mul(-1)
+                )
+                data_covariance = data_data_covar + neg_induc_data_data_covar
+           </a> <a id="change">predictive_covar = PsdSumLazyTensor(predictive_covar, data_covariance)</a>
+
+            &#47&#47 Save the logdet, mean_diff_inv_quad, prior distribution for the ELBO
+            if self.training:
+                self._memoize_cache["prior_distribution_memo"] = MultivariateNormal(induc_mean, induc_induc_covar)</code></pre>

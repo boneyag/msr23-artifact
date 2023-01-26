@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def test_permuted_global_pool():
+    N_1, N_2 = 4, 6
+    x = torch.randn(N_1 + N_2, 4)
+    batch = <a id="change">torch.tensor([0 for _ in range(N_1)] + [1 for _ in range(N_2)])</a>
+
+    permutation = torch.randperm(N_1 + N_2)
+    perm_x = x[permutation]
+    perm_batch = batch[permutation]</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_permuted_global_pool():
+    N_1, N_2 = 4, 6
+    x = torch.randn(N_1 + N_2, 4)
+    batch = <a id="change">torch.cat([torch.zeros(N_1), torch.ones(N_2)]).to(torch.long)</a>
+    perm = torch.randperm(N_1 + N_2)
+
+    out_1 = global_add_pool(x, batch)
+    out_2 = global_add_pool(x[perm], batch[perm])
+    assert torch.allclose(out_1, out_2)
+
+    out_1 = global_mean_pool(x, batch)
+    out_2 = global_mean_pool(x[perm], batch[perm])
+    assert torch.allclose(out_1, out_2)
+
+    out_1 = global_max_pool(x, batch)
+    <a id="change">out_2 = global_max_pool(x[perm], batch[perm])</a>
+    assert torch.allclose(out_1, out_2)
+</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_swap_axes_simple(self):
+        s = self.signal
+        if s._lazy:
+            <a id="change">pytest.skip("LazyS do not support axes swapping")</a>
+        assert s.swap_axes(0, 1).data.shape == (4, 2, 6)
+        assert s.swap_axes(0, 2).axes_manager.shape == (6, 2, 4)
+        assert s.swap_axes(0, 2).data.flags[&quotC_CONTIGUOUS&quot]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            chunks = s.data.chunks
+        assert s.swap_axes(0, 1).data.shape == (4, 2, 6)
+        assert s.swap_axes(0, 2).axes_manager.shape == (6, 2, 4)
+        <a id="change">if not s._lazy:
+            assert not s.swap_axes(0, 2).data.flags[&quotC_CONTIGUOUS&quot]
+            assert s.swap_axes(0, 2, optimize=True).data.flags[&quotC_CONTIGUOUS&quot]
+        else:
+            cks = s.data.chunks
+            assert s.swap_axes(0, 1).data.chunks == (cks[1], cks[0], cks[2])
+            &#47&#47 This data shape does not require rechunking
+            assert s.swap_axes(0, 1, optimize=True).data.chunks == (cks[1], cks[0], cks[2]) 
+
+   </a> def test_swap_axes_iteration(self):
+        s = self.signal
+        s = s.swap_axes(0, 2)
+        assert s.axes_manager._getitem_tuple[:2] == (0, 0)</code></pre>

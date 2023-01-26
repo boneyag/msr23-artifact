@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        sample = self._prepare_sample(sample, volatile=True)
+
+        &#47&#47 forward pass
+        <a id="change">loss</a>, sample_sizes, logging_outputs, ooms_fwd = self._forward(sample, eval=True)
+        assert not ooms_fwd, &quotRan out of memory during validation&quot
+
+        &#47&#47 aggregate stats and logging outputs</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 gather logging outputs from all GPUs
+        if self.args.distributed_world_size &gt; 1:
+            <a id="change">sample_sizes, logging_outputs = zip(*distributed_utils.all_gather_list(
+                (sample_size, logging_output)
+            ))</a>
+        else:
+            sample_sizes = [sample_size]
+            logging_outputs = [logging_output]
+</code></pre>

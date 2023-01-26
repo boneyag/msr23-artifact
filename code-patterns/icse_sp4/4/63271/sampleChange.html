@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    x = layers.ZeroPadding2D(padding=((1, 1), (1, 1)), name=name + &quot_2_pad&quot)(x)
+    x = layers.DepthwiseConv2D(kernel_size, strides=stride, depth_multiplier=c,
+                               use_bias=False, name=name + &quot_2_conv&quot)(x)
+    <a id="change">x_shape = backend.int_shape(x)[1:-1]</a>
+    x = layers.Reshape(x_shape + (groups, c, c))(x)
+    output_shape = x_shape + (groups, c) if backend.backend() == &quottheano&quot else None
+    x = layers.Lambda(lambda x: sum([x[:, :, :, :, i] for i in range(c)]),
+                      output_shape=output_shape, name=name + &quot_2_reduce&quot)(x)</code></pre><h3>After Change</h3><pre><code class='java'>
+    x = layers.ZeroPadding2D(padding=((1, 1), (1, 1)), name=name + &quot_2_pad&quot)(x)
+    x = layers.DepthwiseConv2D(kernel_size, strides=stride, depth_multiplier=c,
+                               use_bias=False, name=name + &quot_2_conv&quot)(x)
+    kernel = np.zeros(<a id="change">(1, 1, filters * c, filters)</a>, dtype=np.float32)
+    for i in range(filters):
+        start = (i // c) * c * c + i % c
+        end = start + c * c</code></pre>

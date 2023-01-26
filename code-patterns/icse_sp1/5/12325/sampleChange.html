@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      A tensor of Q values for the given next state.
+    
+    &#47&#47 TODO(b/117175589): Add binary tests for DDQN.
+    <a id="change">next_q_values</a>, _ = self._q_network(next_time_steps.observation,
+                                       next_time_steps.step_type)
+    best_next_actions = tf.cast(
+        tf.argmax(input=next_q_values, axis=-1), dtype=tf.int32)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 TODO(b/117175589): Add binary tests for DDQN.
+    next_target_q_values, _ = self._target_q_network(
+        next_time_steps.observation, next_time_steps.step_type)
+    <a id="change">batch_size = (
+        next_target_q_values.shape[0] or tf.shape(next_target_q_values)[0])</a>
+    <a id="change">dummy_state = self._greedy_policy.get_initial_state(batch_size)</a>
+    &#47&#47 Find the greedy actions using our greedy policy. This ensures that masked
+    &#47&#47 actions (and other logic) are respected.
+    <a id="change">best_next_actions = self._greedy_policy.action(
+        next_time_steps, dummy_state).action</a>
+
+    &#47&#47 Handle action_spec.shape=(), and shape=(1,) by using the multi_dim_actions
+    &#47&#47 param. Note: assumes len(tf.nest.flatten(action_spec)) == 1.
+    multi_dim_actions = tf.nest.flatten(self._action_spec)[0].shape.ndims &gt; 0</code></pre>

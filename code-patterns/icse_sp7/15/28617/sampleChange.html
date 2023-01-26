@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            except AttributeError:
+                pass
+            return g
+        <a id="change">return grad</a>
+
+    @Backend._assert_backend_available
+    def compute_hessian(self, objective, argument):
+        raise NotImplementedError</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    @Backend._assert_backend_available
+    def compute_gradient(self, function, arguments):
+        <a id="change">flattened_arguments = flatten_arguments(arguments)</a>
+
+        <a id="change">if len(flattened_arguments) == 1:
+            @functools.wraps(function)
+            def unary_gradient(argument):
+                torch_argument = torch.from_numpy(argument)
+                torch_argument.requires_grad_(True)
+                function(torch_argument).backward()
+                return torch_argument.grad.numpy()
+            return unary_gradient
+
+       </a> def nary_gradient(arguments):
+            torch_arguments = []
+            for argument in flatten_arguments(arguments):
+                torch_argument = torch.from_numpy(argument)
+                torch_argument.requires_grad_()
+                torch_arguments.append(torch_argument)
+            function(*torch_arguments).backward()
+            return [argument.grad.numpy() for argument in torch_arguments]
+        <a id="change">return group_return_values(nary_gradient, arguments)</a>
+
+    @Backend._assert_backend_available
+    def compute_hessian(self, objective, argument):
+        raise NotImplementedError</code></pre>

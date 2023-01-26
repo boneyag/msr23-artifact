@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        likely intent and slots.
+        
+        if not self.fitted:
+            <a id="change">raise AssertionError("NLU engine must be fitted before calling "
+                                 "`parse`")</a>
+        language = Language.from_iso_code(
+            self.dataset_metadata["language_code"])
+        return parse(text, self.dataset_metadata["entities"], language,
+                     self.intent_parsers, intent)</code></pre><h3>After Change</h3><pre><code class='java'>
+        entities = self._dataset_metadata["entities"]
+
+        for parser in self.intent_parsers:
+            <a id="change">res = parser.parse(text, intents)</a>
+            if is_empty(res):
+                continue
+            slots = res[RES_SLOTS]
+            scope = [BuiltInEntity.from_label(s[RES_ENTITY]) for s in slots
+                     if is_builtin_entity(s[RES_ENTITY])]
+            resolved_slots = resolve_slots(text, slots, entities, language,
+                                           scope)
+            return parsing_result(text, intent=<a id="change">res[RES_INTENT]</a>,
+                                  slots=resolved_slots)
+        return empty_result(text)
+</code></pre>

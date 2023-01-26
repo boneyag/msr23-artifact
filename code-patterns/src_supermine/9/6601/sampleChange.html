@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def transform(model):
+    models = []
+    layers = model.layers
+    <a id="change">for index in range(len(layers) - 1):
+        if isinstance(layers[index], tuple(WEIGHTED_LAYER_FUNC_LIST)):
+            models.append(to_deeper_model(model, index))
+            models.append(to_wider_model(model, index))
+   </a> return models
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def transform(model):
+    models = []
+    conv_model = model.layers[0]
+    <a id="change">dense_model = model.layers[1]</a>
+
+    <a id="change">for index, layer in enumerate(dense_model):
+        &#47&#47 search dense variation
+        if isinstance(layer, Dense):
+            models.append(Sequential(copy_conv_model(conv_model), to_deeper_dense_model(dense_model, index)))
+            models.append(Sequential(copy_conv_model(conv_model), to_wider_dense_model(dense_model, index)))
+
+   </a> for layer in conv_model.layers:
+        &#47&#47 search conv variation
+        if is_conv_layer(layer):
+            models.append(Sequential(to_deeper_conv_model(conv_model, layer), dense_model))</code></pre>

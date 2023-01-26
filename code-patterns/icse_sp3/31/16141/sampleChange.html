@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                - ln_sigma_
+                - gammaln(ilambda_2)
+                + (lambda_ * Z - safe_exp(lambda_ * Z) - 2 * log(lambda_)) * ilambda_2
+                - gammainccln(ilambda_2, <a id="change">safe_exp(lambda_ * Z - 2 * np.log(lambda_))</a>)
+            )
+        else:
+            v = (
+                log(-lambda_)
+                - log(times)
+                - ln_sigma_
+                - gammaln(ilambda_2)
+                + (lambda_ * Z - safe_exp(lambda_ * Z) - 2 * log(-lambda_)) * ilambda_2
+                - gammaincln(ilambda_2, <a id="change">safe_exp(lambda_ * Z - 2 * np.log(-lambda_))</a>)
+            )
+        return v
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _log_hazard(self, params, times):
+        mu_, ln_sigma_, lambda_ = params
+        ilambda_2 = 1 / lambda_ ** 2
+        <a id="change">Z</a> = (log(times) - mu_) / safe_exp(ln_sigma_)
+        <a id="change">clipped_exp = np.clip(safe_exp(lambda_ * Z) * ilambda_2, 1e-10, 1e20)</a>
+        if lambda_ &gt; 0:
+            v = (
+                log(lambda_)
+                - log(times)
+                - ln_sigma_
+                - gammaln(ilambda_2)
+                + (lambda_ * Z - safe_exp(lambda_ * Z) - 2 * log(lambda_)) * ilambda_2
+                - gammainccln(ilambda_2, clipped_exp)
+            )
+        elif <a id="change">lambda_ &lt; 0:
+    </a>        v = (
+                log(-lambda_)
+                - log(times)
+                - ln_sigma_
+                - gammaln(ilambda_2)
+                + (lambda_ * Z - safe_exp(lambda_ * Z) - 2 * log(-lambda_)) * ilambda_2
+                - gammaincln(ilambda_2, clipped_exp)
+            )
+        else:
+            <a id="change">v = norm.logpdf(Z, loc=0, scale=1) - ln_sigma_ - log(times) - norm.logsf(Z)</a>
+        return v
+
+    def percentile(self, p):
+        lambda_ = self.lambda_</code></pre>

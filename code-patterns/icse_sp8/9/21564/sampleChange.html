@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    ksize_hw = (w.shape_dict[Axis.KH], w.shape_dict[Axis.KW])
+
+    stride_nhwc = tf_op.get_attr("strides")  &#47&#47 type: List[int]
+    <a id="change">assert stride_nhwc[0] == 1</a>
+    assert stride_nhwc[3] == 1
+    stride_hw = stride_nhwc[1:3]
+
+    padding_name = tf_op.get_attr("padding")  &#47&#47 type: str</code></pre><h3>After Change</h3><pre><code class='java'>
+@TensorFlowConverter.register_handler("Conv2D")
+def conv2_d_handler(converter: TensorFlowConverter, tf_op: "tf.Operation"):
+    x = converter.get_variable(tf_op.inputs[0])
+    <a id="change">data_format</a> = <a id="change">tf_op.get_attr("data_format")</a>
+    <a id="change">check_data_format(x, data_format)</a>
+
+    w = converter.get_variable(tf_op.inputs[1])  &#47&#47 HWCN
+    w.order.unify(Order([Axis.KH, Axis.KW, Axis.C, Axis.N]))
+
+    ksize = (w.shape_dict[Axis.KH], w.shape_dict[Axis.KW])
+
+    stride = tuple(tf_op.get_attr("strides"))  &#47&#47 type: Tuple[int,...]
+    assert stride[x.order.axes_dict[Axis.N]] == 1
+    assert stride[x.order.axes_dict[Axis.C]] == 1
+    stride = (stride[x.order.axes_dict[Axis.H]], stride[x.order.axes_dict[Axis.W]])
+
+    <a id="change">x, padding = convolution_handler_preprocess(x, ksize=ksize, padding=tf_op.get_attr("padding"), dilation_rate=(1, 1),
+                                                data_format=data_format)</a>
+
+    y, = Convolution2D(None, ksize=ksize, stride=stride, padding=padding)(x, w)
+    converter.set_variable(tf_op.outputs[0], y)
+</code></pre>

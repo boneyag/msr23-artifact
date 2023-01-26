@@ -1,0 +1,158 @@
+<html><h3>a14ebdd7f5935d387f857986c349686c62678598,pynets/workflows.py,,rsn_structural_connectometry,#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#,655
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+    rsn_structural_connectometry_wf.config[&quotexecution&quot][&quotcrashdump_dir&quot]=&quot/tmp&quot
+    rsn_structural_connectometry_wf.config[&quotexecution&quot][&quotremove_unnecessary_outputs&quot]=&quotfalse&quot
+    <a id="change">rsn_structural_connectometry_wf.write_graph()</a>
+    plugin_args = { &quotn_procs&quot: int(procmem[0]),&quotmemory_gb&quot: int(procmem[1])}
+    print(&quot\n&quot + &quotRunning with &quot + str(plugin_args) + &quot\n&quot)
+    res = rsn_structural_connectometry_wf.run(plugin=&quotMultiProc&quot, plugin_args= plugin_args)
+    &#47&#47res = rsn_structural_connectometry_wf.run(plugin=&quotMultiProc&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    import_list=[ "import nibabel as nib", "import nipype.interfaces.fsl as fsl","import nipype.pipeline.engine as pe","import numpy as np","import os","import glob","import seaborn as sns","import random","from nipype.interfaces.fsl import ExtractROI","from matplotlib import pyplot as plt","from sklearn.preprocessing import normalize","from matplotlib import colors","from nilearn import plotting, masking"]
+
+    <a id="change">rsn_structural_connectometry_wf</a> = pe.Workflow(name=&quotwb_structural_connectometry&quot)
+    rsn_structural_connectometry_wf.base_directory=&quot/tmp/pynets&quot
+    
+    &#47&#47&#47&#47Create input/output nodes
+    &#47&#471) Add variable to IdentityInterface if user-set
+    inputnode = pe.Node(niu.IdentityInterface(fields=[&quotID&quot, &quotatlas_select&quot, &quotnetwork&quot, &quotnode_size&quot, &quotmask&quot, &quotparlistfile&quot, &quotplot_switch&quot, &quotparc&quot, &quotref_txt&quot, &quotprocmem&quot, &quotdir_path&quot, &quotbedpostx_dir&quot, &quotlabel_names&quot, &quotanat_loc&quot]), name=&quotinputnode&quot)
+
+    &#47&#472)Add variable to input nodes if user-set (e.g. inputnode.inputs.WHATEVER)
+    inputnode.inputs.ID = ID
+    inputnode.inputs.atlas_select = atlas_select
+    inputnode.inputs.network = network
+    inputnode.inputs.node_size = node_size
+    inputnode.inputs.mask = mask
+    inputnode.inputs.parlistfile = parlistfile
+    inputnode.inputs.plot_switch = plot_switch
+    inputnode.inputs.parc = parc
+    inputnode.inputs.ref_txt = ref_txt
+    inputnode.inputs.procmem = procmem
+    inputnode.inputs.dir_path = dir_path
+    inputnode.inputs.bedpostx_dir = bedpostx_dir
+    inputnode.inputs.label_names = label_names
+    inputnode.inputs.anat_loc = anat_loc
+    inputnode.inputs.nodif_brain_mask_path = nodif_brain_mask_path
+
+
+    &#47&#473) Add variable to function nodes
+    &#47&#47&#47&#47Create function nodes                                   
+    RSN_fetch_nodes_and_labels_node = pe.Node(niu.Function(input_names = [&quotatlas_select&quot, &quotparlistfile&quot, &quotref_txt&quot, &quotparc&quot, &quotfunc_file&quot], 
+                                                          output_names = [&quotlabel_names&quot, &quotcoords&quot, &quotatlas_select&quot, &quotnetworks_list&quot, &quotparcel_list&quot, &quotpar_max&quot, &quotparlistfile&quot, &quotdir_path&quot], 
+                                                          function=nodemaker.RSN_fetch_nodes_and_labels, imports = import_list), name = "RSN_fetch_nodes_and_labels_node")    
+
+    get_node_membership_node = pe.Node(niu.Function(input_names = [&quotnetwork&quot, &quotfunc_file&quot, &quotcoords&quot, &quotlabel_names&quot, &quotparc&quot, &quotparcel_list&quot], 
+                                                      output_names = [&quotnet_coords&quot, &quotnet_parcel_list&quot, &quotnet_label_names&quot, &quotnetwork&quot], 
+                                                      function=nodemaker.get_node_membership, imports = import_list), name = "get_node_membership_node")
+    
+    &#47&#47&#47&#47Node generation
+    if mask is not None:
+        node_gen_node = pe.Node(niu.Function(input_names = [&quotmask&quot, &quotcoords&quot, &quotparcel_list&quot, &quotlabel_names&quot, &quotdir_path&quot, &quotID&quot, &quotparc&quot], 
+                                                     output_names=[&quotnet_parcels_map_nifti&quot, &quotcoords&quot, &quotlabel_names&quot], 
+                                                     function=nodemaker.node_gen_masking, imports = import_list), name = "node_gen_masking_node")   
+    else:
+        node_gen_node = pe.Node(niu.Function(input_names = [&quotcoords&quot, &quotparcel_list&quot, &quotlabel_names&quot, &quotdir_path&quot, &quotID&quot, &quotparc&quot], 
+                                                     output_names=[&quotnet_parcels_map_nifti&quot, &quotcoords&quot, &quotlabel_names&quot], 
+                                                     function=nodemaker.node_gen, imports = import_list), name = "node_gen_node")
+    
+    prepare_masks_node = pe.Node(niu.Function(input_names = [&quotbedpostx_dir&quot, &quotanat_loc&quot],
+                                              output_names=[&quotWM_diff_mask_path&quot, &quotvent_CSF_diff_mask_path&quot], 
+                                         function=diffconnectometry.prepare_masks, imports = import_list), name = "prepare_masks_node")
+
+    grow_nodes_node = pe.Node(niu.Function(input_names = [&quotbedpostx_dir&quot, &quotcoords&quot, &quotnode_size&quot, &quotparc&quot, &quotparcel_list&quot, &quotnet_parcels_map_nifti&quot, &quotnetwork&quot],
+                                           output_names=[&quotseeds_text&quot, &quotprobtrackx_output_dir_path&quot], 
+                                         function=diffconnectometry.grow_nodes, imports = import_list), name = "grow_nodes_node")
+
+    run_probtrackx2_node = pe.Node(niu.Function(input_names = [&quoti&quot, &quotseeds_text&quot, &quotbedpostx_dir&quot, &quotprobtrackx_output_dir_path&quot, &quotvent_CSF_diff_mask_path&quot, &quotWM_diff_mask_path&quot, &quotprocmem&quot],
+                                                output_names=[&quotmax_i&quot], 
+                                         function=diffconnectometry.run_probtrackx2, imports = import_list), name = "run_probtrackx2_node")
+
+    run_probtrackx2_iterables = []
+    iter_i = range(int(procmem[0]))
+    run_probtrackx2_iterables.append(("i", iter_i))
+    run_probtrackx2_node.iterables = run_probtrackx2_iterables
+
+    collect_struct_mapping_outputs_node = pe.Node(niu.Function(input_names = [&quotparc&quot, &quotbedpostx_dir&quot, &quotnetwork&quot, &quotID&quot, &quotprobtrackx_output_dir_path&quot, &quotmax_i&quot],
+                                              output_names=[&quotconn_matrix&quot, &quotconn_matrix_symm&quot, &quotest_path_struct&quot], 
+                                         function=diffconnectometry.collect_struct_mapping_outputs, imports = import_list), name = "collect_struct_mapping_outputs_node")
+    
+
+    structural_plotting_node = pe.Node(niu.Function(input_names = [&quotconn_matrix&quot, &quotconn_matrix_symm&quot, &quotlabel_names&quot, &quotatlas_select&quot, &quotID&quot, &quotbedpostx_dir&quot, &quotnetwork&quot, &quotparc&quot, &quotplot_switch&quot, &quotcoords&quot],
+                                         function=plotting.structural_plotting, imports = import_list), name = "structural_plotting_node")
+
+    outputnode = pe.Node(niu.Function(function=utils.output_echo, input_names=[&quotest_path_struct&quot], output_names=[&quotest_path_struct&quot]), name=&quotoutputnode&quot)
+       
+    &#47&#47&#47&#47Connect nodes of workflow
+    rsn_structural_connectometry_wf.connect([
+        (inputnode, RSN_fetch_nodes_and_labels_node, [(&quotatlas_select&quot, &quotatlas_select&quot),
+                                                      (&quotparlistfile&quot, &quotparlistfile&quot),
+                                                      (&quotparc&quot, &quotparc&quot),
+                                                      (&quotref_txt&quot, &quotref_txt&quot)]),
+        (inputnode, get_node_membership_node, [(&quotnetwork&quot, &quotnetwork&quot),
+                                               (&quotnodif_brain_mask_path&quot, &quotfunc_file&quot),
+                                               (&quotparc&quot, &quotparc&quot)]),   
+        (RSN_fetch_nodes_and_labels_node, get_node_membership_node, [(&quotcoords&quot, &quotcoords&quot),
+                                                                     (&quotlabel_names&quot, &quotlabel_names&quot),
+                                                                     (&quotparcel_list&quot, &quotparcel_list&quot),
+                                                                     (&quotpar_max&quot, &quotpar_max&quot),
+                                                                     (&quotnetworks_list&quot, &quotnetworks_list&quot)]),      
+        (inputnode, node_gen_node, [(&quotID&quot, &quotID&quot),
+                                    (&quotmask&quot, &quotmask&quot),
+                                    (&quotparc&quot, &quotparc&quot),
+                                    (&quotref_txt&quot, &quotref_txt&quot),
+                                    (&quotatlas_select&quot, &quotatlas_select&quot),
+                                    (&quotparlistfile&quot, &quotparlistfile&quot)]),
+        (inputnode, RSN_fetch_nodes_and_labels_node, [(&quotnodif_brain_mask_path&quot, &quotfunc_file&quot)]),
+        (RSN_fetch_nodes_and_labels_node, node_gen_node, [(&quotdir_path&quot, &quotdir_path&quot),
+                                                          (&quotpar_max&quot, &quotpar_max&quot),
+                                                          (&quotnetworks_list&quot, &quotnetworks_list&quot)]),
+        (get_node_membership_node, node_gen_node, [(&quotnet_coords&quot, &quotcoords&quot),
+                                                    (&quotnet_label_names&quot, &quotlabel_names&quot),
+                                                    (&quotnet_parcel_list&quot, &quotparcel_list&quot)]),
+        (RSN_fetch_nodes_and_labels_node, grow_nodes_node, [(&quotparcel_list&quot, &quotparcel_list&quot)]),
+        (node_gen_node, grow_nodes_node, [(&quotnet_parcels_map_nifti&quot, &quotnet_parcels_map_nifti&quot)]),
+        (inputnode, prepare_masks_node, [(&quotbedpostx_dir&quot, &quotbedpostx_dir&quot),
+                                         (&quotanat_loc&quot, &quotanat_loc&quot)]),
+        (RSN_fetch_nodes_and_labels_node, grow_nodes_node, [(&quotcoords&quot, &quotcoords&quot)]),
+        (inputnode, grow_nodes_node, [(&quotbedpostx_dir&quot, &quotbedpostx_dir&quot),
+                                      (&quotnode_size&quot, &quotnode_size&quot),
+                                      (&quotparc&quot, &quotparc&quot),
+                                      (&quotnetwork&quot, &quotnetwork&quot)]),
+        (inputnode, run_probtrackx2_node, [(&quotbedpostx_dir&quot, &quotbedpostx_dir&quot),
+                                           (&quotprocmem&quot, &quotprocmem&quot)]),
+        (prepare_masks_node, run_probtrackx2_node, [(&quotvent_CSF_diff_mask_path&quot, &quotvent_CSF_diff_mask_path&quot),
+                                                    (&quotWM_diff_mask_path&quot, &quotWM_diff_mask_path&quot)]),
+        (grow_nodes_node, run_probtrackx2_node, [(&quotseeds_text&quot, &quotseeds_text&quot),
+                                                            (&quotprobtrackx_output_dir_path&quot,&quotprobtrackx_output_dir_path&quot)]),      
+        (grow_nodes_node, collect_struct_mapping_outputs_node, [(&quotprobtrackx_output_dir_path&quot,&quotprobtrackx_output_dir_path&quot)]),
+        (inputnode, collect_struct_mapping_outputs_node, [(&quotbedpostx_dir&quot, &quotbedpostx_dir&quot),
+                                                          (&quotnode_size&quot, &quotnode_size&quot),
+                                                          (&quotparc&quot, &quotparc&quot),
+                                                          (&quotnetwork&quot, &quotnetwork&quot),
+                                                          (&quotID&quot, &quotID&quot)]),
+        (run_probtrackx2_node, collect_struct_mapping_outputs_node, [(&quotmax_i&quot, &quotmax_i&quot)]),
+        (collect_struct_mapping_outputs_node, structural_plotting_node, [(&quotconn_matrix&quot, &quotconn_matrix&quot),
+                                                                         (&quotconn_matrix_symm&quot, &quotconn_matrix_symm&quot)]),
+        (inputnode, structural_plotting_node, [(&quotlabel_names&quot, &quotlabel_names&quot),
+                                               (&quotatlas_select&quot, &quotatlas_select&quot),
+                                               (&quotID&quot, &quotID&quot),
+                                               (&quotbedpostx_dir&quot, &quotbedpostx_dir&quot),
+                                               (&quotnetwork&quot, &quotnetwork&quot),
+                                               (&quotparc&quot, &quotparc&quot),
+                                               (&quotplot_switch&quot, &quotplot_switch&quot)]),
+        (RSN_fetch_nodes_and_labels_node, structural_plotting_node, [(&quotcoords&quot, &quotcoords&quot)]),        
+        (collect_struct_mapping_outputs_node, outputnode, [(&quotest_path_struct&quot, &quotest_path_struct&quot)]),
+        ])
+        
+    rsn_structural_connectometry_wf.config[&quotlogging&quot][&quotlog_directory&quot]=&quot/tmp&quot
+    rsn_structural_connectometry_wf.config[&quotlogging&quot][&quotworkflow_level&quot]=&quotDEBUG&quot
+    <a id="change">rsn_structural_connectometry_wf.config[&quotlogging&quot][&quotutils_level&quot]=&quotDEBUG&quot</a>
+    <a id="change">rsn_structural_connectometry_wf.config[&quotlogging&quot][&quotinterface_level&quot]=&quotDEBUG&quot</a>
+    &#47&#47rsn_structural_connectometry_wf.config[&quotexecution&quot][&quotplugin&quot]=&quotMultiProc&quot
+    &#47&#47rsn_structural_connectometry_wf.write_graph()
+    &#47&#47plugin_args = { &quotn_procs&quot: int(procmem[0]),&quotmemory_gb&quot: int(procmem[1])}
+    &#47&#47print(&quot\n&quot + &quotRunning with &quot + str(plugin_args) + &quot\n&quot)</code></pre><img src="327042174.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dPys/PyNets/commit/a14ebdd7f5935d387f857986c349686c62678598#diff-a5e79a7e41491eb16bf874dd4eda4feabad2b77a2ce09242dddd2ebedc6c096cL662' target='_blank'>Link</a></div><div id='project'> Project Name: dPys/PyNets</div><div id='commit'> Commit Name: a14ebdd7f5935d387f857986c349686c62678598</div><div id='time'> Time: 2018-01-01</div><div id='author'> Author: dpisner@utexas.edu</div><div id='file'> File Name: pynets/workflows.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: rsn_structural_connectometry</div><BR><BR><div id='link'><a href='https://github.com/dPys/PyNets/commit/a14ebdd7f5935d387f857986c349686c62678598#diff-a5e79a7e41491eb16bf874dd4eda4feabad2b77a2ce09242dddd2ebedc6c096cL518' target='_blank'>Link</a></div><div id='project'> Project Name: dPys/PyNets</div><div id='commit'> Commit Name: a14ebdd7f5935d387f857986c349686c62678598</div><div id='time'> Time: 2018-01-01</div><div id='author'> Author: dpisner@utexas.edu</div><div id='file'> File Name: pynets/workflows.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: wb_structural_connectometry</div><BR><BR><div id='link'><a href='https://github.com/dPys/PyNets/commit/a14ebdd7f5935d387f857986c349686c62678598#diff-a5e79a7e41491eb16bf874dd4eda4feabad2b77a2ce09242dddd2ebedc6c096cL35' target='_blank'>Link</a></div><div id='project'> Project Name: dPys/PyNets</div><div id='commit'> Commit Name: a14ebdd7f5935d387f857986c349686c62678598</div><div id='time'> Time: 2018-01-01</div><div id='author'> Author: dpisner@utexas.edu</div><div id='file'> File Name: pynets/workflows.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: wb_functional_connectometry</div><BR><BR><div id='link'><a href='https://github.com/dPys/PyNets/commit/a14ebdd7f5935d387f857986c349686c62678598#diff-a5e79a7e41491eb16bf874dd4eda4feabad2b77a2ce09242dddd2ebedc6c096cL268' target='_blank'>Link</a></div><div id='project'> Project Name: dPys/PyNets</div><div id='commit'> Commit Name: a14ebdd7f5935d387f857986c349686c62678598</div><div id='time'> Time: 2018-01-01</div><div id='author'> Author: dpisner@utexas.edu</div><div id='file'> File Name: pynets/workflows.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: rsn_functional_connectometry</div><BR><BR><div id='link'><a href='https://github.com/dPys/PyNets/commit/a14ebdd7f5935d387f857986c349686c62678598#diff-a5e79a7e41491eb16bf874dd4eda4feabad2b77a2ce09242dddd2ebedc6c096cL662' target='_blank'>Link</a></div><div id='project'> Project Name: dPys/PyNets</div><div id='commit'> Commit Name: a14ebdd7f5935d387f857986c349686c62678598</div><div id='time'> Time: 2018-01-01</div><div id='author'> Author: dpisner@utexas.edu</div><div id='file'> File Name: pynets/workflows.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: rsn_structural_connectometry</div><BR>

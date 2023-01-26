@@ -1,0 +1,36 @@
+<html><h3>ca907342507c1139696f542de0a3351d7a382eee,reinforcement_learning/actor_critic.py,,finish_episode,#,65
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps)
+    for (log_prob, value), r in zip(saved_actions, rewards):
+        reward = r - value.data[0, 0]
+        <a id="change">policy_loss -= (log_prob * reward).sum()</a>
+        value_loss += F.smooth_l1_loss(value, Variable(torch.Tensor([r])))
+    optimizer.zero_grad()
+    <a id="change">(policy_loss + value_loss).backward()</a>
+    optimizer.step()
+    del model.rewards[:]
+    del model.saved_actions[:]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    R = 0
+    saved_actions = model.saved_actions
+    policy_losses = []
+    value_losses = <a id="change">[]</a>
+    rewards = []
+    for r in model.rewards[::-1]:
+        R = r + args.gamma * R
+        rewards.insert(0, R)
+    rewards = torch.Tensor(rewards)
+    rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps)
+    for (log_prob, value), r in zip(saved_actions, rewards):
+        reward = r - value.data[0, 0]
+        policy_losses.append(-log_prob * reward)
+        value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([r]))))
+    optimizer.zero_grad()
+    <a id="change">loss = torch.cat(policy_losses).sum() + torch.cat(value_losses).sum()</a>
+    loss.backward()
+    optimizer.step()
+    del model.rewards[:]
+    del model.saved_actions[:]</code></pre><img src="157767655.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/examples/commit/ca907342507c1139696f542de0a3351d7a382eee#diff-5a9b3c72d798ab16737a14c4e24fee71dd6b5dff1d075679591993b742acc0b8L68' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/examples</div><div id='commit'> Commit Name: ca907342507c1139696f542de0a3351d7a382eee</div><div id='time'> Time: 2017-12-04</div><div id='author'> Author: sgross@fb.com</div><div id='file'> File Name: reinforcement_learning/actor_critic.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: finish_episode</div><BR><BR><div id='link'><a href='https://github.com/HyperGAN/HyperGAN/commit/691e0b50d0b15665df5ec77eeec7c605c4283e1f#diff-3718564353b0d14f2ed55f9f89cf60971b15c416967dc1b78d574472d4a9323aL19' target='_blank'>Link</a></div><div id='project'> Project Name: HyperGAN/HyperGAN</div><div id='commit'> Commit Name: 691e0b50d0b15665df5ec77eeec7c605c4283e1f</div><div id='time'> Time: 2020-03-08</div><div id='author'> Author: mikkel@255bits.com</div><div id='file'> File Name: hypergan/trainers/alternating_trainer.py</div><div id='class'> Class Name: AlternatingTrainer</div><div id='method'> Method Name: _step</div><BR><BR><div id='link'><a href='https://github.com/chainer/chainerrl/commit/90a55f5d4953f023b580351d33ca06c4e9d39ffa#diff-33cc147cf3d3e8c9bf19ba31074656008a3f852ff69cad7de3332178044787b4L46' target='_blank'>Link</a></div><div id='project'> Project Name: chainer/chainerrl</div><div id='commit'> Commit Name: 90a55f5d4953f023b580351d33ca06c4e9d39ffa</div><div id='time'> Time: 2016-03-17</div><div id='author'> Author: muupan@gmail.com</div><div id='file'> File Name: a3c.py</div><div id='class'> Class Name: A3C</div><div id='method'> Method Name: act</div><BR><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/b48c943b9f6248dbdd42d0fce44658b937098372#diff-b4100f6b28e3fe40b94aaadeed293d48028b533419b7743de7274166b39dc6abL41' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: b48c943b9f6248dbdd42d0fce44658b937098372</div><div id='time'> Time: 2017-10-23</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: torch_geometric/sparse/sum_test.py</div><div id='class'> Class Name: SumTest</div><div id='method'> Method Name: test_autograd</div><BR>

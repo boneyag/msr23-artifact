@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def generate_run(self, run_name):
+    tf.compat.v1.reset_default_graph()
+    <a id="change">sess = tf.compat.v1.Session()</a>
+    placeholder = tf.compat.v1.placeholder(tf.float32, shape=[3])
+
+    if run_name == self._RUN_WITH_LEGACY_SCALARS:
+      tf.compat.v1.summary.scalar(self._LEGACY_SCALAR_TAG, tf.reduce_mean(input_tensor=placeholder))
+    elif run_name == self._RUN_WITH_SCALARS:
+      summary.op(self._SCALAR_TAG, tf.reduce_sum(input_tensor=placeholder),
+                 display_name=self._DISPLAY_NAME,
+                 description=self._DESCRIPTION)
+    elif run_name == self._RUN_WITH_HISTOGRAM:
+      tf.compat.v1.summary.histogram(self._HISTOGRAM_TAG, placeholder)
+    else:
+      assert False, &quotInvalid run name: %r&quot % run_name
+    <a id="change">summ = tf.compat.v1.summary.merge_all()</a>
+
+    subdir = os.path.join(self.logdir, run_name)
+    with test_util.FileWriterCache.get(subdir) as writer:
+      writer.add_graph(sess.graph)
+      for step in xrange(self._STEPS):
+        feed_dict = {placeholder: [1 + step, 2 + step, 3 + step]}
+        <a id="change">s = sess.run(summ, feed_dict=feed_dict)</a>
+        writer.add_summary(s, global_step=step)
+
+  def test_index(self):
+    self.set_up_with_runs([self._RUN_WITH_LEGACY_SCALARS,</code></pre><h3>After Change</h3><pre><code class='java'>
+              self._LEGACY_SCALAR_TAG, tf.reduce_mean(data),
+          ).numpy()
+        elif run_name == self._RUN_WITH_SCALARS:
+          <a id="change">summ = summary.op(
+              self._SCALAR_TAG,
+              tf.reduce_sum(data),
+              display_name=self._DISPLAY_NAME,
+              description=self._DESCRIPTION,
+          ).numpy()</a>
+        elif run_name == self._RUN_WITH_HISTOGRAM:
+          summ = tf.compat.v1.summary.histogram(
+              self._HISTOGRAM_TAG, data
+          ).numpy()</code></pre>

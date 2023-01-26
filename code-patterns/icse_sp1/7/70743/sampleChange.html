@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return F.tanh(self.mean)
+
+    def sample(self):
+        <a id="change">return F.tanh(F.gaussian(self.mean, self.ln_var))</a>
+
+    def prob(self, x):
+        return F.exp(self.log_prob(x))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        return F.tanh(self.mean)
+
+    def sample(self):
+        <a id="change">y = F.tanh(F.gaussian(self.mean, self.ln_var))</a>
+        &#47&#47 Avoid edge values that cause arctanh to go inf
+        eps = np.finfo(y.dtype).eps
+        y = F.clip(y, <a id="change">-1</a> + eps, 1 - eps)
+        if chainer.is_debug:
+            assert not (_unwrap_variable(y) == 1).any()
+            assert not (_unwrap_variable(y) == -1).any()
+        <a id="change">return y</a>
+
+    def prob(self, x):
+        return F.exp(self.log_prob(x))
+</code></pre>

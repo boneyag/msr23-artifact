@@ -1,0 +1,46 @@
+<html><h3>58efec0f2bc7e8de2ea9b89ec638d4a0a2d60537,python/ray/util/sgd/torch/distributed_torch_runner.py,LocalDistributedRunner,_try_reserve_and_set_cuda,#LocalDistributedRunner#,278
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 initialized because the env var is used later when
+        &#47&#47 starting the DDP setup.
+        os.environ["CUDA_VISIBLE_DEVICES"] = device
+        <a id="change">if use_found_device:
+            &#47&#47 Once cuda is initialized, torch.device ignores the os.env
+            &#47&#47 so we have to set the right actual device.
+            self._set_cuda_device(device)
+        else:
+            &#47&#47 if CUDA is not initialized, we can set the os.env.
+            &#47&#47 Even if initialized, we want to set the device to use BatchNorm.
+            &#47&#47 and make Torch think it only sees 1 GPU.
+            self._set_cuda_device("0")
+
+   </a> def _set_cuda_device(self, device_str):
+        Sets the CUDA device for this current local worker.
+        if self._is_set:
+            raise RuntimeError("CUDA devices already set.")</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 initialized because the env var is used later when
+        &#47&#47 starting the DDP setup.
+        os.environ["CUDA_VISIBLE_DEVICES"] = reserved_device
+        <a id="change">if visible_devices:
+            &#47&#47 We want to set the index on the visible devices list.
+            if reserved_device not in visible_devices:
+                raise RuntimeError(
+                    "TorchTrainer reserved a device {} that was not in the "
+                    "CUDA_VISIBLE_DEVICES {}. This may be because the "
+                    "Ray cluster is not set with the right env vars. "
+                    "If that is not the issue, please raise a "
+                    "Github issue.".format(reserved_device, visible_devices))
+            devices = visible_devices.split(",")
+            scoped_index = devices.index(reserved_device)
+            self._set_cuda_device(str(scoped_index))
+        else:
+            &#47&#47 Once cuda is initialized, torch.device ignores the os.env
+            &#47&#47 so we have to set the right actual device.
+            self._set_cuda_device(reserved_device)
+
+   </a> def _set_cuda_device(self, device_str):
+        Sets the CUDA device for this current local worker.
+        if self._is_set:
+            raise RuntimeError("CUDA devices already set.")</code></pre><img src="29654181.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/58efec0f2bc7e8de2ea9b89ec638d4a0a2d60537#diff-bcbbc871d3b955a0ea6b42e6dbc2213e0b847688efae523c35d5ab5b3ee175e9L278' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 58efec0f2bc7e8de2ea9b89ec638d4a0a2d60537</div><div id='time'> Time: 2020-06-12</div><div id='author'> Author: rliaw@berkeley.edu</div><div id='file'> File Name: python/ray/util/sgd/torch/distributed_torch_runner.py</div><div id='class'> Class Name: LocalDistributedRunner</div><div id='method'> Method Name: _try_reserve_and_set_cuda</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/1b1466748f1db72835a594d73d502e9787e080a9#diff-668950907d5b4f4956c129465c593956e11465bcb8afc1303272156328755a86L133' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 1b1466748f1db72835a594d73d502e9787e080a9</div><div id='time'> Time: 2020-09-04</div><div id='author'> Author: wlx65005@gmail.com</div><div id='file'> File Name: streaming/python/runtime/task.py</div><div id='class'> Class Name: InputStreamTask</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/f31ee84bfdc6dc2325c8890412a965e509074d0a#diff-668950907d5b4f4956c129465c593956e11465bcb8afc1303272156328755a86L133' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: f31ee84bfdc6dc2325c8890412a965e509074d0a</div><div id='time'> Time: 2020-09-05</div><div id='author'> Author: wlx65005@gmail.com</div><div id='file'> File Name: streaming/python/runtime/task.py</div><div id='class'> Class Name: InputStreamTask</div><div id='method'> Method Name: run</div><BR>

@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if msg:
+      if PY2:
+        msg = msg.encode(&quotutf-8&quot)  &#47&#47 sys.stderr expects bytes in Py2, unicode in Py3
+      <a id="change">print(msg, file=out or sys.stderr)</a>
+    self._exit(result)
+
+  def exit_and_fail(self, msg=None):
+    Exits the runtime with an exit code of 1, indicating failure.</code></pre><h3>After Change</h3><pre><code class='java'>
+      out = out or sys.stderr
+      &#47&#47 sys.stderr expects bytes in Py2, unicode in Py3
+      msg = ensure_binary(msg)
+      <a id="change">try:
+        print(msg, file=out)
+        &#47&#47 TODO: Determine whether this call is a no-op because the stream gets flushed on exit, or
+        &#47&#47 if we could lose what we just printed, e.g. if we get interrupted by a signal while
+        &#47&#47 exiting and the stream is buffered like stdout.
+        out.flush()
+      except Exception as e:
+        &#47&#47 If the file is already closed, or any other error occurs, just log it and continue to
+        &#47&#47 exit.
+        logger.exception(e)
+   </a> self._exit(result)
+
+  def exit_and_fail(self, msg=None):
+    Exits the runtime with an exit code of 1, indicating failure.</code></pre>

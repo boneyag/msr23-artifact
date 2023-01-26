@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    max_iter = len(data_loader)
+    start_iter = arguments["iteration"]
+    start_training_time = time.time()
+    <a id="change">trained_time = 0</a>
+    tic = <a id="change">time.time()</a>
+    end = time.time()
+    for iteration, (images, targets, _) in enumerate(data_loader, start_iter):
+        iteration = iteration + 1
+        arguments["iteration"] = iteration
+        scheduler.step()
+
+        images = images.to(device)
+        targets = targets.to(device)
+        loss_dict = model(images, targets=targets)
+
+        &#47&#47 reduce losses over all GPUs for logging purposes
+        loss_dict_reduced = reduce_loss_dict(loss_dict)
+        losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+        loss = sum(loss for loss in loss_dict.values())
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        trained_time += time.time() - end
+        end = time.time()
+        if iteration % args.log_step == 0:
+            eta_seconds = int((trained_time / iteration) * (max_iter - iteration))
+            log_str = [
+                "iter: {:06d}, lr: {:.5f}, cost: {:.2f}s, eta: {}".format(iteration,
+                                                                          optimizer.param_groups[0][&quotlr&quot],
+                                                                          time.time() - tic, str(datetime.timedelta(seconds=eta_seconds))),
+                "total_loss: {:.3f}".format(losses_reduced.item())
+            ]
+            for loss_name, loss_item in loss_dict_reduced.items():
+                log_str.append("{}: {:.3f}".format(loss_name, loss_item.item()))
+            <a id="change">log_str = &quot, &quot.join(log_str)</a>
+            &#47&#47 TODO: use MetricLogger to log
+            logger.info(log_str)
+            if summary_writer:
+                global_step = iteration</code></pre><h3>After Change</h3><pre><code class='java'>
+        meters.update(time=batch_time)
+        if iteration % args.log_step == 0:
+            eta_seconds = meters.time.global_avg * (max_iter - iteration)
+            eta_string = str(datetime.timedelta(seconds=<a id="change">int(eta_seconds)</a>))
+            logger.info(
+                meters.delimiter.join([
+                    "iter: {iter:06d}",</code></pre>

@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  n_tasks = 1
+  data_points = 10
+  mols = <a id="change">["CCCCCCCC"]</a> * data_points
+  <a id="change">X = featurizer(mols)</a>
+
+  y = np.random.randint(0, 2, size=(data_points, n_tasks))
+  w = np.ones(shape=(data_points, n_tasks))
+  dataset = dc.data.NumpyDataset(X, y, w, mols)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  loader = dc.data.CSVLoader(
+      tasks=chembl25_tasks, smiles_field=&quotsmiles&quot, featurizer=feat)
+  <a id="change">dataset = loader.create_dataset(
+      inputs=[dataset_file], shard_size=10000, data_dir=tempfile.mkdtemp())</a>
+  y = np.random.randint(0, 2, size=(data_points, n_tasks))
+  w = np.ones(shape=(data_points, n_tasks))
+  dataset = dc.data.NumpyDataset(dataset.X[:data_points, :max_seq_len], y, w,
+                                 dataset.ids[:data_points])
+
+  classsification_metric = dc.metrics.Metric(
+      dc.metrics.roc_auc_score, np.mean, mode="classification")
+
+  model_dir = tempfile.mkdtemp()
+  model = dc.models.Smiles2Vec(
+      char_to_idx=char_to_idx,
+      max_seq_len=max_seq_len,
+      use_conv=True,
+      n_tasks=n_tasks,
+      model_dir=model_dir,
+      mode="classification")
+  model.fit(dataset, nb_epoch=3)
+
+  &#47&#47 Reload Trained Model
+  reloaded_model = dc.models.Smiles2Vec(
+      char_to_idx=char_to_idx,
+      max_seq_len=max_seq_len,
+      use_conv=True,
+      n_tasks=n_tasks,
+      model_dir=model_dir,
+      mode="classification")
+  reloaded_model.restore()
+
+  &#47&#47 Check predictions match on original dataset
+  <a id="change">origpred = model.predict(dataset)</a>
+  reloadpred = reloaded_model.predict(dataset)
+  assert np.all(origpred == reloadpred)
+
+</code></pre>

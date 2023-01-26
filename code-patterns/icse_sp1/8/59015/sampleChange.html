@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.lib.seek(0, 2)
+        filelen = self.lib.tell()
+        if self.length:
+            <a id="change">self.lib.seek(self.start + self.length - self._cookie_size, 0)</a>
+        else:
+            self.lib.seek(-self._cookie_size, 2)
+        (magic, totallen, tocpos, toclen, pyvers, pylib_name) = struct.unpack(
+                self._cookie_format, self.lib.read(self._cookie_size))</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.lib.seek(0, 2)
+        filelen = self.lib.tell()
+        found = False
+        <a id="change">for i in range(4096):
+            self.lib.seek(filelen-self._cookie_size, 0)
+            (magic, totallen, tocpos, toclen, pyvers, pylib_name) = struct.unpack(
+                self._cookie_format, self.lib.read(self._cookie_size))
+            if magic != self.MAGIC:
+                filelen -= 1
+            else:
+                found = True
+                break
+                
+                
+       </a> if not found:
+            raise RuntimeError("%s is not a valid %s archive file" %
+                               (self.path, self.__class__.__name__))
+</code></pre>

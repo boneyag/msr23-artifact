@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    from numpy.distutils.system_info import get_info
+    config = Configuration(&quotintegrate&quot, parent_package, top_path)
+
+    <a id="change">blas_opt = get_info(&quotblas_opt&quot,notfound_action=2)</a>
+    lapack_opt = get_info(&quotlapack_opt&quot,notfound_action=2)
+
+    mach_src = [join(&quotmach&quot,&quot*.f&quot)]
+    quadpack_src = [join(&quotquadpack&quot,&quot*.f&quot)]
+    odepack_src = [join(&quotodepack&quot,&quot*.f&quot)]
+    dop_src = [join(&quotdop&quot,&quot*.f&quot)]
+    quadpack_test_src = [join(&quottests&quot,&quot_test_multivariate.c&quot)]
+
+    config.add_library(&quotmach&quot, sources=mach_src,
+                       config_fc={&quotnoopt&quot:(__file__,1)})
+    config.add_library(&quotquadpack&quot, sources=quadpack_src)
+    config.add_library(&quotodepack&quot, sources=odepack_src)
+    config.add_library(&quotdop&quot, sources=dop_src)
+
+    &#47&#47 Extensions
+    &#47&#47 quadpack:
+    config.add_extension(&quot_quadpack&quot,
+                         sources=[&quot_quadpackmodule.c&quot],
+                         libraries=([&quotquadpack&quot, &quotmach&quot] +
+                                    lapack_opt[&quotlibraries&quot]),
+                         depends=([&quotquadpack.h&quot,&quot__quadpack.h&quot]
+                                  + quadpack_src + mach_src))
+
+    &#47&#47 odepack
+    libs = [&quotodepack&quot,&quotmach&quot]
+
+    &#47&#47 Remove libraries key from blas_opt
+    if &quotlibraries&quot in blas_opt:    &#47&#47 key doesn&quott exist on OS X ...
+        <a id="change">libs.extend(blas_opt[&quotlibraries&quot])</a>
+    libs.extend(lapack_opt[&quotlibraries&quot])
+    newblas = {}
+    for key in blas_opt:
+        if key == &quotlibraries&quot:</code></pre><h3>After Change</h3><pre><code class='java'>
+    lapack_opt = dict(get_info(&quotlapack_opt&quot,notfound_action=2))
+    &#47&#47 Pop off the libraries list so it can be combined with
+    &#47&#47 additional required libraries
+    <a id="change">lapack_libs = lapack_opt.pop(&quotlibraries&quot, [])</a>
+
+    mach_src = [join(&quotmach&quot,&quot*.f&quot)]
+    quadpack_src = [join(&quotquadpack&quot,&quot*.f&quot)]
+    odepack_src = [join(&quotodepack&quot,&quot*.f&quot)]</code></pre>

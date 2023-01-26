@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return (left_vals.view(-1, inner_size) * right_vals.view(-1, inner_size)).sum(-1)
+
+    def _get_indices(self, left_indices, right_indices):
+        <a id="change">res = self.lhs.index_select(-2, left_indices) * self.rhs.index_select(-1, right_indices).transpose(-1, -2)</a>
+        return res.sum(-1)
+
+    def diag(self):
+        return (self.lhs * self.rhs.transpose(-1, -2)).sum(-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+        right_vals = self.lhs._get_indices(_inner_repeat(inner_indices, outer_size),
+                                           _outer_repeat(right_indices, inner_size))
+
+        return (left_vals.view(-1, inner_size) * <a id="change">right_vals.view(-1, inner_size)</a>).sum(-1)
+
+    def diag(self):
+        if isinstance(self.lhs, NonLazyVariable) and isinstance(self.rhs, NonLazyVariable):</code></pre>

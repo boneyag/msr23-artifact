@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                return batch_eval(in_sym, out_sym, inputs, args=eval_params)
+
+        X_adv, = batch_eval_com([self.x], [self.default_graph], [X])
+        <a id="change">return X_adv</a>
+
+
+class FastGradientMethod(Attack):
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+        if not hasattr(self, "_x") and not hasattr(self, "_x_adv"):
+            input_shape = list(X.shape)
+            input_shape[0] = None
+            <a id="change">self._x = tf.placeholder(tf.float32, shape=input_shape)</a>
+            self._x_adv = self.generate(self._x)
+
+        &#47&#47 This indicates loop calls between generate and generate_np
+        if hasattr(self, "_x") and not hasattr(self, "_x_adv"):
+            error_string = "No symbolic or numeric implementation of attack."
+            raise NotImplementedError(error_string)
+
+        <a id="change">return self.sess.run(self._x_adv, feed_dict={self._x: X})</a>
+
+
+class FastGradientMethod(Attack):
+    </code></pre>

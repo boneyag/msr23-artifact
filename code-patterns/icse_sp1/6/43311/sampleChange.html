@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    rpn_cls_target, -1, name=&quotlabels_not_ignored&quot)
+
+                &#47&#47 Flatten rpn_cls_prob (only anchors, not completely).
+                <a id="change">rpn_cls_prob = tf.reshape(
+                    rpn_cls_prob, [-1, 2], name=&quotrpn_cls_prob_flatten&quot)</a>
+
+                &#47&#47 Now we only have the labels we are going to compare with the
+                &#47&#47 cls probability. We need to remove the background.
+                labels = tf.boolean_mask(
+                    rpn_cls_target, labels_not_ignored, name=&quotlabels&quot)
+                cls_prob = tf.boolean_mask(rpn_cls_prob, labels_not_ignored)
+
+                &#47&#47 We need to transform `labels` to `cls_prob` shape.
+                cls_target = tf.one_hot(labels, depth=2)
+
+                &#47&#47 TODO: In other implementations they use
+                &#47&#47 `sparse_softmax_cross_entropy_with_logits` with
+                &#47&#47 `reduce_mean`. Should we use that?
+                log_loss = tf.losses.log_loss(cls_target, cls_prob)
+                &#47&#47 TODO: For logs
+                <a id="change">cls_loss = tf.identity(log_loss, name=&quotlog_loss&quot)</a>
+
+                &#47&#47 Finally, we need to calculate the regression loss over `rpn_bbox_target`
+                &#47&#47 and `rpn_bbox_pred`.
+                &#47&#47 Since `rpn_bbox_target` is obtained from AnchorTargetLayer then we</code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 We apply smooth l1 loss as described by the Fast R-CNN paper.
+                reg_loss_per_anchor = smooth_l1_loss(rpn_bbox_pred, rpn_bbox_target)
+
+                <a id="change">prediction_dict[&quotreg_loss_per_anchor&quot]</a> = reg_loss_per_anchor
+
+                return {
+                    &quotrpn_cls_loss&quot: tf.reduce_mean(cross_entropy_per_anchor),</code></pre>

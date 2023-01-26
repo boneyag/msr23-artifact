@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def astep(self, q0, logp):
+
+        <a id="change">if self.gibbs == &quotsequential&quot:
+            self.index = (self.index + 1) % self.dim
+        elif self.gibbs == &quotrandom&quot:
+            self.index = np.random.randint(0, self.dim)
+        else:
+            self.index = slice(None) &#47&#47 select all
+
+       </a> mask = np.zeros(self.dim, dtype=np.bool8)
+        mask[self.index] = True
+
+        &#47&#47 Convert adaptive_scale_factor to a jump probability</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def astep(self, q0, logp):
+
+        <a id="change">if (self.gibbs == &quotsequential&quot) or (self.gibbs == &quotrandom&quot):
+            order = list(range(self.dim))
+            if self.gibbs == &quotrandom&quot:
+                np.random.shuffle(order)
+
+            q = copy(q0)
+            for idx in order:
+                q[idx] = True - q[idx]
+                q = metrop_select(logp(q) - logp(q0), q, q0)
+            q_new = q
+        else:
+            &#47&#47 Convert adaptive_scale_factor to a jump probability
+            p_jump = 1. - .5 ** self.scaling
+
+            rand_array = random(q0.shape)
+            q = copy(q0)
+            &#47&#47 Locations where switches occur, according to p_jump
+            switch_locs = (rand_array &lt; p_jump)
+            q[switch_locs] = True - q[switch_locs]
+            q_new = metrop_select(logp(q) - logp(q0), q, q0)
+
+       </a> return q_new
+
+    @staticmethod
+    def competence(var):</code></pre>

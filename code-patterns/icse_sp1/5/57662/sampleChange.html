@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  results = []
+  exceptions = []
+  with futures.ProcessPoolExecutor(max_workers=max_concurrency) as executor:
+    for result, exception in <a id="change">executor.map(_ExecuteProcCall, target_arg_tuples)</a>:
+      results.append(result)
+      if exception:
+        exceptions.append(exception)</code></pre><h3>After Change</h3><pre><code class='java'>
+  with futures.ProcessPoolExecutor(max_workers=max_concurrency) as executor:
+    for target, args, kwargs in target_arg_tuples:
+      call_futures.append(executor.submit(target, *args, **kwargs))
+    <a id="change">for index, future in enumerate(call_futures):
+      try:
+        results.append(future.result())
+      except:
+        results.append(None)
+        msg = &quotException occured in call {0}:{1}{2}&quot.format(
+            index, os.linesep, traceback.format_exc())
+        logging.error(msg)
+        error_strings.append(msg)
+ </a> if error_strings:
+    msg = (&quotThe following exceptions occurred during parallel execution: &quot
+           &quot{0}&quot.format(os.linesep.join([e for e in error_strings])))
+    raise errors.VmUtil.CalledProcessException(msg)</code></pre>

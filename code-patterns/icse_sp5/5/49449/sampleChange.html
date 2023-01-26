@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            constant_deriv = left_vecs * self.base_lazy_tensor._matmul(right_vecs)
+            constant_deriv = constant_deriv.sum(-2, keepdim=True).sum(-1, keepdim=True)
+
+        <a id="change">if constant_deriv.dim():
+            constant_deriv = constant_deriv.view(*self.constant.size())
+       </a> res.append(constant_deriv)
+        return res
+
+    def _constant_as(self, other):</code></pre><h3>After Change</h3><pre><code class='java'>
+        constant_deriv = constant_deriv.sum(-2).sum(-1)
+
+        &#47&#47 Get derivaties of everything else
+        constant = <a id="change">self.constant.view(*self.constant.shape, 1, 1)</a>
+        <a id="change">left_vecs = left_vecs * constant</a>
+        res = self.base_lazy_tensor._quad_form_derivative(left_vecs, right_vecs)
+
+        return res + (constant_deriv,)
+</code></pre>

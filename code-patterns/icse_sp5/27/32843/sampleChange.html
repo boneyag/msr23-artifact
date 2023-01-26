@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            Fstar_mean_1, Fstar_var_1 = GPflow.conditionals.gaussian_gp_predict_whitened(self.Xs, self.X, self.k, self.mu, self.sqrt)
+            Fstar_mean_2, Fstar_var_2 = GPflow.conditionals.gaussian_gp_predict_whitened(self.Xs, self.X, self.k, self.mu, self.chol)
+            
+        <a id="change">mean_diff = theano.function([self.X, self.Xs, self.mu, self.sqrt, self.free_x],
+                                Fstar_mean_1 - Fstar_mean_2, on_unused_input=&quotignore&quot)(
+                                        self.X_data, self.Xs_data, self.mu_data, self.sqrt_data, self.free_x_data)</a>
+
+        <a id="change">var_diff = theano.function([self.X, self.Xs, self.mu, self.sqrt, self.free_x],
+                                Fstar_var_1 - Fstar_var_2, on_unused_input=&quotignore&quot)(
+                                        self.X_data, self.Xs_data, self.mu_data, self.sqrt_data, self.free_x_data)</a>
+
+        self.failUnless(np.allclose(mean_diff, 0))
+        self.failUnless(np.allclose(var_diff, 0))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47the chols are diagonal matrices, with the same entries as the diag representation.
+        self.chol = theano.scan(lambda x : tf.diag(x), self.sqrt.T)[0].swapaxes(0,2)
+
+    def test_whiten(<a id="change">self</a>):
+        with self.k.tf_mode():
+            Fstar_mean_1, Fstar_var_1 = GPflow.conditionals.gaussian_gp_predict_whitened(self.Xs, self.X, self.k, self.mu, self.sqrt)
+            Fstar_mean_2, Fstar_var_2 = GPflow.conditionals.gaussian_gp_predict_whitened(self.Xs, self.X, self.k, self.mu, self.chol)
+            
+        <a id="change">mean_diff = tf.Session().run(Fstar_mean_1 - Fstar_mean_2, feed_dict=self.feed_dict)</a>
+        <a id="change">var_diff = tf.Session().run(Fstar_var_1 - Fstar_var_2, feed_dict=self.feed_dict)</a>
+
+        self.failUnless(np.allclose(mean_diff, 0))
+        self.failUnless(np.allclose(var_diff, 0))
+</code></pre>

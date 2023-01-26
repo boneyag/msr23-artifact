@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for split_name, expected_records_number in self.SPLITS.items():
+      dataset = self.builder.as_dataset(split=split_name)
+      self._check_split(dataset)
+      <a id="change">records = list(self.builder.numpy_iterator(split=split_name))</a>
+      split_to_checksums[split_name] = set(<a id="change">checksum</a>(rec) <a id="change">for</a> rec in records)
+      self.assertEqual(len(records), expected_records_number)
+    for (split1, hashes1), (split2, hashes2) in itertools.combinations(
+        split_to_checksums.items(), 2):</code></pre><h3>After Change</h3><pre><code class='java'>
+      with self._subTest("num_samples"):
+        self._assertNumSamples(self.builder)
+
+    <a id="change">with self._subTest("reload"):
+      &#47&#47 When reloading the dataset, metadata should been reloaded too.
+      builder_reloaded = self.DATASET_CLASS(  &#47&#47 pylint: disable=not-callable
+          data_dir=self.builder._data_dir_root)  &#47&#47 pylint: disable=protected-access
+
+      if compute_stats:  &#47&#47 TODO(b/119906277): Remove
+        self._assertNumSamples(builder_reloaded)
+
+      &#47&#47 After reloading, as_dataset should still be working
+      with self._subTest("as_dataset"):
+        self._assertAsDataset(builder_reloaded)
+
+ </a> def _assertAsDataset(self, builder):
+    split_to_checksums = {}  &#47&#47 {"split": set(records_checksums)}
+    for split_name, expected_records_number in self.SPLITS.items():
+      dataset = self.builder.as_dataset(split=split_name)</code></pre>

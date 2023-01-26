@@ -1,0 +1,75 @@
+<html><h3>cd78bf1fe1f567bfc74c70ed4251ae1a58f79581,scripts/machine_translation/dataprocessor.py,,make_dataloader,#,198
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                            batch_sampler=val_batch_sampler,
+                                            batchify_fn=test_batchify_fn,
+                                            num_workers=num_workers)
+    <a id="change">test_batch_sampler</a> = nlp.data.FixedBucketSampler(lengths=target_test_lengths,
+                                                     batch_size=args.test_batch_size,
+                                                     num_buckets=args.num_buckets,
+                                                     ratio=args.bucket_ratio,
+                                                     shuffle=False,
+                                                     use_average_length=use_average_length,
+                                                     bucket_scheme=bucket_scheme)
+    logging.info(<a id="change">&quotTest Batch Sampler:\n{}&quot.format(test_batch_sampler.stats())</a>)
+    test_data_loader = gluon.data.DataLoader(data_test,
+                                             batch_sampler=test_batch_sampler,
+                                             batchify_fn=test_batchify_fn,</code></pre><h3>After Change</h3><pre><code class='java'>
+    Create data loaders for training/validation/test.
+    data_train_lengths = get_data_lengths(data_train)
+    data_val_lengths = get_data_lengths(data_val)
+    data_test_lengths = <a id="change">get_data_lengths(data_test)</a>
+    train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
+                                  btf.Stack(dtype=&quotfloat32&quot), btf.Stack(dtype=&quotfloat32&quot))
+    test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
+                                 btf.Stack(dtype=&quotfloat32&quot), btf.Stack(dtype=&quotfloat32&quot),
+                                 btf.Stack())
+    target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
+    target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
+    if args.bucket_scheme == &quotconstant&quot:
+        bucket_scheme = nlp.data.ConstWidthBucket()
+    elif args.bucket_scheme == &quotlinear&quot:
+        bucket_scheme = nlp.data.LinearWidthBucket()
+    elif args.bucket_scheme == &quotexp&quot:
+        bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
+    else:
+        raise NotImplementedError
+    train_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_train_lengths,
+                                                      batch_size=args.batch_size,
+                                                      num_buckets=args.num_buckets,
+                                                      ratio=args.bucket_ratio,
+                                                      shuffle=True,
+                                                      use_average_length=use_average_length,
+                                                      num_shards=num_shards,
+                                                      bucket_scheme=bucket_scheme)
+    logging.info(&quotTrain Batch Sampler:\n%s&quot, train_batch_sampler.stats())
+    train_data_loader = nlp.data.ShardedDataLoader(data_train,
+                                                   batch_sampler=train_batch_sampler,
+                                                   batchify_fn=train_batchify_fn,
+                                                   num_workers=num_workers)
+
+    val_batch_sampler = nlp.data.FixedBucketSampler(lengths=target_val_lengths,
+                                                    batch_size=args.test_batch_size,
+                                                    num_buckets=args.num_buckets,
+                                                    ratio=args.bucket_ratio,
+                                                    shuffle=False,
+                                                    use_average_length=use_average_length,
+                                                    bucket_scheme=bucket_scheme)
+    logging.info(&quotValid Batch Sampler:\n%s&quot, val_batch_sampler.stats())
+    val_data_loader = gluon.data.DataLoader(data_val,
+                                            batch_sampler=val_batch_sampler,
+                                            batchify_fn=test_batchify_fn,
+                                            num_workers=num_workers)
+    <a id="change">test_batch_sampler</a> = nlp.data.FixedBucketSampler(lengths=target_test_lengths,
+                                                     batch_size=args.test_batch_size,
+                                                     num_buckets=args.num_buckets,
+                                                     ratio=args.bucket_ratio,
+                                                     shuffle=False,
+                                                     use_average_length=use_average_length,
+                                                     bucket_scheme=bucket_scheme)
+    logging.info(<a id="change">&quotTest Batch Sampler:\n%s&quot</a>, <a id="change">test_batch_sampler.stats()</a>)
+    test_data_loader = gluon.data.DataLoader(data_test,
+                                             batch_sampler=test_batch_sampler,
+                                             batchify_fn=test_batchify_fn,</code></pre><img src="97325.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/gluon-nlp/commit/cd78bf1fe1f567bfc74c70ed4251ae1a58f79581#diff-6dc41bea719f8f593b642349227f35bf90729de2e03aefd4698b39b94ccb7825L202' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/gluon-nlp</div><div id='commit'> Commit Name: cd78bf1fe1f567bfc74c70ed4251ae1a58f79581</div><div id='time'> Time: 2018-11-19</div><div id='author'> Author: zs910504@gmail.com</div><div id='file'> File Name: scripts/machine_translation/dataprocessor.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: make_dataloader</div><BR>

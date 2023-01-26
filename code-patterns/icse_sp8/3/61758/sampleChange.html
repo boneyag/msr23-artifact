@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    with self.invalidated(targets) as invalidation_check:
+      pex = self._get_pex_for_versioned_targets(interpreter, invalidation_check.all_vts)
+      <a id="change">self.context.products.register_data(self.PYTHON_SOURCES, pex)</a>
+
+  def _get_pex_for_versioned_targets(self, interpreter, versioned_targets):
+    if versioned_targets:
+      target_set_id = VersionedTargetSet.from_versioned_targets(versioned_targets).cache_key.hash</code></pre><h3>After Change</h3><pre><code class='java'>
+  def execute(self):
+    interpreter = self.context.products.get_data(PythonInterpreter)
+
+    <a id="change">pex_by_target_base = OrderedDict()</a>  &#47&#47 Preserve ~PYTHONPATH ordering over pexes.
+    for target_base, targets in self._iter_targets_by_base():
+      with self.invalidated(targets) as invalidation_check:
+        pex = self._get_pex_for_versioned_targets(interpreter, invalidation_check.all_vts)
+        pex_by_target_base[target_base] = pex
+    <a id="change">self.context.products.register_data(self.PythonSources, self.PythonSources(pex_by_target_base))</a>
+
+  def _iter_targets_by_base(self):
+    &#47&#47 N.B: Files and Resources targets belong with the consuming (dependee) targets so that those
+    &#47&#47 targets can be ensured of access to the files in their PEX chroot. This means a given Files</code></pre>

@@ -1,0 +1,101 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        ok_vocab = {w.upper(): v for w, v in reversed(ok_vocab)} if case_insensitive else dict(ok_vocab)
+
+        sections, section = [], None
+        <a id="change">for line_no, line in enumerate(utils.smart_open(questions)):
+            &#47&#47 TODO: use level3 BLAS (=evaluate multiple questions at once), for speed
+            line = utils.to_unicode(line)
+            if line.startswith(&quot: &quot):
+                &#47&#47 a new section starts =&gt; store the old section
+                if section:
+                    sections.append(section)
+                    self.log_accuracy(section)
+                section = {&quotsection&quot: line.lstrip(&quot: &quot).strip(), &quotcorrect&quot: [], &quotincorrect&quot: []}
+            else:
+                if not section:
+                    raise ValueError("missing section header before line &#47&#47%i in %s" % (line_no, questions))
+                try:
+                    if case_insensitive:
+                        a, b, c, expected = [word.upper() for word in line.split()]
+                    else:
+                        a, b, c, expected = [word for word in line.split()]
+                except ValueError:
+                    logger.info("skipping invalid line &#47&#47%i in %s", line_no, questions)
+                    continue
+                if a not in ok_vocab or b not in ok_vocab or c not in ok_vocab or expected not in ok_vocab:
+                    logger.debug("skipping line &#47&#47%i with OOV words: %s", line_no, line.strip())
+                    continue
+
+                original_vocab = self.vocab
+                self.vocab = ok_vocab
+                ignore = {a, b, c}  &#47&#47 input words to be ignored
+                predicted = None
+                &#47&#47 find the most likely prediction, ignoring OOV words and input words
+                sims = most_similar(self, positive=[b, c], negative=[a], topn=False, restrict_vocab=restrict_vocab)
+                self.vocab = original_vocab
+                for index in matutils.argsort(sims, reverse=True):
+                    predicted = self.index2word[index].upper() if case_insensitive else self.index2word[index]
+                    if predicted in ok_vocab and predicted not in ignore:
+                        if predicted != expected:
+                            logger.debug("%s: expected %s, predicted %s", line.strip(), expected, predicted)
+                        break
+                if predicted == expected:
+                    section[&quotcorrect&quot].append((a, b, c, expected))
+                else:
+                    section[&quotincorrect&quot].append((a, b, c, expected))
+       </a> if section:
+            &#47&#47 store the last section, too
+            sections.append(section)
+            self.log_accuracy(section)</code></pre><h3>After Change</h3><pre><code class='java'>
+        ok_vocab = {w.upper(): v for w, v in reversed(ok_vocab)} if case_insensitive else dict(ok_vocab)
+
+        sections, section = [], None
+        <a id="change">with utils.open(questions, &quotrb&quot) as f:
+            for line_no, line in enumerate(f):
+                &#47&#47 TODO: use level3 BLAS (=evaluate multiple questions at once), for speed
+                line = utils.to_unicode(line)
+                if line.startswith(&quot: &quot):
+                    &#47&#47 a new section starts =&gt; store the old section
+                    if section:
+                        sections.append(section)
+                        self.log_accuracy(section)
+                    section = {&quotsection&quot: line.lstrip(&quot: &quot).strip(), &quotcorrect&quot: [], &quotincorrect&quot: []}
+                else:
+                    if not section:
+                        raise ValueError("missing section header before line &#47&#47%i in %s" % (line_no, questions))
+                    try:
+                        if case_insensitive:
+                            a, b, c, expected = [word.upper() for word in line.split()]
+                        else:
+                            a, b, c, expected = [word for word in line.split()]
+                    except ValueError:
+                        logger.info("skipping invalid line &#47&#47%i in %s", line_no, questions)
+                        continue
+                    if a not in ok_vocab or b not in ok_vocab or c not in ok_vocab or expected not in ok_vocab:
+                        logger.debug("skipping line &#47&#47%i with OOV words: %s", line_no, line.strip())
+                        continue
+
+                    original_vocab = self.vocab
+                    self.vocab = ok_vocab
+                    ignore = {a, b, c}  &#47&#47 input words to be ignored
+                    predicted = None
+                    &#47&#47 find the most likely prediction, ignoring OOV words and input words
+                    sims = most_similar(self, positive=[b, c], negative=[a], topn=False, restrict_vocab=restrict_vocab)
+                    self.vocab = original_vocab
+                    for index in matutils.argsort(sims, reverse=True):
+                        predicted = self.index2word[index].upper() if case_insensitive else self.index2word[index]
+                        if predicted in ok_vocab and predicted not in ignore:
+                            if predicted != expected:
+                                logger.debug("%s: expected %s, predicted %s", line.strip(), expected, predicted)
+                            break
+                    if predicted == expected:
+                        section[&quotcorrect&quot].append((a, b, c, expected))
+                    else:
+                        section[&quotincorrect&quot].append((a, b, c, expected))
+       </a> if section:
+            &#47&#47 store the last section, too
+            sections.append(section)
+            self.log_accuracy(section)</code></pre>

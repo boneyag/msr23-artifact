@@ -1,0 +1,130 @@
+<html><h3>bf2c49078d1306382e4eb50b144d357ec039aee9,scipy/integrate/tests/test_ivp.py,,test_integration,#,151
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    atol = 1e-6
+    y0 = [1/3, 2/9]
+
+    <a id="change">with warnings.catch_warnings():
+        warnings.simplefilter(&quotignore&quot)
+        for vectorized, method, t_span, jac in product(
+                [False, True],
+                [&quotRK23&quot, &quotRK45&quot, &quotRadau&quot, &quotBDF&quot, &quotLSODA&quot],
+                [[5, 9], [5, 1]],
+                [None, jac_rational, jac_rational_sparse]):
+
+            if vectorized:
+                fun = fun_rational_vectorized
+            else:
+                fun = fun_rational
+
+            res = solve_ivp(fun, t_span, y0, rtol=rtol,
+                            atol=atol, method=method, dense_output=True,
+                            jac=jac, vectorized=vectorized)
+            assert_equal(res.t[0], t_span[0])
+            assert_(res.t_events is None)
+            assert_(res.success)
+            assert_equal(res.status, 0)
+
+            assert_(res.nfev &lt; 40)
+
+            if method in [&quotRK23&quot, &quotRK45&quot, &quotLSODA&quot]:
+                assert_equal(res.njev, 0)
+                assert_equal(res.nlu, 0)
+            else:
+                assert_(0 &lt; res.njev &lt; 3)
+                assert_(0 &lt; res.nlu &lt; 10)
+
+            y_true = sol_rational(res.t)
+            e = compute_error(res.y, y_true, rtol, atol)
+            assert_(np.all(e &lt; 5))
+
+            tc = np.linspace(*t_span)
+            yc_true = sol_rational(tc)
+            yc = res.sol(tc)
+
+            e = compute_error(yc, yc_true, rtol, atol)
+            assert_(np.all(e &lt; 5))
+
+            tc = (t_span[0] + t_span[-1]) / 2
+            yc_true = sol_rational(tc)
+            yc = res.sol(tc)
+
+            e = compute_error(yc, yc_true, rtol, atol)
+            assert_(np.all(e &lt; 5))
+
+            &#47&#47 LSODA for some reasons doesn&quott pass the polynomial through the
+            &#47&#47 previous points exactly after the order change. It might be some
+            &#47&#47 bug in LSOSA implementation or maybe we missing something.
+            if method != &quotLSODA&quot:
+                assert_allclose(res.sol(res.t), res.y, rtol=1e-15, atol=1e-15)
+
+
+</a>def test_integration_complex():
+    rtol = 1e-3
+    atol = 1e-6
+    y0 = [0.5 + 1j]</code></pre><h3>After Change</h3><pre><code class='java'>
+    atol = 1e-6
+    y0 = [1/3, 2/9]
+
+    <a id="change">for vectorized, method, t_span, jac in product(
+            [False, True],
+            [&quotRK23&quot, &quotRK45&quot, &quotRadau&quot, &quotBDF&quot, &quotLSODA&quot],
+            [[5, 9], [5, 1]],
+            [None, jac_rational, jac_rational_sparse]):
+
+        if vectorized:
+            fun = fun_rational_vectorized
+        else:
+            fun = fun_rational
+
+        with suppress_warnings() as sup:
+            sup.filter(UserWarning,
+                       "The following arguments have no effect for a chosen solver: `jac`")
+            res = solve_ivp(fun, t_span, y0, rtol=rtol,
+                            atol=atol, method=method, dense_output=True,
+                            jac=jac, vectorized=vectorized)
+        assert_equal(res.t[0], t_span[0])
+        assert_(res.t_events is None)
+        assert_(res.success)
+        assert_equal(res.status, 0)
+
+        assert_(res.nfev &lt; 40)
+
+        if method in [&quotRK23&quot, &quotRK45&quot, &quotLSODA&quot]:
+            assert_equal(res.njev, 0)
+            assert_equal(res.nlu, 0)
+        else:
+            assert_(0 &lt; res.njev &lt; 3)
+            assert_(0 &lt; res.nlu &lt; 10)
+
+        y_true = sol_rational(res.t)
+        e = compute_error(res.y, y_true, rtol, atol)
+        assert_(np.all(e &lt; 5))
+
+        tc = np.linspace(*t_span)
+        yc_true = sol_rational(tc)
+        yc = res.sol(tc)
+
+        e = compute_error(yc, yc_true, rtol, atol)
+        assert_(np.all(e &lt; 5))
+
+        tc = (t_span[0] + t_span[-1]) / 2
+        yc_true = sol_rational(tc)
+        yc = res.sol(tc)
+
+        e = compute_error(yc, yc_true, rtol, atol)
+        assert_(np.all(e &lt; 5))
+
+        &#47&#47 LSODA for some reasons doesn&quott pass the polynomial through the
+        &#47&#47 previous points exactly after the order change. It might be some
+        &#47&#47 bug in LSOSA implementation or maybe we missing something.
+        if method != &quotLSODA&quot:
+            assert_allclose(res.sol(res.t), res.y, rtol=1e-15, atol=1e-15)
+
+
+</a>def test_integration_complex():
+    rtol = 1e-3
+    atol = 1e-6
+    y0 = [0.5 + 1j]</code></pre><img src="5979049.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 13</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/bf2c49078d1306382e4eb50b144d357ec039aee9#diff-50c468bee6bf53c57e8968dbcc83d6eaaf3eecc42921e96a8d96269d4738c568L156' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: bf2c49078d1306382e4eb50b144d357ec039aee9</div><div id='time'> Time: 2017-07-15</div><div id='author'> Author: cdouglass256@gmail.com</div><div id='file'> File Name: scipy/integrate/tests/test_ivp.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_integration</div><BR><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/1c880c79459a63c8e36f48966142aea56626818e#diff-6fccc260c07da151221bdf834dbf3cc2ed647700776d8133030634d38546cfb5L132' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: 1c880c79459a63c8e36f48966142aea56626818e</div><div id='time'> Time: 2017-07-10</div><div id='author'> Author: cdouglass256@gmail.com</div><div id='file'> File Name: scipy/sparse/linalg/tests/test_matfuncs.py</div><div id='class'> Class Name: TestExpM</div><div id='method'> Method Name: test_padecases_dtype_sparse_float</div><BR><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/bf2c49078d1306382e4eb50b144d357ec039aee9#diff-50c468bee6bf53c57e8968dbcc83d6eaaf3eecc42921e96a8d96269d4738c568L217' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: bf2c49078d1306382e4eb50b144d357ec039aee9</div><div id='time'> Time: 2017-07-15</div><div id='author'> Author: cdouglass256@gmail.com</div><div id='file'> File Name: scipy/integrate/tests/test_ivp.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_integration_complex</div><BR><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/bf2c49078d1306382e4eb50b144d357ec039aee9#diff-f63bd5cdde794c99495db341b838a8a086b41c5955378ad354675c70248245d9L296' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: bf2c49078d1306382e4eb50b144d357ec039aee9</div><div id='time'> Time: 2017-07-15</div><div id='author'> Author: cdouglass256@gmail.com</div><div id='file'> File Name: scipy/optimize/tests/test_least_squares.py</div><div id='class'> Class Name: BaseMixin</div><div id='method'> Method Name: test_rosenbrock</div><BR>

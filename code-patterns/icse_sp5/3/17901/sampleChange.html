@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+class WhitenTest(GPflowTestCase):
+    def setUp(self):
+        <a id="change">tf.reset_default_graph()</a>
+        self.k = GPflow.kernels.Matern32(1) + GPflow.kernels.White(1)
+        self.k.white.variance = 0.01
+        self.num_data = 10
+        self.num_test_data = 100</code></pre><h3>After Change</h3><pre><code class='java'>
+
+class WhitenTest(GPflowTestCase):
+    def setUp(self):
+        <a id="change">with self.test_session():
+            self.k = GPflow.kernels.Matern32(1) + GPflow.kernels.White(1)
+            self.k.white.variance = 0.01
+            self.num_data = 10
+            self.num_test_data = 100
+            self.X = tf.placeholder(float_type, [self.num_data, 1])
+            self.F = tf.placeholder(float_type, [self.num_data, 1])
+            self.Xs = tf.placeholder(float_type, [self.num_test_data, 1])
+
+            &#47&#47make tf array shenanigans
+            self.free_x = tf.placeholder(float_type)
+            self.k.make_tf_array(self.free_x)
+
+            self.free_x_data = self.k.get_free_state()
+            &#47&#47 NB. with too many random data, numerics suffer
+            self.rng = np.random.RandomState(0)
+            self.X_data = self.rng.randn(self.num_data, 1)
+            self.F_data = self.rng.randn(self.num_data, 1)
+            self.Xs_data = self.rng.randn(self.num_test_data,1)
+
+            self.feed_dict = {
+                    self.free_x:self.free_x_data,
+                    self.X:self.X_data,
+                    self.F:self.F_data,
+                    self.Xs:self.Xs_data}
+
+   </a> def test_whiten(self):
+        
+        make sure that predicting using the whitened representation is the
+        sameas the non-whitened one.</code></pre>

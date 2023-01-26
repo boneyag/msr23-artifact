@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def stop(self):
+        self.did_terminate.set()
+        <a id="change">self.popen.terminate()</a>
+        signal.signal(signal.SIGINT, self.old_signal)
+
+
+class GdbTransportDebugger(GdbDebugger):</code></pre><h3>After Change</h3><pre><code class='java'>
+        t.start()
+
+    def stop(self):
+        <a id="change">if not self._is_running:
+            return
+
+       </a> signal.signal(signal.SIGINT, self.old_sigint_handler)
+        termios.tcsetattr(sys.stdin.fileno(), termios.TCSAFLUSH, self.old_termios)
+
+        try:
+            <a id="change">children = psutil.Process(self.popen.pid).children(recursive=True)</a>
+            for c in children:
+                c.terminate()
+            _, alive = psutil.wait_procs(children, timeout=self._GRACEFUL_SHUTDOWN_TIMEOUT_SEC)
+            for a in alive:</code></pre>

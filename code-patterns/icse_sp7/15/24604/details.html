@@ -1,0 +1,49 @@
+<html><h3>52796475005cb8828c73dfbb97ba9820667c9d41,cnvlib/coverage.py,,interval_coverages_pileup,#Any#Any#Any#Any#,147
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def interval_coverages_pileup(bed_fname, bam_fname, min_mapq, procs=1):
+    Calculate log2 coverages in the BAM file at each interval.
+    logging.info("Processing reads in %s", os.path.basename(bam_fname))
+    <a id="change">if procs == 1:
+        for chrom, start, end, gene, count, depth in bedcov(bed_fname, bam_fname,
+                                                            min_mapq):
+            yield [count,
+                   (chrom, start, end, gene,
+                    math.log(depth, 2) if depth else NULL_LOG2_COVERAGE, depth)]
+        raise StopIteration
+
+   </a> with futures.ProcessPoolExecutor(procs) as pool:
+        <a id="change">for biter in pool.map(_bedcov, ((bed_chrom, bam_fname, min_mapq) for
+                                       bed_chrom in to_chunks(bed_fname))):
+            for chrom, start, end, gene, count, depth in biter:
+                yield [count,
+                       (chrom, start, end, gene,
+                        math.log(depth, 2) if depth else NULL_LOG2_COVERAGE, depth)]
+            rm(bed_chrom)
+
+</a>def _bedcov(args):
+    Wrapper for parallel.
+    return list(bedcov(*args))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def interval_coverages_pileup(bed_fname, bam_fname, min_mapq, procs=1):
+    Calculate log2 coverages in the BAM file at each interval.
+    logging.info("Processing reads in %s", os.path.basename(bam_fname))
+    <a id="change">if procs == 1:
+        for count, row in bedcov(bed_fname, bam_fname, min_mapq):
+            yield [count, row]
+    else:
+        with futures.ProcessPoolExecutor(procs) as pool:
+            args_iter = ((bed_chunk, bam_fname, min_mapq)
+                         for bed_chunk in to_chunks(bed_fname))
+            for bed_chunk_fname, biter in pool.map(_bedcov, args_iter):
+                for count, row in biter:
+                    yield [count, row]
+                rm(bed_chunk_fname)
+
+
+</a>def _bedcov(args):
+    Wrapper for parallel.
+    bed_fname = args[0]
+    return bed_fname, list(bedcov(*args))</code></pre><img src="128647307.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 14</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/etal/cnvkit/commit/52796475005cb8828c73dfbb97ba9820667c9d41#diff-d9a87a9ec7327385b230ddb29fd4eab94bacd4259a5d53f02d286b703b51816cL150' target='_blank'>Link</a></div><div id='project'> Project Name: etal/cnvkit</div><div id='commit'> Commit Name: 52796475005cb8828c73dfbb97ba9820667c9d41</div><div id='time'> Time: 2016-08-28</div><div id='author'> Author: eric.talevich@gmail.com</div><div id='file'> File Name: cnvlib/coverage.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: interval_coverages_pileup</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/91cdde2ef79e87a9cb0d80cb55769bc23dc271cc#diff-aa5dd9f8d1a85b941435e87fc6d0c01b25b841750301ad3057e7146609bb4badL56' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 91cdde2ef79e87a9cb0d80cb55769bc23dc271cc</div><div id='time'> Time: 2014-08-19</div><div id='author'> Author: john.sirois@gmail.com</div><div id='file'> File Name: src/python/pants/backend/jvm/tasks/dependencies.py</div><div id='class'> Class Name: Dependencies</div><div id='method'> Method Name: console_output</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/991b6233b442369be2310ca58fbd7c4b93f72c89#diff-ff4ba28c4a8ca7f5ca50c90b2d06ec224dfe65f5de5c28932bc42a7f964617f1L37' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 991b6233b442369be2310ca58fbd7c4b93f72c89</div><div id='time'> Time: 2014-12-23</div><div id='author'> Author: tinystatemachine@gmail.com</div><div id='file'> File Name: src/python/pants/backend/core/tasks/what_changed.py</div><div id='class'> Class Name: WhatChanged</div><div id='method'> Method Name: console_output</div><BR>

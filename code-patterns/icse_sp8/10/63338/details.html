@@ -1,0 +1,107 @@
+<html><h3>63aeab22374e4cfa7e1f8b803298fb9df7d9e70e,src/sos/workflow_executor.py,Base_Executor,run_as_nested,#Base_Executor#Any#Any#Any#Any#,1339
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        self.handle_unknown_target(res.target, dag, runnable)
+                    &#47&#47 if the job is failed
+                    elif isinstance(res, Exception):
+                        <a id="change">env.logger.debug(f&quotNested received an exception&quot)</a>
+                        runnable._status = &quotfailed&quot
+                        dag.save(env.config[&quotoutput_dag&quot])
+                        exec_error.append(runnable._node_id, res)
+                        raise exec_error
+                    elif &quot__step_name__&quot in res:
+                        env.logger.debug(f&quotNested receive step result &quot)
+                        self.step_completed(res, dag, runnable)
+                    else:
+                        raise RuntimeError(
+                            f&quotNested wokflow received an unrecognized response: {res}&quot)
+
+                manager.cleanup()
+
+                &#47&#47 step 3: find steps to run
+                while True:
+                    if not dag.dirty():
+                        break
+                    &#47&#47 with status.
+                    runnable = dag.find_executable()
+                    if runnable is None:
+                        dag.mark_dirty(False)
+                        break
+
+                    &#47&#47 find the section from runnable
+                    section = self.workflow.section_by_id(runnable._step_uuid)
+                    &#47&#47 execute section with specified input
+                    runnable._status = &quotrunning&quot
+                    dag.save(env.config[&quotoutput_dag&quot])
+
+                    &#47&#47 workflow shared variables
+                    shared = {x: env.sos_dict[x] for x in self.shared.keys(
+                    ) if x in env.sos_dict and pickleable(env.sos_dict[x], x)}
+                    if &quotshared&quot in section.options:
+                        shared.update(self.get_shared_vars(
+                            section.options[&quotshared&quot]))
+
+                    if &quotworkflow_id&quot in env.sos_dict:
+                        runnable._context[&quotworkflow_id&quot] = env.sos_dict[&quotworkflow_id&quot]
+
+                    &#47&#47 send the step to the parent
+                    step_id = uuid.uuid4()
+                    <a id="change">env.logger.debug(
+                        f&quotNested send step {section.step_name()} to master with args {self.args} and context {runnable._context}&quot)</a>
+
+                    socket = create_socket(env.zmq_context, zmq.PAIR, &quotworker pair socket&quot)
+                    port = socket.bind_to_random_port(&quottcp://127.0.0.1&quot)
+                    parent_socket.send_pyobj([&quotstep&quot, step_id, section, runnable._context, shared, self.args,</code></pre><h3>After Change</h3><pre><code class='java'>
+                        self.handle_unknown_target(res.target, dag, runnable)
+                    &#47&#47 if the job is failed
+                    elif isinstance(res, Exception):
+                        <a id="change">env.log_to_file(&quotEXECUTOR&quot, f&quotNested received an exception&quot)</a>
+                        runnable._status = &quotfailed&quot
+                        dag.save(env.config[&quotoutput_dag&quot])
+                        exec_error.append(runnable._node_id, res)
+                        raise exec_error
+                    elif &quot__step_name__&quot in res:
+                        env.log_to_file(&quotEXECUTOR&quot, f&quotNested receive step result &quot)
+                        self.step_completed(res, dag, runnable)
+                    else:
+                        raise RuntimeError(
+                            f&quotNested wokflow received an unrecognized response: {res}&quot)
+
+                manager.cleanup()
+
+                &#47&#47 step 3: find steps to run
+                while True:
+                    if not dag.dirty():
+                        break
+                    &#47&#47 with status.
+                    runnable = dag.find_executable()
+                    if runnable is None:
+                        dag.mark_dirty(False)
+                        break
+
+                    &#47&#47 find the section from runnable
+                    section = self.workflow.section_by_id(runnable._step_uuid)
+                    &#47&#47 execute section with specified input
+                    runnable._status = &quotrunning&quot
+                    dag.save(env.config[&quotoutput_dag&quot])
+
+                    &#47&#47 workflow shared variables
+                    shared = {x: env.sos_dict[x] for x in self.shared.keys(
+                    ) if x in env.sos_dict and pickleable(env.sos_dict[x], x)}
+                    if &quotshared&quot in section.options:
+                        shared.update(self.get_shared_vars(
+                            section.options[&quotshared&quot]))
+
+                    if &quotworkflow_id&quot in env.sos_dict:
+                        runnable._context[&quotworkflow_id&quot] = env.sos_dict[&quotworkflow_id&quot]
+
+                    &#47&#47 send the step to the parent
+                    step_id = uuid.uuid4()
+                    <a id="change">env.log_to_file(&quotEXECUTOR&quot,
+                        f&quotNested send step {section.step_name()} to master with args {self.args} and context {runnable._context}&quot)</a>
+
+                    socket = create_socket(env.zmq_context, zmq.PAIR, &quotworker pair socket&quot)
+                    port = socket.bind_to_random_port(&quottcp://127.0.0.1&quot)
+                    parent_socket.send_pyobj([&quotstep&quot, step_id, section, runnable._context, shared, self.args,</code></pre><img src="294335099.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/63aeab22374e4cfa7e1f8b803298fb9df7d9e70e#diff-80b10834cec740685f801a84510cc796583fdc2e1a254ab9d42c3fa2067dc45bL1420' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: 63aeab22374e4cfa7e1f8b803298fb9df7d9e70e</div><div id='time'> Time: 2019-02-26</div><div id='author'> Author: ben.bog@gmail.com</div><div id='file'> File Name: src/sos/workflow_executor.py</div><div id='class'> Class Name: Base_Executor</div><div id='method'> Method Name: run_as_nested</div><BR><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/63aeab22374e4cfa7e1f8b803298fb9df7d9e70e#diff-80b10834cec740685f801a84510cc796583fdc2e1a254ab9d42c3fa2067dc45bL1018' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: 63aeab22374e4cfa7e1f8b803298fb9df7d9e70e</div><div id='time'> Time: 2019-02-26</div><div id='author'> Author: ben.bog@gmail.com</div><div id='file'> File Name: src/sos/workflow_executor.py</div><div id='class'> Class Name: Base_Executor</div><div id='method'> Method Name: run_as_master</div><BR><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/63aeab22374e4cfa7e1f8b803298fb9df7d9e70e#diff-80b10834cec740685f801a84510cc796583fdc2e1a254ab9d42c3fa2067dc45bL1420' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: 63aeab22374e4cfa7e1f8b803298fb9df7d9e70e</div><div id='time'> Time: 2019-02-26</div><div id='author'> Author: ben.bog@gmail.com</div><div id='file'> File Name: src/sos/workflow_executor.py</div><div id='class'> Class Name: Base_Executor</div><div id='method'> Method Name: run_as_nested</div><BR><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/63aeab22374e4cfa7e1f8b803298fb9df7d9e70e#diff-80b10834cec740685f801a84510cc796583fdc2e1a254ab9d42c3fa2067dc45bL443' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: 63aeab22374e4cfa7e1f8b803298fb9df7d9e70e</div><div id='time'> Time: 2019-02-26</div><div id='author'> Author: ben.bog@gmail.com</div><div id='file'> File Name: src/sos/workflow_executor.py</div><div id='class'> Class Name: Base_Executor</div><div id='method'> Method Name: resolve_dangling_targets</div><BR>

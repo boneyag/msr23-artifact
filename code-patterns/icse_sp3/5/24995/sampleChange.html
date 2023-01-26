@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 1.input encoder
+        &#47&#47 1.1 embedding for story and query
+        story_embedding = tf.nn.embedding_lookup(self.Embedding,self.story)  &#47&#47 [batch_size,story_length,sequence_length,embed_size]
+        query_embedding=<a id="change">tf.nn.embedding_lookup(self.Embedding,self.query)</a>    &#47&#47 [batch_size,sequence_length,embed_size]
+        &#47&#47 1.2 mask for story and query
+        story_mask=tf.get_variable("story_mask",[self.sequence_length,1],initializer=tf.constant_initializer(1.0))
+        query_mask=tf.get_variable("query_mask",[self.sequence_length,1],initializer=tf.constant_initializer(1.0))
+        &#47&#47 1.3 multiply of embedding and mask for story and query
+        self.story_embedding=tf.multiply(story_embedding,story_mask)  &#47&#47 [batch_size,story_length,sequence_length,embed_size]
+        <a id="change">self.query_embedding=tf.multiply(query_embedding,query_mask)</a>  &#47&#47 [batch_size,sequence_length,embed_size]
+        &#47&#47 1.4 use bag of words to encoder story and query
+        self.story_embedding=tf.reduce_sum(self.story_embedding,axis=2) &#47&#47[batch_size,story_length,embed_size]
+        self.query_embedding=tf.reduce_sum(self.query_embedding,axis=1)  &#47&#47[batch_size,embed_size]</code></pre><h3>After Change</h3><pre><code class='java'>
+        main computation graph here: 1.input encoder 2.dynamic emeory 3.output layer 
+        &#47&#47 1.input encoder
+        self.embedding_with_mask()
+        <a id="change">if self.use_bi_lstm:
+            self.input_encoder_bi_lstm()
+        else:
+            self.input_encoder_bow()
+        &#47&#47 2. dynamic emeory
+       </a> self.hidden_state=self.rnn_story() &#47&#47[batch_size,block_size,hidden_size]. get hidden state after process the story
+
+        &#47&#47 3.output layer
+        logits=self.output_module() &#47&#47[batch_size,vocab_size]</code></pre>

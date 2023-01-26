@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    transforms = zip(sampled_dxs, sampled_dys, sampled_angles)
+
+  adv_xs = []
+  <a id="change">accs = []</a>
+
+  &#47&#47 Perform the transformation
+  for (dx, dy, angle) in transforms:
+    adv_xs.append(_apply_transformation(x, dx, dy, angle, batch_size))
+    preds_adv = model.get_logits(adv_xs[-1])
+
+    &#47&#47 Compute accuracy
+    accs.append(tf.count_nonzero(tf.equal(tf.argmax(y, axis=-1),
+                                          tf.argmax(preds_adv, axis=-1))))
+  &#47&#47 Return the adv_x with worst accuracy
+  adv_xs = <a id="change">tf.stack(adv_xs)</a>
+  accs = tf.stack(accs)
+  <a id="change">return tf.gather(adv_xs, tf.argmin(accs))</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  &#47&#47 Return the adv_x with worst accuracy
+
+  &#47&#47 all_xents is n_total_samples x batch_size (SB)
+  all_xents = <a id="change">tf.stack(all_xents)</a> &#47&#47 SB
+
+  &#47&#47 We want the worst case sample, with the largest xent_loss
+  worst_sample_idx = tf.argmax(all_xents, axis=0)  &#47&#47 B
+
+  batch_size = tf.shape(x)[0]
+  <a id="change">keys = tf.stack([
+      tf.range(batch_size, dtype=tf.int32),
+      tf.cast(worst_sample_idx, tf.int32)
+  ], axis=1)</a>
+  <a id="change">transformed_ims_bshwc = tf.einsum(&quotsbhwc-&gt;bshwc&quot, transformed_ims)</a>
+  after_lookup = tf.gather_nd(transformed_ims_bshwc, keys)  &#47&#47 BHWC
+  <a id="change">return after_lookup</a>
+
+
+def parallel_apply_transformations(x, transforms, black_border_size=0):
+  transforms = tf.convert_to_tensor(transforms, dtype=tf.float32)</code></pre>

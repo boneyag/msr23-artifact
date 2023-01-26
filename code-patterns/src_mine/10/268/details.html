@@ -1,0 +1,77 @@
+<html><h3>16914cec3cababd56e18ac775339469f35bf4fa6,GPflow/conditionals.py,,conditional,#,5
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 compute kernel stuff
+    num_data = tf.shape(X)[0]
+    Kmn = kern.K(X, Xnew)
+    Kmm = kern.K(X) + <a id="change">eye(num_data)</a>
+    Lm = tf.cholesky(Kmm)
+
+    &#47&#47 Compute the projection matrix A
+    A = tf.matrix_triangular_solve(Lm, Kmn, lower=True)
+
+    &#47&#47 compute the covariance due to the conditioning
+    if full_cov:
+        <a id="change">fvar</a> = kern.K(Xnew) - tf.matmul(tf.transpose(A), A)
+        fvar = tf.tile(tf.expand_dims(fvar, 2), [1, 1, num_columns])
+    else:
+        fvar = kern.Kdiag(Xnew) - tf.reduce_sum(tf.square(A), 0)
+        fvar = tf.tile(tf.expand_dims(fvar, 1), [1, num_columns])
+
+    &#47&#47 another backsubstitution in the unwhitened case
+    if not whiten:
+        A = tf.matrix_triangular_solve(tf.transpose(Lm), A, lower=False)
+
+    &#47&#47 construct the conditional mean
+    fmean = tf.matmul(tf.transpose(A), f)
+
+    &#47&#47 add extra projected variance from q(f) if needed
+    if q_sqrt is not None:
+        projected_var = []
+        for d in range(num_columns):
+            if q_sqrt.get_shape().ndims == 2:
+                LTA = A * q_sqrt[:, d:d + 1]
+            elif q_sqrt.get_shape().ndims == 3:
+                L = tf.user_ops.triangle(q_sqrt[:, :, d], &quotlower&quot)
+                <a id="change">LTA</a> = tf.matmul(tf.transpose(L), A)
+            else:  &#47&#47 pragma no cover
+                raise ValueError("Bad dimension for q_sqrt: %s" %
+                                 str(q_sqrt.get_shape().ndims))</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 compute kernel stuff
+    num_data = tf.shape(X)[0]
+    Kmn = kern.K(X, Xnew)
+    Kmm = kern.K(X) + <a id="change">eye(num_data)</a> * 1e-6
+    Lm = tf.cholesky(Kmm)
+
+    &#47&#47 Compute the projection matrix A
+    A = tf.matrix_triangular_solve(Lm, Kmn, lower=True)
+
+    &#47&#47 compute the covariance due to the conditioning
+    if full_cov:
+        <a id="change">fvar</a> = kern.K(Xnew) - tf.matmul(tf.transpose(A), A)
+        fvar = tf.tile(tf.expand_dims(fvar, 2), [1, 1, num_columns])
+    else:
+        fvar = kern.Kdiag(Xnew) - tf.reduce_sum(tf.square(A), 0)
+        fvar = tf.tile(tf.expand_dims(fvar, 1), [1, num_columns])
+
+    &#47&#47 another backsubstitution in the unwhitened case
+    if not whiten:
+        A = tf.matrix_triangular_solve(tf.transpose(Lm), A, lower=False)
+
+    &#47&#47 construct the conditional mean
+    fmean = tf.matmul(tf.transpose(A), f)
+
+    &#47&#47 add extra projected variance from q(f) if needed
+    if q_sqrt is not None:
+        projected_var = []
+        for d in range(num_columns):
+            if q_sqrt.get_shape().ndims == 2:
+                LTA = A * q_sqrt[:, d:d + 1]
+            elif q_sqrt.get_shape().ndims == 3:
+                L = tf.user_ops.triangle(q_sqrt[:, :, d], &quotlower&quot)
+                <a id="change">LTA</a> = tf.matmul(tf.transpose(L), A)
+            else:  &#47&#47 pragma no cover
+                raise ValueError("Bad dimension for q_sqrt: %s" %
+                                 str(q_sqrt.get_shape().ndims))</code></pre><img src="718434.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 2</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/16914cec3cababd56e18ac775339469f35bf4fa6#diff-09f24dab3268c2998f1d264731bdf087026278a0ae88f1b89a68b7c4500e2f59L51' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: 16914cec3cababd56e18ac775339469f35bf4fa6</div><div id='time'> Time: 2016-04-14</div><div id='author'> Author: james.hensman@gmail.com</div><div id='file'> File Name: GPflow/conditionals.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: conditional</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/8db30b2681160d42fe80f5fc025de128dd75a0d4#diff-a8b1842a605e08d9388a75cb12761ae3ba9f87e3cd4ce9816200df088f6ce8fcL118' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 8db30b2681160d42fe80f5fc025de128dd75a0d4</div><div id='time'> Time: 2018-07-23</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/crf.py</div><div id='class'> Class Name: CRFAsRNNLayer</div><div id='method'> Method Name: layer_op</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/135a56e0935fbb04811f8ce7b9f514f498212f71#diff-a8b1842a605e08d9388a75cb12761ae3ba9f87e3cd4ce9816200df088f6ce8fcL83' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 135a56e0935fbb04811f8ce7b9f514f498212f71</div><div id='time'> Time: 2018-07-25</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/crf.py</div><div id='class'> Class Name: CRFAsRNNLayer</div><div id='method'> Method Name: layer_op</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/7732f27b85819cfb98388a498f59abc1bfd53f28#diff-043f23c556aaef08c2c069f1a6864d08683b8d8dfc2c13ca212d8af0c268c7afL23' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 7732f27b85819cfb98388a498f59abc1bfd53f28</div><div id='time'> Time: 2019-01-31</div><div id='author'> Author: dylan.flaute@gmail.com</div><div id='file'> File Name: onmt/modules/structured_attention.py</div><div id='class'> Class Name: MatrixTree</div><div id='method'> Method Name: forward</div><BR>

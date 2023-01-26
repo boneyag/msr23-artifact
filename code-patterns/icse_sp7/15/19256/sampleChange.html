@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    res_file = ext.transform(stim_file).to_df()
+    res_target = ext_target.transform(stim).to_df()
+    res_topn = ext_topn.transform(stim).to_df()
+    <a id="change">res_threshold = ext_threshold.transform(stim).to_df()</a>
+    res_default = ext_default.transform(stim_masked).to_df()
+    <a id="change">res_return_mask = ext_return_mask.transform(stim).to_df()</a>
+
+    assert res.shape[0] == 1
+
+    &#47&#47 test onset/duration
+    assert res_file[&quotonset&quot][0] == 1.0
+    assert res_file[&quotduration&quot][0] == 0.2
+
+    &#47&#47 Check target words
+    assert all([w.capitalize() in res_target.columns for w in target_wds])
+    assert res_target.shape[1] == 6
+
+    &#47&#47 Check top_n
+    assert res_topn.shape[1] == 104
+    assert all([res_topn.iloc[:,3][0] &gt; res_topn.iloc[:,i][0] for i in range(4,103)])
+
+    &#47&#47 Check threshold and return_softmax
+    tknz = BertTokenizer.from_pretrained(&quotbert-base-uncased&quot)
+    vocab = tknz.vocab.keys()
+    for v in vocab:
+        if v.capitalize() in res_threshold.columns:
+            assert res_threshold[v.capitalize()][0] &gt;= .1
+            assert res_threshold[v.capitalize()][0] &lt;= 1
+
+    &#47&#47 Test update mask method
+    assert ext_target.mask == 1
+    ext_target.update_mask(new_mask=&quotsentence&quot)
+    assert ext_target.mask == &quotsentence&quot
+    res_target_new = ext_target.transform(stim).to_df()
+    assert all([res_target[c][0] != res_target_new[c][0]
+                for c in [&quotTarget&quot, &quotWord&quot]])
+    with pytest.raises(ValueError) as err:
+        ext_target.update_mask(new_mask=[&quotsome&quot, &quotmask&quot])
+    assert &quotmust be a string&quot in str(err.value)
+    
+    &#47&#47 Test default mask
+    assert res_default.shape[0] == 1
+
+    &#47&#47 Test return mask and input
+    assert res_return_mask[&quottrue_word&quot][0] == &quotis&quot
+    assert &quottrue_word_score&quot in res_return_mask.columns
+    assert res_return_mask[&quotsequence&quot][0] == &quotThis is not a tokenized sentence .&quot
+
+    &#47&#47 remove
+    <a id="change">del ext, ext_masked, ext_target, ext_topn, ext_threshold, ext_default, \
+        ext_return_mask</a>
+    del res, res_masked, res_file, res_target, res_topn, res_threshold, \
+        res_default, res_return_mask
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    res_masked = BertLMExtractor().transform(stim_masked).to_df()
+    res_file =  BertLMExtractor(mask=2).transform(stim_file).to_df()
+    res_target = ext_target.transform(stim).to_df()
+    res_topn = <a id="change">BertLMExtractor(mask=3, top_n=100).transform(stim).to_df()</a>
+    res_threshold = BertLMExtractor(mask=4, threshold=.1, return_softmax=True).transform(stim).to_df()
+    res_default = BertLMExtractor().transform(stim_masked).to_df()
+    res_return_mask = <a id="change">BertLMExtractor(mask=1, top_n=10, return_masked_word=True, return_input=True).transform(stim).to_df()</a>
+
+    assert res.shape[0] == 1
+
+    &#47&#47 test onset/duration</code></pre>

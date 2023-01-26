@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    atol = 1e-6
+    y0 = [1/3, 2/9]
+    for method in [&quotRK23&quot, &quotRK45&quot, &quotRadau&quot, &quotBDF&quot]:
+        for t_span in <a id="change">([5, 9], [5, 1])</a>:
+            res = solve_ivp(fun_rational, t_span, y0, rtol=rtol,
+                            atol=atol, method=method, dense_output=True)
+            assert_equal(res.t[0], t_span[0])</code></pre><h3>After Change</h3><pre><code class='java'>
+    atol = 1e-6
+    y0 = [1/3, 2/9]
+
+    <a id="change">with warnings.catch_warnings():
+        warnings.simplefilter(&quotignore&quot)
+        for method, t_span, jac in product(
+                [&quotRK23&quot, &quotRK45&quot, &quotRadau&quot, &quotBDF&quot],
+                [[5, 9], [5, 1]],
+                [None, jac_rational, jac_rational_sparse]):
+
+            res = solve_ivp(fun_rational, t_span, y0, rtol=rtol,
+                            atol=atol, method=method, dense_output=True,
+                            jac=jac)
+            assert_equal(res.t[0], t_span[0])
+            assert_(res.t_events is None)
+            assert_(res.success)
+            assert_equal(res.status, 0)
+
+            assert_(res.nfev &lt; 40)
+
+            if method in [&quotRK23&quot, &quotRK45&quot]:
+                assert_equal(res.njev, 0)
+                assert_equal(res.nlu, 0)
+            else:
+                assert_(0 &lt; res.njev &lt; 3)
+                assert_(0 &lt; res.nlu &lt; 10)
+
+            y_true = sol_rational(res.t)
+            e = compute_error(res.y, y_true, rtol, atol)
+            assert_(np.all(e &lt; 5))
+
+            tc = np.linspace(*t_span)
+            yc_true = sol_rational(tc)
+            yc = res.sol(tc)
+
+            e = compute_error(yc, yc_true, rtol, atol)
+            assert_(np.all(e &lt; 5))
+
+            assert_allclose(res.sol(res.t), res.y, rtol=1e-15, atol=1e-15)
+
+
+</a>def test_events():
+    event_rational_3.terminal = True
+
+    for method in [&quotRK23&quot, &quotRK45&quot, &quotRadau&quot, &quotBDF&quot]:</code></pre>

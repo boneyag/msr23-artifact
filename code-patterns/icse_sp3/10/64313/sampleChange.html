@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    runner.enable_logging = True
+                    log_performance(runner.step_itr,
+                                    obtain_evaluation_samples(
+                                        self.policy, <a id="change">runner.get_env_copy()</a>),
+                                    discount=self._discount)
+                runner.step_itr += 1
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            float: The average return in last epoch cycle.
+
+        
+        <a id="change">if not self._eval_env:
+            self._eval_env = runner.get_env_copy()
+       </a> last_return = None
+        runner.enable_logging = False
+
+        for _ in runner.step_epochs():
+            for cycle in range(self._steps_per_epoch):
+                runner.step_path = runner.obtain_trajectories(runner.step_itr)
+                last_return = self.train_once(runner.step_itr,
+                                              runner.step_path)
+                if (cycle == 0 and self.replay_buffer.n_transitions_stored &gt;=
+                        self._min_buffer_size):
+                    runner.enable_logging = True
+                    log_performance(runner.step_itr,
+                                    obtain_evaluation_samples(
+                                        self.policy, <a id="change">self._eval_env</a>),
+                                    discount=self._discount)
+                runner.step_itr += 1
+</code></pre>

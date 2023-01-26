@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def __init__(self, in_features, out_features, sigma_zero=0.4, bias=True):
+        super(NoisyFactorizedLinear, self).__init__(in_features, out_features, bias=bias)
+        sigma_init = sigma_zero / math.sqrt(in_features)
+        <a id="change">self.sigma_weight</a> = nn.Parameter(<a id="change">torch.Tensor(out_features, in_features).fill_(sigma_init)</a>)
+        self.register_buffer("epsilon_input", torch.zeros(1, in_features))
+        self.register_buffer("epsilon_output", torch.zeros(out_features, 1))
+        if bias:
+            <a id="change">self.sigma_bias</a> = nn.Parameter(<a id="change">torch.Tensor(out_features).fill_(sigma_init)</a>)
+
+    def forward(self, input):
+        torch.randn(self.epsilon_input.size(), out=self.epsilon_input)</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    def __init__(self, in_features, out_features, sigma_zero=0.4, bias=True):
+        super(NoisyFactorizedLinear, self).__init__(in_features, out_features, bias=bias)
+        <a id="change">sigma_init</a> = sigma_zero / math.sqrt(in_features)
+        <a id="change">self.sigma_weight</a> = nn.Parameter(<a id="change">torch.full((out_features, in_features), sigma_init)</a>)
+        self.register_buffer("epsilon_input", torch.zeros(1, in_features))
+        self.register_buffer("epsilon_output", torch.zeros(out_features, 1))
+        if bias:
+            <a id="change">self.sigma_bias</a> = nn.Parameter(<a id="change">torch.full((out_features,), sigma_init)</a>)
+
+    def forward(self, input):
+        self.epsison_input.normal_()</code></pre>

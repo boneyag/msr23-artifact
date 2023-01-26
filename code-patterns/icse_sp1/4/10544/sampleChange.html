@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    sleep_count = 0
+    print(&quotListening for messages on {}&quot.format(subscription_path))
+    <a id="change">while sleep_count &lt; duration:
+        time.sleep(1)
+        sleep_count = sleep_count + 1
+
+
+</a>def parse_command_line_args():
+    Parse command line arguments.
+    parser = argparse.ArgumentParser(description=(
+            &quotGoogle Cloud IoT Core MQTT binary transmission demo.&quot))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Set up a callback to acknowledge a message. This closes around an event
+    &#47&#47 so that it can signal that it is done and the main thread can continue.
+    job_done = <a id="change">threading.Event()</a>
+
+    def callback(message):
+        global count
+        try:
+            count = count + 1
+            print(&quotReceived image {}:&quot.format(count))
+            image_data = base64.b64decode(message.data)
+
+            with io.open(
+                    file_pattern.format(prefix, count, extension), &quotwb&quot) as f:
+                f.write(image_data)
+                message.ack()
+                &#47&#47 Signal to the main thread that we can exit.
+                job_done.set()
+
+        except binascii.Error:
+            message.ack()  &#47&#47 To move forward if a message can&quott be processed
+
+    subscriber.subscribe(subscription_path, callback=callback)
+
+    print(&quotListening for messages on {}&quot.format(subscription_path))
+    finished = <a id="change">job_done.wait(timeout=timeout)</a>
+    if not finished:
+        print("No event received before the timeout.")
+
+</code></pre>

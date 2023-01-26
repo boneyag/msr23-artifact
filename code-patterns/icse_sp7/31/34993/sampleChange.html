@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        alpha /= 1.0 - (self._gamma_m ** timestep_new)
+
+        result = []
+        for name, param in <a id="change">self.network.params.items()</a>:
+            m_gradient = self.params[name + &quot.mean_gradient&quot]
+            ms_gradient = self.params[name + &quot.mean_sqr_gradient&quot]
+            rms_gradient = tensor.sqrt(ms_gradient) + self._epsilon
+            <a id="change">param_new = param - (alpha * m_gradient / rms_gradient)</a>
+            <a id="change">result.append((param, param_new))</a>
+        result.append((timestep, timestep_new))
+        return result
+
+    def reset(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+        alpha *= tensor.sqrt(1.0 - (self._gamma_ms ** timestep_new))
+        alpha /= 1.0 - (self._gamma_m ** timestep_new)
+
+        <a id="change">updates = dict()</a>
+        for name, param in <a id="change">self.network.params.items()</a>:
+            m_gradient = self.params[name + &quot.mean_gradient&quot]
+            ms_gradient = self.params[name + &quot.mean_sqr_gradient&quot]
+            rms_gradient = tensor.sqrt(ms_gradient) + self._epsilon
+            <a id="change">updates[name] = -m_gradient / rms_gradient</a>
+        <a id="change">self._normalize(updates)</a>
+
+        result = []
+        <a id="change">for name, param in self.network.params.items():
+            update = updates[name]
+            result.append((param, param + alpha * update))
+       </a> result.append((timestep, timestep_new))
+        return result
+
+    def reset(self):</code></pre>

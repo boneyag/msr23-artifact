@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    from pants.bin.goal_runner import GoalRunner
+
+    &#47&#47 Now that plugins and backends are loaded, we can gather the known scopes.
+    <a id="change">known_scope_infos = [GlobalOptionsRegistrar.get_scope_info()]</a>
+
+    &#47&#47 Add scopes for all needed subsystems via a union of all known subsystem sets.
+    subsystems = Subsystem.closure(
+      GoalRunner.subsystems() | Goal.subsystems() | build_configuration.subsystems()
+    )
+    for subsystem in subsystems:
+      <a id="change">known_scope_infos.append(subsystem.get_scope_info())</a>
+
+    &#47&#47 Add scopes for all tasks in all goals.
+    for goal in Goal.all():
+      known_scope_infos.extend(filter(None, goal.known_scope_infos()))</code></pre><h3>After Change</h3><pre><code class='java'>
+                             build_configuration.subsystems() |
+                             set(Goal.get_optionables()))
+
+    <a id="change">known_scope_infos = sorted({
+      si for optionable in top_level_optionables for si in optionable.known_scope_infos()
+    })</a>
+
+    &#47&#47 Now that we have the known scopes we can get the full options.
+    options = options_bootstrapper.get_full_options(known_scope_infos)
+
+    <a id="change">distinct_optionable_classes = sorted({si.optionable_cls for si in known_scope_infos},
+                                         key=lambda o: o.options_scope)</a>
+    for optionable_cls in distinct_optionable_classes:
+      optionable_cls.register_options_on_scope(options)
+
+    &#47&#47 Make the options values available to all subsystems.</code></pre>

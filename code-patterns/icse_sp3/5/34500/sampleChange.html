@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        vecs = torch.stack((tensorA, tensorB), 0)
+        vectors_obj = build_vectors(tokens, vecs)
+
+        tensorC = torch.tensor(<a id="change">[1, 1]</a>, dtype=torch.float)
+        vectors_obj[&quotb&quot] = tensorC
+
+        vector_path = os.path.join(self.test_dir, &quotvectors.pt&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+        vecs = torch.stack((tensorA, tensorB), 0)
+        vectors_obj = build_vectors(tokens, vecs)
+
+        <a id="change">with self.subTest(&quotpybind&quot):
+            vector_path = os.path.join(self.test_dir, &quotvectors_pybind.pt&quot)
+            torch.save(vectors_obj, vector_path)
+            loaded_vectors_obj = torch.load(vector_path)
+
+            self.assertEqual(loaded_vectors_obj[&quota&quot], tensorA)
+            self.assertEqual(loaded_vectors_obj[&quotb&quot], tensorB)
+            self.assertEqual(loaded_vectors_obj[&quotnot_in_it&quot], expected_unk_tensor)
+
+       </a> with self.subTest(&quottorchscript&quot):
+            vector_path = os.path.join(self.test_dir, &quotvectors_torchscript.pt&quot)
+            torch.save(vectors_obj.to_ivalue(), vector_path)
+            loaded_vectors_obj = torch.load(vector_path)</code></pre>

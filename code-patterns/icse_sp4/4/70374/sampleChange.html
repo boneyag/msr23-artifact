@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    pytest.importorskip(&quotbokeh&quot)
+    from distributed.bokeh.scheduler import BokehScheduler
+
+    <a id="change">for port in [0, (&quot127.0.0.3&quot, 0)]:
+        for url, expected in [(&quottcp://0.0.0.0&quot, (&quot::&quot, &quot0.0.0.0&quot)),
+                              (&quottcp://127.0.0.2&quot, &quot127.0.0.2&quot),
+                              (&quottcp://127.0.0.2:38275&quot, &quot127.0.0.2&quot)]:
+            services = {(&quotbokeh&quot, port): BokehScheduler}
+
+            s = Scheduler(services=services)
+            yield s.start(url)
+
+            sock = first(s.services[&quotbokeh&quot].server._http._sockets.values())
+            if isinstance(port, tuple):    &#47&#47 host explicitly overridden
+                assert sock.getsockname()[0] == port[0]
+            elif isinstance(expected, tuple):
+                assert sock.getsockname()[0] in expected
+            else:
+                assert sock.getsockname()[0] == expected
+            yield s.close()
+
+
+</a>@gen_cluster(client=True, worker_kwargs={&quotprofile_cycle_interval&quot: 100})
+def test_profile_metadata(c, s, a, b):
+    start = time() - 1
+    futures = c.map(slowinc, range(10), delay=0.05, workers=a.address)</code></pre><h3>After Change</h3><pre><code class='java'>
+        s = Scheduler(services=services)
+        yield s.start(url)
+
+        <a id="change">sock = first(s.services[&quotbokeh&quot].server._http._sockets.values())</a>
+        assert sock.getsockname()[0] == &quot127.0.0.1&quot
+        yield s.close()
+
+</code></pre>

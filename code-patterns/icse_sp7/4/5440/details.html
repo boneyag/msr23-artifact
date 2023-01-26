@@ -1,0 +1,71 @@
+<html><h3>ac932c665b0a06ea9e222136351f52b5d6772ed0,examples/pytorch/jtnn/jtnn/jtnn_enc.py,DGLJTNNEncoder,run,#DGLJTNNEncoder#Any#Any#,86
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Since tree roots are designated to 0.  In the batched graph we can
+        &#47&#47 simply find the corresponding node ID by looking at node_offset
+        root_ids = mol_tree_batch.node_offset[:-1]
+        n_nodes = <a id="change">len(mol_tree_batch.nodes)</a>
+        edge_list = mol_tree_batch.edge_list
+        n_edges = len(edge_list)
+
+        &#47&#47 Assign structure embeddings to tree nodes</code></pre><h3>After Change</h3><pre><code class='java'>
+    def run(self, mol_tree_batch, mol_tree_batch_lg):
+        &#47&#47 Since tree roots are designated to 0.  In the batched graph we can
+        &#47&#47 simply find the corresponding node ID by looking at node_offset
+        node_offset = <a id="change">np.cumsum([0] + mol_tree_batch.batch_num_nodes)</a>
+        root_ids = node_offset[:-1]
+        n_nodes = mol_tree_batch.number_of_nodes()
+        n_edges = mol_tree_batch.number_of_edges()
+
+        &#47&#47 Assign structure embeddings to tree nodes
+        mol_tree_batch.ndata.update({
+            &quotx&quot: self.embedding(mol_tree_batch.ndata[&quotwid&quot]),
+            &quoth&quot: cuda(torch.zeros(n_nodes, self.hidden_size)),
+        })
+
+        &#47&#47 Initialize the intermediate variables according to Eq (4)-(8).
+        &#47&#47 Also initialize the src_x and dst_x fields.
+        &#47&#47 TODO: context?
+        mol_tree_batch.edata.update({
+            &quots&quot: cuda(torch.zeros(n_edges, self.hidden_size)),
+            &quotm&quot: cuda(torch.zeros(n_edges, self.hidden_size)),
+            &quotr&quot: cuda(torch.zeros(n_edges, self.hidden_size)),
+            &quotz&quot: cuda(torch.zeros(n_edges, self.hidden_size)),
+            &quotsrc_x&quot: cuda(torch.zeros(n_edges, self.hidden_size)),
+            &quotdst_x&quot: cuda(torch.zeros(n_edges, self.hidden_size)),
+            &quotrm&quot: cuda(torch.zeros(n_edges, self.hidden_size)),
+            &quotaccum_rm&quot: cuda(torch.zeros(n_edges, self.hidden_size)),
+        })
+
+        &#47&#47 Send the source/destination node features to edges
+        mol_tree_batch.apply_edges(
+            func=lambda edges: {&quotsrc_x&quot: edges.src[&quotx&quot], &quotdst_x&quot: edges.dst[&quotx&quot]},
+        )
+
+        &#47&#47 Message passing
+        &#47&#47 I exploited the fact that the reduce function is a sum of incoming
+        &#47&#47 messages, and the uncomputed messages are zero vectors.  Essentially,
+        &#47&#47 we can always compute s_ij as the sum of incoming m_ij, no matter
+        &#47&#47 if m_ij is actually computed or not.
+        for eid in level_order(mol_tree_batch, root_ids):
+            &#47&#47eid = mol_tree_batch.edge_ids(u, v)
+            mol_tree_batch_lg.pull(
+                eid,
+                enc_tree_msg,
+                enc_tree_reduce,
+                self.enc_tree_update,
+            )
+
+        &#47&#47 Readout
+        mol_tree_batch.update_all(
+            enc_tree_gather_msg,
+            enc_tree_gather_reduce,
+            self.enc_tree_gather_update,
+        )
+
+        root_vecs = <a id="change">mol_tree_batch</a>.nodes[root_ids].data[&quoth&quot]
+
+        return mol_tree_batch, root_vecs
+</code></pre><img src="35906290.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/ac932c665b0a06ea9e222136351f52b5d6772ed0#diff-5a55a51ddf71b9a35f027dd8bc9c60431ad77e7cb258e559db6e09edba84c8a5L68' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: ac932c665b0a06ea9e222136351f52b5d6772ed0</div><div id='time'> Time: 2018-12-02</div><div id='author'> Author: coin2028@hotmail.com</div><div id='file'> File Name: examples/pytorch/jtnn/jtnn/jtnn_enc.py</div><div id='class'> Class Name: DGLJTNNEncoder</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/neurodsp-tools/neurodsp/commit/f61f339dbc1782f7c5cd6cee6e3a5cd4758622bb#diff-6b2a344e18ca966bccd6827c8e9136ab1ff6daf42dab938e1d2f7267da8a7cb2L135' target='_blank'>Link</a></div><div id='project'> Project Name: neurodsp-tools/neurodsp</div><div id='commit'> Commit Name: f61f339dbc1782f7c5cd6cee6e3a5cd4758622bb</div><div id='time'> Time: 2019-10-09</div><div id='author'> Author: tdonoghue@ucsd.edu</div><div id='file'> File Name: neurodsp/aperiodic/dfa.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: compute_detrended_fluctuation</div><BR><BR><div id='link'><a href='https://github.com/neurodsp-tools/neurodsp/commit/f61f339dbc1782f7c5cd6cee6e3a5cd4758622bb#diff-6b2a344e18ca966bccd6827c8e9136ab1ff6daf42dab938e1d2f7267da8a7cb2L102' target='_blank'>Link</a></div><div id='project'> Project Name: neurodsp-tools/neurodsp</div><div id='commit'> Commit Name: f61f339dbc1782f7c5cd6cee6e3a5cd4758622bb</div><div id='time'> Time: 2019-10-09</div><div id='author'> Author: tdonoghue@ucsd.edu</div><div id='file'> File Name: neurodsp/aperiodic/dfa.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: compute_rescaled_range</div><BR>

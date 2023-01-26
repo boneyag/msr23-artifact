@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    super()._generate_rays()
+
+    rays_o, rays_d = <a id="change">np.split(self.rays, 2, axis=-1)</a>
+    near = 1.
+    viewdirs = rays_d
+
+    &#47&#47 Shift ray origins to near plane</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    super()._generate_rays()
+
+    <a id="change">origins = self.rays.origins</a>
+    directions = self.rays.directions
+    viewdirs = directions
+    near = 1.
+
+    &#47&#47 Shift ray origins to near plane
+    t = -(near + origins[Ellipsis, 2]) / directions[Ellipsis, 2]
+    origins = origins + t[Ellipsis, None] * directions
+
+    &#47&#47 Projection
+    o0 = -1. * ((2. * self.focal) / self.w) * origins[Ellipsis, 0] / origins[Ellipsis, 2]
+    o1 = -1. * ((2. * self.focal) / self.h) * origins[Ellipsis, 1] / origins[Ellipsis, 2]
+    o2 = 1. + 2. * near / origins[Ellipsis, 2]
+
+    d0 = (-1. * ((2. * self.focal) / self.w) *
+          (directions[Ellipsis, 0] / directions[Ellipsis, 2] -
+           origins[Ellipsis, 0] / origins[Ellipsis, 2]))
+    d1 = (-1. * ((2. * self.focal) / self.h) *
+          (directions[Ellipsis, 1] / directions[Ellipsis, 2] -
+           origins[Ellipsis, 1] / origins[Ellipsis, 2]))
+    d2 = -2. * near / origins[Ellipsis, 2]
+
+    origins = np.stack([o0, o1, o2], -1)
+    directions = np.stack([d0, d1, d2], -1)
+    self.rays = Rays(origins=origins, directions=directions, viewdirs=viewdirs)
+
+    &#47&#47 Split poses from the dataset and generated poses
+    if self.split == "test":
+      self.camtoworlds = self.camtoworlds[n_render_poses:]
+      split = <a id="change">[np.split(r, [n_render_poses], 0) for r in self.rays]</a>
+      split0, split1 = <a id="change">zip(*split)</a>
+      self.render_rays = Rays(*split0)
+      self.rays = Rays(*split1)
+
+  def _recenter_poses(self, poses):</code></pre>

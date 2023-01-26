@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Handle everything as if multiagent
+        if isinstance(batch, SampleBatch):
+            batch = MultiAgentBatch({DEFAULT_POLICY_ID: batch}, batch.count)
+        <a id="change">with self.add_batch_timer:
+            for policy_id, s in batch.policy_batches.items():
+                for row in s.rows():
+                    self.replay_buffers[policy_id].add(
+                        row["obs"], row["actions"], row["rewards"],
+                        row["new_obs"], row["dones"], row["weights"]
+                        if "weights" in row else None)
+       </a> self.num_added += batch.count
+
+    def replay(self):
+        if self._fake_batch:</code></pre><h3>After Change</h3><pre><code class='java'>
+        if isinstance(batch, SampleBatch):
+            batch = MultiAgentBatch({DEFAULT_POLICY_ID: batch}, batch.count)
+        with self.add_batch_timer:
+            <a id="change">if self.replay_mode == "lockstep":
+                &#47&#47 Note that prioritization is not supported in this mode.
+                for s in batch.timeslices(self.replay_sequence_length):
+                    self.replay_buffers[_ALL_POLICIES].add(s, weight=None)
+            else:
+                for policy_id, b in batch.policy_batches.items():
+                    for s in b.timeslices(self.replay_sequence_length):
+                        if "weights" in s:
+                            weight = np.mean(s["weights"])
+                        else:
+                            weight = None
+                        self.replay_buffers[policy_id].add(s, weight=weight)
+       </a> self.num_added += batch.count
+
+    def replay(self):
+        if self._fake_batch:</code></pre>

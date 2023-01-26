@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if scores_mask is not None:
+      padding_mask = tf.logical_not(scores_mask)
+      &#47&#47 Bias so padding positions do not contribute to attention distribution.
+      scores -= 1.e9 * tf.cast(padding_mask, dtype=<a id="change">K.floatx()</a>)
+    if training is None:
+      training = K.learning_phase()
+    weights = tf.compat.v1.math.softmax(scores)</code></pre><h3>After Change</h3><pre><code class='java'>
+      padding_mask = tf.logical_not(scores_mask)
+      &#47&#47 Bias so padding positions do not contribute to attention distribution.
+      &#47&#47 Note 65504. is the max float16 value.
+      <a id="change">if scores.dtype is tf.float16:
+        scores -= 65504. * tf.cast(padding_mask, dtype=scores.dtype)
+      else:
+        scores -= 1.e9 * tf.cast(padding_mask, dtype=scores.dtype)
+   </a> if training is None:
+      training = K.learning_phase()
+    weights = tf.compat.v1.math.softmax(scores)
+</code></pre>

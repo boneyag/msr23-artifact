@@ -1,0 +1,66 @@
+<html><h3>1121290a9fe851ebbf9647f44bfa8f58f4e115b6,src/python/pants/backend/python/lint/flake8/rules.py,,lint,#Any#Any#Any#Any#,49
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 each target runs with its own interpreter constraints. See
+    &#47&#47 http://flake8.pycqa.org/en/latest/user/invocation.html.
+    interpreter_constraints = PexInterpreterConstraints.create_from_adaptors(
+        adaptors=<a id="change">[</a>adaptor] if isinstance(adaptor, PythonTargetAdaptor) else [],
+        python_setup=python_setup,
+    )
+    requirements_pex = await Get[Pex](</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 NB: Flake8 output depends upon which Python interpreter version it&quots run with. We ensure that
+    &#47&#47 each target runs with its own interpreter constraints. See
+    &#47&#47 http://flake8.pycqa.org/en/latest/user/invocation.html.
+    <a id="change">interpreter_constraints = PexInterpreterConstraints.create_from_adaptors(
+        (adaptor_with_origin.adaptor for adaptor_with_origin in adaptors_with_origins),
+        python_setup=python_setup,
+    )</a>
+    requirements_pex = await Get[Pex](
+        CreatePex(
+            output_filename="flake8.pex",
+            requirements=PexRequirements(requirements=tuple(flake8.get_requirement_specs())),
+            interpreter_constraints=interpreter_constraints,
+            entry_point=flake8.get_entry_point(),
+        )
+    )
+
+    config_path: Optional[str] = flake8.options.config
+    config_snapshot = await Get[Snapshot](
+        PathGlobs(
+            globs=tuple([config_path] if config_path else []),
+            glob_match_error_behavior=GlobMatchErrorBehavior.error,
+            description_of_origin="the option `--flake8-config`",
+        )
+    )
+
+    all_source_files = await Get[SourceFiles](
+        AllSourceFilesRequest(
+            adaptor_with_origin.adaptor for adaptor_with_origin in adaptors_with_origins
+        )
+    )
+    specified_source_files = await Get[SourceFiles](
+        SpecifiedSourceFilesRequest(adaptors_with_origins)
+    )
+
+    merged_input_files = await Get[Digest](
+        DirectoriesToMerge(
+            directories=(
+                all_source_files.snapshot.directory_digest,
+                requirements_pex.directory_digest,
+                config_snapshot.directory_digest,
+            )
+        ),
+    )
+
+    <a id="change">address_references = ", ".join(
+        sorted(
+            adaptor_with_origin.adaptor.address.reference()
+            for adaptor_with_origin in adaptors_with_origins
+        )
+    )</a>
+
+    request = requirements_pex.create_execute_request(
+        python_setup=python_setup,
+        subprocess_encoding_environment=subprocess_encoding_environment,</code></pre><img src="284971068.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/1121290a9fe851ebbf9647f44bfa8f58f4e115b6#diff-64e0fba587aed8555f75cf1dc420602642940f55a8234d9c9125e9eddcdcea8dL58' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 1121290a9fe851ebbf9647f44bfa8f58f4e115b6</div><div id='time'> Time: 2020-02-27</div><div id='author'> Author: ericarellano@me.com</div><div id='file'> File Name: src/python/pants/backend/python/lint/flake8/rules.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: lint</div><BR><BR><div id='link'><a href='https://github.com/mathics/Mathics/commit/3c70d80fe38b326fa8455637cbe619a04d98c0a5#diff-fa5c94f26ca5c0dc22f2be3492a94845f44994e7e12cae4d873747e10d3236bdL12' target='_blank'>Link</a></div><div id='project'> Project Name: mathics/Mathics</div><div id='commit'> Commit Name: 3c70d80fe38b326fa8455637cbe619a04d98c0a5</div><div id='time'> Time: 2021-01-23</div><div id='author'> Author: pablo-escobar@riseup.net</div><div id='file'> File Name: mathics/core/util.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/1121290a9fe851ebbf9647f44bfa8f58f4e115b6#diff-49791b93c6533bb76483502ba015127dbddcd2aca89ee9ce1d564fd23ddaad7bL58' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 1121290a9fe851ebbf9647f44bfa8f58f4e115b6</div><div id='time'> Time: 2020-02-27</div><div id='author'> Author: ericarellano@me.com</div><div id='file'> File Name: src/python/pants/backend/python/lint/bandit/rules.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: lint</div><BR>

@@ -1,0 +1,53 @@
+<html><h3>ccb227291ac951205df5fdf5812298606e0aa26f,lazyflow/operators/classifierOperators.py,OpTrainPixelwiseClassifierBlocked,execute,#OpTrainPixelwiseClassifierBlocked#Any#Any#Any#Any#,133
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                assert halo_shape[-1] == 0, "Didn&quott expect a non-zero halo for channel dimension."
+
+                &#47&#47 Expand block by halo, then clip to image bounds
+                <a id="change">block_label_roi = numpy.array( block_label_roi )</a>
+                <a id="change">block_label_roi[0]</a> -= halo_shape
+                <a id="change">block_label_roi[1]</a> += halo_shape
+                <a id="change">block_label_roi = getIntersection( block_label_roi, roiFromShape(image_slot.meta.shape) )</a>
+
+                block_image_roi = numpy.array( block_label_roi )
+                assert (block_image_roi[:, -1] == [0,1]).all()
+                num_channels = image_slot.meta.shape[-1]</code></pre><h3>After Change</h3><pre><code class='java'>
+                block_label_bb_roi = bb_roi_within_block + block_label_roi[0]
+
+                &#47&#47 Double-check that there is at least 1 non-zero label in the block.
+                <a id="change">if (block_label_bb_roi[1] &gt; block_label_bb_roi[0]).all():
+                    &#47&#47 Ask for the halo needed by the classifier
+                    axiskeys = image_slot.meta.getAxisKeys()
+                    halo_shape = classifier_factory.get_halo_shape(axiskeys)
+                    assert len(halo_shape) == len( block_label_roi[0] )
+                    assert halo_shape[-1] == 0, "Didn&quott expect a non-zero halo for channel dimension."
+    
+                    &#47&#47 Expand block by halo, but keep clipped to image bounds
+                    padded_label_roi, bb_roi_within_padded = enlargeRoiForHalo( *block_label_bb_roi, 
+                                                                                shape=label_slot.meta.shape,
+                                                                                sigma=halo_shape,
+                                                                                window=1,
+                                                                                return_result_roi=True )
+                    
+                    &#47&#47 Copy labels to new array, which has size == bounding-box + halo
+                    padded_label_data = numpy.zeros( padded_label_roi[1] - padded_label_roi[0], label_slot.meta.dtype )                
+                    padded_label_data[roiToSlice(*bb_roi_within_padded)] = block_label_data[roiToSlice(*bb_roi_within_block)]
+    
+                    padded_image_roi = numpy.array( padded_label_roi )
+                    assert (padded_image_roi[:, -1] == [0,1]).all()
+                    num_channels = image_slot.meta.shape[-1]
+                    padded_image_roi[:, -1] = [0, num_channels]
+    
+                    &#47&#47 Ensure the results are plain ndarray, not VigraArray, 
+                    &#47&#47  which some classifiers might have trouble with.
+                    padded_image_data = numpy.asarray( image_slot(*padded_image_roi).wait() )
+                    
+                    label_data_blocks.append( padded_label_data )
+                    image_data_blocks.append( padded_image_data )
+
+       </a> if len(image_data_blocks) == 0:
+            result[0] = None
+        else:
+            axistags = self.Images[0].meta.axistags</code></pre><img src="120154174.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/ccb227291ac951205df5fdf5812298606e0aa26f#diff-a1202feb19922b57129358e8b1acf35520315f7f48b973d2229f82fb23136dd8L145' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: ccb227291ac951205df5fdf5812298606e0aa26f</div><div id='time'> Time: 2015-03-19</div><div id='author'> Author: bergs@janelia.hhmi.org</div><div id='file'> File Name: lazyflow/operators/classifierOperators.py</div><div id='class'> Class Name: OpTrainPixelwiseClassifierBlocked</div><div id='method'> Method Name: execute</div><BR><BR><div id='link'><a href='https://github.com/HazyResearch/fonduer/commit/1d6771befb95f4ae94f308899633294a003dcfd6#diff-0c785e8f4024f6d1d130d6b0b9b59af850e9d7d3a6cec8d4642f81bf54c1b510L180' target='_blank'>Link</a></div><div id='project'> Project Name: HazyResearch/fonduer</div><div id='commit'> Commit Name: 1d6771befb95f4ae94f308899633294a003dcfd6</div><div id='time'> Time: 2020-07-24</div><div id='author'> Author: hiromu.hota@hal.hitachi.com</div><div id='file'> File Name: src/fonduer/utils/data_model_utils/structural.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: common_ancestor</div><BR><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/ccb227291ac951205df5fdf5812298606e0aa26f#diff-a1202feb19922b57129358e8b1acf35520315f7f48b973d2229f82fb23136dd8L145' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: ccb227291ac951205df5fdf5812298606e0aa26f</div><div id='time'> Time: 2015-03-19</div><div id='author'> Author: bergs@janelia.hhmi.org</div><div id='file'> File Name: lazyflow/operators/classifierOperators.py</div><div id='class'> Class Name: OpTrainPixelwiseClassifierBlocked</div><div id='method'> Method Name: execute</div><BR><BR><div id='link'><a href='https://github.com/HazyResearch/fonduer/commit/1d6771befb95f4ae94f308899633294a003dcfd6#diff-0c785e8f4024f6d1d130d6b0b9b59af850e9d7d3a6cec8d4642f81bf54c1b510L212' target='_blank'>Link</a></div><div id='project'> Project Name: HazyResearch/fonduer</div><div id='commit'> Commit Name: 1d6771befb95f4ae94f308899633294a003dcfd6</div><div id='time'> Time: 2020-07-24</div><div id='author'> Author: hiromu.hota@hal.hitachi.com</div><div id='file'> File Name: src/fonduer/utils/data_model_utils/structural.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: lowest_common_ancestor_depth</div><BR>

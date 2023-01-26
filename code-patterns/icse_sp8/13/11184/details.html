@@ -1,0 +1,99 @@
+<html><h3>79fc09d66d3f4736b9fb4f5756a78725719f3808,train.py,,train,#Any#,27
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    optimizer = optim.Adam(model.parameters(), lr=opt.learning_rate)
+
+    &#47&#47 Load the optimizer
+    <a id="change">if infos.get(&quotstate_dict&quot, None):
+        optimizer.load_state_dict(infos[&quotstate_dict&quot])
+
+   </a> while True:
+        if update_lr_flag:
+                &#47&#47 Assign the learning rate
+            if epoch &gt; opt.learning_rate_decay_start and opt.learning_rate_decay_start &gt;= 0:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Load the optimizer
+    if vars(opt).get(&quotstart_from&quot, None) is not None:
+        optimizer.load_state_dict(torch.load(<a id="change">os.path.join(opt.start_from, &quotoptimizer.pth&quot)</a>))
+
+    while True:
+        if update_lr_flag:
+                &#47&#47 Assign the learning rate
+            if epoch &gt; opt.learning_rate_decay_start and opt.learning_rate_decay_start &gt;= 0:
+                frac = (epoch - opt.learning_rate_decay_start) // opt.learning_rate_decay_every
+                decay_factor = opt.learning_rate_decay_rate  ** frac
+                opt.current_lr = opt.learning_rate * decay_factor
+                utils.set_lr(optimizer, opt.current_lr) &#47&#47 set the decayed rate
+            else:
+                opt.current_lr = opt.learning_rate
+            &#47&#47 Assign the scheduled sampling prob
+            if epoch &gt; opt.scheduled_sampling_start and opt.scheduled_sampling_start &gt;= 0:
+                frac = (epoch - opt.scheduled_sampling_start) // opt.scheduled_sampling_increase_every
+                opt.ss_prob = min(opt.scheduled_sampling_increase_prob  * frac, opt.scheduled_sampling_max_prob)
+                model.ss_prob = opt.ss_prob
+            update_lr_flag = False
+                
+        start = time.time()
+        &#47&#47 Load data from train split (0)
+        data = loader.get_batch(&quottrain&quot)
+        print(&quotRead data:&quot, time.time() - start)
+
+        start = time.time()
+
+        tmp = [data[&quotfc_feats&quot], data[&quotatt_feats&quot], data[&quotlabels&quot], data[&quotmasks&quot]]
+        tmp = [Variable(torch.from_numpy(_)).cuda() for _ in tmp]
+        fc_feats, att_feats, labels, masks = tmp
+        
+        optimizer.zero_grad()
+        loss = crit(model(fc_feats, att_feats, labels)[:, 1:], labels[:,1:], masks[:,1:])
+        loss.backward()
+        utils.clip_gradient(optimizer, opt.grad_clip)
+        optimizer.step()
+        train_loss = loss.data[0]
+        end = time.time()
+        print("iter {} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}" \
+            .format(iteration, epoch, train_loss, end - start))
+
+        &#47&#47 Update the iteration and epoch
+        iteration += 1
+        if data[&quotbounds&quot][&quotwrapped&quot]:
+            epoch += 1
+            update_lr_flag = True
+
+        &#47&#47 Write the training loss summary
+        if (iteration % opt.losses_log_every == 0):
+            loss_history[iteration] = train_loss
+            lr_history[iteration] = opt.current_lr
+            ss_prob_history[iteration] = model.ss_prob
+
+        &#47&#47 make evaluation on validation set, and save model
+        if (iteration % opt.save_checkpoint_every == 0):
+            &#47&#47 eval model
+            eval_kwargs = {&quotsplit&quot: &quotval&quot,
+                            &quotdataset&quot: opt.input_json}
+            eval_kwargs.update(vars(opt))
+            val_loss, predictions, lang_stats = eval_utils.eval_split(model, crit, loader, eval_kwargs)
+
+            val_result_history[iteration] = {&quotloss&quot: val_loss, &quotlang_stats&quot: lang_stats, &quotpredictions&quot: predictions}
+
+            &#47&#47 Save model if is improving on validation result
+            if opt.language_eval == 1:
+                current_score = lang_stats[&quotCIDEr&quot]
+            else:
+                current_score = - val_loss
+
+            best_flag = False
+            if True: &#47&#47 if true
+                if best_val_score is None or current_score &gt; best_val_score:
+                    best_val_score = current_score
+                    best_flag = True
+                checkpoint_path = os.path.join(opt.checkpoint_path, &quotmodel.pth&quot)
+                torch.save(model.state_dict(), checkpoint_path)
+                print("model saved to {}".format(checkpoint_path))
+                <a id="change">optimizer_path = os.path.join(opt.checkpoint_path, &quotoptimizer.pth&quot)</a>
+                torch.save(optimizer.state_dict(), optimizer_path)
+
+                &#47&#47 Dump miscalleous informations
+                infos[&quotiter&quot] = iteration</code></pre><img src="71417553.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ruotianluo/self-critical.pytorch/commit/79fc09d66d3f4736b9fb4f5756a78725719f3808#diff-ed183d67207df065a11e1289f19d34cc2abbc5448dea952683cfe9728c342b95L32' target='_blank'>Link</a></div><div id='project'> Project Name: ruotianluo/self-critical.pytorch</div><div id='commit'> Commit Name: 79fc09d66d3f4736b9fb4f5756a78725719f3808</div><div id='time'> Time: 2017-02-10</div><div id='author'> Author: rluo@ttic.edu</div><div id='file'> File Name: train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/pytorch/text/commit/f34e4fbad1b40627dfdc92c6eaf56969cba77c06#diff-1154fb0ac2ec7b1fbd994e75fa0e50a3ac102a4f10d0c7bb142047926a83fffeL37' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/text</div><div id='commit'> Commit Name: f34e4fbad1b40627dfdc92c6eaf56969cba77c06</div><div id='time'> Time: 2019-11-25</div><div id='author'> Author: 6156351+zhangguanheng66@users.noreply.github.com</div><div id='file'> File Name: test/data/test_builtin_datasets.py</div><div id='class'> Class Name: TestDataset</div><div id='method'> Method Name: test_penntreebank</div><BR><BR><div id='link'><a href='https://github.com/ruotianluo/ImageCaptioning.pytorch/commit/79fc09d66d3f4736b9fb4f5756a78725719f3808#diff-ed183d67207df065a11e1289f19d34cc2abbc5448dea952683cfe9728c342b95L32' target='_blank'>Link</a></div><div id='project'> Project Name: ruotianluo/ImageCaptioning.pytorch</div><div id='commit'> Commit Name: 79fc09d66d3f4736b9fb4f5756a78725719f3808</div><div id='time'> Time: 2017-02-10</div><div id='author'> Author: rluo@ttic.edu</div><div id='file'> File Name: train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR>

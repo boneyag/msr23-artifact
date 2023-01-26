@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if isinstance(rho, np.float):
+            return np.array([[rho]])
+        slc = x1.shape[1 - self.axis]
+        <a id="change">return rho[:slc, slc:]</a>
+
+
+class CorrelationDistance(Distance):
+    supports_missing = False</code></pre><h3>After Change</h3><pre><code class='java'>
+    def compute_correlation(self, x1, x2):
+        n1 = x1.shape[1 - self.axis]
+        n2 = x2.shape[1 - self.axis] if x2 is not None else 0
+        <a id="change">if x2 is None:
+            if n1 == 2:
+                &#47&#47 Special case to properly fill degenerate self correlations
+                &#47&#47 (nan, inf on the diagonals)
+                rho = stats.spearmanr(x1, x1, axis=self.axis)[0]
+                assert rho.shape == (4, 4)
+                rho = rho[:2, :2].copy()
+            else:
+                &#47&#47 scalar if n1 == 1
+                rho = stats.spearmanr(x1, axis=self.axis)[0]
+            return np.atleast_2d(rho)
+        else:
+            &#47&#47 this computes too much (most of it is thrown away)
+            rho = stats.spearmanr(x1, x2, axis=self.axis)[0]
+            if np.isscalar(rho):
+                &#47&#47 scalar if n1 + n2 &lt;= 2
+                assert n1 + n2 &lt;= 2
+                return np.atleast_2d(rho)
+            else:
+                assert rho.shape == (n1 + n2, n1 + n2)
+                return rho[:n1, n1:].copy()
+
+
+</a>class CorrelationDistance(Distance):
+    supports_missing = False
+
+</code></pre>

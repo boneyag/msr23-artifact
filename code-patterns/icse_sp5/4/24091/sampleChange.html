@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if &quotconfig_recommend&quot in target_data:
+        assert &quotnewest_result_id&quot in target_data and &quotstatus&quot in target_data
+        LOG.debug(&quot%s: Skipping aggregate_target_results.\nData:\n%s\n\n&quot,
+                  <a id="change">AlgorithmType.name(algorithm)</a>, target_data)
+        return target_data, algorithm
+
+    newest_result = Result.objects.get(pk=result_id)</code></pre><h3>After Change</h3><pre><code class='java'>
+    result_id, algorithm, target_data = aggregate_target_results_input
+    newest_result = Result.objects.get(pk=result_id)
+    session = newest_result.session
+    task_name = <a id="change">_get_task_name(session, result_id)</a>
+
+    &#47&#47 If the preprocessing method has already generated a config, bypass this method.
+    if &quotconfig_recommend&quot in target_data:
+        assert &quotnewest_result_id&quot in target_data and &quotstatus&quot in target_data
+        LOG.debug("\n%s: Result = %s\n", task_name, _task_result_tostring(target_data))
+        LOG.info(&quot%s: Skipping aggregate_target_results (status=%s).&quot, task_name,
+                 target_data.get(&quotstatus&quot, &quot&quot))
+        return target_data, algorithm
+
+    LOG.info("%s: Aggregating target results...", task_name)
+
+    &#47&#47 Aggregate all knob config results tried by the target so far in this
+    &#47&#47 tuning session and this tuning workload.
+    target_results = Result.objects.filter(session=session,
+                                           dbms=newest_result.dbms,
+                                           workload=newest_result.workload)
+    LOG.debug("%s: &#47&#47 results: %s", task_name, len(target_results))
+    if len(target_results) == 0:
+        raise Exception(&quotCannot find any results for session_id={}, dbms_id={}&quot
+                        .format(session, newest_result.dbms))
+    agg_data = DataUtil.aggregate_data(target_results)
+    LOG.debug("%s ~ INITIAL: X_matrix=%s, X_columnlabels=%s", task_name,
+              agg_data[&quotX_matrix&quot].shape, len(agg_data[&quotX_columnlabels&quot]))
+    agg_data[&quotnewest_result_id&quot] = result_id
+    agg_data[&quotstatus&quot] = &quotgood&quot
+
+    &#47&#47 Clean knob data
+    cleaned_agg_data = clean_knob_data(agg_data[&quotX_matrix&quot], agg_data[&quotX_columnlabels&quot], session)
+    agg_data[&quotX_matrix&quot] = np.array(cleaned_agg_data[0])
+    agg_data[&quotX_columnlabels&quot] = np.array(cleaned_agg_data[1])
+    <a id="change">LOG.debug("%s ~ FINAL: X_matrix=%s, X_columnlabels=%s", task_name,
+              agg_data[&quotX_matrix&quot].shape, len(agg_data[&quotX_columnlabels&quot]))</a>
+
+    exec_time = save_execution_time(start_ts, "aggregate_target_results", newest_result)
+    LOG.debug("\n%s: Result = %s\n", task_name, _task_result_tostring(agg_data))
+    LOG.info(&quot%s: Finished aggregating target results (%.1f seconds).&quot, task_name, exec_time)</code></pre>

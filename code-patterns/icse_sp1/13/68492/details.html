@@ -1,0 +1,40 @@
+<html><h3>9b664bd7cd8dbb9657626166ba61887ed06774d7,gpytorch/utils/toeplitz.py,,index_coef_to_sparse,#Any#Any#Any#,6
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    num_target_points, num_coefficients = value_matrix.size()
+    index_list = [[], []]
+    <a id="change">value_list = []</a>
+    for i in range(num_target_points):
+        <a id="change">for j in range(num_coefficients):
+            if value_matrix[i, j] == 0:
+                continue
+            index_list[0].append(i)
+            index_list[1].append(index_matrix[i, j])
+            value_list.append(value_matrix[i, j])
+
+   </a> index_tensor = torch.LongTensor(index_list)
+    <a id="change">value_tensor = torch.FloatTensor(value_list)</a>
+    res = torch.sparse.FloatTensor(index_tensor, value_tensor, torch.Size([num_target_points, row_length]))
+    return res
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    row_tensor = torch.arange(0, num_target_points).unsqueeze(1)
+    row_tensor = row_tensor.repeat(1, num_coefficients).type_as(index_matrix)
+    index_tensor = <a id="change">torch.cat([row_tensor.view(1, -1), index_matrix.view(1, -1)], 0)</a>
+    value_tensor = value_matrix.view(-1)
+
+    nonzero_indices = value_tensor.nonzero()
+    if nonzero_indices.storage():
+        nonzero_indices.squeeze_()
+        index_tensor = index_tensor.index_select(1, nonzero_indices)
+        value_tensor = value_tensor.index_select(0, nonzero_indices)
+    else:
+        <a id="change">index_tensor = index_tensor.resize_(2, 1).zero_()</a>
+        value_tensor = value_tensor.resize_(1).zero_()
+
+    res = torch.sparse.FloatTensor(index_tensor, value_tensor, torch.Size([num_target_points, row_length]))
+    return res</code></pre><img src="313853876.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 11</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/9b664bd7cd8dbb9657626166ba61887ed06774d7#diff-fa4fc1b7b647a4f34b82de5c4d74ca29623c0e4598be9065cb1810147566ddb7L23' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 9b664bd7cd8dbb9657626166ba61887ed06774d7</div><div id='time'> Time: 2017-09-13</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/utils/toeplitz.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: index_coef_to_sparse</div><BR><BR><div id='link'><a href='https://github.com/arraiy/torchgeometry/commit/e18e682858c57124d46c40e8ab1d136c009a1f69#diff-c88458ab5581381d31bc757fec9aa9f53b5ae74659c5371d3ddc804621d7a919L36' target='_blank'>Link</a></div><div id='project'> Project Name: arraiy/torchgeometry</div><div id='commit'> Commit Name: e18e682858c57124d46c40e8ab1d136c009a1f69</div><div id='time'> Time: 2020-10-06</div><div id='author'> Author: daniel.koguciuk@gmail.com</div><div id='file'> File Name: kornia/geometry/homography.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: find_homography_dlt</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/9b664bd7cd8dbb9657626166ba61887ed06774d7#diff-fa4fc1b7b647a4f34b82de5c4d74ca29623c0e4598be9065cb1810147566ddb7L23' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 9b664bd7cd8dbb9657626166ba61887ed06774d7</div><div id='time'> Time: 2017-09-13</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/utils/toeplitz.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: index_coef_to_sparse</div><BR><BR><div id='link'><a href='https://github.com/interactiveaudiolab/nussl/commit/e7b29c20004bc520b202fea982b8db4c760fc822#diff-8e24ae1876b6acf6b147b64965b92678414c0a4211393f8daeb7aa2777614063L69' target='_blank'>Link</a></div><div id='project'> Project Name: interactiveaudiolab/nussl</div><div id='commit'> Commit Name: e7b29c20004bc520b202fea982b8db4c760fc822</div><div id='time'> Time: 2020-08-06</div><div id='author'> Author: prem@u.northwestern.edu</div><div id='file'> File Name: tests/ml/test_loss.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_permutation_invariant_loss_tf</div><BR>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    all_snapshots: Iterable[Snapshot] = (*full_snapshots.values(), *snapshot_subsets)
+    if request.strip_source_roots:
+        <a id="change">all_sources_fields = (*full_snapshots.keys(), *digest_subset_requests.keys())</a>
+        stripped_snapshots = await MultiGet(
+            Get(
+                SourceRootStrippedSources,
+                StripSourcesFieldRequest(
+                    sources_field,
+                    specified_files_snapshot=snapshot,
+                    for_sources_types=request.for_sources_types,
+                    enable_codegen=request.enable_codegen,
+                ),
+            )
+            <a id="change">for</a> sources_field, snapshot in <a id="change">zip(all_sources_fields, all_snapshots)</a>
+        )
+        all_snapshots = (stripped_snapshot.snapshot for stripped_snapshot in stripped_snapshots)
+    result = await Get(Snapshot, MergeDigests(snapshot.digest for snapshot in all_snapshots))
+    return SourceFiles(result)</code></pre><h3>After Change</h3><pre><code class='java'>
+    ):
+        sources_field, origin = sources_field_with_origin
+        if isinstance(sources_field, FilesSources):
+            <a id="change">all_unrooted_files.update(hydrated_sources.snapshot.files)</a>
+        if not hydrated_sources.snapshot.files:
+            continue
+        specified_sources = calculate_specified_sources(
+            hydrated_sources.snapshot, sources_field.address, origin</code></pre>

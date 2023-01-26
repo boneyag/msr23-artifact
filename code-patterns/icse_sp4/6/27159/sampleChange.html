@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def get_initial_states(self, X):
+        &#47&#47 build an all-zero tensor of shape (samples, output_dim)
+        initial_state = <a id="change">K.zeros_like(X)</a>  &#47&#47 (samples, timesteps, input_dim)
+        initial_state = K.sum(initial_state, axis=1)  &#47&#47 (samples, input_dim)
+        reducer = K.zeros((self.input_dim, self.output_dim))
+        <a id="change">initial_state = K.dot(initial_state, reducer)</a>  &#47&#47 (samples, output_dim)
+        initial_states = [initial_state for _ in range(len(self.states))]
+        return initial_states
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def get_initial_states(self, X):
+        &#47&#47 build an all-zero tensor of shape (samples, output_dim)
+        initial_state = <a id="change">X[:, 0, 0] * 0</a>  &#47&#47 (samples, )
+        <a id="change">initial_state = K.pack([initial_state] * self.output_dim)</a>  &#47&#47 (output_dim, samples)
+        initial_state = K.permute_dimensions(initial_state, (1, 0))  &#47&#47 (samples, output_dim)
+        initial_states = [initial_state for _ in range(len(self.states))]
+        return initial_states</code></pre>

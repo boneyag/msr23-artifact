@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        batch = self._evaluation_batch()
+        self.log_diagnostics(iteration, batch, paths)
+
+        <a id="change">return np.mean(total_returns)</a>
+
+    @abc.abstractmethod
+    def log_diagnostics(self, iteration, batch, paths):
+        raise NotImplementedError</code></pre><h3>After Change</h3><pre><code class='java'>
+        iteration = epoch * self._epoch_length
+        batch = self._evaluation_batch()
+
+        <a id="change">diagnostics = self.get_diagnostics(iteration, batch, paths)</a>
+        <a id="change">diagnostics.update({
+            &quotreturn-average&quot: np.mean(total_returns),
+            &quotreturn-min&quot: np.min(total_returns),
+            &quotreturn-max&quot: np.max(total_returns),
+            &quotreturn-std&quot: np.std(total_returns),
+            &quotepisode-length-avg&quot: np.mean(episode_lengths),
+            &quotepisode-length-min&quot: np.min(episode_lengths),
+            &quotepisode-length-max&quot: np.max(episode_lengths),
+            &quotepisode-length-std&quot: np.std(episode_lengths),
+        })</a>
+
+        env_infos = evaluation_env.get_path_infos(paths)
+        for key, value in env_infos.items():
+            diagnostics[f&quotevaluation_env/{key}&quot] = value
+
+        if self._eval_render and hasattr(evaluation_env, &quotrender_rollouts&quot):
+            &#47&#47 TODO(hartikainen): Make this consistent such that there&quots no need
+            &#47&#47 for the hasattr check.
+            evaluation_env.render_rollouts(paths)
+
+        <a id="change">return diagnostics</a>
+
+    @abc.abstractmethod
+    def get_diagnostics(self, iteration, batch, paths):
+        raise NotImplementedError</code></pre>

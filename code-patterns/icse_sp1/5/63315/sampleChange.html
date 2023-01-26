@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                              num_sequences,
+                                              num_samples))
+        sample *= num_classes
+        sample = <a id="change">tensor.cast(sample, &quotint64&quot)</a>
+        self.sample_logprobs = \
+            self._get_target_preact(layer_input, sample)
+
+    def _compute_unnormalized_logprobs(self, layer_input):</code></pre><h3>After Change</h3><pre><code class='java'>
+        class_probs = self.network.class_prior_probs
+        class_probs = class_probs[None, :]
+        num_batch_samples = num_time_steps * num_sequences * num_samples
+        class_probs = <a id="change">tensor.tile(class_probs, [num_batch_samples, 1])</a>
+        sample = self.network.random.multinomial(pvals=class_probs)
+        sample = sample.argmax(1)
+        <a id="change">sample = sample.reshape([num_time_steps, num_sequences, num_samples])</a>
+        self.sample_logprobs = \
+            self._get_target_preact(layer_input, sample)
+        self.sample = sample
+</code></pre>

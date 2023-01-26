@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    out_dir = pudl.load.metadata.prep_directory(out_dir, clobber=clobber)
+    in_types = create_in_dtypes()
+    schema = create_cems_schema()
+    <a id="change">data_path = pathlib.Path(datapkg_dir, &quotdata&quot)</a>
+    &#47&#47 double check that all of the years you are asking for are actually in
+    _verify_cems_args(data_path, epacems_years, epacems_states)
+    for file in data_path.iterdir():
+        <a id="change">if "epacems" in file.name:
+            df_name = file.name[:file.name.find(".")]
+            year = int(df_name[25:29])
+            state = df_name[30:].upper()
+            &#47&#47 only convert the years and states that you actually want
+            if year in epacems_years and state in epacems_states:
+                df = pd.read_csv(
+                    file, dtype=in_types, parse_dates=["operating_datetime_utc"]
+                ).assign(year=year)
+                logger.info(
+                    f"Converted {len(df)} records for {year} and {state}."
+                )
+                pq.write_to_dataset(
+                    pa.Table.from_pandas(
+                        df, preserve_index=False, schema=schema),
+                    root_path=str(out_dir), partition_cols=list(partition_cols),
+                    compression=compression)
+
+
+</a>def parse_command_line(argv):
+    
+    Parse command line arguments. See the -h option.
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 paths pertaining to the CEMS years/states of interest.
+    in_types = create_in_dtypes()
+    schema = create_cems_schema()
+    <a id="change">for year in epacems_years:
+        for state in epacems_states:
+            newpath = pathlib.Path(
+                data_dir,
+                f"hourly_emissions_epacems_{year}_{state.lower()}.csv.gz")
+            df = (
+                pd.read_csv(newpath, dtype=in_types,
+                            parse_dates=["operating_datetime_utc"])
+                .assign(year=year)
+            )
+            logger.info(f"{year}-{state}: {len(df)} records")
+            pq.write_to_dataset(
+                pa.Table.from_pandas(
+                    df, preserve_index=False, schema=schema),
+                root_path=str(out_dir), partition_cols=list(partition_cols),
+                compression=compression)
+
+
+</a>def parse_command_line(argv):
+    
+    Parse command line arguments. See the -h option.
+</code></pre>

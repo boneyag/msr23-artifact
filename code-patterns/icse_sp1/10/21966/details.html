@@ -1,0 +1,50 @@
+<html><h3>1b7866b1aeea83478b86ddbc32fe887fee3a65c5,deepchem/models/tensorgraph/tensor_graph.py,TensorGraph,fit_generator,#TensorGraph#Any#Any#Any#Any#,144
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        enqueue_thread.start()
+      fetches = [train_op, self.loss.out_tensor]
+      for feed_dict in create_feed_dict():
+        <a id="change">try:
+          fetched_values = self.session.run(fetches, feed_dict=feed_dict)
+          loss = fetched_values[-1]
+          avg_loss += loss
+          n_batches += 1
+          self.global_step += 1
+          n_samples += 1
+          if self.tensorboard and n_samples % self.tensorboard_log_frequency == 0:
+            summary = self.session.run(
+                self._get_tf("summary_op"), feed_dict=feed_dict)
+            self._log_tensorboard(summary)
+        except OutOfRangeError:
+          break
+       </a> if self.global_step % checkpoint_interval == checkpoint_interval - 1:
+          saver.save(self.session, self.save_file, global_step=self.global_step)
+          avg_loss = float(avg_loss) / n_batches
+          print(&quotEnding global_step %d: Average loss %g&quot % (self.global_step,</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.restore()
+      avg_loss, n_batches = 0.0, 0.0
+      n_samples = 0
+      <a id="change">n_enqueued = [0]</a>
+      final_sample = [None]
+      if self.use_queue:
+        enqueue_thread = threading.Thread(
+            target=_enqueue_batch,
+            args=(self, feed_dict_generator, self._get_tf("Graph"),
+                  self.session, n_enqueued, final_sample))
+        enqueue_thread.start()
+      fetches = [train_op, self.loss.out_tensor]
+      for feed_dict in create_feed_dict():
+        if self.use_queue:
+          &#47&#47 Don&quott let this thread get ahead of the enqueue thread, since if
+          &#47&#47 we try to read more batches than the total number that get queued,
+          &#47&#47 this thread will hang indefinitely.
+          <a id="change">while n_enqueued[0] &lt;= n_samples:
+            if n_samples == final_sample[0]:
+              break
+            time.sleep(0)
+         </a> if n_samples == final_sample[0]:
+            break
+        fetched_values = self.session.run(fetches, feed_dict=feed_dict)
+        loss = fetched_values[-1]</code></pre><img src="118996902.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/1b7866b1aeea83478b86ddbc32fe887fee3a65c5#diff-6613318d8bbcd1d33ff2b1b10c15e5cc51b90396b1cf9e4380b2c472b9a4c57bL144' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 1b7866b1aeea83478b86ddbc32fe887fee3a65c5</div><div id='time'> Time: 2017-09-26</div><div id='author'> Author: peter.eastman@gmail.com</div><div id='file'> File Name: deepchem/models/tensorgraph/tensor_graph.py</div><div id='class'> Class Name: TensorGraph</div><div id='method'> Method Name: fit_generator</div><BR><BR><div id='link'><a href='https://github.com/jhfjhfj1/autokeras/commit/b048efa4f956b80266942caea6ee8b4311e1d17a#diff-bde1ba062503d5efbeba8c716fef7355d9c7b9f48d67637f46dcbbd0d03f4970L179' target='_blank'>Link</a></div><div id='project'> Project Name: jhfjhfj1/autokeras</div><div id='commit'> Commit Name: b048efa4f956b80266942caea6ee8b4311e1d17a</div><div id='time'> Time: 2018-04-08</div><div id='author'> Author: jin@tamu.edu</div><div id='file'> File Name: autokeras/classifier.py</div><div id='class'> Class Name: ClassifierBase</div><div id='method'> Method Name: fit</div><BR>

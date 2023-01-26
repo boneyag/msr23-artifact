@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Merge episode inputs into single arrays
+        _, _, actions, batch_advantage, states = self.merge_episodes(batch)
+
+        <a id="change">log_probs, loss, _ = self.session.run([self.log_probabilities, self.loss, self.optimize_op],
+                                              {self.state: states,
+                                               self.actions: actions,
+                                               self.advantage: batch_advantage})</a>
+       &#47&#47 print(&quotlog probs:&quot + str(log_probs))
+       &#47&#47 print(&quotloss:&quot + str(loss))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        fetches = [self.optimize_op, self.log_probabilities, self.loss]
+        fetches.extend(self.network.internal_state_outputs)
+
+        <a id="change">feed_dict = {self.state: states, self.path_length: path_lengths, self.actions: actions, self.advantage: batch_advantage}</a>
+        <a id="change">feed_dict.update({internal_state: self.internal_states[n] for n, internal_state in enumerate(self.network.internal_state_inputs)})</a>
+
+        fetched = self.session.run(fetches, feed_dict)
+        log_probs = fetched[1]
+        loss = fetched[2]</code></pre>

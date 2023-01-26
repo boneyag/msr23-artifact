@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def run_remote_inference(self, model_id, data, N: int = 1):
+        serialized_data = sy.serde.serialize(data)
+        result = <a id="change">json.loads(
+            self._send_post(
+                "models/{}".format(model_id),
+                data={
+                    "data": serialized_data.decode(self._encoding),
+                    "encoding": self._encoding,
+                },
+                N=N,
+            )
+        )</a>
+
+        return self._return_bool_result(result, return_key="prediction")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            "data": serialized_data,
+            "encoding": self._encoding,
+        }
+        <a id="change">self.ws.send(json.dumps(payload))</a>
+        <a id="change">response = json.loads(self.ws.recv())</a>
+        if response["success"]:
+            return torch.tensor(response["prediction"])
+        else:
+            raise RuntimeError(response["error"])</code></pre>

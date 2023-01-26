@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        out = torch.matmul(x, self.weight)
+        deg = adj.sum(dim=-1, keepdim=True).clamp(min=1).pow(-0.5)
+        <a id="change">deg_matrix = torch.bmm(deg, deg.permute(0, 2, 1))</a>
+        adj_deg = deg_matrix * adj
+        out = torch.bmm(adj_deg, out) if B!=1 else torch.matmul(adj_deg, out)
+
+        if self.bias is not None:</code></pre><h3>After Change</h3><pre><code class='java'>
+        out = torch.matmul(x, self.weight)
+        deg_inv_sqrt = adj.sum(dim=-1).clamp(min=1).pow(-0.5)
+
+        <a id="change">adj = deg_inv_sqrt.unsqueeze(-1) * adj * deg_inv_sqrt.unsqueeze(-2)</a>
+        out = torch.matmul(adj, out)
+
+        if self.bias is not None:
+            out = out + self.bias</code></pre>

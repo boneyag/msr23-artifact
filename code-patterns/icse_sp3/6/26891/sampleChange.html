@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 We can kick off the search and let the auto-scheduler do its magic.
+&#47&#47 After some measurement trials, it will return the best schedule it found.
+
+sch, args = <a id="change">auto_scheduler.auto_schedule(task, tuning_options=tune_option)</a>
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 We can lower the schedule to see the IR after auto-scheduling.
+&#47&#47 The auto-scheduler correctly performs optimizations including multi-level tiling,
+&#47&#47 parallelization, vectorization, unrolling and operator fusion.
+
+print(tvm.lower(sch, args, simple_mode=True))
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Check correctness and evaluate performance
+&#47&#47 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&#47&#47 We build the binary and check its correctness and performance.
+
+func = tvm.build(sch, args)
+a_np = np.random.uniform(size=(128, 128)).astype(np.float32)
+b_np = np.random.uniform(size=(128, 128)).astype(np.float32)
+c_np = np.random.uniform(size=(128, 128)).astype(np.float32)
+out_np = a_np.dot(b_np) + c_np
+
+ctx = tvm.cpu()
+a_tvm = tvm.nd.array(a_np, ctx=ctx)
+b_tvm = tvm.nd.array(b_np, ctx=ctx)
+c_tvm = tvm.nd.array(c_np, ctx=ctx)
+out_tvm = tvm.nd.empty(out_np.shape, ctx=ctx)
+func(a_tvm, b_tvm, c_tvm, out_tvm)
+
+&#47&#47 Check results
+np.testing.assert_allclose(out_np, out_tvm.asnumpy(), rtol=1e-3)
+
+&#47&#47 Evaluate execution time.
+evaluator = func.time_evaluator(func.entry_name, ctx, min_repeat_ms=500)
+print(
+    "Execution time of this operator: %.3f ms"
+    % (np.median(evaluator(a_tvm, b_tvm, c_tvm, out_tvm).results) * 1000)
+)
+
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Using the record file
+&#47&#47 ^^^^^^^^^^^^^^^^^^^^^
+&#47&#47 During the search, all measuremnt records are dumpped into the record
+&#47&#47 file "matmul.json". The measurement records can be used to re-apply search results,
+&#47&#47 resume the search, and perform other analyses.
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Here is an example where we load the best schedule from a file,
+&#47&#47 print the equivalent python schedule API, and build the binary again.
+
+&#47&#47 Load the measuremnt record for the best schedule
+<a id="change">inp, res = auto_scheduler.load_best(log_file, task.workload_key)</a>
+
+&#47&#47 Print equivalent python schedule API. This can be used for debugging and
+&#47&#47 learning the behavior of the auto-scheduler.
+print("Equivalent python schedule:")</code></pre><h3>After Change</h3><pre><code class='java'>
+&#47&#47 file and apply it.
+
+&#47&#47 Run auto-tuning (search)
+<a id="change">task.tune(tune_option)</a>
+&#47&#47 Apply the best schedule
+sch, args = task.apply_best(log_file)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47</code></pre>

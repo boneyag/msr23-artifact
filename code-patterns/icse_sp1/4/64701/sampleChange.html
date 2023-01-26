@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            cmd = "cd /workspace/ctr/data/ && curl -o dac.tar.gz " + address + " && tar zxf dac.tar.gz && rm dac.tar.gz"
+            exit_code = subprocess.call(cmd, shell=True)
+            if exit_code != 0:
+                <a id="change">raise Exception("The download command failed, please check the network settings")</a>
+            logger.info("run trainer")
+            train_prog = t.get_trainer_program()
+            train_loop(args, train_prog, py_reader, loss, auc_var, batch_auc_var,
+                       args.trainers, args.trainer_id)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 comma separated ips of all pservers, needed by trainer and
+
+        args.endpoints = os.getenv("PADDLE_PSERVERS", "")
+        ep_list = <a id="change">args.endpoints.split(&quot,&quot)</a>
+        args.trainers = int(os.getenv("PADDLE_TRAINERS_NUM", "1"))
+        args.pserver_id = int(os.getenv("PADDLE_PSERVER_ID", "0"))
+        <a id="change">for ep in ep_list:
+            if os.getenv("POD_IP", "localhost") in ep:
+                args.current_endpoint = ep
+                break
+       </a> args.role = os.getenv("TRAINING_ROLE", "TRAINER")
+        args.trainer_id = int(os.getenv("PADDLE_TRAINER_ID", "0"))
+        args.is_local = bool(int(os.getenv("PADDLE_IS_LOCAL", 0)))
+    if args.is_local:</code></pre>

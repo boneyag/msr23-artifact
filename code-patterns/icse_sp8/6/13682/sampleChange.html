@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        metrics.log_scalar("oom", ooms, len(samples), priority=600, round=3)
+        if ooms == self.args.distributed_world_size * len(samples):
+            <a id="change">logger.warning("OOM in all workers, skipping update")</a>
+            self.zero_grad()
+            return None
+
+        try:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if is_dummy_batch:
+            sample_size *= 0.  &#47&#47 multiply by 0 to preserve device
+        <a id="change">if torch.is_tensor(sample_size):
+            sample_size = sample_size.float()
+        else:
+            sample_size = float(sample_size)
+
+        &#47&#47 gather logging outputs from all replicas
+       </a> if self._sync_stats():
+            logging_outputs, (sample_size, ooms) = self._aggregate_logging_outputs(
+                logging_outputs, sample_size, ooms, ignore=is_dummy_batch,
+            )</code></pre>

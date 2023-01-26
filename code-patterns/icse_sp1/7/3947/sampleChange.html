@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    docs_path = "tests/data/pure_html/lincoln_short.html"
+
+    <a id="change">logger.info("Parsing...")</a>
+    doc_preprocessor = HTMLDocPreprocessor(docs_path, max_docs=max_docs)
+    corpus_parser = Parser(session, structural=True, lingual=True)
+    corpus_parser.apply(doc_preprocessor, parallelism=PARALLEL)
+    assert session.query(Document).count() == max_docs</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def test_ngrams():
+    Test ngram limits in mention extraction
+    <a id="change">file_name = "lincoln_short"</a>
+    docs_path = f"tests/data/pure_html/{file_name}.html"
+    doc = parse_doc(docs_path, file_name)
+
+    &#47&#47 Mention Extraction
+    Person = mention_subclass("Person")
+    person_ngrams = MentionNgrams(n_max=3)
+    person_matcher = PersonMatcher()
+
+    mention_extractor_udf = MentionExtractorUDF(
+        [Person], [person_ngrams], [person_matcher]
+    )
+    doc = <a id="change">mention_extractor_udf.apply(doc)</a>
+
+    assert len(doc.persons) == 118
+    mentions = doc.persons
+    assert len([x for x in mentions if x.context.get_num_words() == 1]) == 49
+    assert len([x for x in mentions if x.context.get_num_words() &gt; 3]) == 0
+
+    &#47&#47 Test for unigram exclusion
+    for mention in doc.persons[:]:
+        doc.persons.remove(mention)
+    assert len(doc.persons) == 0
+
+    person_ngrams = MentionNgrams(n_min=2, n_max=3)
+    mention_extractor_udf = MentionExtractorUDF(
+        [Person], [person_ngrams], [person_matcher]
+    )
+    doc = mention_extractor_udf.apply(doc)
+    assert len(doc.persons) == 69
+    <a id="change">mentions = doc.persons</a>
+    assert len([x for x in mentions if x.context.get_num_words() == 1]) == 0
+    assert len([x for x in mentions if x.context.get_num_words() &gt; 3]) == 0
+
+</code></pre>

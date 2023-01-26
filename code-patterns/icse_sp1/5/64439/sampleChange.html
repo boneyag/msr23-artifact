@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        avar = torch.tensor(a.repeat(3, 1, 1), requires_grad=True)
+        bvar = torch.tensor(b.repeat(3, 1, 1), requires_grad=True)
+        cvar = torch.tensor(c.repeat(3, 1, 1), requires_grad=True)
+        mat = torch.tensor(<a id="change">torch.randn(3, 24, 5)</a>, requires_grad=True)
+        kp_lazy_var = KroneckerProductLazyTensor(NonLazyTensor(avar), NonLazyTensor(bvar), NonLazyTensor(cvar))
+        res = kp_lazy_var.matmul(mat)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        res = kp_lazy_var.matmul(mat)
+
+        avar_copy = avar.clone().detach().requires_grad_(True)
+        <a id="change">bvar_copy = bvar.clone().detach().requires_grad_(True)</a>
+        cvar_copy = cvar.clone().detach().requires_grad_(True)
+        mat_copy = mat.clone().detach().requires_grad_(True)
+        actual = kron(kron(avar_copy, bvar_copy), cvar_copy).matmul(mat_copy)
+        self.assertTrue(approx_equal(res, actual))</code></pre>

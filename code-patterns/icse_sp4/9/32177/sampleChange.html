@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                except Exception as e:
+                    raise serializers.ValidationError("Experiment " + key + " does not exist")
+
+                <a id="change">samples = experiment.sample_set.filter(
+                    &#47&#47 We only want samples with a quant.sf file associated with them
+                    results__computedfile__filename="quant.sf",
+                    results__computedfile__s3_key__isnull=False,
+                    results__computedfile__s3_bucket__isnull=False,
+                )</a>
+                if samples.count() == 0:
+                    raise serializers.ValidationError(
+                        "Experiment "
+                        + key</code></pre><h3>After Change</h3><pre><code class='java'>
+        else:
+            accessions.extend(value)
+
+    <a id="change">if len(non_downloadable_experiments) != 0:
+        raise serializers.ValidationError(
+            {
+                "message": "Experiment(s) in dataset have zero downloadable samples. See `non_downloadable_experiments` for a full list",
+                "non_downloadable_experiments": non_downloadable_experiments,
+            }
+        )
+
+   </a> if len(accessions) == 0:
+        return
+
+    if data.get("quant_sf_only", False):
+        samples_without_quant_sf = Sample.public_objects.filter(
+            accession_code__in=accessions
+        ).exclude(
+            &#47&#47 Exclude samples that have at least one uploaded quant.sf file associated with them
+            results__computedfile__filename="quant.sf",
+            results__computedfile__s3_key__isnull=False,
+            results__computedfile__s3_bucket__isnull=False,
+        )
+        if samples_without_quant_sf.count() &gt; 0:
+            raise serializers.ValidationError(
+                <a id="change">{
+                    "message": "Sample(s) in dataset are missing quant.sf files. See `non_downloadable_samples` for a full list",
+                    "non_downloadable_samples": [
+                        s.accession_code for s in samples_without_quant_sf
+                    ],
+                }</a>,
+            )
+
+    else:</code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_output(self, test_nets):
+        &quot&quot&quot Checks that the output of the net is not zero or nan &quot&quot&quot
+        net = test_nets[0]
+        <a id="change">if type(net.in_dim) is int:
+            dummy_input = Variable(torch.ones(2, net.in_dim))
+        else:
+            dummy_input = Variable(torch.ones(2, *net.in_dim))
+       </a> out = net(dummy_input)
+        flag = True
+        if torch.sum(torch.abs(out.data)) &lt; SMALL_NUM:
+            print("FAIL")</code></pre><h3>After Change</h3><pre><code class='java'>
+    def test_output(self, test_nets):
+        &quot&quot&quot Checks that the output of the net is not zero or nan &quot&quot&quot
+        net = test_nets[0]
+        dummy_input = <a id="change">self.init_dummy_input(net)</a>
+        <a id="change">dummy_output = self.init_dummy_output(net)</a>
+        out = net(dummy_input)
+        flag = True
+        if net.__class__.__name__.find(&quotMultiMLPNet&quot) != -1:
+            zero_test = sum([torch.sum(torch.abs(x.data)) for x in out])
+            nan_test = np.isnan(sum([torch.sum(x.data) for x in out]))
+        else:
+            <a id="change">zero_test = torch.sum(torch.abs(out.data))</a>
+            nan_test = np.isnan(torch.sum(out.data))
+        if zero_test &lt; SMALL_NUM:
+            print("FAIL")
+            print(out)</code></pre>

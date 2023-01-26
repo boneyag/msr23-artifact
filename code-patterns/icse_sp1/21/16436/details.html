@@ -1,0 +1,52 @@
+<html><h3>89e81228719825b36d6278276efcd6fc146574a3,tensorflow/python/grappler/layout_optimizer_test.py,LayoutOptimizerTest,testConv3D,#LayoutOptimizerTest#,1438
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  @test_util.deprecated_graph_mode_only
+  def testConv3D(self):
+    <a id="change">if not test.is_gpu_available(cuda_only=True):
+      self.skipTest(&quotGPU required&quot)
+   </a> random_seed.set_random_seed(0)
+    x = random_ops.truncated_normal([2, 2, 14, 14, 1], seed=0)
+    w = random_ops.truncated_normal([2, 2, 2, 1, 2], seed=0)
+    strides = [1, 1, 1, 1, 1]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  @test_util.deprecated_graph_mode_only
+  def testConv3D(self):
+    <a id="change">if test.is_gpu_available(cuda_only=True):
+      random_seed.set_random_seed(0)
+      x = random_ops.truncated_normal([1, 784], seed=0)
+      conv = _two_layer_model(x)
+      filters = random_ops.truncated_normal([2, 2, 2, 1, 2], seed=0)
+      strides_val = [1, 1, 1, 1, 1]
+      x_3d = array_ops.reshape(conv, [-1, 4, 14, 14, 1])
+      conv3d = gen_nn_ops.conv3d(x_3d, filters, strides_val, &quotVALID&quot)
+      output = array_ops.identity(conv3d)
+
+      with session.Session(config=_get_config(False)) as sess:
+        output_val_ref = sess.run(output)
+
+      with session.Session(config=_get_config()) as sess:
+        metadata = config_pb2.RunMetadata()
+        output_val = sess.run(output, run_metadata=metadata)
+
+      nodes = []
+      num_transposes = 0
+      for node in metadata.cost_graph.node:
+        if _is_transpose(node.name):
+          num_transposes += 1
+        nodes.append(node.name)
+
+      expected_num_transposes = 2
+      self.assertEqual(expected_num_transposes, num_transposes)
+      self._assert_trans_nhwc_to_nchw(&quotConv2D-0&quot, nodes)
+      self._assert_trans_ndhwc_to_ncdhw(&quotConv3D-0&quot, nodes)
+      self._assert_trans_ncdhw_to_ndhwc(&quotConv3D-0-0&quot, nodes)
+      self.assertAllClose(output_val_ref, output_val, atol=1e-3)
+
+ </a> @test_util.deprecated_graph_mode_only
+  def testConv3DBackpropInput(self):
+    if test.is_gpu_available(cuda_only=True):
+      random_seed.set_random_seed(0)</code></pre><img src="96205755.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 13</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/tensorflow/commit/89e81228719825b36d6278276efcd6fc146574a3#diff-3093688146d963c3adc64499b7b4083f276dd640fe740f85c5418e4f6fb4f00dL1400' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tensorflow</div><div id='commit'> Commit Name: 89e81228719825b36d6278276efcd6fc146574a3</div><div id='time'> Time: 2020-10-30</div><div id='author'> Author: gardener@tensorflow.org</div><div id='file'> File Name: tensorflow/python/grappler/layout_optimizer_test.py</div><div id='class'> Class Name: LayoutOptimizerTest</div><div id='method'> Method Name: testConv3D</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tensorflow/commit/89e81228719825b36d6278276efcd6fc146574a3#diff-3093688146d963c3adc64499b7b4083f276dd640fe740f85c5418e4f6fb4f00dL1502' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tensorflow</div><div id='commit'> Commit Name: 89e81228719825b36d6278276efcd6fc146574a3</div><div id='time'> Time: 2020-10-30</div><div id='author'> Author: gardener@tensorflow.org</div><div id='file'> File Name: tensorflow/python/grappler/layout_optimizer_test.py</div><div id='class'> Class Name: LayoutOptimizerTest</div><div id='method'> Method Name: testConv3DBackpropFilter</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tensorflow/commit/89e81228719825b36d6278276efcd6fc146574a3#diff-3093688146d963c3adc64499b7b4083f276dd640fe740f85c5418e4f6fb4f00dL1469' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tensorflow</div><div id='commit'> Commit Name: 89e81228719825b36d6278276efcd6fc146574a3</div><div id='time'> Time: 2020-10-30</div><div id='author'> Author: gardener@tensorflow.org</div><div id='file'> File Name: tensorflow/python/grappler/layout_optimizer_test.py</div><div id='class'> Class Name: LayoutOptimizerTest</div><div id='method'> Method Name: testConv3DBackpropInput</div><BR>

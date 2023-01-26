@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            encoder_outputs = cls.encoder(inputs, **encoder, **kwargs)
+
+            &#47&#47 Bottleneck: working with compressed representation
+            x = <a id="change">cls.embedding(encoder_outputs[-1], **embedding, **kwargs)</a>
+            encoder_outputs.append(x)
+
+            &#47&#47 Decoder: transition up
+            x = cls.decoder(encoder_outputs, **decoder, **kwargs)</code></pre><h3>After Change</h3><pre><code class='java'>
+        kwargs = cls.fill_params(&quotbody&quot, **kwargs)
+        encoder = kwargs.pop(&quotencoder&quot)
+        embedding_common = kwargs.pop(&quotembedding_common&quot)
+        embedding_order = kwargs.pop(&quotembedding_order&quot) or [name <a id="change">for</a> name in kwargs
+                                                            if &quotembedding&quot in name]
+        decoder = kwargs.pop(&quotdecoder&quot)
+
+        with tf.variable_scope(name):
+            &#47&#47 Encoder: transition down
+            encoder_args = {**kwargs, **encoder}
+            encoder_outputs = cls.encoder(inputs, name=&quotencoder&quot, **encoder_args)
+            x = encoder_outputs[-1]
+
+            &#47&#47 Bottleneck: working with compressed representation via multiple steps of processing
+            <a id="change">for embedding_name in embedding_order:
+                embedding_args = kwargs.pop(embedding_name)
+                if embedding_args:
+                    embedding_args = {**kwargs, **embedding_common, **embedding_args}
+                    x = cls.embedding(x, name=embedding_name, **embedding_args)
+
+           </a> encoder_outputs.append(x)
+
+            &#47&#47 Decoder: transition up
+            decoder_args = {**kwargs, **decoder}</code></pre>

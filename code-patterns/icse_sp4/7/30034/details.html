@@ -1,0 +1,30 @@
+<html><h3>88b164b98c209ea8e2afbfae93a01b9aacd8b0ab,tools/train_shadownet.py,,train_shadownet,#Any#Any#Any#Any#,65
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 decode the tf records to get the training data
+    decoder = data_utils.TextFeatureIO(char_dict_path=ops.join(cfg.PATH.CHAR_DICT_DIR, &quotchar_dict.json&quot),
+                                       ord_map_dict_path=ops.join(cfg.PATH.CHAR_DICT_DIR, &quotord_map.json&quot)).reader
+    <a id="change">images, labels, imagenames = decoder.read_features(ops.join(cfg.PATH.TFRECORDS_DIR, &quottrain_feature.tfrecords&quot),
+                                                       num_epochs=None, input_size=cfg.ARCH.INPUT_SIZE,
+                                                       input_channels=cfg.ARCH.INPUT_CHANNELS)</a>
+    inputdata, input_labels, input_imagenames = tf.train.shuffle_batch(
+        tensors=[images, labels, imagenames], batch_size=cfg.TRAIN.BATCH_SIZE,
+        capacity=1000 + 2*cfg.TRAIN.BATCH_SIZE, min_after_dequeue=100, num_threads=num_threads)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    decoder = data_utils.TextFeatureIO(char_dict_path=ops.join(cfg.PATH.CHAR_DICT_DIR, &quotchar_dict.json&quot),
+                                       ord_map_dict_path=ops.join(cfg.PATH.CHAR_DICT_DIR, &quotord_map.json&quot)).reader
+
+    <a id="change">dataset = tf.data.TFRecordDataset(cfg.PATH.TFRECORDS_DIR)</a>
+    dataset = dataset.batch(cfg.TRAIN.BATCH_SIZE, drop_remainder=True)
+    dataset = <a id="change">dataset.map(decoder.extract_features_batch, num_parallel_calls=num_threads)</a>
+    &#47&#47 dataset = dataset.apply(tf.contrib.data.map_and_batch(map_func=decoder.extract_features,
+    &#47&#47                                                       batch_size=config.cfg.TRAIN.BATCH_SIZE,
+    &#47&#47                                                       num_parallel_batches=num_threads,
+    &#47&#47                                                       drop_remainder=True))
+    <a id="change">dataset = dataset.apply(tf.contrib.data.shuffle_and_repeat(cfg.TRAIN.BATCH_SIZE*num_threads*16))</a>
+    dataset = dataset.prefetch(buffer_size=cfg.TRAIN.BATCH_SIZE*num_threads)
+    iterator = dataset.make_one_shot_iterator()
+    input_images, input_labels, input_image_names = iterator.get_next()
+</code></pre><img src="149806734.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/MaybeShewill-CV/CRNN_Tensorflow/commit/88b164b98c209ea8e2afbfae93a01b9aacd8b0ab#diff-924421df4918ab79a7b2a8bd9b8045ebc294a29779fc6789490f59f5cc5a3231L74' target='_blank'>Link</a></div><div id='project'> Project Name: MaybeShewill-CV/CRNN_Tensorflow</div><div id='commit'> Commit Name: 88b164b98c209ea8e2afbfae93a01b9aacd8b0ab</div><div id='time'> Time: 2018-09-28</div><div id='author'> Author: debenito@unternehmertum.de</div><div id='file'> File Name: tools/train_shadownet.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train_shadownet</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/datasets/commit/da7c8af137d3380a772e06aeb9bdb6529671fa3f#diff-553d6cfc6573dd6962198833a189a68cbbad0558af6e273d0dbd64e4e390a4a2L326' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/datasets</div><div id='commit'> Commit Name: da7c8af137d3380a772e06aeb9bdb6529671fa3f</div><div id='time'> Time: 2020-04-16</div><div id='author'> Author: epot@google.com</div><div id='file'> File Name: tensorflow_datasets/testing/test_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: features_encode_decode</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/03ef391a07e08eefce7299f3a934b49505c5be16#diff-3fd13049f701a1ddfd5481f7b85e90bbaa9d87cc6d97325000183995519fa72bL70' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 03ef391a07e08eefce7299f3a934b49505c5be16</div><div id='time'> Time: 2017-03-06</div><div id='author'> Author: lilleswing@gmail.com</div><div id='file'> File Name: examples/pdbbind/pdbbind_datasets.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: featurize_pdbbind</div><BR>

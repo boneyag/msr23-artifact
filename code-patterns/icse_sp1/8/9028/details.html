@@ -1,0 +1,37 @@
+<html><h3>732197e23a937b7b6d196936519c16ec6317ea9f,rllib/execution/train_ops.py,TrainTFMultiGPU,__call__,#TrainTFMultiGPU#Any#,167
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    int(tuples_per_device) // int(self.per_device_batch_size))
+                logger.debug("== sgd epochs for {} ==".format(policy_id))
+                for i in range(self.num_sgd_iter):
+                    <a id="change">iter_extra_fetches = defaultdict(list)</a>
+                    permutation = np.random.permutation(num_batches)
+                    for batch_index in range(num_batches):
+                        batch_fetches = optimizer.optimize(
+                            self.sess, permutation[batch_index] *
+                            self.per_device_batch_size)
+                        for k, v in batch_fetches[LEARNER_STATS_KEY].items():
+                            <a id="change">iter_extra_fetches</a>[k].append(v)
+                    if logger.getEffectiveLevel() &lt;= logging.DEBUG:
+                        avg = averaged(iter_extra_fetches)
+                        logger.debug("{} {}".format(i, avg))</code></pre><h3>After Change</h3><pre><code class='java'>
+                logger.debug("== sgd epochs for {} ==".format(policy_id))
+                for _ in range(self.num_sgd_iter):
+                    permutation = np.random.permutation(num_batches)
+                    <a id="change">batch_fetches_all_towers = []</a>
+                    for batch_index in range(num_batches):
+                        batch_fetches = optimizer.optimize(
+                            self.sess, permutation[batch_index] *
+                            self.per_device_batch_size)
+
+                        <a id="change">batch_fetches_all_towers.append(
+                            tree.map_structure_with_path(
+                                lambda p, *s: self._all_tower_reduce(p, *s),
+                                *(batch_fetches["tower_{}".format(tower_num)]
+                                  for tower_num in range(len(self.devices)))))</a>
+
+                &#47&#47 Reduce mean across all minibatch SGD steps (axis=0 to keep
+                &#47&#47 all shapes as-is).
+                fetches[policy_id] = tree.map_structure(</code></pre><img src="63460222.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/732197e23a937b7b6d196936519c16ec6317ea9f#diff-ca2f00c2b48414dfe957c981f05e8a79f8c80d76e0ffff2fe567148ba525baa4L168' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 732197e23a937b7b6d196936519c16ec6317ea9f</div><div id='time'> Time: 2021-03-08</div><div id='author'> Author: sven@anyscale.io</div><div id='file'> File Name: rllib/execution/train_ops.py</div><div id='class'> Class Name: TrainTFMultiGPU</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/biocore/scikit-bio/commit/e022ffad2e378bb2cdcea12114b18d47f53256d4#diff-9771493b2aa14310a82a9e885f6d6f5ff8661d3c253d6da39188a03b9ea4b3b5L187' target='_blank'>Link</a></div><div id='project'> Project Name: biocore/scikit-bio</div><div id='commit'> Commit Name: e022ffad2e378bb2cdcea12114b18d47f53256d4</div><div id='time'> Time: 2014-05-08</div><div id='author'> Author: josenavasmolina@gmail.com</div><div id='file'> File Name: skbio/maths/gradient.py</div><div id='class'> Class Name: BaseVectors</div><div id='method'> Method Name: get_vectors</div><BR><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/bb567f578ac20d7e6ef1990018a55f4f3bff61f6#diff-23459cdcdce6c5c2f947d27b8475780139df45a23634f051f3164c80ed664f48L55' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: bb567f578ac20d7e6ef1990018a55f4f3bff61f6</div><div id='time'> Time: 2014-05-26</div><div id='author'> Author: itykaul@gmail.com</div><div id='file'> File Name: src/python/pants/tasks/detect_duplicates.py</div><div id='class'> Class Name: DuplicateDetector</div><div id='method'> Method Name: detect_duplicates_for_target</div><BR>

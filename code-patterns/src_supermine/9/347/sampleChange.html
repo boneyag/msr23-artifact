@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                result[mutable.key] = F.one_hot(index, num_classes=mutable.length).view(-1).bool()
+        for mutable in self.mutables:
+            if isinstance(mutable, InputChoice):
+                <a id="change">weights = torch.tensor([edges_max.get(src_key, 0.) for src_key in mutable.choose_from])</a>  &#47&#47 pylint: disable=not-callable
+                _, topk_edge_indices = torch.topk(weights, mutable.n_chosen or mutable.n_candidates)
+                selected_multihot = []
+                for i, src_key in enumerate(mutable.choose_from):</code></pre><h3>After Change</h3><pre><code class='java'>
+        for mutable in self.mutables:
+            if isinstance(mutable, InputChoice) and mutable.n_chosen is not None:
+                weights = []
+                <a id="change">for src_key in mutable.choose_from:
+                    if src_key not in edges_max:
+                        _logger.warning("InputChoice.NO_KEY in &quot%s&quot is weighted 0 when selecting inputs.", mutable.key)
+                    weights.append(edges_max.get(src_key, 0.))
+               </a> weights = torch.tensor(weights)  &#47&#47 pylint: disable=not-callable
+                _, topk_edge_indices = torch.topk(weights, mutable.n_chosen)
+                selected_multihot = []
+                for i, src_key in enumerate(mutable.choose_from):</code></pre>

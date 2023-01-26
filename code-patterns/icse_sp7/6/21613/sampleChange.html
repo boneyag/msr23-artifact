@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+@gen_cluster(client=True, Worker=Nanny)
+def test_dask(c, s, a, b):
+    <a id="change">x = np.random.random((1000, 10))</a>
+    y = np.random.random(1000)
+
+    dtrain = xgb.DMatrix(x, label=y)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    dtrain = xgb.DMatrix(df, label=labels)
+    bst = xgb.train(param, dtrain)
+
+    <a id="change">ddf = dd.from_pandas(df, npartitions=4)</a>
+    dlabels = dd.from_pandas(labels, npartitions=4)
+    dbst = yield dxgb._train(c, param, ddf, dlabels)
+
+    result = bst.predict(dtrain)
+    dresult = <a id="change">dbst.predict(dtrain)</a>
+
+    correct = (result &gt; 0.5) == labels
+    <a id="change">dcorrect = (dresult &gt; 0.5) == labels</a>
+    assert dcorrect.sum() &gt;= correct.sum()
+
+
+def test_synchronous_api(loop):</code></pre>

@@ -1,0 +1,71 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mu_ = v_/tau_
+        
+        self.tau_ = np.empty(self.N,dtype=float)
+        <a id="change">self.v_</a> = np.empty(self.N,dtype=float)
+
+        &#47&#47Initial values - Marginal moments
+        z = np.empty(self.N,dtype=float)
+        self.Z_hat = np.empty(self.N,dtype=float)
+        phi = np.empty(self.N,dtype=float)
+        mu_hat = np.empty(self.N,dtype=float)
+        sigma2_hat = np.empty(self.N,dtype=float)
+
+        &#47&#47Approximation
+        epsilon_np1 = self.epsilon + 1.
+        epsilon_np2 = self.epsilon + 1.
+       	self.iterations = 0
+        self.np1 = [self.tau_tilde.copy()]
+        self.np2 = [self.v_tilde.copy()]
+        while epsilon_np1 &gt; self.epsilon or epsilon_np2 &gt; self.epsilon:
+            update_order = np.arange(self.N)
+            random.shuffle(update_order)
+            for i in update_order:
+                &#47&#47Cavity distribution parameters
+                self.tau_[i] = 1./self.Sigma[i,i] - self.eta*self.tau_tilde[i]
+                self.v_[i] = self.mu[i]/self.Sigma[i,i] - self.eta*self.v_tilde[i]
+                &#47&#47Marginal moments
+                self.Z_hat[i], mu_hat[i], sigma2_hat[i] = self.likelihood.moments_match(i,self.tau_[i],self.v_[i])
+                &#47&#47Site parameters update
+                Delta_tau = self.delta/self.eta*(1./sigma2_hat[i] - 1./self.Sigma[i,i])
+                Delta_v = self.delta/self.eta*(mu_hat[i]/sigma2_hat[i] - self.mu[i]/self.Sigma[i,i])
+                self.tau_tilde[i] = self.tau_tilde[i] + Delta_tau
+                self.v_tilde[i] = self.v_tilde[i] + Delta_v
+                &#47&#47Posterior distribution parameters update
+                si=self.Sigma[:,i].reshape(self.N,1)
+                self.Sigma = self.Sigma - Delta_tau/(1.+ Delta_tau*self.Sigma[i,i])*np.dot(si,si.T)
+                self.mu = np.dot(self.Sigma,self.v_tilde)
+                self.iterations += 1
+            &#47&#47Sigma recomptutation with Cholesky decompositon
+            Sroot_tilde_K = np.sqrt(self.tau_tilde)[:,None]*(self.K)
+            B = np.eye(self.N) + np.sqrt(self.tau_tilde)[None,:]*Sroot_tilde_K
+            L = jitchol(B)
+            V,info = linalg.flapack.dtrtrs(L,Sroot_tilde_K,lower=1)
+            self.Sigma = self.K - np.dot(V.T,V)
+            self.mu = np.dot(self.Sigma,self.v_tilde)
+            epsilon_np1 = sum((self.tau_tilde-self.np1[-1])**2)/self.N
+            epsilon_np2 = sum((self.v_tilde-self.np2[-1])**2)/self.N
+            self.np1.append(self.tau_tilde.copy())
+            self.np2.append(self.v_tilde.copy())
+
+        &#47&#47Variables to be called from GP
+        mu_tilde = self.v_tilde/self.tau_tilde &#47&#47When calling EP, this variable is used instead of Y in the GP model
+        sigma_sum = 1./self.tau_ + 1./self.tau_tilde
+        mu_diff_2 = (self.v_/<a id="change">self.tau_</a> - mu_tilde)**2
+        Z_ep = np.sum(np.log(<a id="change">self.Z_hat</a>)) + 0.5*np.sum(np.log(sigma_sum)) + 0.5*np.sum(mu_diff_2/sigma_sum) &#47&#47Normalization constant
+        <a id="change">return self.tau_tilde[:,None], mu_tilde[:,None], Z_ep</a>
+
+class DTC(EP):
+    def fit_EP(self):
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+            self.np1.append(self.tau_tilde.copy())
+            self.np2.append(self.v_tilde.copy())
+
+        <a id="change">return self._compute_GP_variables()</a>
+
+class DTC(EP):
+    def fit_EP(self):
+        </code></pre>

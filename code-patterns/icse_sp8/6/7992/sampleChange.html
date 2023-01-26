@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    memory_input = torch.div(outputs[-1] + memory[t-1], 2.0)
+                    &#47&#47 add a random noise
+                    noise = torch.autograd.Variable(
+                        memory_input.data.new(<a id="change">memory_input.size()</a>).normal_(0.0, 0.5))
+                    <a id="change">memory_input = memory_input + noise</a>
+
+            &#47&#47 Prenet
+            processed_memory = self.prenet(memory_input)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            stop_token_input = decoder_input
+            
+            &#47&#47 stop token prediction
+            <a id="change">stop_token_input = torch.cat((output, current_context_vec), -1)</a>
+            stop_output = self.stop_token(stop_token_input)
+
+            &#47&#47 predict mel vectors from decoder vectors
+            output = self.proj_to_mel(output)
+
+            outputs += [output]
+            alignments += [alignment]
+            stop_outputs += <a id="change">[stop_output]</a>
+
+            t += 1
+
+            if (not greedy and self.training) or (greedy and memory is not None):
+                if t &gt;= T_decoder:
+                    break
+            else:
+                if t &gt; 1 and is_end_of_frames(output, self.eps):
+                    break
+                elif t &gt; self.max_decoder_steps:
+                    print(" !! Decoder stopped with &quotmax_decoder_steps&quot. \
+                          Something is probably wrong.")
+                    break
+                           
+        assert greedy or len(outputs) == T_decoder
+
+        &#47&#47 Back to batch first
+        alignments = torch.stack(alignments).transpose(0, 1)
+        outputs = torch.stack(outputs).transpose(0, 1).contiguous()
+        <a id="change">stop_outputs = torch.stack(stop_outputs).transpose(0, 1).contiguous()</a>
+
+        return outputs, alignments, stop_outputs
+
+</code></pre>

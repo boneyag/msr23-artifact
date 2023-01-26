@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    x = converter.get_variable(converter.get_input_tensor(k_op)[0])
+
+    &#47&#47 FIXME: More effective implementation
+    <a id="change">y, = Reshape(None, in_order=OrderNTC, out_order=OrderNHWC, out_shape=[x.shape[0], x.shape[1], 1, x.shape[2]])</a>
+    y, = AveragePooling2D(None, ksize=(x.shape[1], 1), stride=(1, 1), padding=(0, 0))(y)
+
+    &#47&#47 flatten without changing memory layout
+    z, = Reshape(None, in_order=y.order, out_order=OrderNC, out_shape=[y.shape[0], mul(y.shape[1:])])(y)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+@KerasConverter.register_handler("GlobalAveragePooling1D")
+def _convert_global_average_pooling1d(converter: KerasConverter, k_op: keras.layers.GlobalAveragePooling1D):
+    <a id="change">x</a> = converter.get_variable(converter.get_input_tensor(k_op)[0])
+
+    &#47&#47 FIXME: More effective implementation
+    <a id="change">y, = Reshape(None, in_order=OrderNTC, out_order=OrderNHWC, out_shape=[x.shape[0], x.shape[1], 1, x.shape[2]])(x)</a>
+    y, = AveragePooling2D(None, ksize=(x.shape[1], 1), stride=(1, 1), padding=(0, 0))(y)
+
+    &#47&#47 flatten without changing memory layout
+    z, = Reshape(None, in_order=y.order, out_order=OrderNC, out_shape=[y.shape[0], mul(y.shape[1:])])(y)</code></pre>

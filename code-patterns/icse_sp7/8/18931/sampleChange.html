@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    fr = N.zeros(NN,dtype=complex)  &#47&#47 Initialize output
+    
+    &#47&#47 The overlap-add procedure including multiplication with the synthesis windows    
+    <a id="change">for ii in range(n):
+        X = len(gd[ii])
+        &#47&#47 TODO: the following indexes can be written as two slices
+        ixs = N.concatenate((N.arange(0,int(ceil(X/2.))),N.arange(X-int(floor(X/2.)),X)))
+
+        temp = fft(c[ii])*len(c[ii])
+        cii = temp[ixs]
+        pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
+        win_range = N.mod(pos,NN)
+        fr[win_range] += N.fft.fftshift(cii*gd[ii])
+
+    &#47&#47 TODO: this could probably be a rifft, if real signals (as outcome) are assumed
+   </a> fr = ifft(fr)
+    fr = fr[:Ls] &#47&#47 Truncate the signal to original length (if given)
+    return fr
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    fr = N.zeros(nn,dtype=complex)  &#47&#47 Initialize output
+    
+    &#47&#47 The overlap-add procedure including multiplication with the synthesis windows    
+    <a id="change">for gdii,tpii,cii in izip(gd,timepos,c):
+        X = len(gdii)
+        &#47&#47 TODO: the following indexes can be written as two slices
+        ixs = N.concatenate((N.arange(0,ceil(X/2.),dtype=int),N.arange(X-floor(X/2.),X,dtype=int)))
+
+        temp = fft(cii)*len(cii)
+        tii = temp[ixs]
+        pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+tpii-1
+        win_range = N.mod(pos,nn)
+        fr[win_range] += N.fft.fftshift(tii*gdii)
+
+    &#47&#47 TODO: this could probably be a rifft, if real signals (as outcome) are assumed
+   </a> fr = ifft(fr)
+    fr = fr[:Ls] &#47&#47 Truncate the signal to original length (if given)
+    return fr
+</code></pre>

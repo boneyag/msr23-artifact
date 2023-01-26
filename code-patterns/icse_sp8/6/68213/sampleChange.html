@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    n, e, K = x.size(0), row.size(0), weight.size(0)
+
+    if edge_attr is None:
+        <a id="change">edge_attr = x.data.new(e).fill_(1)</a>
+
+    &#47&#47 Compute degree.
+    degree = x.data.new(n).fill_(0).scatter_add_(0, row, edge_attr)
+    degree = degree.pow_(-0.5)
+
+    &#47&#47 Compute normalized and rescaled Laplacian.
+    edge_attr *= <a id="change">degree[row]</a>
+    edge_attr *= degree[col]
+    <a id="change">lap = SparseTensor(edge_index, -edge_attr, torch.Size([n, n]))</a>
+
+    &#47&#47 Convolution.
+    Tx_0 = x
+    output = torch.mm(Tx_0, weight[0])</code></pre><h3>After Change</h3><pre><code class='java'>
+    row, col = edge_index
+    n, e, K = x.size(0), row.size(0), weight.size(0)
+
+    edge_attr = <a id="change">x.new_full((e, ), 1)</a> if edge_attr is None else edge_attr
+    deg = degree(row, n, dtype=edge_attr.dtype, device=edge_attr.device)
+
+    &#47&#47 Compute normalized and rescaled Laplacian.</code></pre>

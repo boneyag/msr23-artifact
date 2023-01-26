@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    orig_timeout_time = None
+    timeout_interval = None
+    while 1:
+      <a id="change">if orig_timeout_time is not None:
+        remaining_time = time.time() - (orig_timeout_time + timeout_interval)
+        if remaining_time &gt; 0:
+          original_timestamp = datetime.datetime.fromtimestamp(orig_timeout_time).isoformat()
+          raise cls.ProcessStreamTimeout(
+            "iterating over bytes from nailgun timed out with timeout interval {} starting at {}, "
+            "overtime seconds: {}"
+            .format(timeout_interval, original_timestamp, remaining_time))
+      elif timeout_object is not None:
+        opts = timeout_object.maybe_timeout_options()
+        if opts:
+          orig_timeout_time = opts.start_time
+          timeout_interval = opts.interval
+          continue
+        remaining_time = None
+      else:
+        remaining_time = None
+
+     </a> with cls._set_socket_timeout(sock, timeout=remaining_time):
+        chunk_type, payload = cls.read_chunk(sock, return_bytes)
+        yield chunk_type, payload
+        if chunk_type == ChunkType.EXIT:</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 We poll with low timeouts because we poll under a lock. This allows the DaemonPantsRunner
+        &#47&#47 to shut down the socket, and us to notice, pretty quickly.
+        with cls._set_socket_timeout(maybe_shutdown_socket.socket, timeout=0.01):
+          <a id="change">try:
+            chunk_type, payload = cls.read_chunk(maybe_shutdown_socket.socket, return_bytes)
+          except socket.timeout:
+            &#47&#47 Timeouts are handled by the surrounding loop
+            continue
+     </a> yield chunk_type, payload
+      if chunk_type == ChunkType.EXIT:
+        break
+</code></pre>

@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    x = _preprocess_conv2d_input(x, data_format)
+    padding = _preprocess_padding(padding)
+    <a id="change">strides = (1,) + strides + (1,)</a>
+
+    <a id="change">x</a> = tf.nn.separable_conv2d(x, depthwise_kernel, pointwise_kernel,
+                               strides=strides,
+                               padding=padding,
+                               rate=dilation_rate)
+    <a id="change">return _postprocess_conv2d_output(x, data_format)</a>
+
+
+def depthwise_conv2d(x, depthwise_kernel, strides=(1, 1), padding=&quotvalid&quot,
+                     data_format=None, dilation_rate=(1, 1)):</code></pre><h3>After Change</h3><pre><code class='java'>
+    if data_format not in {&quotchannels_first&quot, &quotchannels_last&quot}:
+        raise ValueError(&quotUnknown data_format &quot + str(data_format))
+
+    <a id="change">x</a>, <a id="change">tf_data_format</a> = _preprocess_conv2d_input(x, data_format)
+    padding = _preprocess_padding(padding)
+    <a id="change">if tf_data_format == &quotNHWC&quot:
+        strides = (1,) + strides + (1,)
+    else:
+        strides = (1, 1) + strides
+
+   </a> <a id="change">x</a> = tf.nn.separable_conv2d(x, depthwise_kernel, pointwise_kernel,
+                               strides=strides,
+                               padding=padding,
+                               rate=dilation_rate,
+                               data_format=tf_data_format)
+    <a id="change">if data_format == &quotchannels_first&quot and tf_data_format == &quotNHWC&quot:
+        x = tf.transpose(x, (0, 3, 1, 2))  &#47&#47 NHWC -&gt; NCHW
+   </a> <a id="change">return x</a>
+
+
+def depthwise_conv2d(x, depthwise_kernel, strides=(1, 1), padding=&quotvalid&quot,
+                     data_format=None, dilation_rate=(1, 1)):</code></pre>

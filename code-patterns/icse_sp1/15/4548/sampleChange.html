@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    self._input_channels = input_channels
+
+    <a id="change">if not tf.float32.is_compatible_with(inputs.dtype):
+      raise TypeError("Input must have dtype tf.float32, but dtype was " +
+                      inputs.dtype.name)
+
+   </a> depthwise_weight_shape = (self._kernel_shape[0], self._kernel_shape[1],
+                              self._input_channels, self._channel_multiplier)
+    pointwise_input_size = self._channel_multiplier * self._input_channels
+    pointwise_weight_shape = (1, 1, pointwise_input_size, self._output_channels)
+    bias_shape = (self._output_channels,)
+
+    if "w_dw" not in self._initializers:
+      fan_in_shape = depthwise_weight_shape[:2]
+      self._initializers["w_dw"] = <a id="change">create_weight_initializer(fan_in_shape)</a>
+
+    if "w_pw" not in self._initializers:
+      fan_in_shape = pointwise_weight_shape[:3]
+      self._initializers["w_pw"] = create_weight_initializer(fan_in_shape)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    self._input_channels = input_channels
+
+    <a id="change">_verify_inputs_dtype(inputs)</a>
+
+    depthwise_weight_shape = (self._kernel_shape[0], self._kernel_shape[1],
+                              self._input_channels, self._channel_multiplier)
+    pointwise_input_size = self._channel_multiplier * self._input_channels
+    pointwise_weight_shape = (1, 1, pointwise_input_size, self._output_channels)
+    bias_shape = (self._output_channels,)
+
+    if "w_dw" not in self._initializers:
+      fan_in_shape = depthwise_weight_shape[:2]
+      self._initializers["w_dw"] = create_weight_initializer(fan_in_shape,
+                                                             dtype=inputs.dtype)
+
+    if "w_pw" not in self._initializers:
+      fan_in_shape = pointwise_weight_shape[:3]
+      self._initializers["w_pw"] = create_weight_initializer(fan_in_shape,
+                                                             dtype=<a id="change">inputs.dtype</a>)
+
+    if "b" not in self._initializers and self._use_bias:
+      self._initializers["b"] = create_bias_initializer(bias_shape,
+                                                        dtype=<a id="change">inputs.dtype</a>)
+
+    self._w_dw = tf.get_variable(
+        "w_dw",
+        shape=depthwise_weight_shape,
+        dtype=<a id="change">inputs.dtype</a>,
+        initializer=self._initializers["w_dw"],
+        partitioner=self._partitioners.get("w_dw", None),
+        regularizer=self._regularizers.get("w_dw", None))</code></pre>

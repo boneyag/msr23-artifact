@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.dropout_keep_prob_output_t = tf.constant(self.dropout_keep_prob_output)
+        self.dropout_keep_prob_image_embed_t = tf.constant(self.dropout_keep_prob_image_embed)
+
+        <a id="change">for idx, device in enumerate(self.devices):
+            with tf.device("/%s" % device):
+                if idx &gt; 0:
+                    tf.get_variable_scope().reuse_variables()
+
+                from_idx = self.batch_size_per_gpu*idx
+
+                video = tf.slice(self.video, [from_idx,0,0,0,0],
+                                    [self.batch_size_per_gpu,-1,-1,-1,-1])
+                video_mask = tf.slice(self.video_mask, [from_idx,0],
+                                        [self.batch_size_per_gpu,-1])
+                caption = tf.slice(self.caption, [from_idx,0],
+                                        [self.batch_size_per_gpu,-1])
+                caption_mask = tf.slice(self.caption_mask, [from_idx,0],
+                                            [self.batch_size_per_gpu,-1])
+                answer = tf.slice(self.answer, [from_idx,0],
+                                            [self.batch_size_per_gpu,-1])
+
+                self.build_graph_single_gpu(video, video_mask, caption,
+                                            caption_mask, answer, idx)
+
+       </a> self.mean_loss = tf.reduce_mean(tf.pack(self.mean_loss_list, axis=0))
+        self.alpha = tf.pack(self.alpha_list, axis=0)
+        self.predictions = tf.pack(self.predictions_list, axis=0)
+        self.correct_predictions = tf.pack(self.correct_predictions_list, axis=0)</code></pre><h3>After Change</h3><pre><code class='java'>
+                                                caption_mask, answer, idx)
+
+        self.mean_loss = tf.reduce_mean(tf.stack(self.mean_loss_list, axis=0))
+        self.mean_grad = <a id="change">average_gradients(self.mean_grad_list)</a> &#47&#47 use this to debug.
+        self.alpha = tf.stack(self.alpha_list, axis=0)
+        self.predictions = tf.stack(self.predictions_list, axis=0)
+        self.correct_predictions = tf.stack(self.correct_predictions_list, axis=0)</code></pre>

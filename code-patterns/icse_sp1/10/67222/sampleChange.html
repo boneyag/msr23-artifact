@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            loss: An average loss value masked by the length.
+        
+        input = input.contiguous()
+        <a id="change">target = target.contiguous()</a>
+
+        &#47&#47 logits_flat: (batch * max_len, dim)
+        input = input.view(-1, input.shape[-1])
+        &#47&#47 target_flat: (batch * max_len, dim)
+        target_flat = target.view(-1, target.shape[-1])
+        &#47&#47 losses_flat: (batch * max_len, dim)
+        losses_flat = functional.mse_loss(
+            input, target_flat, size_average=False, reduce=False)
+        &#47&#47 losses: (batch, max_len, dim)
+        losses = losses_flat.view(*target.size())
+
+        &#47&#47 mask: (batch, max_len, 1)
+        mask = sequence_mask(
+            sequence_length=length, max_len=target.size(1)).unsqueeze(2)
+        <a id="change">losses = losses * mask.float()</a>
+        <a id="change">loss = losses.sum() / (length.float().sum() * float(target.shape[2]))</a>
+        return loss
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            loss: An average loss value masked by the length.
+        
+        &#47&#47 mask: (batch, max_len, 1)
+        mask = <a id="change">sequence_mask(
+            sequence_length=length, max_len=target.size(1)).unsqueeze(2).float()</a>
+        mask = mask.expand_as(input)
+        loss = functional.mse_loss(
+            input * mask, target * mask, reduction="sum")
+        <a id="change">loss = loss / mask.sum()</a>
+        return loss
+
+</code></pre>

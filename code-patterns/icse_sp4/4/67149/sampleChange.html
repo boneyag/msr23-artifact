@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        device_id = (device_id[:-1] + device_id[1:]) / 2.0
+        device_id = device_id.to(torch.long)  &#47&#47 round.
+        split = device_id.bincount().cumsum(0)
+        split = <a id="change">torch.cat([split.new_zeros(1), split], dim=0).tolist()</a>
+
+        return [
+            Batch.from_data_list(data_list[split[i]:split[i + 1]]).to(
+                torch.device(&quotcuda:{}&quot.format(i))) for i in range(num_devices)</code></pre><h3>After Change</h3><pre><code class='java'>
+        device_id = device_id.to(torch.long)  &#47&#47 round.
+        split = device_id.bincount().cumsum(0)
+        split = torch.cat([split.new_zeros(1), split], dim=0)
+        <a id="change">split = torch.unique(split, sorted=True)</a>
+        <a id="change">split = split.tolist()</a>
+
+        return [
+            Batch.from_data_list(data_list[split[i]:split[i + 1]]).to(
+                torch.device(&quotcuda:{}&quot.format(device_ids[i])))</code></pre>

@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        logits = [l for l in out.data.cpu().numpy()]
+        preds = [np.argsort(-l)[:10] for l in logits]
+        guesses = []
+        for i, ps in <a id="change">enumerate(preds)</a>:
+            guesses.append([])
+            for p in ps:
+                guesses[-1].append((self.i_to_ans[p], logits[i][p], probs[i][p]))</code></pre><h3>After Change</h3><pre><code class='java'>
+        out = self.model(input_dict, lengths_dict, qnums)
+        probs = F.softmax(out).data.cpu().numpy()
+        n_examples = probs.shape[0]
+        preds = <a id="change">np.argsort(-probs, axis=1)</a>
+        for i in range(n_examples):
+            guesses.append([])
+            for p in <a id="change">preds[i][:max_n_guesses]</a>:
+                guesses[-1].append((self.i_to_ans[p], probs[i][p]))
+        return guesses
+</code></pre>

@@ -1,0 +1,146 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &quotPack.num_sounds&quot: list(),
+            &quotPack.num_downloads&quot: list(),
+            &quotUser.num_sounds&quot: list(),
+            &quotUser.num_posts&quot: <a id="change">list()</a>,
+        }
+
+        &#47&#47 IMPLEMENTATION NOTE: on the code below we iterate multiple times on Sounds, Packs and Users tables.
+        &#47&#47 This is done in this way because due to our DB structure and the way that Django ORM works, if we annotate
+        &#47&#47 counts from different tables in a single queryset (annotations that require SQL JOINs with more than one
+        &#47&#47 table), the result we obtain is not the count that we want (see https://code.djangoproject.com/ticket/10060)
+        &#47&#47 The easier solution for us is to do the queries individually for each kind of "count" that we want to
+        &#47&#47 annotate.
+
+        &#47&#47 Sounds
+        total = Sound.objects.all().count()
+
+        &#47&#47 Look at number of comments
+        for count, sound in enumerate(Sound.objects.all().annotate(real_num_comments=Count(&quotcomments&quot)).iterator()):
+            real_num_comments = sound.real_num_comments
+            if real_num_comments != sound.num_comments:
+                mismatches_report[&quotSound.num_comments&quot] += 1
+                mismatches_object_ids[&quotSound.num_comments&quot].append(sound.id)
+                sound.num_comments = real_num_comments
+                if not options[&quotno-changes&quot]:
+                    sound.is_index_dirty = True
+                    sound.save()
+            report_progress(&quotChecking number of comments in %i sounds... %.2f%%&quot, total, count)
+
+        &#47&#47 Look at number of rartings and average rating
+        for count, sound in enumerate(Sound.objects.all().annotate(
+                real_num_ratings=Count(&quotratings&quot), real_avg_rating=Avg(&quotratings__rating&quot)).iterator()):
+            real_num_ratings = sound.real_num_ratings
+            if real_num_ratings != sound.num_ratings:
+                mismatches_report[&quotSound.num_ratings&quot] += 1
+                mismatches_object_ids[&quotSound.num_ratings&quot].append(sound.id)
+                sound.num_ratings = real_num_ratings
+                sound.avg_rating = sound.real_avg_rating
+                if not options[&quotno-changes&quot]:
+                    sound.is_index_dirty = True
+                    sound.save()
+            report_progress(&quotChecking number and average of ratings in %i sounds... %.2f%%&quot, total, count)
+
+        &#47&#47 Look at number of downloads
+        if not options[&quotskip-downloads&quot]:
+            for count, sound in enumerate(Sound.objects.all().annotate(
+                    real_num_downloads=Count(&quotdownloads&quot)).iterator()):
+
+                real_num_downloads = sound.real_num_downloads
+                if real_num_downloads != sound.num_downloads:
+                    mismatches_report[&quotSound.num_downloads&quot] += 1
+                    mismatches_object_ids[&quotSound.num_downloads&quot].append(sound.id)
+                    sound.num_downloads = real_num_downloads
+                    if not options[&quotno-changes&quot]:
+                        sound.is_index_dirty = True
+                        sound.save()
+                report_progress(&quotChecking number of downloads in %i sounds... %.2f%%&quot, total, count)
+
+        &#47&#47 Packs
+        total = Pack.objects.all().count()
+
+        &#47&#47 Look at number of sounds
+        for count, pack in enumerate(Pack.objects.all().extra(select={
+            &quotreal_num_sounds&quot: 
+                SELECT COUNT(U0."id") AS "count"
+                FROM "sounds_sound" U0
+                WHERE U0."pack_id" = ("sounds_pack"."id") 
+                AND U0."processing_state" = &quotOK&quot AND U0."moderation_state" = &quotOK&quot
+            
+        }).iterator()):
+            real_num_sounds = pack.real_num_sounds
+            if real_num_sounds != pack.num_sounds:
+                mismatches_report[&quotPack.num_sounds&quot] += 1
+                mismatches_object_ids[&quotPack.num_sounds&quot].append(pack.id)
+                pack.num_sounds = real_num_sounds
+                if not options[&quotno-changes&quot]:
+                    pack.save()
+            report_progress("Checking number of sounds in %i packs... %.2f%%", total, count)
+
+        &#47&#47 Look at number of downloads
+        if not options[&quotskip-downloads&quot]:
+            for count, pack in enumerate(Pack.objects.all().annotate(real_num_downloads=Count(&quotdownloads&quot)).iterator()):
+                real_num_downloads = pack.real_num_downloads
+                if real_num_downloads != pack.num_downloads:
+                    mismatches_report[&quotPack.num_downloads&quot] += 1
+                    mismatches_object_ids[&quotPack.num_downloads&quot].append(pack.id)
+                    pack.num_downloads = real_num_downloads
+                    if not options[&quotno-changes&quot]:
+                        pack.save()
+                report_progress("Checking number of downloads in %i packs... %.2f%%", total, count)
+
+        &#47&#47 Users
+        potential_user_ids = set()
+        potential_user_ids.update(Sound.objects.all().values_list(&quotuser_id&quot, flat=True))  &#47&#47 Add ids of uploaders
+        potential_user_ids.update(Post.objects.all().values_list(&quotauthor_id&quot, flat=True))  &#47&#47 Add ids of forum posters
+        total = len(potential_user_ids)
+
+        &#47&#47 Look at number of sounds
+        for count, user in enumerate(User.objects.filter(id__in=potential_user_ids).select_related(&quotprofile&quot).extra(
+                select={
+                    &quotreal_num_sounds&quot: 
+                        SELECT COUNT(U0."id") AS "count"
+                        FROM "sounds_sound" U0
+                        WHERE U0."user_id" = ("auth_user"."id") 
+                        AND U0."processing_state" = &quotOK&quot AND U0."moderation_state" = &quotOK&quot
+                    
+                }).iterator()):
+            user_profile = user.profile
+            real_num_sounds = user.real_num_sounds
+            if real_num_sounds != user_profile.num_sounds:
+                mismatches_report[&quotUser.num_sounds&quot] += 1
+                mismatches_object_ids[&quotUser.num_sounds&quot].append(user.id)
+                user_profile.num_sounds = real_num_sounds
+                if not options[&quotno-changes&quot]:
+                    user_profile.save()
+            report_progress(&quotChecking number of sounds in %i users... %.2f%%&quot, total, count)
+
+        &#47&#47 Look at number of posts
+        for count, user in enumerate(User.objects.filter(id__in=potential_user_ids).select_related(&quotprofile&quot).annotate(
+                real_num_posts=Count(&quotposts&quot),).iterator()):
+            user_profile = user.profile
+            real_num_posts = user.real_num_posts
+            if real_num_posts != user_profile.num_posts:
+                mismatches_report[&quotUser.num_posts&quot] += 1
+                mismatches_object_ids[&quotUser.num_posts&quot].append(user.id)
+                user_profile.num_posts = real_num_posts
+                if not options[&quotno-changes&quot]:
+                    user_profile.save()
+            report_progress(&quotChecking number of posts in %i users... %.2f%%&quot, total, count)
+
+        console_logger.info("Number of mismatched counts: ")
+        console_logger.info(&quot\n&quot + pprint.pformat(mismatches_report))
+        <a id="change">mismatches_object_ids = {key: value for key, value in mismatches_object_ids.items() if value}</a>
+        console_logger.info(&quot\n&quot + pprint.pformat(mismatches_object_ids))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                console_logger.info(message % (total, 100 * float(count + 1) / total))
+
+        mismatches_report = defaultdict(int)
+        <a id="change">mismatches_object_ids = defaultdict(list)</a>
+
+        &#47&#47 IMPLEMENTATION NOTE: on the code below we iterate multiple times on Sounds, Packs and Users tables.
+        &#47&#47 This is done in this way because due to our DB structure and the way that Django ORM works, if we annotate
+        &#47&#47 counts from different tables in a single queryset (annotations that require SQL JOINs with more than one</code></pre>

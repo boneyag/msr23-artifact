@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    fields = torch.load(dict_path)
+
+    if old_style_vocab(fields):
+        <a id="change">enc_vocab = next((v for n, v in fields if n == &quotsrc&quot), None)</a>
+        dec_vocab = next((v for n, v in fields if n == &quottgt&quot), None)
+    else:
+        enc_vocab = fields[&quotsrc&quot][0][1].vocab
+        dec_vocab = fields[&quottgt&quot][0][1].vocab</code></pre><h3>After Change</h3><pre><code class='java'>
+def get_vocabs(dict_path):
+    fields = torch.load(dict_path)
+
+    <a id="change">vocs = []</a>
+    <a id="change">for side in [&quotsrc&quot, &quottgt&quot]:
+        if _old_style_vocab(fields):
+            vocab = next((v for n, v in fields if n == side), None)
+        else:
+            try:
+                vocab = fields[side][0][1].base_field.vocab
+            except AttributeError:
+                vocab = fields[side][0][1].vocab
+        vocs.append(vocab)
+   </a> enc_vocab, dec_vocab = vocs
+
+    logger.info("From: %s" % dict_path)
+    logger.info("\t* source vocab: %d words" % len(enc_vocab))</code></pre>

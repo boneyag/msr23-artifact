@@ -1,0 +1,46 @@
+<html><h3>8cec62160ffd56f90c781f7524f643b95896c455,server/website/website/tasks/async_tasks.py,,configuration_recommendation_ddpg,#Any#,423
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    LOG.info(&quotUse ddpg to recommend configuration&quot)
+    result_id = result_info[&quotnewest_result_id&quot]
+    result = Result.objects.filter(pk=result_id)
+    session = <a id="change">Result</a>.objects.get(pk=result_id).session
+    agg_data = DataUtil.aggregate_data(result)
+    metric_data, _ = clean_metric_data(agg_data[&quoty_matrix&quot], agg_data[&quoty_columnlabels&quot], session)
+    metric_data = metric_data.flatten()</code></pre><h3>After Change</h3><pre><code class='java'>
+    LOG.info(&quotUse ddpg to recommend configuration&quot)
+    result_id = result_info[&quotnewest_result_id&quot]
+    result_list = Result.objects.filter(pk=result_id)
+    <a id="change">result = result_list.first()</a>
+    session = <a id="change">result.session</a>
+    agg_data = DataUtil.aggregate_data(result_list)
+    metric_data, _ = clean_metric_data(agg_data[&quoty_matrix&quot], agg_data[&quoty_columnlabels&quot], session)
+    metric_data = metric_data.flatten()
+    metric_scalar = MinMaxScaler().fit(metric_data.reshape(1, -1))
+    normalized_metric_data = metric_scalar.transform(metric_data.reshape(1, -1))[0]
+    cleaned_knob_data = clean_knob_data(agg_data[&quotX_matrix&quot], agg_data[&quotX_columnlabels&quot],
+                                        session)
+    knob_labels = np.array(cleaned_knob_data[1]).flatten()
+    knob_num = len(knob_labels)
+    metric_num = len(metric_data)
+
+    ddpg = DDPG(n_actions=knob_num, n_states=metric_num, a_hidden_sizes=ACTOR_HIDDEN_SIZES,
+                c_hidden_sizes=CRITIC_HIDDEN_SIZES, use_default=USE_DEFAULT)
+    if session.ddpg_actor_model is not None and session.ddpg_critic_model is not None:
+        ddpg.set_model(session.ddpg_actor_model, session.ddpg_critic_model)
+    if session.ddpg_reply_memory is not None:
+        ddpg.replay_memory.set(session.ddpg_reply_memory)
+    knob_data = ddpg.choose_action(normalized_metric_data)
+
+    knob_bounds = np.vstack(DataUtil.get_knob_bounds(knob_labels, session))
+    knob_data = MinMaxScaler().fit(knob_bounds).inverse_transform(knob_data.reshape(1, -1))[0]
+    conf_map = {k: knob_data[i] for i, k in enumerate(knob_labels)}
+
+    <a id="change">conf_map_res = create_and_save_recommendation(recommended_knobs=conf_map, result=result,
+                                                  status=&quotgood&quot, info=&quotINFO: ddpg&quot)</a>
+
+    return conf_map_res
+
+</code></pre><img src="100323274.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cmu-db/ottertune/commit/8cec62160ffd56f90c781f7524f643b95896c455#diff-d15601f548d63e88a9121f54fa1950afb6dc289aba118e3eeab23aa54ffd3097L425' target='_blank'>Link</a></div><div id='project'> Project Name: cmu-db/ottertune</div><div id='commit'> Commit Name: 8cec62160ffd56f90c781f7524f643b95896c455</div><div id='time'> Time: 2020-01-08</div><div id='author'> Author: dvanaken@cs.cmu.edu</div><div id='file'> File Name: server/website/website/tasks/async_tasks.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: configuration_recommendation_ddpg</div><BR><BR><div id='link'><a href='https://github.com/sahana/eden/commit/734af1c431c93768638e306e9b08f5ef30c1c2f7#diff-c79fc40ef951fe9b26289f00f3a97d7b181a032706c6e381c8127dfc1e364b54L660' target='_blank'>Link</a></div><div id='project'> Project Name: sahana/eden</div><div id='commit'> Commit Name: 734af1c431c93768638e306e9b08f5ef30c1c2f7</div><div id='time'> Time: 2020-03-05</div><div id='author'> Author: fran@aidiq.com</div><div id='file'> File Name: modules/s3db/asset.py</div><div id='class'> Class Name: S3AssetModel</div><div id='method'> Method Name: asset_onaccept</div><BR><BR><div id='link'><a href='https://github.com/OpenMined/Grid/commit/0bce5765b02513a167e454f112a61bd70d47d6ff#diff-c97f93829dae314baa5d9ce56a24d0ad476740f8ca1243cd4d644192add939ebL74' target='_blank'>Link</a></div><div id='project'> Project Name: OpenMined/Grid</div><div id='commit'> Commit Name: 0bce5765b02513a167e454f112a61bd70d47d6ff</div><div id='time'> Time: 2020-03-02</div><div id='author'> Author: ionesiojr@gmail.com</div><div id='file'> File Name: gateway/app/main/processes/controller.py</div><div id='class'> Class Name: FLController</div><div id='method'> Method Name: last_participation</div><BR>

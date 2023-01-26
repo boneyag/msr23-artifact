@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if checkpoint_params.current_stage == 0:
+                self._run_train(train_net, train_start_time, progress_bar, self.dataset, training_callback)
+
+            <a id="change">if checkpoint_params.data_aug_retrain_on_original and self.data_augmenter and self.n_augmentations != 0:
+                print("Starting training on original data only")
+                &#47&#47 TODO: THIS MUST BE IMPLEMENTED
+                if checkpoint_params.current_stage == 0:
+                    checkpoint_params.current_stage = 1
+                    checkpoint_params.iter = 0
+                    checkpoint_params.early_stopping_best_at_iter = 0
+                    checkpoint_params.early_stopping_best_cur_nbest = 0
+                    checkpoint_params.early_stopping_best_accuracy = 0
+
+                self.dataset.generate_only_non_augmented = True  &#47&#47 this is the important line!
+                self._run_train(train_net, train_start_time, progress_bar, self.dataset, training_callback)
+
+   </a> def _run_train(self, train_net, train_start_time, progress_bar, dataset: CalamariData, training_callback):
+        checkpoint_params = self.checkpoint_params
+        with dataset:
+            train_net.train(dataset.get_train_data(), dataset.get_val_data(), checkpoint_params, self.txt_postproc, progress_bar, training_callback)</code></pre><h3>After Change</h3><pre><code class='java'>
+            self._data.params().pre_processors_.sample_processors = [p for p in self._data.params().pre_processors_.sample_processors if p.name != AugmentationProcessor.__name__]
+            &#47&#47 Remove augmented samples if &quotpreloaded"
+            if isinstance(train_pipeline, RawDataPipeline):
+                <a id="change">train_pipeline.samples = [s for s in train_pipeline.samples if not s.meta.get(&quotaugmented&quot, False)]</a>
+
+            print(f"Training on {len(train_pipeline.create_data_generator())} samples.")
+
+            super(CalamariTrainer, self).fit()</code></pre>

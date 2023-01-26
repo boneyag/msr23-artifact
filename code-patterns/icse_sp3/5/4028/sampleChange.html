@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def build(self):
+        pyver = self.composer.ver(Python)
+        cpu_only = self.composer.cuda_ver is None
+        <a id="change">return (r&quot&quot&quot
+            $GIT_CLONE https://github.com/BVLC/caffe ~/caffe && \
+            sed -i &quots/CV_LOAD_IMAGE_COLOR/cv::IMREAD_COLOR/g&quot ~/caffe/src/caffe/layers/window_data_layer.cpp && \
+            sed -i &quots/CV_LOAD_IMAGE_COLOR/cv::IMREAD_COLOR/g&quot ~/caffe/src/caffe/util/io.cpp && \
+            sed -i &quots/CV_LOAD_IMAGE_GRAYSCALE/cv::IMREAD_GRAYSCALE/g&quot ~/caffe/src/caffe/util/io.cpp && \
+            cp ~/caffe/Makefile.config.example ~/caffe/Makefile.config && \
+            sed -i &quots/&#47&#47 %s/%s/g&quot ~/caffe/Makefile.config && \
+        &quot&quot&quot % (
+            (&quotCPU_ONLY&quot, &quotCPU_ONLY&quot) if cpu_only else \
+            (&quotUSE_CUDNN&quot, &quotUSE_CUDNN&quot) \
+        )).rstrip() + (
+            &quot&quot if pyver == &quot2.7&quot else r&quot&quot&quot
+            sed -i &quots/&#47&#47 PYTHON_LIBRARIES/PYTHON_LIBRARIES/g&quot &quot&quot&quot
+            + r&quot&quot&quot~/caffe/Makefile.config && \
+            &quot&quot&quot.rstrip()
+        ) + r&quot&quot&quot
+            sed -i &quots/&#47&#47 WITH_PYTHON_LAYER/WITH_PYTHON_LAYER/g&quot &quot&quot&quot \
+          + r&quot&quot&quot~/caffe/Makefile.config && \
+            sed -i &quots/&#47&#47 OPENCV_VERSION/OPENCV_VERSION/g&quot &quot&quot&quot \
+          + r&quot&quot&quot~/caffe/Makefile.config && \
+          &quot&quot&quot.rstrip() + (
+            r&quot&quot if cpu_only else r&quot&quot&quot
+            sed -i &quots/&#47&#47 USE_NCCL/USE_NCCL/g&quot ~/caffe/Makefile.config && \
+            sed -i &quots/-gencode arch=compute_20,code=sm_20//g&quot ~/caffe/Makefile.config && \
+            sed -i &quots/-gencode arch=compute_20,code=sm_21//g&quot ~/caffe/Makefile.config && \
+            &quot&quot&quot.rstrip()
+        ) + (r&quot&quot&quot
+            sed -i &quots/2\.7/3\.5/g&quot ~/caffe/Makefile.config && \
+            sed -i &quots/boost_python3/boost_python35/g&quot ~/caffe/Makefile.config && \
+            &quot&quot&quot if pyver == &quot3.5&quot else (
+            r&quot&quot&quot
+            sed -i &quots/2\.7/3\.6/g&quot ~/caffe/Makefile.config && \
+            sed -i &quots/3\.5/3\.6/g&quot ~/caffe/Makefile.config && \
+            sed -i &quots/boost_python3/boost_python36/g&quot ~/caffe/Makefile.config && \
+            &quot&quot&quot if pyver == &quot3.6&quot else
+            r&quot&quot&quot
+            &quot&quot&quot
+        )).rstrip() + r&quot&quot&quot
+            sed -i &quots/\/usr\/lib\/python/\/usr\/local\/lib\/python/g&quot &quot&quot&quot \
+        + r&quot&quot&quot~/caffe/Makefile.config && \
+            sed -i &quots/\/usr\/local\/include/\/usr\/local\/include &quot&quot&quot \
+        + r&quot&quot&quot\/usr\/include\/hdf5\/serial/g&quot ~/caffe/Makefile.config && \
+            sed -i &quots/hdf5/hdf5_serial/g&quot ~/caffe/Makefile && \
+            sed -i &quots/&#47&#47 Debugging/COMMON_FLAGS += -std=c++11\n&#47&#47 Debugging/g&quot ~/caffe/Makefile && \
+            cd ~/caffe && \
+            make -j"$(nproc)" -Wno-deprecated-gpu-targets distribute && \
+
+            &#47&#47 fix ValueError caused by python-dateutil 1.x
+            sed -i &quots/,&lt;2//g&quot ~/caffe/python/requirements.txt && \
+
+            $PIP_INSTALL \
+                -r ~/caffe/python/requirements.txt && \
+
+            cd ~/caffe/distribute/bin && \
+            for file in *.bin; do mv "$file" "${file%%%%.bin}"; done && \
+            cd ~/caffe/distribute && \
+            cp -r bin include lib proto /usr/local/ && \
+            cp -r python/caffe /usr/local/lib/python%s/dist-packages/ && \
+        &quot&quot&quot % pyver</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def build(self):
+        cpu_only = self.composer.cuda_ver is None
+        <a id="change">return (r&quot&quot&quot
+            apt-get update && \
+            DEBIAN_FRONTEND=noninteractive $APT_INSTALL \
+                caffe-%s \
+                && \
+        &quot&quot&quot % (&quotcpu&quot if cpu_only else &quotcuda&quot)
+        ).rstrip()</a>
+</code></pre>

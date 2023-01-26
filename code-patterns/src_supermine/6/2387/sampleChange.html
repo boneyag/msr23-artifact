@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 TODO(ilr) Handle inserting resources in local mode
+    all_resource_ids = global_worker.core_worker.resource_ids()
+    assigned_ids = [
+        resource_id for resource_id, _ in all_resource_ids.get("GPU", <a id="change">[]</a>)
+    ]
+    &#47&#47 If the user had already set CUDA_VISIBLE_DEVICES, then respect that (in
+    &#47&#47 the sense that only GPU IDs that appear in CUDA_VISIBLE_DEVICES should be</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 TODO(ilr) Handle inserting resources in local mode
+    all_resource_ids = global_worker.core_worker.resource_ids()
+    assigned_ids = []
+    <a id="change">for resource, assignment in all_resource_ids.items():
+        &#47&#47 Handle both normal and placement group GPU resources.
+        if resource == "GPU" or resource.startswith("GPU_group_"):
+            for resource_id, _ in assignment:
+                assigned_ids.append(resource_id)
+    &#47&#47 If the user had already set CUDA_VISIBLE_DEVICES, then respect that (in
+    &#47&#47 the sense that only GPU IDs that appear in CUDA_VISIBLE_DEVICES should be
+    &#47&#47 returned).
+   </a> if global_worker.original_gpu_ids is not None:
+        assigned_ids = [
+            global_worker.original_gpu_ids[gpu_id] for gpu_id in assigned_ids
+        ]</code></pre>

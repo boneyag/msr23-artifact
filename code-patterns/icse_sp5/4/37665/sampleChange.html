@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            for j in range(b.shape[1]):
+                col = b[:, j].toarray()
+                xj = Afactsolve(ravel(col))
+                w = <a id="change">nonzero</a>(xj)[0]
+                tempj.fill(j)
+                x = x + A.__class__((xj[w], (w, tempj[:len(w)])),
+                                    shape=b.shape, dtype=A.dtype)</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Create a sparse output matrix by repeatedly applying
+            &#47&#47 the sparse factorization to solve columns of b.
+            data_segs = []
+            <a id="change">row_segs = []</a>
+            col_segs = []
+            for j in range(b.shape[1]):
+                bj = b[:, j].A.ravel()
+                xj = Afactsolve(bj)
+                w = np.flatnonzero(xj)
+                segment_length = w.shape[0]
+                row_segs.append(w)
+                col_segs.append(np.ones(segment_length, dtype=int)*j)
+                data_segs.append(np.asarray(xj[w], dtype=A.dtype))
+            sparse_data = np.concatenate(data_segs)
+            <a id="change">sparse_row = np.concatenate(row_segs)</a>
+            sparse_col = np.concatenate(col_segs)
+            x = A.__class__((sparse_data, (sparse_row, sparse_col)),
+                           shape=b.shape, dtype=A.dtype)
+</code></pre>

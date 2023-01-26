@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 beam blocking
+        if self.block_ngram &gt; 0:
+            <a id="change">for beam_id, hyp in enumerate(self.partial_hyps):
+                if len(hyp) &lt; self.block_ngram - 1:
+                    continue
+                ngrams = self._find_ngrams(hyp, self.block_ngram)
+                prefix = hyp[-(self.block_ngram - 1) :]
+                for ngram in ngrams:
+                    if prefix == list(ngram[:-1]) or self.block_ngram == 1:
+                        logprobs[beam_id][ngram[-1]] = neginf(logprobs.dtype)
+
+       </a> hyp_ids, tok_ids, self.scores = self.select_paths(logprobs, self.scores)
+        &#47&#47 use clone() here to ensure that self.all_scores will not be changed
+        &#47&#47 later due to any penalties to self.scores
+        self.all_scores.append(self.scores.clone())</code></pre><h3>After Change</h3><pre><code class='java'>
+        if self.block_ngram &gt; 0:
+            logprobs = self._block_ngrams(self.block_ngram, logprobs, None)
+
+        <a id="change">if self.context_block_ngram &gt; 0:
+            if self.context is None:
+                raise ValueError(
+                    "Must use TreeSearch.set_context to use context blocking."
+                )
+            logprobs = self._block_ngrams(
+                self.context_block_ngram, logprobs, self.context
+            )
+
+       </a> hyp_ids, tok_ids, self.scores = self.select_paths(logprobs, self.scores)
+        &#47&#47 use clone() here to ensure that self.all_scores will not be changed
+        &#47&#47 later due to any penalties to self.scores
+        self.all_scores.append(self.scores.clone())</code></pre>

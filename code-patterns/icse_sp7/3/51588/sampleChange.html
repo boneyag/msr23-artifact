@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if mask is not None:
+            scaled = scaled.view(b, self.head_count, l, dim_per_head)
+            mask = mask.unsqueeze(1).expand_as(scaled)
+            scaled = <a id="change">scaled</a>.masked_fill(Variable(mask), -1e18) \
+                           .view(bh, l, dim_per_head)
+
+        &#47&#47 Return one attn</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        if mask is not None:
+            mask = mask.unsqueeze(1).expand_as(scaled_scores)
+            scaled_scores = <a id="change">scaled_scores.masked_fill(Variable(mask), -1e18)</a> 
+
+        &#47&#47 3) Apply attention dropout and compute context vectors.
+        attn = self.sm(scaled_scores)
+        drop_attn = self.dropout(attn)
+        context = unshape(torch.matmul(drop_attn, value_up))
+        
+        <a id="change">output = self.final_linear(context)</a>
+        &#47&#47 CHECK
+        batch_, q_len_, d_ = output.size()
+        aeq(q_len, q_len_)
+        aeq(batch, batch_)</code></pre>

@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        total_time += time.time() - tm
+        if &quotbench_mode&quot in train_model.params:
+          for i in range(train_model.num_gpus):
+            <a id="change">if train_model.params[&quotbench_mode&quot] == &quottokens&quot:
+              &#47&#47 adding source length
+              total_objects += np.sum(fetches_vals[i + 1]["source_tensors"][-1])
+              &#47&#47 adding target length
+              total_objects += np.sum(fetches_vals[i + 1]["target_tensors"][-1])
+            elif train_model.params[&quotbench_mode&quot] == &quotimages&quot:
+              &#47&#47 adding batch size
+              total_objects += np.sum(
+                fetches_vals[i + 1]["source_tensors"][0].shape[0]
+              )
+     </a> step += 1
+
+  if hvd is not None:
+    deco_print("Finished training on rank {}".format(hvd.rank()))</code></pre><h3>After Change</h3><pre><code class='java'>
+    local_init_op=tf.group(tf.local_variables_initializer(), init_data_layer)
+  )
+  fetches = [train_model.train_op]
+  <a id="change">try:
+    total_objects = 0.0
+    &#47&#47 on horovod num_gpus is 1
+    for worker_id in range(train_model.num_gpus):
+      fetches.append(train_model.get_num_objects_per_step(worker_id))
+  except NotImplementedError:
+    deco_print("WARNING: Can&quott compute number of objects per step, since "
+               "train model does not define get_num_objects_per_step method.")
+
+  &#47&#47 starting training
+ </a> with tf.train.MonitoredTrainingSession(
+    scaffold=scaffold,
+    checkpoint_dir=checkpoint_dir,
+    save_summaries_steps=train_model.params[&quotsave_summaries_steps&quot],</code></pre>

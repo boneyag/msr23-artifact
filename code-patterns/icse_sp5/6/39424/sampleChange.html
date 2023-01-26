@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    pre_filter_shape = pre_layer.kernel_size
+    conv_func = get_conv_layer_func(len(pre_filter_shape))
+    n_pre_filters = pre_layer.filters
+    n_units = <a id="change">next_layer.get_weights().shape[1]</a>
+
+    teacher_w1 = pre_layer.get_weights()[0]
+    teacher_w2 = next_layer.get_weights()[0]
+    n_total_weights = reduce(mul, teacher_w2.shape)</code></pre><h3>After Change</h3><pre><code class='java'>
+    pre_filter_shape = pre_layer.kernel_size
+    conv_func = get_conv_layer_func(len(pre_filter_shape))
+    n_pre_filters = pre_layer.filters
+    <a id="change">n_units = next_layer.units</a>
+
+    teacher_w1 = pre_layer.get_weights()[0]
+    teacher_w2 = next_layer.get_weights()[0]
+    n_total_weights = int(reduce(mul, teacher_w2.shape))
+    teacher_w2 = teacher_w2.reshape(int(n_total_weights / n_pre_filters / n_units), n_pre_filters, n_units)
+    teacher_b1 = pre_layer.get_weights()[1]
+    teacher_b2 = next_layer.get_weights()[1]
+    rand = np.random.randint(n_pre_filters, size=n_add_filters)
+    replication_factor = np.bincount(rand)
+    student_w1 = teacher_w1.copy()
+    student_w2 = teacher_w2.copy()
+    student_b1 = teacher_b1.copy()
+    &#47&#47 target layer update (i)
+    for i in range(len(rand)):
+        teacher_index = rand[i]
+        new_weight = teacher_w1[:, :, :, teacher_index]
+        new_weight = new_weight[:, :, :, np.newaxis]
+        student_w1 = np.concatenate((student_w1, new_weight), axis=3)
+        student_b1 = np.append(student_b1, teacher_b1[teacher_index])
+    &#47&#47 next layer update (i+1)
+    for i in range(len(rand)):
+        teacher_index = rand[i]
+        factor = replication_factor[teacher_index] + 1
+        new_weight = teacher_w2[:, teacher_index, :] * (1. / factor)
+        new_weight_re = new_weight[:, np.newaxis, :]
+        student_w2 = np.concatenate((student_w2, new_weight_re), axis=1)
+        student_w2[:, teacher_index, :] = new_weight
+
+    new_pre_layer = conv_func(n_pre_filters + n_add_filters,
+                              kernel_size=pre_filter_shape,
+                              activation=&quotrelu&quot,
+                              padding=&quotsame&quot,
+                              input_shape=pre_layer.input_shape[1:])
+    new_pre_layer.build((None,) * (len(pre_filter_shape) + 1) + (pre_layer.input_shape[-1],))
+    new_pre_layer.set_weights((student_w1, student_b1))
+    new_next_layer = Dense(n_units, activation=&quotrelu&quot)
+    n_new_total_weights = int(<a id="change">reduce(mul, student_w2.shape)</a>)
+    <a id="change">input_dim = int(n_new_total_weights / n_units)</a>
+    new_next_layer.build((None, input_dim))
+    new_next_layer.set_weights((student_w2.reshape(input_dim, n_units), teacher_b2))
+    return new_pre_layer, new_next_layer
+</code></pre>

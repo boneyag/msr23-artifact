@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    method_codes = {&quotlinear&quot: 1, &quotgaussian&quot: 2}
+    if method not in method_codes:
+        raise ValueError(&quotInvalid method for SoftNMS: {}&quot.format(method))
+    <a id="change">new_dets</a>, inds = soft_nms_cpu(
+        dets_np,
+        iou_thr,
+        method=method_codes[method],</code></pre><h3>After Change</h3><pre><code class='java'>
+        dets_t = dets.detach().cpu()
+    elif isinstance(dets, np.ndarray):
+        is_tensor = False
+        <a id="change">dets_t = torch.from_numpy(dets)</a>
+    else:
+        raise TypeError(
+            &quotdets must be either a Tensor or numpy array, but got {}&quot.format(
+                type(dets)))
+
+    method_codes = {&quotlinear&quot: 1, &quotgaussian&quot: 2}
+    if method not in method_codes:
+        raise ValueError(&quotInvalid method for SoftNMS: {}&quot.format(method))
+    results = nms_cpu.soft_nms(dets_t, iou_thr, method_codes[method], sigma,
+                               min_score)
+
+    new_dets = results[:, :5]
+    <a id="change">inds = results[:, 5]</a>
+
+    if is_tensor:
+        return dets.new_tensor(new_dets), dets.new_tensor(
+            inds, dtype=torch.long)</code></pre>

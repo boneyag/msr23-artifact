@@ -1,0 +1,80 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  for col_schema in schema:
+    col_name = col_schema[&quotname&quot]
+    col_type = <a id="change">col_schema[&quottype&quot].lower()</a>
+    transform = features[col_name][&quottransform&quot]
+
+    &#47&#47 Map the target transfrom into one_hot or identity.
+    if transform == constant.TARGET_TRANSFORM:</code></pre><h3>After Change</h3><pre><code class='java'>
+        inverted_features_target[name] = {constant.ONE_HOT_TRANSFORM}
+
+  numerical_vocab_stats = {}
+  <a id="change">for col_name, transform_set in six.iteritems(inverted_features_target):
+    &#47&#47 All transforms in transform_set require the same analysis. So look
+    &#47&#47 at the first transform.
+    transform_name = next(iter(transform_set))
+    if (transform_name in constant.CATEGORICAL_TRANSFORMS or
+       transform_name in constant.TEXT_TRANSFORMS):
+      if transform_name in constant.TEXT_TRANSFORMS:
+        &#47&#47 Split strings on space, then extract labels and how many rows each
+        &#47&#47 token is in. This is done by making two temp tables:
+        &#47&#47   SplitTable: each text row is made into an array of strings. The
+        &#47&#47       array may contain repeat tokens
+        &#47&#47   TokenTable: SplitTable with repeated tokens removed per row.
+        &#47&#47 Then to flatten the arrays, TokenTable has to be joined with itself.
+        &#47&#47 See the sections &quotFlattening Arrays&quot and &quotFiltering Arrays&quot at
+        &#47&#47 https://cloud.google.com/bigquery/docs/reference/standard-sql/arrays
+        sql = (&quotWITH SplitTable AS &quot
+               &quot         (SELECT SPLIT({name}, \&quot \&quot) as token_array FROM {table}), &quot
+               &quot     TokenTable AS &quot
+               &quot         (SELECT ARRAY(SELECT DISTINCT x &quot
+               &quot                       FROM UNNEST(token_array) AS x) AS unique_tokens_per_row &quot
+               &quot          FROM SplitTable) &quot
+               &quotSELECT token, COUNT(token) as token_count &quot
+               &quotFROM TokenTable &quot
+               &quotCROSS JOIN UNNEST(TokenTable.unique_tokens_per_row) as token &quot
+               &quotWHERE LENGTH(token) &gt; 0 &quot
+               &quotGROUP BY token &quot
+               &quotORDER BY token_count DESC, token ASC&quot).format(name=col_name,
+                                                              table=table_name)
+      else:
+        &#47&#47 Extract label and frequency
+        sql = (&quotSELECT {name} as token, count(*) as count &quot
+               &quotFROM {table} &quot
+               &quotWHERE {name} IS NOT NULL &quot
+               &quotGROUP BY {name} &quot
+               &quotORDER BY count DESC, token ASC&quot).format(name=col_name,
+                                                        table=table_name)
+
+      df = _execute_sql(sql, table)
+
+      &#47&#47 Save the vocab
+      string_buff = six.StringIO()
+      df.to_csv(string_buff, index=False, header=False)
+      file_io.write_string_to_file(
+          os.path.join(output_dir, constant.VOCAB_ANALYSIS_FILE % col_name),
+          string_buff.getvalue())
+      numerical_vocab_stats[col_name] = {&quotvocab_size&quot: len(df)}
+
+      &#47&#47 free memeory
+      del string_buff
+      del df
+    elif transform_name in constant.NUMERIC_TRANSFORMS:
+      &#47&#47 get min/max/average
+      sql = (&quotSELECT max({name}) as max_value, min({name}) as min_value, &quot
+             &quotavg({name}) as avg_value from {table}&quot).format(name=col_name,
+                                                             table=table_name)
+      df = _execute_sql(sql, table)
+      numerical_vocab_stats[col_name] = {&quotmin&quot: df.iloc[0][&quotmin_value&quot],
+                                         &quotmax&quot: df.iloc[0][&quotmax_value&quot],
+                                         &quotmean&quot: df.iloc[0][&quotavg_value&quot]}
+
+  &#47&#47 get num examples
+ </a> sql = &quotSELECT count(*) as num_examples from {table}&quot.format(table=table_name)
+  df = _execute_sql(sql, table)
+  num_examples = df.iloc[0][&quotnum_examples&quot]
+</code></pre>

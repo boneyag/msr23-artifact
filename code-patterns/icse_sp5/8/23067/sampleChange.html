@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            if line_idx &lt; num_sids:
+                if tokens[0] == sids[line_idx]:
+                    row_data = <a id="change">map(float, tokens[1:])</a>
+
+                    <a id="change">if len(row_data) == num_sids:
+                        data[line_idx, :] = row_data
+                    else:
+                        raise InvalidDistanceMatrixFormatError("The number of "
+                                "values in row number %d doesn&quott match the "
+                                "number of sample IDs in the header." %
+                                line_idx + 1)
+               </a> else:
+                    raise SampleIdMismatchError("Encountered mismatched "
+                            "sample IDs while parsing the distance matrix "
+                            "file. Please ensure the sample IDs match between "</code></pre><h3>After Change</h3><pre><code class='java'>
+        for line_idx, line in enumerate(dm_f):
+            tokens = map(lambda e: e.strip(), line.strip().split(delimiter))
+
+            <a id="change">if line_idx == 0:
+                &#47&#47 We&quotre at the header (sample IDs).
+                sids = tokens
+                num_sids = len(sids)
+                data = np.empty((num_sids, num_sids))
+            elif line_idx &lt;= num_sids:
+                if len(tokens) != num_sids + 1:
+                    raise DistanceMatrixFormatError("The number of values in "
+                            "row number %d is not equal to the number of "
+                            "sample IDs in the header." % line_idx)
+
+                row_idx = line_idx - 1
+
+                if tokens[0] == sids[row_idx]:
+                    row_data = np.zeros(num_sids)
+
+                    for col_idx in range(row_idx):
+                        row_data[col_idx] = float(tokens[col_idx + 1])
+
+                    data[row_idx,:] = row_data
+                else:
+                    raise SampleIDMismatchError("Encountered mismatched "
+                            "sample IDs while parsing the distance matrix "
+                            "file. Please ensure the sample IDs match between "
+                            "the distance matrix header (first row) and the "
+                            "row labels (first column).")
+            else:
+                if &quot&quot.join(tokens):
+                    &#47&#47 If it isn&quott a blank line, raise an error because we
+                    &#47&#47 shouldn&quott ignore extra data.
+                    raise InvalidDistanceMatrixFormatError("Encountered extra "
+                            "rows without corresponding sample IDs in the "
+                            "header.")
+
+       </a> if sids is None:
+            raise MissingHeaderError("Could not find a header line containing "
+                    "sample IDs in the distance matrix file. Is the file "
+                    "empty?")</code></pre>

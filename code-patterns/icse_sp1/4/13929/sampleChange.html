@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    constant_wildcard = Wild(&quotc&quot, exclude=symbols)
+    
+    pattern = reduce(operator.add, [c * s for c, s in zip(wildcards, symbols)])
+    <a id="change">pattern += constant_wildcard</a>
+    
+    coefficients = sp.zeros(len(diff_eq_names))
+    constants = sp.zeros((len(diff_eq_names), 1))
+    
+    for row_idx, (name, expr) in enumerate(diff_eqs):
+        s_expr = expr.sympy_expr.expand()
+        pattern_matches = s_expr.match(pattern)
+        if pattern_matches is None:
+            raise ValueError((&quotThe expression "%s", defining the variable %s, &quot
+                             &quotcould not be separated into linear components&quot) %
+                             (expr, name))
+        
+        for col_idx in xrange(len(diff_eq_names)):
+            coefficients[row_idx, col_idx] = <a id="change">pattern_matches[wildcards[col_idx]]</a>
+        
+        constants[row_idx] = pattern_matches[constant_wildcard]
+
+    return (diff_eq_names, coefficients, constants)</code></pre><h3>After Change</h3><pre><code class='java'>
+    for row_idx, (name, expr) in enumerate(diff_eqs):
+        s_expr = expr.sympy_expr.expand()
+
+        <a id="change">current_s_expr = s_expr</a>
+        for col_idx, (name, symbol) in enumerate(zip(eqs.diff_eq_names, symbols)):
+            current_s_expr = <a id="change">current_s_expr.collect(symbol)</a>
+            constant_wildcard = Wild(&quotc&quot, exclude=[symbol])
+            factor_wildcard = Wild(&quotc_&quot+name, exclude=symbols)
+            one_pattern = factor_wildcard*symbol + constant_wildcard
+            matches = current_s_expr.match(one_pattern)</code></pre>

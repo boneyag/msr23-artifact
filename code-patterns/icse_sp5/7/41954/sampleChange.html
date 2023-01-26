@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Spark has to infer whether a filed is nullable or not from a limited number of samples.
+        &#47&#47 It does not always get it right. We copy the nullable boolean variable for the fields
+        &#47&#47 from the original dataframe to the final DF schema.
+        <a id="change">nullables = {field.name: field.nullable for field in df.schema.fields}</a>
+        for field in final_output_schema.fields:
+            if field.name in nullables:
+                field.nullable = nullables[field.name]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 append output schema
+        override_fields = df.limit(1).rdd.mapPartitions(predict).toDF().schema.fields[-len(output_cols):]
+        <a id="change">for name, override, label in zip(output_cols, override_fields, label_cols):
+            &#47&#47 default data type as label type
+            data_type = metadata[label][&quotspark_data_type&quot]()
+
+            if type(override.dataType) == VectorUDT:
+                &#47&#47 Override output to vector. This is mainly for torch&quots classification loss
+                &#47&#47 where label is a scalar but model output is a vector.
+                data_type = VectorUDT()
+            final_output_fields.append(StructField(name=name, dataType=data_type, nullable=True))
+
+       </a> final_output_schema = StructType(final_output_fields)
+
+        pred_rdd = df.rdd.mapPartitions(predict)
+</code></pre>

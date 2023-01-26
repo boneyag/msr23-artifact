@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if featurizer is None:
+            mxlen = kwargs.get(&quotmxlen&quot, self.mxlen if hasattr(self, &quotmxlen&quot) else len(tokens))
+            maxw = kwargs.get(&quotmaxw&quot, self.maxw if hasattr(self, &quotmaxw&quot) else max([len(token) for token in tokens]))
+            <a id="change">zero_alloc = kwargs.get(&quotzero_alloc&quot, np.zeros)</a>
+            featurizer = WordCharLength(self, mxlen, maxw, zero_alloc)
+
+        &#47&#47 This might be inefficient if the label space is large
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 This might be inefficient if the label space is large
+
+        label_vocab = revlut(self.get_labels())
+        <a id="change">batch_dict = dict()</a>
+        <a id="change">for k, vectorizer in vectorizers.items():
+            value, length = vectorizer.run(tokens, self.embeddings[k].vocab)
+            batch_dict[k] = value
+            if length is not None:
+                batch_dict[&quot{}_lengths&quot.format(k)] = length
+
+       </a> indices = self.predict(batch_dict)[0]
+        output = []
+        for j in len(tokens):
+            output.append((tokens[j], label_vocab[indices[j].item()]))</code></pre>

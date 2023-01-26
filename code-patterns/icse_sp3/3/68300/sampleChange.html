@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                
+                if nobjects &gt; 0:
+                    assert img.min() &gt;= 0,"Algorithm requires image values between 0 and 1"
+                    <a id="change">assert img.max() &lt;= 1,"Algorithm requires image values between 0 and 1"</a>
+                    areas = fix(nd.sum(np.ones(labels.shape,int),
+                                       labels, np.arange(nobjects+1)))
+                    areas = areas.astype(int)
+                    indices = np.cumsum(areas)[:-1]</code></pre><h3>After Change</h3><pre><code class='java'>
+                    indices = np.cumsum(areas)[:-1]
+                    ordered_image = stretched_img + labels.astype(float)
+                    ordered_image = ordered_image.flatten()
+                    image_idx = <a id="change">np.argsort(ordered_image)</a>
+                    max_indices = (indices + areas[1:] - 1).astype(int)
+                    indices_25  = indices+(areas[1:]+2)/4
+                    indices_50  = indices+(areas[1:]+1)/2
+                    indices_75  = indices+3*(areas[1:]+2) / 4
+                    &#47&#47
+                    &#47&#47 Check for round-up overflow
+                    &#47&#47
+                    for indices in (indices_25, indices_50, indices_75):
+                        imask = indices &gt; max_indices
+                        indices[imask] = max_indices[imask]
+                    lower_quartile_intensity = flat_img[image_idx[indices_25]]
+                    median_intensity         = flat_img[image_idx[indices_50]]
+                    upper_quartile_intensity = <a id="change">flat_img[image_idx[indices_75]]</a>
+                else:
+                    lower_quartile_intensity = np.zeros((0,))
+                    median_intensity = np.zeros((0,))
+                    upper_quartile_intensity = np.zeros((0,))</code></pre>

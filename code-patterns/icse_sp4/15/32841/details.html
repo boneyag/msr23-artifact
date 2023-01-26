@@ -1,0 +1,59 @@
+<html><h3>1b97292ef55358a0207ea3fb04f9d26b8266122d,examples/low_data/tox_graph_conv_one_fold.py,,,#,15
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+for trial_num, (task, support) in enumerate(support_generator):
+  print("Starting trial %d" % trial_num)
+  &#47&#47 Train model on support
+  <a id="change">g = tf.Graph()</a>
+  <a id="change">sess = tf.Session(graph=g)</a>
+
+  &#47&#47 Do setup required for tf/keras models
+  &#47&#47 Number of features on conv-mols
+  n_feat = 75
+  &#47&#47 Batch size of models
+  batch_size = 50
+
+  <a id="change">with g.as_default():
+    graph_model = dc.nn.SequentialGraph(n_feat)
+    graph_model.add(dc.nn.GraphConv(64, activation=&quotrelu&quot))
+    graph_model.add(dc.nn.GraphPool())
+    graph_model.add(dc.nn.GraphConv(128, activation=&quotrelu&quot))
+    graph_model.add(dc.nn.GraphPool())
+    graph_model.add(dc.nn.GraphConv(64, activation=&quotrelu&quot))
+    graph_model.add(dc.nn.GraphPool())
+    graph_model.add(dc.nn.Dense(128, activation=&quottanh&quot))
+    graph_model.add(dc.nn.GraphGather(batch_size, activation="tanh"))
+
+    with tf.Session() as sess:
+      model = dc.models.MultitaskGraphClassifier(
+        sess, graph_model, 1, batch_size=batch_size,
+        learning_rate=1e-3, learning_rate_decay_time=1000,
+        optimizer_type="adam", beta1=.9, beta2=.999)
+
+      &#47&#47 Fit trained model
+      model.fit(support, nb_epoch=10)
+
+      &#47&#47 Test model
+      task_dataset = dc.data.get_task_dataset_minus_support(
+          test_dataset, support, task)
+      y_pred = model.predict_proba(task_dataset)
+      score = metric.compute_metric(
+          task_dataset.y, y_pred, task_dataset.w)
+      print("Score on task %s is %s" % (str(task), str(score)))
+      task_scores[task].append(score)
+
+&#47&#47 Join information for all tasks.
+</a>mean_task_scores = {}
+std_task_scores = {}
+for task in range(len(test_dataset.get_task_names())):
+  mean_task_scores[task] = np.mean(np.array(task_scores[task]))</code></pre><h3>After Change</h3><pre><code class='java'>
+import numpy as np
+np.random.seed(123)
+import tensorflow as tf
+<a id="change">tf.set_random_seed(123)</a>
+import deepchem as dc
+from datasets import load_tox21_convmol
+
+&#47&#47 4-fold splits</code></pre><img src="161582981.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/1b97292ef55358a0207ea3fb04f9d26b8266122d#diff-ab614916f44b5c1344025af754a5d44377830b00d9ba7d96b2d28352bc30703bL9' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: 1b97292ef55358a0207ea3fb04f9d26b8266122d</div><div id='time'> Time: 2017-03-04</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: examples/low_data/tox_graph_conv_one_fold.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/c6c9993a19ca6521871e3be00004891d47254972#diff-269e3a09c7e87a0101d5dd98c4b7dc0b02344d41b7bbfe499ae00b918e5d5d70L17' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: c6c9993a19ca6521871e3be00004891d47254972</div><div id='time'> Time: 2017-02-23</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: examples/clintox/clintox_graph_conv.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/c6c9993a19ca6521871e3be00004891d47254972#diff-81faeccad42570a619b5b64a9dc7b3460f0081d315a30561164217252b4f8e07L15' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: c6c9993a19ca6521871e3be00004891d47254972</div><div id='time'> Time: 2017-02-23</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: examples/tox21/tox21_graph_conv.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

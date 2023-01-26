@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    true_edge_mag = scharr_edges(y_true, True)
+    pred_edge_mag = scharr_edges(y_pred, True)
+    cnst = 0.002
+    upper = 2.0 * <a id="change">tf.multiply(true_edge_mag, pred_edge_mag)</a> + cnst
+    lower = tf.square(true_edge_mag) + tf.square(pred_edge_mag) + cnst
+    gms = tf.div(upper, lower)
+    <a id="change">_mean, _var = tf.nn.moments(gms, axes=[1, 2], keep_dims=True)</a>
+    &#47&#47 single metric value per image in tensor [?, 1, 1]
+    gmsd = tf.reduce_mean(tf.sqrt(_var), axis=-1)
+    &#47&#47 need to expand to [?, height, width] dimensions for Keras ... modify to not be hard-coded
+    return K.tile(gmsd, [1, 64, 64])</code></pre><h3>After Change</h3><pre><code class='java'>
+    pred_edge = scharr_edges(y_pred, True)
+    ephsilon = 0.0025
+    upper = 2.0 * true_edge * pred_edge
+    lower = <a id="change">K.square(true_edge) + K.square(pred_edge)</a>
+    gms = <a id="change">(upper + ephsilon) / (lower + ephsilon)</a>
+    gmsd = K.std(gms, axis=(1, 2, 3), keepdims=True)
+    gmsd = K.squeeze(gmsd, axis=-1)
+    return gmsd
+</code></pre>

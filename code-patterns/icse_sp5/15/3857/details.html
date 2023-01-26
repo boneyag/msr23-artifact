@@ -1,0 +1,119 @@
+<html><h3>8a1c113df6403b0aae6d951fec8624643953e018,mozilla_voice_tts/tts/models/tacotron.py,Tacotron,__init__,#Tacotron#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#,10
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                               prenet_type, prenet_dropout, forward_attn,
+                               trans_agent, forward_attn_mask, location_attn,
+                               attn_K, separate_stopnet, proj_speaker_dim)
+        <a id="change">self.postnet = PostCBHG(decoder_output_dim)</a>
+        self.last_linear = nn.Linear(self.postnet.cbhg.gru_features * 2,
+                                     postnet_output_dim)
+        &#47&#47 speaker embedding layers
+        if num_speakers &gt; 1:
+            self.speaker_embedding = nn.Embedding(num_speakers, speaker_embedding_dim)
+            self.speaker_embedding.weight.data.normal_(0, 0.3)
+            <a id="change">self.speaker_project_mel = nn.Sequential(
+                nn.Linear(speaker_embedding_dim, proj_speaker_dim), nn.Tanh())</a>
+            self.speaker_embeddings = None
+            <a id="change">self.speaker_embeddings_projected = None</a>
+        &#47&#47 global style token layers
+        if self.gst:
+            self.gst_layer = GST(num_mel=80,
+                                 num_heads=gst_num_heads,
+                                 num_style_tokens=gst_style_tokens,
+                                 embedding_dim=gst_embedding_dim)
+        &#47&#47 backward pass decoder
+        if self.bidirectional_decoder:
+            self._init_backward_decoder()
+        &#47&#47 setup DDC
+        if self.double_decoder_consistency:
+            <a id="change">self.coarse_decoder</a> = Decoder(
+                decoder_in_features, decoder_output_dim, ddc_r, memory_size,
+                attn_type, attn_win, attn_norm, prenet_type, prenet_dropout,
+                forward_attn, trans_agent, forward_attn_mask, location_attn,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+class Tacotron(TacotronAbstract):
+    def __init__(self,
+                 num_chars<a id="change">,
+  </a>               num_speakers,
+                 r=5,
+                 postnet_output_dim=1025,
+                 decoder_output_dim=80,
+                 attn_type=&quotoriginal&quot,
+                 attn_win=False,
+                 attn_norm="sigmoid",
+                 prenet_type="original",
+                 prenet_dropout=True,
+                 forward_attn=False,
+                 trans_agent=False,
+                 forward_attn_mask=False,
+                 location_attn=True,
+                 attn_K=5,
+                 separate_stopnet=True,
+                 bidirectional_decoder=False,
+                 double_decoder_consistency=False,
+                 ddc_r=None,
+                 speaker_embedding_dim=None,
+                 gst=False,
+                 gst_embedding_dim=256,
+                 gst_num_heads=4,
+                 gst_style_tokens=10,
+                 memory_size=5):
+        super(Tacotron,
+              self).__init__(num_chars, num_speakers, r, postnet_output_dim,
+                             decoder_output_dim, attn_type, attn_win,
+                             attn_norm, prenet_type, prenet_dropout,
+                             forward_attn, trans_agent, forward_attn_mask,
+                             location_attn, attn_K, separate_stopnet,
+                             bidirectional_decoder, double_decoder_consistency,
+                             ddc_r, gst)
+
+        &#47&#47 init layer dims
+        decoder_in_features = 256
+        encoder_in_features = 256
+
+     <a id="change">   if speaker_embedding_dim is None:
+            &#47&#47 if speaker_embedding_dim is None we need use the nn.Embedding, with default speaker_embedding_dim
+            self.embeddings_per_sample = False
+            speaker_embedding_dim = 256
+        else:
+            &#47&#47 if speaker_embedding_dim is not None we need use speaker embedding per sample
+            self.embeddings_per_sample = True
+
+        &#47&#47 speaker and gst embeddings is concat in decoder input
+    </a>    if num_speakers &gt; 1: 
+            decoder_in_features = decoder_in_features + speaker_embedding_dim &#47&#47 add speaker embedding dim
+        if self.gst:
+            decoder_in_features = decoder_in_features + gst_embedding_dim &#47&#47 add gst embedding dim
+
+        &#47&#47 embedding layer
+        self.embedding = nn.Embedding(num_chars, 256, padding_idx=0)
+
+        &#47&#47 speaker embedding layers
+        if num_speakers &gt; 1:
+            if not self.embeddings_per_sample:
+                self.speaker_embedding = nn.Embedding(num_speakers, speaker_embedding_dim)
+                self.speaker_embedding.weight.data.normal_(0, 0.3)
+
+        &#47&#47 base model layers
+        self.embedding.weight.data.normal_(0, 0.3)
+        self.encoder = Encoder(encoder_in_features)
+        self.decoder = Decoder(decoder_in_features, decoder_output_dim, r,
+                               memory_size, attn_type, attn_win, attn_norm,
+                               prenet_type, prenet_dropout, forward_attn,
+                               trans_agent, forward_attn_mask, location_attn,
+                               attn_K, separate_stopnet)
+        self.postnet = PostCBHG(decoder_output_dim)
+        self.last_linear = nn.Linear(self.postnet.cbhg.gru_features * 2,
+                                     postnet_output_dim)
+
+        &#47&#47 global style token layers
+        if self.gst:
+            self.gst_layer = GST(num_mel=80,
+                                 num_heads=gst_num_heads,
+                                 num_style_tokens=gst_style_tokens,
+                                 e<a id="change">mbedding_dim=gst_em</a>bedding_dim)
+        &#47&#47 backward pass decoder
+        if self.bidirectional_decoder:
+            self._init_backward_decoder()</code></pre><img src="25032316.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mozilla/TTS/commit/8a1c113df6403b0aae6d951fec8624643953e018#diff-7b566f5d2fdbc81e8ffb7ce1a1cb5b0293eff4c2b96936da623efba50a78b03eL10' target='_blank'>Link</a></div><div id='project'> Project Name: mozilla/TTS</div><div id='commit'> Commit Name: 8a1c113df6403b0aae6d951fec8624643953e018</div><div id='time'> Time: 2020-08-05</div><div id='author'> Author: edresson1@gmail.com</div><div id='file'> File Name: mozilla_voice_tts/tts/models/tacotron.py</div><div id='class'> Class Name: Tacotron</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/mozilla/TTS/commit/8a1c113df6403b0aae6d951fec8624643953e018#diff-7b566f5d2fdbc81e8ffb7ce1a1cb5b0293eff4c2b96936da623efba50a78b03eL10' target='_blank'>Link</a></div><div id='project'> Project Name: mozilla/TTS</div><div id='commit'> Commit Name: 8a1c113df6403b0aae6d951fec8624643953e018</div><div id='time'> Time: 2020-08-05</div><div id='author'> Author: edresson1@gmail.com</div><div id='file'> File Name: mozilla_voice_tts/tts/models/tacotron.py</div><div id='class'> Class Name: Tacotron</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/mozilla/TTS/commit/0a92c6d5a7601fe0b1d8d5bf53ef1774c15647cc#diff-852be801ffb42483a749d2f0dadc027d0a30839010bd0eb9c3d14866e8eec8ffL10' target='_blank'>Link</a></div><div id='project'> Project Name: mozilla/TTS</div><div id='commit'> Commit Name: 0a92c6d5a7601fe0b1d8d5bf53ef1774c15647cc</div><div id='time'> Time: 2019-03-25</div><div id='author'> Author: egolge@mozilla.com</div><div id='file'> File Name: models/tacotron.py</div><div id='class'> Class Name: Tacotron</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/ikostrikov/pytorch-a2c-ppo-acktr/commit/18022693482182082f178cd73fa3a3cfdecc160a#diff-fada037ad086638e65c7ae77e3d223963e9afaa26326aab0ea718f4013176e43L115' target='_blank'>Link</a></div><div id='project'> Project Name: ikostrikov/pytorch-a2c-ppo-acktr</div><div id='commit'> Commit Name: 18022693482182082f178cd73fa3a3cfdecc160a</div><div id='time'> Time: 2018-05-02</div><div id='author'> Author: ikostrikov@gmail.com</div><div id='file'> File Name: model.py</div><div id='class'> Class Name: MLPBase</div><div id='method'> Method Name: __init__</div><BR>

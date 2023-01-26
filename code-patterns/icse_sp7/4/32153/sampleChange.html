@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for chunk_idx in range(0, len(sklearn_pipeline_list),self.n_jobs*2):
+            if self.n_jobs != 1:
+                pool = Pool(processes=self.n_jobs)
+                <a id="change">tmp_result_score = pool.map(_wrapped_cross_val_score, sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*2])</a>
+                pool.terminate() &#47&#47 garbage collection
+            else:
+                tmp_result_score = map(_wrapped_cross_val_score, sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*2])
+            &#47&#47 update pbar</code></pre><h3>After Change</h3><pre><code class='java'>
+        resulting_score_list = []
+        &#47&#47 chunk size for pbar update
+        for chunk_idx in range(0, len(sklearn_pipeline_list),self.n_jobs*4):
+            parallel = <a id="change">Parallel(n_jobs=self.n_jobs, verbose=0, pre_dispatch=&quot2*n_jobs&quot)</a>
+            tmp_result_score = parallel(delayed(_wrapped_cross_val_score)(sklearn_pipeline, features, classes,
+                                         self.cv, self.scoring_function, sample_weight, self.max_eval_time_mins)
+                      for sklearn_pipeline in sklearn_pipeline_list[chunk_idx:chunk_idx+self.n_jobs*4])
+            &#47&#47 update pbar</code></pre>

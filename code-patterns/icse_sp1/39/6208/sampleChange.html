@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if b_regularizer:
+            b_regularizer.set_param(self.b)
+            self.regularizers.append(b_regularizer)
+        <a id="change">if activity_regularizer:
+            activity_regularizer.set_layer(self)
+            self.regularizers.append(activity_regularizer)
+
+       </a> <a id="change">self.constraints</a> = <a id="change">[W_constraint, b_constraint]</a>
+
+        if weights is not None:
+            self.set_weights(weights)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+from ..layers.core import Layer
+
+class Convolution1D(Layer):
+    def __init__(<a id="change">self</a>, input_dim, nb_filter, filter_length,
+        init=&quotuniform&quot, activation=&quotlinear&quot, weights=None,
+        border_mode=&quotvalid&quot, subsample_length=1,
+        W_regularizer=&quotidentity&quot, b_regularizer=&quotidentity&quot, activity_regularizer=&quotidentity&quot, W_constraint=&quotidentity&quot, b_constraint=&quotidentity&quot):
+
+        super(Convolution1D,self).__init__()
+
+        self.nb_filter = nb_filter
+        self.input_dim = input_dim
+        self.filter_length = filter_length
+        self.subsample_length = subsample_length
+        self.init = initializations.get(init)
+        self.activation = activations.get(activation)
+        self.subsample = (1, subsample_length)
+        self.border_mode = border_mode
+
+        self.input = T.tensor3()
+        self.W_shape = (nb_filter, input_dim, filter_length, 1)
+        self.W = self.init(self.W_shape)
+        self.b = shared_zeros((nb_filter,))
+
+        self.params = [self.W, self.b]
+
+        self.regularizers = []
+
+        <a id="change">self.W_regularizer = regularizers.get(W_regularizer)</a>
+        <a id="change">self</a>.W_regularizer.set_param(self.W)
+        self.regularizers.append(<a id="change">self.W_regularizer</a>)
+
+        <a id="change">self.b_regularizer = regularizers.get(b_regularizer)</a>
+        <a id="change">self</a>.b_regularizer.set_param(self.b)
+        self.regularizers.append(<a id="change">self.b_regularizer</a>)
+
+        <a id="change">self.activity_regularizer = regularizers.get(activity_regularizer)</a>
+        <a id="change">self.activity_regularizer.set_layer(self)</a>
+        <a id="change">self.regularizers.append(self.activity_regularizer)</a>
+
+        <a id="change">self.W_constraint = constraints.get(W_constraint)</a>
+        <a id="change">self.b_constraint = constraints.get(b_constraint)</a>
+        <a id="change">self.constraints</a> = <a id="change">[self.W_constraint, self.b_constraint]</a>
+
+        if weights is not None:
+            self.set_weights(weights)
+</code></pre>

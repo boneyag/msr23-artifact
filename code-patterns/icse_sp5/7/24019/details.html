@@ -1,0 +1,98 @@
+<html><h3>af1a77ca7fbc2bdabec7e859b7046ea3a28b6081,dnc/dnc.py,DNC,forward,#DNC#Any#Any#Any#,201
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    outputs = None
+    chxs = []
+    if self.debug:
+      viz = <a id="change">[mem_hidden[&quotmemory&quot][0]]</a> if self.share_memory else [mem_hidden[0][&quotmemory&quot][0]]
+
+    read_vectors = [last_read] * max_length
+    &#47&#47 outs = [input[:, x, :] for x in range(max_length)]
+    outs = [T.cat([input[:, x, :], last_read], 1) for x in range(max_length)]
+
+    for layer in range(self.num_layers):
+      &#47&#47 this layer&quots hidden states
+      chx = controller_hidden[layer]
+
+      m = mem_hidden if self.share_memory else mem_hidden[layer]
+      &#47&#47 pass through controller
+      outs, _, (chx, m) = self._layer_forward(
+          outs,
+          layer,
+          (chx, m)
+      )
+
+      &#47&#47 debug memory
+      if self.debug:
+        viz.append(m[&quotmemory&quot][0])
+
+      &#47&#47 store the memory back (per layer or shared)
+      if self.share_memory:
+        mem_hidden = m
+      else:
+        mem_hidden[layer] = m
+      chxs.append(chx)
+
+      if layer == self.num_layers - 1:
+        &#47&#47 final outputs
+        outputs = T.stack(outs, 1)
+      else:
+        &#47&#47 the controller output + read vectors go into next layer
+        outs = [T.cat([o, r], 1) for o, r in zip(outs, read_vectors)]
+        &#47&#47 outs = [o for o in outs]
+
+    if self.debug:
+      <a id="change">viz = T.cat(viz, 0).transpose(0, 1)</a>
+
+    controller_hidden = chxs
+
+    if not self.batch_first:</code></pre><h3>After Change</h3><pre><code class='java'>
+    outputs = None
+    chxs = []
+    if self.debug:
+      <a id="change">viz = []</a>
+
+    read_vectors = [last_read] * max_length
+    &#47&#47 outs = [input[:, x, :] for x in range(max_length)]
+    outs = [T.cat([input[:, x, :], last_read], 1) for x in range(max_length)]
+
+    for layer in range(self.num_layers):
+      &#47&#47 this layer&quots hidden states
+      chx = controller_hidden[layer]
+
+      m = mem_hidden if self.share_memory else mem_hidden[layer]
+      &#47&#47 pass through controller
+      if self.debug:
+        outs, _, mem_debug, (chx, m) = self._layer_forward(outs,layer,(chx, m))
+      else:
+        outs, _, (chx, m) = self._layer_forward(outs, layer, (chx, m))
+
+      &#47&#47 debug memory
+      if self.debug:
+        viz.append(mem_debug)
+
+      &#47&#47 store the memory back (per layer or shared)
+      if self.share_memory:
+        mem_hidden = m
+      else:
+        mem_hidden[layer] = m
+      chxs.append(chx)
+
+      if layer == self.num_layers - 1:
+        &#47&#47 final outputs
+        outputs = T.stack(outs, 1)
+      else:
+        &#47&#47 the controller output + read vectors go into next layer
+        outs = [T.cat([o, r], 1) for o, r in zip(outs, read_vectors)]
+        &#47&#47 outs = [o for o in outs]
+
+    if self.debug:
+      <a id="change">viz = np.array(viz)</a>
+      s = <a id="change">list(viz.shape)</a>
+      <a id="change">viz = viz.reshape(s[0]*s[1], s[2]*s[3])</a>
+
+    controller_hidden = chxs
+
+    if not self.batch_first:</code></pre><img src="125503290.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ixaxaar/pytorch-dnc/commit/af1a77ca7fbc2bdabec7e859b7046ea3a28b6081#diff-1d9b1f89a6b95da052e076dcd768ac007ad8fa06163924120f3f71be35f1ea38L201' target='_blank'>Link</a></div><div id='project'> Project Name: ixaxaar/pytorch-dnc</div><div id='commit'> Commit Name: af1a77ca7fbc2bdabec7e859b7046ea3a28b6081</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: root@ixaxaar.in</div><div id='file'> File Name: dnc/dnc.py</div><div id='class'> Class Name: DNC</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/interactiveaudiolab/nussl/commit/fa6f47e7aee228226421c52e61cce4e1ab4cc099#diff-8e24ae1876b6acf6b147b64965b92678414c0a4211393f8daeb7aa2777614063L41' target='_blank'>Link</a></div><div id='project'> Project Name: interactiveaudiolab/nussl</div><div id='commit'> Commit Name: fa6f47e7aee228226421c52e61cce4e1ab4cc099</div><div id='time'> Time: 2020-03-15</div><div id='author'> Author: prem@u.northwestern.edu</div><div id='file'> File Name: tests/ml/test_loss.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_permutation_invariant_loss_tf</div><BR><BR><div id='link'><a href='https://github.com/ixaxaar/pytorch-dnc/commit/4dde9c49f8cf467b7c11675005cdcd2be1b07e1a#diff-1d9b1f89a6b95da052e076dcd768ac007ad8fa06163924120f3f71be35f1ea38L201' target='_blank'>Link</a></div><div id='project'> Project Name: ixaxaar/pytorch-dnc</div><div id='commit'> Commit Name: 4dde9c49f8cf467b7c11675005cdcd2be1b07e1a</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: root@ixaxaar.in</div><div id='file'> File Name: dnc/dnc.py</div><div id='class'> Class Name: DNC</div><div id='method'> Method Name: forward</div><BR>

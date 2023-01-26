@@ -1,0 +1,24 @@
+<html><h3>faf3aa876462323f2fa721ebd633752d6489808f,sru/modules.py,SRU,forward,#SRU#Any#Any#Any#,536
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        orig_input = input
+        if isinstance(orig_input, PackedSequence):
+            input, batch_sizes, sorted_indices, unsorted_indices = input
+            length = <a id="change">input.size(0)</a>
+            batch_size = input.size(1)
+            mask_pad = torch.arange(batch_size,
+                                    device=batch_sizes.device).expand(length, batch_size)
+            <a id="change">mask_pad = (mask_pad &gt;= batch_sizes.view(length, 1)).contiguous()</a>
+        else:
+            length = input.size(0)
+            batch_size = input.size(1)
+            batch_sizes = None</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 packing at all, but makes SRU usage compatible with nn.RNN usage
+        orig_input = input
+        if isinstance(orig_input, PackedSequence):
+            <a id="change">input</a>, lengths = nn.utils.rnn.pad_packed_sequence(input)
+            max_length = lengths.max().item()
+            mask_pad = torch.ByteTensor([[0] * l + [1] * (max_length - l) for l in lengths.tolist()])
+            mask_pad = mask_pad.to(input.device).transpose(0, 1).contiguous()</code></pre><img src="2121410.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/asappresearch/sru/commit/faf3aa876462323f2fa721ebd633752d6489808f#diff-fbdb17c4f9a1012308449ed128e27fceac2cd837fa198a5afc3ef73ed9cd6d0cL1' target='_blank'>Link</a></div><div id='project'> Project Name: asappresearch/sru</div><div id='commit'> Commit Name: faf3aa876462323f2fa721ebd633752d6489808f</div><div id='time'> Time: 2020-09-18</div><div id='author'> Author: taolei@csail.mit.edu</div><div id='file'> File Name: sru/modules.py</div><div id='class'> Class Name: SRU</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/809d0e5b52561fefd3b0d98c08d3cbb175d7e706#diff-fa3c76576694291de650c11f3e3a4d00a68e887bfedddaf1079b5a7ac6903d6cL125' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 809d0e5b52561fefd3b0d98c08d3cbb175d7e706</div><div id='time'> Time: 2017-07-04</div><div id='author'> Author: sasha.rush@gmail.com</div><div id='file'> File Name: onmt/Models.py</div><div id='class'> Class Name: Encoder</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/f93beff338925cc1bf1b3ff1b32a2c440a4c9427#diff-68c6598a9a0388328d590991f9e979dd4aec605432ce08476976c0fd8a578dc0L18' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: f93beff338925cc1bf1b3ff1b32a2c440a4c9427</div><div id='time'> Time: 2020-04-21</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: tests/_tests_scripts/z_mvp_mnist_gan.py</div><div id='class'> Class Name: CustomRunner</div><div id='method'> Method Name: _handle_batch</div><BR>

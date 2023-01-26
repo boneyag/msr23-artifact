@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        b = rng.rand(n_samples, 100)
+        time1 = time.time()
+        transport = ot.da.OTDA_sinkhorn()
+        <a id="change">transport.fit(a, b)</a>
+        G1 = transport.G
+        time2 = time.time()
+        transport = ot.gpu.da.OTDA_sinkhorn()
+        transport.fit(a, b)</code></pre><h3>After Change</h3><pre><code class='java'>
+        a = rng.rand(n_samples // 4, 100)
+        b = rng.rand(n_samples, 100)
+
+        <a id="change">wa = ot.unif(n_samples // 4)</a>
+        <a id="change">wb = ot.unif(n_samples)</a>
+
+        <a id="change">M = ot.dist(a.copy(), b.copy())</a>
+        M2 = ot.gpu.dist(a.copy(), b.copy(), to_numpy=False)
+
+        reg = 1
+
+        <a id="change">G = ot.sinkhorn(wa, wb, M, reg)</a>
+        G1 = ot.gpu.sinkhorn(wa, wb, M, reg)
+
+        np.testing.assert_allclose(G1, G, rtol=1e-10)
+</code></pre>

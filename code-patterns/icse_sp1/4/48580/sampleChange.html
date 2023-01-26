@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    print(&quotpart {}, train: {}, val: {}, test: {}&quot.format(g.rank(), len(train_nid),
+                                                         len(val_nid), len(test_nid)))
+    device = th.device(&quotcpu&quot)
+    n_classes = <a id="change">len(th.unique(g.ndata[&quotlabels&quot][np.arange(g.number_of_nodes())]))</a>
+
+    &#47&#47 Pack data
+    in_feats = g.ndata[&quotfeatures&quot].shape[1]
+    data = train_nid, val_nid, in_feats, n_classes, g</code></pre><h3>After Change</h3><pre><code class='java'>
+    g = dgl.distributed.DistGraph(args.ip_config, args.graph_name, conf_file=args.conf_path)
+    print(&quotrank:&quot, g.rank())
+
+    <a id="change">pb = g.get_partition_book()</a>
+    train_nid = dgl.distributed.node_split(g.ndata[&quottrain_mask&quot], pb, force_even=True)
+    val_nid = dgl.distributed.node_split(g.ndata[&quotval_mask&quot], pb, force_even=True)
+    test_nid = dgl.distributed.node_split(g.ndata[&quottest_mask&quot], pb, force_even=True)
+    <a id="change">local_nid = pb.partid2nids(pb.partid).detach().numpy()</a>
+    print(&quotpart {}, train: {} (local: {}), val: {} (local: {}), test: {} (local: {})&quot.format(
+        g.rank(), len(train_nid), len(np.intersect1d(train_nid.numpy(), local_nid)),
+        len(val_nid), len(np.intersect1d(val_nid.numpy(), local_nid)),
+        len(test_nid), len(np.intersect1d(test_nid.numpy(), local_nid))))</code></pre>

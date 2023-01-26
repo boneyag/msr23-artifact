@@ -1,0 +1,73 @@
+<html><h3>1d4823c0ec446e93d00df8ca654db4b45b63b3d4,rllib/tests/test_model_imports.py,,model_import_test,#Any#Any#Any#,127
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for fw in ["tf", "torch"]:
+        print("framework={}".format(fw))
+
+        <a id="change">config["use_pytorch"] = fw == "torch"</a>
+        <a id="change">config["eager"] = fw == "eager"</a>
+        config["model"]["custom_model"] = "keras_model" if fw != "torch" else \
+            "torch_model"
+
+        <a id="change">eager_mode_ctx = None</a>
+        <a id="change">if fw == "eager":
+            eager_mode_ctx = eager_mode()
+            eager_mode_ctx.__enter__()
+            assert tf.executing_eagerly()
+        elif fw == "tf":
+            assert not tf.executing_eagerly()
+
+       </a> agent = agent_cls(config, env)
+
+        def current_weight(agent):
+            if fw == "tf":
+                return agent.get_weights()["default_policy"][
+                    "default_policy/value/kernel"][0]
+            elif fw == "torch":
+                return float(agent.get_weights()["default_policy"][
+                    "value_branch.weight"][0][0])
+            else:
+                return agent.get_weights()["default_policy"][4][0]
+
+        &#47&#47 Import weights for our custom model from an h5 file.
+        weight_before_import = current_weight(agent)
+        agent.import_model(import_file=import_file)
+        weight_after_import = current_weight(agent)
+        check(weight_before_import, weight_after_import, false=True)
+
+        &#47&#47 Train for a while.
+        for _ in range(1):
+            agent.train()
+        weight_after_train = current_weight(agent)
+        &#47&#47 Weights should have changed.
+        check(weight_before_import, weight_after_train, false=True)
+        check(weight_after_import, weight_after_train, false=True)
+
+        &#47&#47 We can save the entire Agent and restore, weights should remain the
+        &#47&#47 same.
+        file = agent.save("after_train")
+        check(weight_after_train, current_weight(agent))
+        agent.restore(file)
+        check(weight_after_train, current_weight(agent))
+
+        &#47&#47 Import (untrained) weights again.
+        agent.import_model(import_file=import_file)
+        check(current_weight(agent), weight_after_import)
+
+        <a id="change">if eager_mode_ctx:
+            eager_mode_ctx.__exit__(None, None, None)
+
+
+</a>class TestModelImport(unittest.TestCase):
+    def setUp(self):
+        ray.init()
+        ModelCatalog.register_custom_model("keras_model", MyKerasModel)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    agent_cls = get_agent_class(algo)
+
+    for fw in <a id="change">framework_iterator(config, ["tf", "torch"])</a>:
+        config["model"]["custom_model"] = "keras_model" if fw != "torch" else \
+            "torch_model"
+</code></pre><img src="7147421.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 17</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/1d4823c0ec446e93d00df8ca654db4b45b63b3d4#diff-882c1f1ec01a8a4f0bd1c899d7f330bb6039af1ad82362f6c66dc008921312bdL133' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 1d4823c0ec446e93d00df8ca654db4b45b63b3d4</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: sven@anyscale.io</div><div id='file'> File Name: rllib/tests/test_model_imports.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: model_import_test</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/1d4823c0ec446e93d00df8ca654db4b45b63b3d4#diff-882c1f1ec01a8a4f0bd1c899d7f330bb6039af1ad82362f6c66dc008921312bdL133' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 1d4823c0ec446e93d00df8ca654db4b45b63b3d4</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: sven@anyscale.io</div><div id='file'> File Name: rllib/tests/test_model_imports.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: model_import_test</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/1d4823c0ec446e93d00df8ca654db4b45b63b3d4#diff-b7a68b91d11f66f41396d92f0ee928151e33514d4d9424908755e88d62c28ddfL27' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 1d4823c0ec446e93d00df8ca654db4b45b63b3d4</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: sven@anyscale.io</div><div id='file'> File Name: rllib/utils/exploration/tests/test_explorations.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: do_test_explorations</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/1d4823c0ec446e93d00df8ca654db4b45b63b3d4#diff-1129758badbb76c0b7c1ea027a5d0cfa93fbaa9711e0749a3414e5b40cbd6bebL23' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 1d4823c0ec446e93d00df8ca654db4b45b63b3d4</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: sven@anyscale.io</div><div id='file'> File Name: rllib/policy/tests/test_compute_log_likelihoods.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: do_test_log_likelihood</div><BR>

@@ -1,0 +1,111 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 Only for debug!
+np.random.seed(123)
+
+<a id="change">g = tf.Graph()</a>
+<a id="change">sess = tf.Session(graph=g)</a>
+<a id="change">K.set_session(sess)</a>
+
+<a id="change">with g.as_default():
+  tf.set_random_</a><a id="change">seed(123)
+  chembl_tasks, datasets, transformers = load_chembl(shard_size=2000,
+    featurizer="GraphConv", set="5thresh", split="random")
+  train_dataset, valid_dataset, test_dataset = datasets
+
+  &#47&#47 Fit models
+  metric = dc.metrics.Metric(dc.metrics.pearson_r2_score, np.mean)
+
+  &#47&#47 Do setup required for tf/keras models
+  &#47&#47 Number of features on conv-mols
+  n_feat = 75
+  &#47&#47 Batch size of models
+  batch_size = 128
+  graph_model = dc.nn.SequentialGraph(n_feat)
+  graph_model.add(dc.nn.GraphConv(128, activation=&quotrelu&quot))
+  graph_model.add(dc.nn.BatchNormalization(epsilon=1e-5, mode=1))
+  graph_model.add(dc.nn.GraphPool())
+  graph_model.add(dc.nn.GraphConv(128, activation=&quotrelu&quot))
+</a>  graph_model.add(dc.nn.BatchNormalization(epsilon=1e-5, mode=1))
+  <a id="change">graph_model.add(dc.nn.GraphPool())</a>
+  &#47&#47 Gather Projection
+  <a id="change">graph_model.add(dc.nn.Dense(256, activation=&quotrelu&quot))</a>
+  <a id="change">graph_model.add(dc.nn.BatchNormalization(epsilon=1e-5, mode=1))</a>
+  <a id="change">graph_model.add(dc.nn.GraphGather(batch_size, activation="tanh"))</a>
+  &#47&#47 Dense post-processing layer
+
+  with <a id="change">tf.Session</a>() as sess:
+    <a id="change">model = dc.models.MultitaskGraphRegressor(
+      sess, graph_model, len(chembl_tasks), batch_size=batch_size,
+      learning_rate=1e-3, learning_rate_decay_time=1000,
+      optimizer_type="adam", beta1=.9, beta2=.999)</a>
+
+    &#47&#47 Fit trained model
+    model.fit(train_dataset, nb_epoch=20)
+
+    print("Evaluating model")
+    <a id="change">train_scores = model.evaluate(train_dataset, [metric], transformers)</a>
+    valid_scores = model.evaluate(valid_dataset, [metric], transformers)
+    <a id="change">test_scores = model.evaluate(test_dataset, [metric], transformers)</a>
+
+    print("Train scores")
+    <a id="change">print(train_scores)</a>
+
+    print("Validation scores")
+    print(valid_scores)
+
+    print("Test scores")
+    <a id="change">print(test_scores)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+train_dataset, valid_dataset, test_dataset = datasets
+
+&#47&#47 Fit models
+<a id="change">metric = dc.metrics.Metric(dc.metrics.pearson_r2_score, np.mean)</a>
+
+&#47&#47 Do setup required for tf/keras models
+&#47&#47 Number of features on conv-mols
+<a id="change">n_feat = 75</a>
+&#47&#47 Batch size of models
+<a id="change">batch_size = 128</a>
+<a id="change">graph_model = dc.nn.SequentialGraph(n_feat)</a>
+<a id="change">graph_model.add(dc.nn.GraphConv(128, n_feat, activation=&quotrelu&quot))</a>
+graph_model.add(dc.nn.BatchNormalization(epsilon=1e-5, mode=1))
+graph_model.add(dc.nn.GraphPool())
+<a id="change">graph_model.add(dc.nn.GraphConv(128, 64, activation=&quotrelu&quot))</a>
+graph_model.add(dc.nn.BatchNormalization(epsilon=1e-5, mode=1))
+<a id="change">graph_model.add(dc.nn.GraphPool())</a>
+&#47&#47 Gather Projection
+<a id="change">graph_model.add(dc.nn.Dense(256, 128, activation=&quotrelu&quot))</a>
+<a id="change">graph_model.add(dc.nn.BatchNormalization(epsilon=1e-5, mode=1))</a>
+<a id="change">graph_model.add(dc.nn.GraphGather(batch_size, activation="tanh"))</a>
+
+<a id="change">model = dc.models.MultitaskGraphRegressor(
+  graph_model,
+  len(chembl_tasks),
+  n_feat,
+  batch_size=batch_size,
+  learning_rate=1e-3,
+  learning_rate_decay_time=1000,
+  optimizer_type="adam",
+  beta1=.9,
+  beta2=.999)</a>
+
+&#47&#47 Fit trained model
+<a id="change">model.fit(train_dataset, nb_epoch=20)</a>
+
+print("Evaluating model")
+<a id="change">train_scores = model.evaluate(train_dataset, [metric], transformers)</a>
+valid_scores = model.evaluate(valid_dataset, [metric], transformers)
+<a id="change">test_scores = model.evaluate(test_dataset, [metric], transformers)</a>
+
+print("Train scores")
+<a id="change">print(train_scores)</a>
+
+print("Validation scores")
+print(valid_scores)
+
+print("Test scores")
+<a id="change">print(test_scores)</a>
+</code></pre>

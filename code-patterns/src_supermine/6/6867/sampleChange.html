@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                iter(max_resources_by_ip.values()))
+        &#47&#47 We fill the worker node resources only once.
+        if not self.node_types[NODE_TYPE_LEGACY_WORKER]["resources"]:
+            <a id="change">if len(max_resources_by_ip) &gt; 1:
+                &#47&#47 Set the node_types here as we already launched a worker node
+                &#47&#47 from which we directly get the node_resources.
+                worker_nodes = self.provider.non_terminated_nodes(
+                    tag_filters={TAG_RAY_NODE_KIND: NODE_KIND_WORKER})
+                worker_node_ips = [
+                    self.provider.internal_ip(node_id)
+                    for node_id in worker_nodes
+                ]
+                for ip in worker_node_ips:
+                    if ip in max_resources_by_ip:
+                        self.node_types[NODE_TYPE_LEGACY_WORKER][
+                            "resources"] = max_resources_by_ip[ip]
+                assert self.node_types[NODE_TYPE_LEGACY_WORKER]["resources"]
+
+   </a> def _get_concurrent_resource_demand_to_launch(
+            self,
+            to_launch: Dict[NodeType, int],
+            connected_nodes: List[NodeIP],</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        &#47&#47 We fill the head node resources only once.
+        if not self.node_types[NODE_TYPE_LEGACY_HEAD]["resources"]:
+            <a id="change">try:
+                head_ip = self.provider.internal_ip(
+                    self.provider.non_terminated_nodes({
+                        TAG_RAY_NODE_KIND: NODE_KIND_HEAD
+                    })[0])
+                self.node_types[NODE_TYPE_LEGACY_HEAD]["resources"] = \
+                    copy.deepcopy(max_resources_by_ip[head_ip])
+            except (IndexError, KeyError):
+                logger.exception("Could not reach the head node.")
+        &#47&#47 We fill the worker node resources only once.
+       </a> if not self.node_types[NODE_TYPE_LEGACY_WORKER]["resources"]:
+            &#47&#47 Set the node_types here in case we already launched a worker node
+            &#47&#47 from which we can directly get the node_resources.
+            worker_nodes = self.provider.non_terminated_nodes(</code></pre>

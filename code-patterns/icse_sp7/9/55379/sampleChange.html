@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                preds_batch = preds_batch[:,:,target_indexes]
+
+            &#47&#47 accumulate predictions
+            <a id="change">preds.append(preds_batch[:Nb])</a>
+
+            &#47&#47 next batch
+            Xb, _, _, Nb = batcher.next()
+
+        &#47&#47 reset batcher
+        batcher.reset()
+
+        &#47&#47 accumulate predictions
+        <a id="change">preds = np.vstack(preds)</a>
+
+        return preds
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        if target_indexes is not None:
+            num_targets = len(target_indexes)
+
+        <a id="change">preds = np.zeros((batcher.num_seqs, buf_len, num_targets), dtype=&quotfloat16&quot)</a>
+
+        si = 0
+
+        &#47&#47 get first batch
+        Xb, _, _, Nb = batcher.next()
+
+        while Xb is not None:
+            &#47&#47 update feed dict
+            fd[self.inputs] = Xb
+
+            &#47&#47 compute predictions
+            preds_batch = sess.run(self.preds_op, feed_dict=fd)
+
+            &#47&#47 filter for specific targets
+            if target_indexes is not None:
+                preds_batch = preds_batch[:,:,target_indexes]
+
+            &#47&#47 accumulate predictions
+            <a id="change">preds[si:si+Nb,:,:]</a> = preds_batch[:Nb,:,:]
+
+            &#47&#47 update sequence index
+            si += Nb</code></pre>

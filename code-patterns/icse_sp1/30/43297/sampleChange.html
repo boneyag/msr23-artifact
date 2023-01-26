@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          timeout=FLAGS.eval_timeout,
+          timeout_fn=terminate_eval)
+
+    for checkpoint in <a id="change">get_next_checkpoint()</a>:
+      tf.logging.info(&quotStarting to evaluate.&quot)
+      try:
+        eval_results = inception_classifier.evaluate(
+            input_fn=imagenet_eval.input_fn,
+            steps=eval_steps,
+            hooks=eval_hooks,
+            checkpoint_path=checkpoint)
+        tf.logging.info(<a id="change">&quotEvaluation results: %s&quot % eval_results</a>)
+      except tf.errors.NotFoundError:
+        &#47&#47 skip checkpoint if it gets deleted prior to evaluation
+        tf.logging.info(&quotCheckpoint %s no longer exists ... skipping&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  if FLAGS.mode == &quoteval&quot:
+    &#47&#47 Run evaluation when there is a new checkpoint
+    for checkpoint in <a id="change">evaluation.checkpoints_iterator(FLAGS.model_dir)</a>:
+      tf.logging.info(&quotStarting to evaluate.&quot)
+      try:
+        <a id="change">start_timestamp = time.time()</a>  &#47&#47 Includes compilation time
+        eval_results = inception_classifier.evaluate(
+            input_fn=imagenet_eval.input_fn,
+            steps=eval_steps,
+            hooks=eval_hooks,
+            checkpoint_path=checkpoint)
+        <a id="change">elapsed_time = int(time.time() - start_timestamp)</a>
+        tf.logging.info(
+            &quotEval results: %s. Elapsed seconds: %d&quot, eval_results, elapsed_time)
+
+        &#47&#47 Terminate eval job when final checkpoint is reached
+        <a id="change">current_step = int(os.path.basename(checkpoint).split(&quot-&quot)[1])</a>
+        <a id="change">if current_step &gt;= FLAGS.train_steps:
+          tf.logging.info(
+              &quotEvaluation finished after training step %d&quot, current_step)
+          break
+     </a> except tf.errors.NotFoundError:
+        &#47&#47 Since the coordinator is on a different job than the TPU worker,
+        &#47&#47 sometimes the TPU worker does not finish initializing until long after
+        &#47&#47 the CPU job tells it to start evaluating. In this case, the checkpoint
+        &#47&#47 file could have been deleted already.
+        <a id="change">tf.logging.info(
+            &quotCheckpoint %s no longer exists, skipping checkpoint&quot, checkpoint)</a>
+
+  elif FLAGS.mode == &quottrain_and_eval&quot:
+    for cycle in range(FLAGS.train_steps // FLAGS.train_steps_per_eval):
+      tf.logging.info(&quotStarting training cycle %d.&quot % cycle)</code></pre>

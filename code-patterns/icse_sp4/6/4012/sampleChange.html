@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                             error_message=e.json()))
+
+        except Exception as e:
+            <a id="change">output_data = FailedOperation(input_data=input_data.dict(),
+                                          success=False,
+                                          error=ComputeError(
+                                              error_type="runtime_error",
+                                              error_message="QCEngine Error:\nError Message: {}".format(str(e))
+                                          ))</a>
+
+    return handle_output_metadata(output_data, metadata, raise_error=raise_error, return_dict=return_dict)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    
+    input_data = model_wrapper(input_data, ResultInput)
+    <a id="change">if isinstance(input_data, FailedOperation):
+        if return_dict:
+            return input_data.dict()
+        return input_data
+
+   </a> if local_options is None:
+        local_options = {}
+
+    try:
+        input_engine_options = input_data._qcengine_local_config
+        input_data = input_data.copy(exclude={&quot_qcengine_local_config&quot})
+    except AttributeError:
+        input_engine_options = {}
+
+    local_options = {**local_options, **input_engine_options}
+    config = get_config(local_options=local_options)
+
+    &#47&#47 Run the program
+    with compute_wrapper(capture_output=capture_output) as metadata:
+        <a id="change">output_data = input_data.copy()</a>  &#47&#47 Initial in case of error handling
+        try:
+            output_data = get_program(program)(input_data, config)
+        except KeyError as e:</code></pre>

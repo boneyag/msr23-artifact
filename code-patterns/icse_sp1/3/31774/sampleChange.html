@@ -1,0 +1,83 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 get reward estimates
+        reward_estimates = self.reward_network(current_state).q_values
+        reward_loss = F.mse_loss(reward_estimates, rewards)
+        <a id="change">self.reward_network_optimizer.zero_grad()</a>
+        reward_loss.backward()
+        self.reward_network_optimizer.step()
+
+        self.loss_reporter.report(</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.minibatch += 1
+        rewards = boosted_rewards
+        discount_tensor = torch.full_like(rewards, self.gamma)
+        not_done_mask = <a id="change">learning_input.not_terminal.float()</a>
+
+        if self.use_seq_num_diff_as_time_diff:
+            &#47&#47 TODO: Implement this in another diff
+            logger.warning(
+                "_dqn_trainer has not implemented use_seq_num_diff_as_time_diff feature"
+            )
+            pass
+
+        all_next_q_values, all_next_q_values_target = self.get_detached_q_values(
+            learning_input.next_state
+        )
+
+        if self.maxq_learning:
+            &#47&#47 Compute max a&quot Q(s&quot, a&quot) over all possible actions using target network
+            next_q_values, max_q_action_idxs = self.get_max_q_values_with_target(
+                all_next_q_values,
+                all_next_q_values_target,
+                learning_input.possible_next_actions_mask.float(),
+            )
+        else:
+            &#47&#47 SARSA
+            next_q_values, max_q_action_idxs = self.get_max_q_values_with_target(
+                all_next_q_values, all_next_q_values_target, learning_input.next_action
+            )
+
+        filtered_next_q_vals = next_q_values * not_done_mask
+
+        if self.minibatch &lt; self.reward_burnin:
+            target_q_values = rewards
+        else:
+            target_q_values = rewards + (discount_tensor * filtered_next_q_vals)
+
+        &#47&#47 Get Q-value of action taken
+        current_state = rlt.StateInput(state=learning_input.state)
+        all_q_values = self.q_network(current_state).q_values
+        self.all_action_scores = all_q_values.detach()
+        q_values = torch.sum(all_q_values * learning_input.action, 1, keepdim=True)
+
+        loss = self.q_network_loss(q_values, target_q_values)
+        self.loss = loss.detach()
+
+        self.q_network_optimizer.zero_grad()
+        loss.backward()
+        if self.gradient_handler:
+            self.gradient_handler(self.q_network.parameters())
+        self.q_network_optimizer.step()
+
+        if self.minibatch &lt; self.reward_burnin:
+            &#47&#47 Reward burnin: force target network
+            self._soft_update(self.q_network, self.q_network_target, 1.0)
+        else:
+            &#47&#47 Use the soft update rule to update target network
+            self._soft_update(self.q_network, self.q_network_target, self.tau)
+
+        logged_action_idxs = learning_input.action.argmax(dim=1, keepdim=True)
+        <a id="change">reward_loss, model_rewards, model_propensities = self.calculate_cpes(
+            training_batch,
+            current_state,
+            logged_action_idxs,
+            max_q_action_idxs,
+            discount_tensor,
+            not_done_mask,
+        )</a>
+
+        self.loss_reporter.report(
+            td_loss=self.loss,
+            reward_loss=reward_loss,</code></pre>

@@ -1,0 +1,76 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    assert ext_cls.return_special == &quot[CLS]&quot
+    assert ext_pooler.return_special == &quotpooler_output&quot
+
+    <a id="change">res_sequence = ext_sequence.transform(stim).to_df()</a>
+    res_file = ext_sequence.transform(stim_file).to_df()
+    res_cls = ext_cls.transform(stim).to_df()
+    <a id="change">res_pooler = ext_pooler.transform(stim).to_df()</a>
+    res_max = ext_max.transform(stim).to_df()
+
+    &#47&#47 Check shape
+    assert len(res_sequence[&quotencoding&quot][0]) == 768
+    assert len(res_cls[&quotencoding&quot][0]) == 768
+    assert len(res_pooler[&quotencoding&quot][0]) == 768
+    assert len(res_max[&quotencoding&quot][0]) == 768
+    assert res_sequence.shape[0] == 1
+    assert res_cls.shape[0] == 1
+    assert res_pooler.shape[0] == 1
+    assert res_max.shape[0] == 1
+
+    &#47&#47 Make sure pooler/cls/no arguments return different encodings
+    assert res_sequence[&quotencoding&quot][0] != res_cls[&quotencoding&quot][0]
+    assert res_sequence[&quotencoding&quot][0] != res_pooler[&quotencoding&quot][0]
+    assert res_sequence[&quotencoding&quot][0] != res_max[&quotencoding&quot][0]
+    assert all([res_max[&quotencoding&quot][0][i] &gt;= res_sequence[&quotencoding&quot][0][i]
+                                              for i in range(768)])
+
+    &#47&#47 test return sequence
+    assert res_sequence[&quotsequence&quot][0] == &quotThis is not a tokenized sentence .&quot
+
+    &#47&#47 test file stim
+    assert res_file[&quotduration&quot][0] == 2.9
+    assert res_file[&quotonset&quot][0] == 0.2
+
+    &#47&#47 catch error with wrong numpy function and wrong special token arg
+    with pytest.raises(ValueError) as err:
+        BertSequenceEncodingExtractor(pooling=&quotavg&quot)
+    assert &quotvalid numpy function&quot in str(err.value)
+    with pytest.raises(ValueError) as err:
+        BertSequenceEncodingExtractor(return_special=&quot[MASK]&quot)
+    assert &quotmust be one of&quot in str(err.value)
+
+    <a id="change">del ext, ext_sequence, ext_cls, ext_pooler, ext_max</a>
+
+
+def test_bert_LM_extractor():
+    stim = ComplexTextStim(text=&quotThis is not a tokenized sentence.&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+&quot&quot&quot
+ 
+def test_bert_sequence_extractor():
+    <a id="change">stim</a> = ComplexTextStim(text=&quotThis is not a tokenized sentence.&quot)
+    stim_file = ComplexTextStim(join(TEXT_DIR, &quotsentence_with_header.txt&quot))
+
+    &#47&#47ext_sequence = BertSequenceEncodingExtractor(return_input=True)
+    &#47&#47ext_cls = BertSequenceEncodingExtractor(return_special=&quot[CLS]&quot)
+    &#47&#47ext_pooler = BertSequenceEncodingExtractor(return_special=&quotpooler_output&quot)
+    &#47&#47ext_max = BertSequenceEncodingExtractor(pooling=&quotmax&quot)
+
+    &#47&#47 Test correct behavior when setting return_special
+    &#47&#47assert ext_cls.pooling is None
+    &#47&#47assert ext_pooler.pooling is None
+    &#47&#47assert ext_cls.return_special == &quot[CLS]&quot
+    &#47&#47assert ext_pooler.return_special == &quotpooler_output&quot
+
+    res_sequence = BertSequenceEncodingExtractor(return_input=True).transform(stim).to_df()
+    res_file =  BertSequenceEncodingExtractor(return_input=True).transform(stim_file).to_df()
+    res_cls = BertSequenceEncodingExtractor(return_special=&quot[CLS]&quot).transform(stim).to_df()
+    res_pooler = <a id="change">BertSequenceEncodingExtractor(return_special=&quotpooler_output&quot).transform(stim).to_df()</a>
+    res_max = <a id="change">BertSequenceEncodingExtractor(pooling=&quotmax&quot).transform(stim).to_df()</a>
+
+    &#47&#47 Check shape
+    assert len(res_sequence[&quotencoding&quot][0]) == 768
+    assert len(res_cls[&quotencoding&quot][0]) == 768</code></pre>

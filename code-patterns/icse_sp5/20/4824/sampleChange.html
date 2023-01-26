@@ -1,0 +1,82 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if bandit.options.skip:
+        return LintResult.noop()
+
+    <a id="change">adaptors_with_origins = linter.adaptors_with_origins</a>
+
+    &#47&#47 NB: Bandit output depends upon which Python interpreter version it&quots run with. We ensure that
+    &#47&#47 each target runs with its own interpreter constraints. See
+    &#47&#47 https://github.com/PyCQA/bandit&#47&#47under-which-version-of-python-should-i-install-bandit.
+    interpreter_constraints = PexInterpreterConstraints.create_from_adaptors(
+        (adaptor_with_origin.adaptor for adaptor_with_origin in adaptors_with_origins),
+        python_setup=python_setup,
+    )
+    requirements_pex = await Get[Pex](
+        PexRequest(
+            output_filename="bandit.pex",
+            requirements=PexRequirements(bandit.get_requirement_specs()),
+            interpreter_constraints=interpreter_constraints,
+            entry_point=bandit.get_entry_point(),
+        )
+    )
+
+    config_path: Optional[str] = bandit.options.config
+    config_snapshot = await Get[Snapshot](
+        PathGlobs(
+            globs=tuple([config_path] if config_path else []),
+            glob_match_error_behavior=GlobMatchErrorBehavior.error,
+            description_of_origin="the option `--bandit-config`",
+        )
+    )
+
+    all_source_files = await Get[SourceFiles](
+        LegacyAllSourceFilesRequest(
+            <a id="change">adaptor_with_origin.adaptor</a> for adaptor_with_origin in adaptors_with_origins
+        )
+    )
+    <a id="change">specified_source_files = await Get[SourceFiles](
+        LegacySpecifiedSourceFilesRequest(adaptors_with_origins)
+    )</a>
+
+    merged_input_files = await Get[Digest](
+        DirectoriesToMerge(
+            directories=(
+                all_source_files.snapshot.directory_digest,
+                requirements_pex.directory_digest,
+                config_snapshot.directory_digest,
+            )
+        ),
+    )
+
+    address_references = ", ".join(
+        sorted(
+            <a id="change">adaptor_with_origin</a>.adaptor.address.reference()
+            <a id="change">for</a> adaptor_with_origin in <a id="change">adaptors_with_origins</a>
+        )
+    )
+
+    request = requirements_pex.create_execute_request(</code></pre><h3>After Change</h3><pre><code class='java'>
+    all_source_files = await Get[SourceFiles](
+        AllSourceFilesRequest(config.sources for config in configs)
+    )
+    <a id="change">specified_source_files = await Get[SourceFiles](
+        SpecifiedSourceFilesRequest((config.sources, config.origin) for config in configs)
+    )</a>
+
+    merged_input_files = await Get[Digest](
+        DirectoriesToMerge(
+            directories=(
+                all_source_files.snapshot.directory_digest,
+                requirements_pex.directory_digest,
+                config_snapshot.directory_digest,
+            )
+        ),
+    )
+
+    address_references = ", ".join(sorted(config.address.reference() <a id="change">for</a> config in configs))
+
+    request = requirements_pex.create_execute_request(
+        python_setup=python_setup,</code></pre>

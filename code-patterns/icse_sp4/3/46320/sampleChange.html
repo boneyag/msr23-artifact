@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    scripted_model = generate_jit_model(1)
+    mod, params = relay.frontend.from_pytorch(scripted_model, shape_list)
+
+    with tvm.transform.PassContext(opt_level=3, disabled_pass=<a id="change">["FoldScaleAxis"]</a>):
+        vm_exec = relay.vm.compile(mod, target=target, params=params)
+
+    ctx = tvm.cpu()</code></pre><h3>After Change</h3><pre><code class='java'>
+    data = process_image(img)
+    data_np = data.detach().numpy()
+
+    <a id="change">with torch.no_grad():
+        pt_res = scripted_model(data)
+
+   </a> for target in ["llvm", "cuda"]:
+        with tvm.transform.PassContext(opt_level=3):
+            vm_exec = relay.vm.compile(mod, target=target, params=params)
+</code></pre>

@@ -1,0 +1,68 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if target_dtype_ops is not None:
+        assert isinstance(target_dtype_ops, list), "target_dtype_ops should be a list of strs"
+    else:
+        <a id="change">target_dtype_ops = lists.symbol.FP16_FUNCS</a>
+
+    if fp32_ops is not None:
+        assert isinstance(fp32_ops, list), "fp32_ops should be a list of strs"
+    else:
+        fp32_ops = lists.symbol.FP32_FUNCS
+
+    if conditional_fp32_ops is not None:
+        assert isinstance(conditional_fp32_ops, list), "conditional_fp32_ops should be a list"
+    else:
+        conditional_fp32_ops = lists.symbol.CONDITIONAL_FP32_FUNCS
+
+    original_conditional_op_names = []
+    conditional_op_names = []
+    param_names = []
+    param_vals = []
+    indptr = [0]
+    for conditional_fp32_op in conditional_fp32_ops:
+        assert isinstance(conditional_fp32_op[0], str) and isinstance(conditional_fp32_op[1], str) \
+            and isinstance(conditional_fp32_op[2], list), "conditional_fp32_ops should be a list of " \
+                                                          "(str, str, list of str)"
+        param_vals += conditional_fp32_op[2]
+        indptr.append(len(param_vals))
+        param_names.append(conditional_fp32_op[1])
+        conditional_op_names.append(conditional_fp32_op[0])
+
+    if excluded_sym_names is not None:
+        assert isinstance(excluded_sym_names, list), "excluded_sym_names should be a list of strs"
+    else:
+        excluded_sym_names = []
+
+    for original_conditional_fp32_op in lists.symbol.CONDITIONAL_FP32_FUNCS:
+        original_conditional_op_names.append(original_conditional_fp32_op[0])
+
+    &#47&#47 Op lists should not have intersection
+    common_ops = set(target_dtype_ops) & set(fp32_ops)
+    assert len(common_ops) == 0, "Ops cannot be in two or more lists. " \
+                                 "Common ops in target_dtype_ops and fp32_ops {}".format(common_ops)
+    common_ops = set(target_dtype_ops) & set(conditional_op_names)
+    assert len(common_ops) == 0, "Ops cannot be in two or more lists. " \
+                                 "Common ops in target_dtype_ops and conditional_fp32_ops {}".format(common_ops)
+    common_ops = set(conditional_op_names) & set(fp32_ops)
+    assert len(common_ops) == 0, "Ops cannot be in two or more lists. " \
+                                 "Common ops in fp32_ops and conditional_fp32_ops {}".format(common_ops)
+
+    combined_ops = set(target_dtype_ops + fp32_ops + conditional_op_names)
+    <a id="change">all_fp16_fp32_ops = set(lists.symbol.FP16_FUNCS + lists.symbol.FP32_FUNCS
+                            + lists.symbol.FP16_FP32_FUNCS + original_conditional_op_names)</a>
+
+    illegal_ops = combined_ops - all_fp16_fp32_ops
+    assert not illegal_ops, &quot&quot&quotCan only choose ops from one of the three lists
+                            for fp16_ops and fp32_ops</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    assert isinstance(sym, Symbol), "First argument to convert_symbol should be Symbol"
+
+    <a id="change">assert target_dtype in [&quotfloat16&quot, &quotbfloat16&quot], \
+               "Only target_dtype float16 and bfloat16 are supported currently"</a>
+
+    if target_dtype == &quotbfloat16&quot:
+        target_dtype = bfloat16
+</code></pre>

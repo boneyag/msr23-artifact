@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+reload = True
+verbosity = "high"
+
+<a id="change">base_dir = "/tmp/muv_tf"</a>
+model_dir = <a id="change">os.path.join(base_dir, "model")</a>
+<a id="change">if os.path.exists(base_dir):
+  shutil.rmtree(base_dir)
+</a><a id="change">os.makedirs(base_dir)</a>
+
+&#47&#47 Load MUV data
+muv_tasks, muv_datasets, transformers = load_muv(
+    base_dir, reload=reload)
+train_dataset, valid_dataset = muv_datasets 
+n_features = 1024 
+
+&#47&#47 Build model
+classification_metric = Metric(metrics.roc_auc_score, np.mean,
+                               verbosity=verbosity,
+                               mode="classification")
+
+tensorflow_model = TensorflowMultiTaskClassifier(
+    len(muv_tasks), n_features, model_dir, dropouts=[.25],
+    learning_rate=0.001, weight_init_stddevs=[.1],
+    batch_size=64, verbosity=verbosity)
+model = TensorflowModel(tensorflow_model, model_dir)
+
+&#47&#47 Fit trained model
+model.fit(train_dataset)
+model.save()
+
+train_evaluator = Evaluator(model, train_dataset, transformers, verbosity=verbosity)
+train_scores = train_evaluator.compute_model_performance([classification_metric])
+
+print("Train scores")
+print(train_scores)
+
+<a id="change">valid_evaluator = Evaluator(model, valid_dataset, transformers, verbosity=verbosity)</a>
+valid_scores = valid_evaluator.compute_model_performance([classification_metric])
+
+print("Validation scores")
+print(valid_scores)</code></pre><h3>After Change</h3><pre><code class='java'>
+model.fit(train_dataset)
+
+&#47&#47 Evaluate train/test scores
+train_scores = <a id="change">model.evaluate(train_dataset, [metric], transformers)</a>
+valid_scores = model.evaluate(valid_dataset, [metric], transformers)
+
+print("Train scores")
+print(train_scores)</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    else:
+                        env.logger.trace(&quotStart submitting {} (status: {})&quot.format(tid, self.task_status.get(tid, &quotunknown&quot)))
+                        t = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+                        self.submitting_tasks[tid] = <a id="change">(t, t.submit(self.execute_task, tid))</a>
+                &#47&#47
+                with threading.Lock():
+                    for tid in to_run:
+                        self.pending_tasks.remove(tid)</code></pre><h3>After Change</h3><pre><code class='java'>
+        while True:
+            &#47&#47 if no new task, does not do anything.
+            if self.running_tasks and time.time() - self._last_status_check &gt; self.status_check_interval:
+                <a id="change">if self._status_checker is None:
+                    self._status_checker = self._thread_workers.submit(self.query_tasks, self.running_tasks, 1)
+                    continue
+                elif self._status_checker.running():
+                    time.sleep(0.01)
+                    continue
+                else:
+                    status_output = self._status_checker.result()
+                    self._status_checker = None
+               </a> with threading.Lock():
+                    for line in status_output.split(&quot\n&quot):
+                        if not line.strip():
+                            continue</code></pre>

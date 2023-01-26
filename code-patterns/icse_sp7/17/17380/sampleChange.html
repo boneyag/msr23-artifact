@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def inverse_op(self, input_image, mask=None):
+        if not isinstance(input_image, dict):
+            full_border = match_ndim(<a id="change">self.border</a>, <a id="change">input_image.ndim</a>)
+            outputs = _crop_numpy_array(input_image, full_border)
+            return outputs, mask
+
+        for name, image in input_image.items():
+            if name not in self.image_name:
+                continue
+            <a id="change">full_border = match_ndim(self.border, image.ndim)</a>
+            <a id="change">input_image[name]</a> = _crop_numpy_array(image, full_border)
+        return input_image, mask
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            input_image[name] = np.pad(image, self.full_border, mode=self.mode)
+        return input_image, mask
+
+    def inverse_op(<a id="change">self</a>, input_image, mask=None):
+        if not isinstance(input_image, dict):
+            &#47&#47 you can run the cropping op without running the padding op, but only if you
+            &#47&#47 pad with a constant amount (not pad_to)
+            if self.full_border is None and <a id="change">self.pad_to</a> == (0,):
+                <a id="change">self._set_full_border(input_image)</a>
+
+            outputs = self._crop_numpy_array(input_image, self.full_border)
+            return outputs, mask
+
+        for name, image in input_image.items():
+            &#47&#47 you can run the cropping op without running the padding op, but only if you
+            &#47&#47 pad with a constant amount (not pad_to)
+            if self.full_border is None and <a id="change">self.pad_to</a> == (0,):
+                <a id="change">self._set_full_border(image)</a>
+
+            if name not in self.image_name:
+                continue
+            input_image[name] = self._crop_numpy_array(image, self.full_border)</code></pre>

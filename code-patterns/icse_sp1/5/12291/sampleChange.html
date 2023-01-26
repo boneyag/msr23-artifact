@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if momentum != 0:
+                    param_state = self.state[p]
+                    if &quotmomentum_buffer&quot not in param_state:
+                        buf = param_state[&quotmomentum_buffer&quot] = <a id="change">torch.clone(d_p).detach()</a>
+                    else:
+                        buf = param_state[&quotmomentum_buffer&quot]
+                        buf.mul_(momentum).add_(d_p, alpha=1 - dampening)
+                    if nesterov:</code></pre><h3>After Change</h3><pre><code class='java'>
+                loss = closure()
+
+        for group in self.param_groups:
+            <a id="change">params_with_grad = []</a>
+            d_p_list = []
+            momentum_buffer_list = []
+            weight_decay = group[&quotweight_decay&quot]
+            momentum = group[&quotmomentum&quot]
+            dampening = group[&quotdampening&quot]
+            nesterov = group[&quotnesterov&quot]
+            lr = group[&quotlr&quot]
+
+            for p in group[&quotparams&quot]:
+                if p.grad is not None:
+                    params_with_grad.append(p)
+                    d_p_list.append(p.grad)
+
+                    state = self.state[p]
+                    if &quotmomentum_buffer&quot not in state:
+                        momentum_buffer_list.append(None)
+                    else:
+                        momentum_buffer_list.append(state[&quotmomentum_buffer&quot])
+
+            F.sgd(params_with_grad,
+                  d_p_list,
+                  momentum_buffer_list,
+                  weight_decay,
+                  momentum,
+                  lr,
+                  dampening,
+                  nesterov)
+
+            &#47&#47 update momentum_buffers in state
+            <a id="change">for p, momentum_buffer in zip(params_with_grad, momentum_buffer_list):
+                state = self.state[p]
+                state[&quotmomentum_buffer&quot] = momentum_buffer
+
+       </a> return loss
+</code></pre>

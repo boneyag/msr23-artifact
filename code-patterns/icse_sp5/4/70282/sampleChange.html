@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 TODO: share the decreasing timeout logic here with NailgunProtocol.iter_chunks() by adding
+        &#47&#47 a method to pants.util.contextutil!
+        remaining_time = time.time() - (start_time + timeout)
+        <a id="change">if remaining_time &gt; 0:
+          stderr = read_file(self._ng_stderr, binary_mode=True)
+          raise self.InitialNailgunConnectTimedOut(
+            timeout=timeout,
+            stdout=accumulated_stdout,
+            stderr=stderr,
+          )
+
+       </a> readable, _, _ = select.select([ng_stdout], [], [], (-1 * remaining_time))
+        if readable:
+          line = ng_stdout.readline()                          &#47&#47 TODO: address deadlock risk here.
+          try:</code></pre><h3>After Change</h3><pre><code class='java'>
+          possibly_raise_timeout(remaining_time)
+          events = selector.select(timeout=-1 * remaining_time)
+          if events:
+            <a id="change">line = ng_stdout.readline()</a>  &#47&#47 TODO: address deadlock risk here.
+            try:
+              return self._NG_PORT_REGEX.match(line).group(1)
+            except AttributeError:
+              pass
+            <a id="change">accumulated_stdout += line</a>
+    else:
+      with safe_open(self._ng_stdout, &quotr&quot) as ng_stdout:
+        while 1:
+          remaining_time = calculate_remaining_time()</code></pre>

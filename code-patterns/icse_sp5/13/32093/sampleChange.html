@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def __init__(self, mainOperator, projectFileGroupName):
+        super( BatchIoSerializer, self ).__init__( projectFileGroupName, self.SerializerVersion )
+        <a id="change">self.mainOperator = mainOperator</a>
+        
+        self._dirty = False
+        
+        def handleDirty():
+            self._dirty = True
+        self.mainOperator.ExportDirectory.notifyDirty( bind(handleDirty) )
+        <a id="change">self.mainOperator.Format.notifyDirty( bind(handleDirty) )</a>
+        self.mainOperator.Suffix.notifyDirty( bind(handleDirty) )
+        
+        def handleNewDataset(slot, index):
+            slot[index].notifyDirty( bind(handleDirty) )
+        &#47&#47 DatasetPath is a multi-slot, so subscribe to dirty callbacks on each slot as it is added
+        <a id="change">self</a>.mainOperator.DatasetPath.notifyInserted( bind(handleNewDataset) )
+    
+    def _serializeToHdf5(self, topGroup, hdf5File, projectFilePath):
+        &#47&#47 Delete any datasets we&quotre about to write</code></pre><h3>After Change</h3><pre><code class='java'>
+    SerializerVersion = 0.1
+
+    def __init__(self, operator, projectFileGroupName):
+        <a id="change">slots = [
+            SerialSlot(operator.ExportDirectory, default=&quot&quot),
+            SerialSlot(operator.Format, default=ExportFormat.H5),
+            SerialSlot(operator.Suffix, default=&quot_results&quot),
+            SerialDatasetPath(operator.DatasetPath,
+                              operator.Dirty,
+                              name=(&quotdatasetInfos&quot, &quotdataset{:&gt;04}&quot)),
+        ]</a>
+
+        super(BatchIoSerializer, self).__init__(projectFileGroupName,
+                                                self.SerializerVersion,
+                                                slots=slots)</code></pre>

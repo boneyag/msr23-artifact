@@ -1,0 +1,63 @@
+<html><h3>4654c35c6deb2e17d5436527a71d1683a2e409d6,vgg.py,,net,#Any#Any#,24
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    layers.append(new)
+
+def net(data_path, input_image):
+    <a id="change">layers = [
+        &quotconv1_1&quot, &quotrelu1_1&quot, &quotconv1_2&quot, &quotrelu1_2&quot, &quotpool1&quot,
+
+        &quotconv2_1&quot, &quotrelu2_1&quot, &quotconv2_2&quot, &quotrelu2_2&quot, &quotpool2&quot,
+
+        &quotconv3_1&quot, &quotrelu3_1&quot, &quotconv3_2&quot, &quotrelu3_2&quot, &quotconv3_3&quot,
+        &quotrelu3_3&quot, &quotconv3_4&quot, &quotrelu3_4&quot, &quotpool3&quot,
+
+        &quotconv4_1&quot, &quotrelu4_1&quot, &quotconv4_2&quot, &quotrelu4_2&quot, &quotconv4_3&quot,
+        &quotrelu4_3&quot, &quotconv4_4&quot, &quotrelu4_4&quot, &quotpool4&quot,
+
+        &quotconv5_1&quot, &quotrelu5_1&quot, &quotconv5_2&quot, &quotrelu5_2&quot, &quotconv5_3&quot,
+        &quotrelu5_3&quot, &quotconv5_4&quot, &quotrelu5_4&quot
+    ]</a>
+
+
+    data = sio.loadmat(data_path)
+    mean = data[&quotnormalization&quot][0][0][0]
+    mean_pixel = np.mean(mean, axis=(0, 1))
+    constants = data[&quotlayers&quot][0]
+
+    net = []
+    for i, kind in enumerate(layers):
+        short = kind[:4]
+        if short == &quotconv&quot:
+            weights = constants[i][0][0][0][0][0]
+            &#47&#47 in matconvnet, weights are [width, height, depth, num_filters]
+            &#47&#47 but in tensorflow, [height, width, in_channels, out_channels]
+            weights = np.transpose(weights, (1, 0, 2, 3))
+            bias = <a id="change">constants</a>[i][0][0][<a id="change">0</a>][0][1].reshape(-1)
+            new = _conv_layer(weights, bias)
+        elif short == &quotrelu&quot:
+            new = tf.nn.relu</code></pre><h3>After Change</h3><pre><code class='java'>
+    weights = data[&quotlayers&quot][0]
+
+    net = {}
+    <a id="change">current = input_image</a>
+    for i, name in enumerate(layers):
+        kind = name[:4]
+        if kind == &quotconv&quot:
+            kernels, bias = weights[i][0][0][0][0]
+            &#47&#47 matconvnet: weights are [width, height, in_channels, out_channels]
+            &#47&#47 tensorflow: weights are [height, width, in_channels, out_channels]
+            kernels = np.transpose(kernels, (1, 0, 2, 3))
+            bias = bias.reshape(-1)
+            current = _conv_layer(current, kernels, bias)
+        elif kind == &quotrelu&quot:
+            current = <a id="change">tf.nn.relu(current)</a>
+        elif kind == &quotpool&quot:
+            current = _pool_layer(current)
+        <a id="change">net[name] = current</a>
+
+    assert len(net) == len(layers)
+    return net, mean_pixel
+</code></pre><img src="311672467.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/anishathalye/neural-style/commit/4654c35c6deb2e17d5436527a71d1683a2e409d6#diff-a9f5cfcc573cb63396788fbca78f68e5b6884e4fafc4e3819ec40c52fd889fdcL7' target='_blank'>Link</a></div><div id='project'> Project Name: anishathalye/neural-style</div><div id='commit'> Commit Name: 4654c35c6deb2e17d5436527a71d1683a2e409d6</div><div id='time'> Time: 2015-12-02</div><div id='author'> Author: me@anishathalye.com</div><div id='file'> File Name: vgg.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: net</div><BR><BR><div id='link'><a href='https://github.com/apache/incubator-tvm/commit/c94623ad0dac5fa5ce7a9a3c4ecb794351ebc610#diff-c9c7999bd8bb452ece74a3d807d6658091cc411581f3e2518d1dd34e99714350L2873' target='_blank'>Link</a></div><div id='project'> Project Name: apache/incubator-tvm</div><div id='commit'> Commit Name: c94623ad0dac5fa5ce7a9a3c4ecb794351ebc610</div><div id='time'> Time: 2020-10-29</div><div id='author'> Author: anshuman.t@huawei.com</div><div id='file'> File Name: tests/python/frontend/tflite/test_forward.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _test_relu</div><BR><BR><div id='link'><a href='https://github.com/maciejkula/spotlight/commit/70e4d7fe60a9658bb27b9f5fb67592a1222b2ec3#diff-f656be4a1ec4df1b52d8d646b5d94252e036bd7e153fda7fc9ef6416695dc7f9L116' target='_blank'>Link</a></div><div id='project'> Project Name: maciejkula/spotlight</div><div id='commit'> Commit Name: 70e4d7fe60a9658bb27b9f5fb67592a1222b2ec3</div><div id='time'> Time: 2017-07-06</div><div id='author'> Author: maciej.kula@gmail.com</div><div id='file'> File Name: spotlight/sequence/representations.py</div><div id='class'> Class Name: CNNNet</div><div id='method'> Method Name: user_representation</div><BR>

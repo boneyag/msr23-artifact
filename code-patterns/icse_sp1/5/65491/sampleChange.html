@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    self._initialize(parameters)
+    for update, parameter, momentum in zip(updates, parameters,
+                                           self.accumulated_momentum):
+      <a id="change">if update is not None:
+        optimizer_utils.check_same_dtype(update, parameter)
+        lr = tf.cast(self.learning_rate, update.dtype)
+        mu = tf.cast(self.momentum, update.dtype)
+        if isinstance(update, tf.IndexedSlices):
+          update, indices = optimizer_utils.deduplicate_indexed_slices(
+              update.values, update.indices)
+          sparse_momentum_update = (mu * momentum.sparse_read(indices)) + update
+          momentum.scatter_update(
+              tf.IndexedSlices(sparse_momentum_update, indices))
+          if self.use_nesterov:
+            parameter.scatter_sub(
+                tf.IndexedSlices(
+                    (lr * update) + (lr * mu * sparse_momentum_update),
+                    indices))
+          else:
+            parameter.scatter_sub(
+                tf.IndexedSlices(lr * sparse_momentum_update, indices))
+        else:
+          momentum.assign((mu * momentum) + update)
+          if self.use_nesterov:
+            parameter.assign_sub((lr * update) + (lr * mu * momentum))
+          else:
+            parameter.assign_sub(lr * momentum)
+
+
+</a>class FastMomentum(base.Optimizer):
+  SGD with Momentum module.
+
+  def __init__(self,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+      else:
+        &#47&#47 Compute and apply a dense update.
+        <a id="change">update</a>, momentum = momentum_update(update, learning_rate, mu,
+                                           momentum_var, self.use_nesterov)
+        momentum_var.assign(momentum)
+        param.assign_sub(update)</code></pre>

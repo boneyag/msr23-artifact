@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        real_logits, fake_logits, fake_features = self.net(features, noise)
+
+        batch_size = tf.shape(real_logits)[0]
+        <a id="change">d_loss = \
+            tf.losses.sparse_softmax_cross_entropy(
+                tf.ones([batch_size, 1], tf.int32), real_logits) + \
+            tf.losses.sparse_softmax_cross_entropy(
+                tf.zeros([batch_size, 1], tf.int32), fake_logits)</a>
+        g_loss = \
+            tf.losses.sparse_softmax_cross_entropy(
+                tf.ones([batch_size, 1], tf.int32), fake_logits)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47g_loss = \
+        &#47&#47    tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+        &#47&#47        labels=tf.ones_like(fake_logits), logits=fake_logits))
+        d_loss = <a id="change">tf.reduce_mean(real_logits - fake_logits)</a>
+        <a id="change">g_loss = tf.reduce_mean(fake_logits)</a>
+
+        with tf.name_scope(&quotComputeGradients&quot):
+            d_vars = tf.get_collection(
+                tf.GraphKeys.TRAINABLE_VARIABLES,</code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 But filter out untargeted allosomes/contigs
+        is_autosome = re.compile(r"(chr)?\d+$")
+        for untgt_chr in set(access_chroms) - set(target_chroms):
+            <a id="change">if not is_autosome.match(untgt_chr):
+                print("Skipping untargeted chromosome", untgt_chr,
+                      file=sys.stderr)
+                del access_chroms[untgt_chr]
+   </a> else:
+        &#47&#47 Chromosome accessible sequence regions not known -- use heuristics
+        &#47&#47 (chromosome length is endpoint of last probe; skip initial
+        &#47&#47 &lt;magic number&gt; of bases that are probably telomeric)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 But filter out untargeted allosomes/contigs
+        untgt_chroms = set(access_chroms) - set(target_chroms)
+        is_autosome = re.compile(r"(chr)?\d+$")
+        <a id="change">if any(is_autosome.match(c) for c in target_chroms):
+            &#47&#47 Autosomes have numeric names -- keep them
+            chroms_to_skip = [c for c in untgt_chroms
+                              if not is_autosome.match(c)]
+        else:
+            &#47&#47 Alternative contigs have long names -- skip them
+            max_tgt_chr_name_len = max(map(len, target_chroms))
+            chroms_to_skip = [c for c in untgt_chroms
+                              if len(c) &gt; max_tgt_chr_name_len]
+       </a> for untgt_chr in chroms_to_skip:
+            logging.info("Skipping untargeted chromosome %s", untgt_chr)
+            del access_chroms[untgt_chr]
+    else:</code></pre>

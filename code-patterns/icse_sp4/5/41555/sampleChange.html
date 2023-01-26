@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if name is None or name == &quot&quot:
+            raise MlflowException(&quotInvalid experiment name&quot, INVALID_PARAMETER_VALUE)
+
+        <a id="change">new_session = self.SessionMaker()</a>
+        try:
+            experiment = SqlExperiment(
+                name=name, lifecycle_stage=LifecycleStage.ACTIVE,
+                artifact_location=artifact_location
+            )
+            new_session.add(experiment)
+            if not artifact_location:
+                &#47&#47 this requires a double write. The first one to generate an autoincrement-ed ID
+                eid = new_session.query(SqlExperiment).filter_by(name=name).first().experiment_id
+                experiment.artifact_location = self._get_artifact_location(eid)
+            <a id="change">new_session.commit()</a>
+        except sqlalchemy.exc.IntegrityError as e:
+            new_session.rollback()
+            raise MlflowException(&quotExperiment(name={}) already exists. &quot
+                                  &quotError: {}&quot.format(name, str(e)), RESOURCE_ALREADY_EXISTS)</code></pre><h3>After Change</h3><pre><code class='java'>
+        if name is None or name == &quot&quot:
+            raise MlflowException(&quotInvalid experiment name&quot, INVALID_PARAMETER_VALUE)
+
+        <a id="change">with self.ManagedSessionMaker() as session:
+            try:
+                experiment = SqlExperiment(
+                    name=name, lifecycle_stage=LifecycleStage.ACTIVE,
+                    artifact_location=artifact_location
+                )
+                session.add(experiment)
+                if not artifact_location:
+                    &#47&#47 this requires a double write. The first one to generate an autoincrement-ed ID
+                    eid = session.query(SqlExperiment).filter_by(name=name).first().experiment_id
+                    experiment.artifact_location = self._get_artifact_location(eid)
+            except sqlalchemy.exc.IntegrityError as e:
+                raise MlflowException(&quotExperiment(name={}) already exists. &quot
+                                      &quotError: {}&quot.format(name, str(e)), RESOURCE_ALREADY_EXISTS)
+
+            return experiment.experiment_id
+
+   </a> def _list_experiments(self, session, ids=None, names=None, view_type=ViewType.ACTIVE_ONLY):
+        stages = LifecycleStage.view_type_to_stages(view_type)
+        conditions = [SqlExperiment.lifecycle_stage.in_(stages)]
+</code></pre>

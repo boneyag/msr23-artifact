@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      pending_submission[promise] = plan
+      submit_satisfied_pending()
+      &#47&#47 Saturate the pool before we block on a result for maximum processing parallelism.
+      if <a id="change">len(in_flight)</a> == self._pool_size:
+        process_one_result()
+
+    &#47&#47 Consume the tail of pending submissions and nodes in_flight.</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 1. Whenever we don&quott have enough work to saturate the pool, request more.
+    &#47&#47 2. Whenever the pool is not saturated, submit currently pending work.
+    for step_batch in self._scheduler.schedule(build_request):
+      <a id="change">if not step_batch:
+        &#47&#47 A batch should only be empty if all dependency work is currently blocked/running.
+        if not in_flight and not pending_submission:
+          raise Exception(&quotScheduler provided an empty batch while no work is in progress!&quot)
+      else:
+        &#47&#47 Submit and wait for work for as long as we&quotre able to keep the pool saturated.
+        pending_submission.update(step_batch)
+        while submit_until(self._pool_size) &gt; 0:
+          await_one()
+      &#47&#47 Await at least one entry per scheduling loop.
+     </a> submit_until(0)
+      if in_flight:
+        await_one()
+</code></pre>

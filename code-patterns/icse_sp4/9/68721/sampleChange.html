@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    net = tf.reshape(net, [config[&quotbatch_size&quot]*2, -1])
+    net = tf.concat(1, [net]+regularizers)
+    <a id="change">s</a> = [int(x) <a id="change">for</a> x in <a id="change">net.get_shape()</a>]
+    net = tf.reshape(net, [<a id="change">s[0]</a>, 1, 1, <a id="change">s[1]</a>])
+    net = conv2d(net, int(net.get_shape()[3]), name=&quotd_endd2&quot, k_w=1, k_h=1, d_h=1, d_w=1, stddev=0.1)
+    net = tf.reshape(net, [config[&quotbatch_size&quot]*2, -1])
+    net = tf.reduce_mean(net, 1)</code></pre><h3>After Change</h3><pre><code class='java'>
+    last_layer = tf.slice(last_layer, [single_batch_size, 0], [single_batch_size, -1])
+
+    regularizers = []
+    <a id="change">for regularizer in config[&quotdiscriminator.regularizers&quot]:
+        regs = regularizer(config, net)
+        regularizers += [tf.reshape(r,[int(r.get_shape()[0]),1,1,int(r.get_shape()[1])]) for r in regs]
+
+   </a> net = tf.concat(3, [net]+regularizers)
+    net = conv2d(net, net.get_shape()[3], name=&quotd_endd3&quot, k_w=1, k_h=1, d_h=1, d_w=1, stddev=0.3)
+
+    net = tf.reshape(net, [config[&quotbatch_size&quot]*2, -1])</code></pre>

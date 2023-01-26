@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 (2) Read and train on experiences from the replay buffer.
+    replay_op = Replay(local_buffer=local_replay_buffer) \
+        .for_each(<a id="change">TrainOneStep(workers)</a>) \
+        .for_each(UpdateTargetNetwork(
+            workers, config["target_network_update_freq"]))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    store_op = rollouts.for_each(
+        StoreToReplayBuffer(local_buffer=local_replay_buffer))
+
+    <a id="change">if config["simple_optimizer"]:
+        train_step_op = TrainOneStep(workers)
+    else:
+        train_step_op = TrainTFMultiGPU(
+            workers=workers,
+            sgd_minibatch_size=config["train_batch_size"],
+            num_sgd_iter=1,
+            num_gpus=config["num_gpus"],
+            shuffle_sequences=True,
+            _fake_gpus=config["_fake_gpus"],
+            framework=config.get("framework"))
+
+    &#47&#47 (2) Read and train on experiences from the replay buffer.
+   </a> replay_op = Replay(local_buffer=local_replay_buffer) \
+        .for_each(train_step_op) \
+        .for_each(UpdateTargetNetwork(
+            workers, config["target_network_update_freq"]))</code></pre>

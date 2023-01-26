@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        stmnt = "DELETE FROM traj_info WHERE hash in (%s)" % sql_compatible_ids
+        cur = self._database.execute(stmnt)
+        <a id="change">self._database.commit()</a>
+        assert cur.rowcount == len(ids), "deleted not as many rows(%s) as desired(%s)" %(cur.rowcount, len(ids))
+
+        &#47&#47 iterate over all LRU databases and delete those ids, we&quotve just deleted from the main db.
+        age_by_hash.sort(key=itemgetter(2))</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 Do this within the same execution block of the main database, because we do not want the entry to be deleted,
+            &#47&#47 in case of a subsequent failure.
+            age_by_hash.sort(key=itemgetter(2))
+            <a id="change">for db, values in itertools.groupby(age_by_hash, key=itemgetter(2)):
+                values = tuple(v[0] for v in values)
+                with sqlite3.connect(db, timeout=self.lru_timeout) as conn:
+                        stmnt = "DELETE FROM usage WHERE hash IN (%s)" \
+                                % SqliteDB._format_tuple_for_sql(values)
+                        curr = conn.execute(stmnt)
+                        assert curr.rowcount == len(values), curr.rowcount</a>
+</code></pre>

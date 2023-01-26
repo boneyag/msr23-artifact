@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def get_quant_results_for_experiment(experiment: Experiment):
+    Returns a list of salmon quant results from `experiment`.
+    <a id="change">results = []</a>
+    <a id="change">for sample in experiment.samples.all():
+        &#47&#47 TODO: this will break when we want to run for a new version.
+        result = sample.results\
+            .filter(processor__name=ProcessorEnum.SALMON_QUANT.value[&quotname&quot])\
+            .order_by(&quot-created_at&quot)\
+            .first()
+
+        if result:
+            results.append(result)
+
+   </a> return results
+
+
+def get_quant_files_for_results(results: List[ComputationalResult]):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Calculate the computational results sorted that are associated with a given sample (
+    &#47&#47 referenced from the top query)
+    newest_computational_results = <a id="change">ComputationalResult</a>.objects.all()\
+        .filter(
+            samples=OuterRef(&quotid&quot),
+            processor__name=ProcessorEnum.SALMON_QUANT.value[&quotname&quot]
+        )\
+        .order_by(&quot-created_at&quot)
+
+    &#47&#47 Annotate each sample in the experiment with the id of the most recent computational result
+    <a id="change">computational_results_ids = experiment.samples.all().annotate(
+        latest_computational_result_id=Subquery(newest_computational_results.values(&quotid&quot)[:1])
+    )\
+    .filter(latest_computational_result_id__isnull=False)\
+    .values_list(&quotlatest_computational_result_id&quot, flat=True)</a>
+
+    &#47&#47 return the computational results that match those ids
+    return ComputationalResult.objects.all().filter(
+        id__in=computational_results_ids</code></pre>

@@ -1,0 +1,71 @@
+<html><h3>0a456a7582da2ab4271756d7775bba84a75c8c0d,allennlp/training/metrics/boolean_accuracy.py,BooleanAccuracy,__call__,#BooleanAccuracy#,32
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            A tensor of the same shape as `predictions`.
+        
+        predictions, gold_labels, mask = self.detach_tensors(predictions, gold_labels, mask)
+        <a id="change">device</a> = <a id="change">gold_labels.device</a>
+
+        &#47&#47 Some sanity checks.
+        if gold_labels.size() != predictions.size():
+            raise ValueError(
+                f"gold_labels must have shape == predictions.size() but "
+                f"found tensor of shape: {gold_labels.size()}"
+            )
+        if mask is not None and mask.size() != predictions.size():
+            raise ValueError(
+                f"mask must have shape == predictions.size() but "
+                f"found tensor of shape: {mask.size()}"
+            )
+
+        batch_size = predictions.size(0)
+
+        if mask is not None:
+            &#47&#47 We can multiply by the mask up front, because we&quotre just checking equality below, and
+            &#47&#47 this way everything that&quots masked will be equal.
+            predictions = predictions * mask
+            gold_labels = gold_labels * mask
+
+            &#47&#47 We want to skip predictions that are completely masked;
+            &#47&#47 so we&quotll keep predictions that aren&quott.
+            keep = mask.view(batch_size, -1).max(dim=1)[0]
+        else:
+            keep = torch.ones(batch_size, device=predictions.device).bool()
+
+        predictions = predictions.view(batch_size, -1)
+        gold_labels = gold_labels.view(batch_size, -1)
+
+        &#47&#47 At this point, predictions is (batch_size, rest_of_dims_combined),
+        &#47&#47 so .eq -&gt; .prod will be 1 if every element of the instance prediction is correct
+        &#47&#47 and 0 if at least one element of the instance prediction is wrong.
+        &#47&#47 Because of how we&quotre handling masking, masked positions are automatically "correct".
+        correct = predictions.eq(gold_labels).prod(dim=1).float()
+
+        &#47&#47 Since masked positions are correct, we need to explicitly exclude instance predictions
+        &#47&#47 where the entire prediction is masked (because they look "correct").
+        self._correct_count += (correct * keep).sum()
+        <a id="change">self._total_count</a> += keep.sum()
+
+        if is_distributed():
+            _correct_count = torch.tensor(self._correct_count).to(device)
+            <a id="change">_total_count</a> = <a id="change">torch.tensor(self._total_count).to(device)</a>
+            dist.all_reduce(_correct_count, op=dist.ReduceOp.SUM)
+            <a id="change">dist.all_reduce(_total_count, op=dist.ReduceOp.SUM)</a>
+            self._correct_count = _correct_count.item()
+            self._total_count = <a id="change">_total_count.item()</a>
+
+    def get_metric(self, reset: bool = False):
+        
+        &#47&#47 Returns</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        if is_distributed():
+            dist.all_reduce(correct_count_diff, op=dist.ReduceOp.SUM)
+            <a id="change">dist.all_reduce(total_count_diff, op=dist.ReduceOp.SUM)</a>
+            self._correct_count += correct_count_diff.item()
+            self._total_count += <a id="change">total_count_diff.item()</a>
+        else:
+            self._correct_count += correct_count_diff
+            self._total_count += total_count_diff
+</code></pre><img src="308742.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/0a456a7582da2ab4271756d7775bba84a75c8c0d#diff-099572a17e26f5e69b9eb4cff1cbf26176a65231c50444d7ac3818bcf3c2bd56L33' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: 0a456a7582da2ab4271756d7775bba84a75c8c0d</div><div id='time'> Time: 2020-08-17</div><div id='author'> Author: eladsegal@users.noreply.github.com</div><div id='file'> File Name: allennlp/training/metrics/boolean_accuracy.py</div><div id='class'> Class Name: BooleanAccuracy</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/0a456a7582da2ab4271756d7775bba84a75c8c0d#diff-b85faa577aece208a96407af7070dfc45c38a39ec9c543b64742503981ec196eL36' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: 0a456a7582da2ab4271756d7775bba84a75c8c0d</div><div id='time'> Time: 2020-08-17</div><div id='author'> Author: eladsegal@users.noreply.github.com</div><div id='file'> File Name: allennlp/training/metrics/categorical_accuracy.py</div><div id='class'> Class Name: CategoricalAccuracy</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/0a456a7582da2ab4271756d7775bba84a75c8c0d#diff-099572a17e26f5e69b9eb4cff1cbf26176a65231c50444d7ac3818bcf3c2bd56L33' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: 0a456a7582da2ab4271756d7775bba84a75c8c0d</div><div id='time'> Time: 2020-08-17</div><div id='author'> Author: eladsegal@users.noreply.github.com</div><div id='file'> File Name: allennlp/training/metrics/boolean_accuracy.py</div><div id='class'> Class Name: BooleanAccuracy</div><div id='method'> Method Name: __call__</div><BR>

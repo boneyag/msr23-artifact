@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            curr.substitute(seq, copied_seq, dag=dag)
+            curr = copied_seq
+
+    <a id="change">return copied</a></code></pre><h3>After Change</h3><pre><code class='java'>
+
+def copy_sequence(sequence, collection, dag=None):
+    if dag is None:
+        <a id="change">dag = sequence.to_dag(copy=False)</a>
+
+    traversed = set()
+    copies = dict()
+
+    def copy(node):
+        if node._node_id not in copies:
+            copies[node._node_id] = node.copy()
+        copied = copies[node._node_id]
+        if not dag.contains_node(copied):
+            dag.add_node(copied)
+        return copied
+
+    <a id="change">for n in sequence.traverse(top_down=True, traversed=traversed,
+                               stop_cond=lambda x: x is collection, unique=True):
+        if n is sequence:
+            copy(n)
+            continue
+        if n is collection:
+            continue
+
+        parents = [p for p in dag.successors(n) if p._node_id in traversed]
+        for parent in parents:
+            copy(parent).substitute(n, copy(n), dag=dag)
+
+   </a> return copies[sequence._node_id]</code></pre>

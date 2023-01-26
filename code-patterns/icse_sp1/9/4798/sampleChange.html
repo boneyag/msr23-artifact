@@ -1,0 +1,100 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        
+        active_workers = []
+        <a id="change">pbar = ProgBarCounter(self._worker_factory.n_workers)</a>
+        trajectories = defaultdict(list)
+
+        &#47&#47 update the policy params of each worker before sampling
+        &#47&#47 for the current iteration
+        idle_worker_ids = []
+        updating_workers = self._update_workers(agent_update, env_update)
+
+        while any(
+                len(trajectories[i]) &lt; n_traj_per_worker
+                for i in range(self._worker_factory.n_workers)):
+            &#47&#47 if there are workers still being updated, check
+            &#47&#47 which ones are still updating and take the workers that
+            &#47&#47 are done updating, and start collecting trajectories on
+            &#47&#47 those workers.
+            if updating_workers:
+                updated, updating_workers = ray.wait(updating_workers,
+                                                     num_returns=1,
+                                                     timeout=0.1)
+                upd = [ray.get(up) for up in updated]
+                idle_worker_ids.extend(upd)
+
+            &#47&#47 if there are idle workers, use them to collect trajectories
+            &#47&#47 mark the newly busy workers as active
+            while idle_worker_ids:
+                idle_worker_id = idle_worker_ids.pop()
+                worker = self._all_workers[idle_worker_id]
+                active_workers.append(worker.rollout.remote())
+
+            &#47&#47 check which workers are done/not done collecting a sample
+            &#47&#47 if any are done, send them to process the collected trajectory
+            &#47&#47 if they are not, keep checking if they are done
+            ready, not_ready = ray.wait(active_workers,
+                                        num_returns=1,
+                                        timeout=0.001)
+            active_workers = not_ready
+            for result in ready:
+                ready_worker_id, trajectory_batch = ray.get(result)
+                pbar.inc(1)
+                trajectories[ready_worker_id].append(trajectory_batch)
+                if len(trajectories[ready_worker_id]) &lt; n_traj_per_worker:
+                    idle_worker_ids.append(ready_worker_id)
+        <a id="change">pbar.stop()</a>
+        ordered_trajectories = list(
+            itertools.chain(*[
+                trajectories[i] for i in range(self._worker_factory.n_workers)
+            ]))</code></pre><h3>After Change</h3><pre><code class='java'>
+        idle_worker_ids = []
+        updating_workers = self._update_workers(agent_update, env_update)
+
+        <a id="change">with click.progressbar(length=self._worker_factory.n_workers,
+                               label=&quotSampling&quot) as pbar:
+            while any(
+                    len(trajectories[i]) &lt; n_traj_per_worker
+                    for i in range(self._worker_factory.n_workers)):
+                &#47&#47 if there are workers still being updated, check
+                &#47&#47 which ones are still updating and take the workers that
+                &#47&#47 are done updating, and start collecting trajectories on
+                &#47&#47 those workers.
+                if updating_workers:
+                    updated, updating_workers = ray.wait(updating_workers,
+                                                         num_returns=1,
+                                                         timeout=0.1)
+                    upd = [ray.get(up) for up in updated]
+                    idle_worker_ids.extend(upd)
+
+                &#47&#47 if there are idle workers, use them to collect trajectories
+                &#47&#47 mark the newly busy workers as active
+                while idle_worker_ids:
+                    idle_worker_id = idle_worker_ids.pop()
+                    worker = self._all_workers[idle_worker_id]
+                    active_workers.append(worker.rollout.remote())
+
+                &#47&#47 check which workers are done/not done collecting a sample
+                &#47&#47 if any are done, send them to process the collected
+                &#47&#47 trajectory if they are not, keep checking if they are done
+                ready, not_ready = ray.wait(active_workers,
+                                            num_returns=1,
+                                            timeout=0.001)
+                active_workers = not_ready
+                for result in ready:
+                    ready_worker_id, trajectory_batch = ray.get(result)
+                    trajectories[ready_worker_id].append(trajectory_batch)
+
+                    if len(trajectories[ready_worker_id]) &lt; n_traj_per_worker:
+                        idle_worker_ids.append(ready_worker_id)
+
+                    pbar.update(1)
+
+       </a> ordered_trajectories = list(
+            itertools.chain(*[
+                trajectories[i] for i in range(self._worker_factory.n_workers)
+            ]))</code></pre>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        self.other_distributions = tolist(other_distributions)
+        for distribution in other_distributions:
+            <a id="change">params += list(distribution.parameters())</a>
+            self.input_var += <a id="change">distribution.cond_var</a>
+
+        self.input_var = list(set(self.input_var))
+        <a id="change">self.optimizer = optimizer(params, **optimizer_params)</a>
+
+    def train(self, train_x, u_train_x, supervised_rate=1, **kwargs):
+        self.p.train()
+        self.q.train()</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.p = p
+        self.q = approximate_dist
+        self.d = discriminator
+        self.other_distributions = <a id="change">nn.ModuleList(tolist(other_distributions))</a>
+
+        self.other_losses = other_losses
+
+        &#47&#47 set params and optim
+        q_params = list(self.q.parameters())
+        p_params = list(self.p.parameters())
+        d_params = list(self.d.parameters())
+        <a id="change">other_params = list(self.other_distributions.parameters())</a>
+        params = <a id="change">q_params + p_params + d_params + other_params</a>
+        <a id="change">self.optimizer = optimizer(params, **optimizer_params)</a>
+
+        &#47&#47 set input_var
+        self.input_var = copy(self.q.cond_var)
+        for distribution in self.other_distributions:
+            self.input_var += <a id="change">copy(distribution.cond_var)</a>
+        self.input_var = list(set(self.input_var))
+
+    def train(self, train_x, u_train_x, supervised_rate=1, **kwargs):
+        self.p.train()</code></pre>

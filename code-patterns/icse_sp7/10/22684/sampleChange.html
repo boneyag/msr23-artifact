@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                assert halo_shape[-1] == 0, "Didn&quott expect a non-zero halo for channel dimension."
+
+                &#47&#47 Expand block by halo, then clip to image bounds
+                <a id="change">block_label_roi = numpy.array( block_label_roi )</a>
+                <a id="change">block_label_roi[0]</a> -= halo_shape
+                <a id="change">block_label_roi[1]</a> += halo_shape
+                <a id="change">block_label_roi = getIntersection( block_label_roi, roiFromShape(image_slot.meta.shape) )</a>
+
+                block_image_roi = numpy.array( block_label_roi )
+                assert (block_image_roi[:, -1] == [0,1]).all()
+                num_channels = image_slot.meta.shape[-1]</code></pre><h3>After Change</h3><pre><code class='java'>
+                block_label_bb_roi = bb_roi_within_block + block_label_roi[0]
+
+                &#47&#47 Double-check that there is at least 1 non-zero label in the block.
+                <a id="change">if (block_label_bb_roi[1] &gt; block_label_bb_roi[0]).all():
+                    &#47&#47 Ask for the halo needed by the classifier
+                    axiskeys = image_slot.meta.getAxisKeys()
+                    halo_shape = classifier_factory.get_halo_shape(axiskeys)
+                    assert len(halo_shape) == len( block_label_roi[0] )
+                    assert halo_shape[-1] == 0, "Didn&quott expect a non-zero halo for channel dimension."
+    
+                    &#47&#47 Expand block by halo, but keep clipped to image bounds
+                    padded_label_roi, bb_roi_within_padded = enlargeRoiForHalo( *block_label_bb_roi, 
+                                                                                shape=label_slot.meta.shape,
+                                                                                sigma=halo_shape,
+                                                                                window=1,
+                                                                                return_result_roi=True )
+                    
+                    &#47&#47 Copy labels to new array, which has size == bounding-box + halo
+                    padded_label_data = numpy.zeros( padded_label_roi[1] - padded_label_roi[0], label_slot.meta.dtype )                
+                    padded_label_data[roiToSlice(*bb_roi_within_padded)] = block_label_data[roiToSlice(*bb_roi_within_block)]
+    
+                    padded_image_roi = numpy.array( padded_label_roi )
+                    assert (padded_image_roi[:, -1] == [0,1]).all()
+                    num_channels = image_slot.meta.shape[-1]
+                    padded_image_roi[:, -1] = [0, num_channels]
+    
+                    &#47&#47 Ensure the results are plain ndarray, not VigraArray, 
+                    &#47&#47  which some classifiers might have trouble with.
+                    padded_image_data = numpy.asarray( image_slot(*padded_image_roi).wait() )
+                    
+                    label_data_blocks.append( padded_label_data )
+                    image_data_blocks.append( padded_image_data )
+
+       </a> if len(image_data_blocks) == 0:
+            result[0] = None
+        else:
+            axistags = self.Images[0].meta.axistags</code></pre>

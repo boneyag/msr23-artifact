@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            W = tf.triu(w)
+            WB = tf.matmul(W, B)
+            return tf.reduce_sum(tf.square(WB), 0)
+        <a id="change">projected_var, _ = theano.scan(f, q_sqrt.swapaxes(0,2))</a>
+        fvar += tf.transpose(projected_var)
+
+    return fmean, fvar
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    elif q_sqrt.get_shape().ndims==3:
+        &#47&#47 we have the cholesky form for q(v)
+        projected_var = []
+        <a id="change">for d in range(num_columns):
+            L = tf.user_ops.triangle(q_sqrt[:,:,d], &quotlower&quot)
+            LTB = tf.matmul(tf.transpose(L), B)
+            projected_var.append(tf.reduce_sum(LTB,0))
+       </a> fvar += tf.transpose(tf.pack(projected_var))
+
+    return fmean, fvar
+</code></pre>

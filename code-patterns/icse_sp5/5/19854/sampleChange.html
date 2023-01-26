@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        evals, evecs = [], []
+        for lazy_tensor in self.lazy_tensors:
+            &#47&#47 TODO: replace with lazy_tensor.symeig() once that is added in.
+            evals_, evecs_ = <a id="change">lazy_tensor</a>.evaluate().symeig(eigenvectors=eigenvectors)
+            evals.append(evals_)
+            evecs.append(evecs_)
+        evals = KroneckerProductLazyTensor(*[DiagLazyTensor(evals_) for evals_ in evals])</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 TODO: replace with lazy_tensor.symeig() once that is added in.
+            &#47&#47 TODO: ensure that the symeig call is also done in this manner
+
+            <a id="change">eval_tensor = lazy_tensor.evaluate()</a>
+            tensor_dtype = eval_tensor.dtype
+
+            evals_, evecs_ = eval_tensor.double().symeig(eigenvectors=eigenvectors)
+
+            &#47&#47 we chop any negative eigenvalues
+            <a id="change">neg_evals = zeros_like(evals_)</a>
+            neg_evals[evals_.data &lt; 0] = -evals_.data[evals_.data &lt; 0]
+            evals_ = evals_ + neg_evals
+
+            <a id="change">evals_ = evals_.type(tensor_dtype)</a>
+            evecs_ = evecs_.type(tensor_dtype)
+
+            evals.append(evals_)
+            evecs.append(evecs_)</code></pre>

@@ -1,0 +1,103 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        init_ = x.new(ncols).zero_() if init is None else init
+        grad_u = u.new(*u.size()).zero_()
+        grad_wc = <a id="change">x.new(2, batch, d*bidir)</a>
+        grad_bias = x.new(2, batch, d*bidir)
+        grad_init = x.new(batch, d*bidir)
+
+        &#47&#47  For DEBUG
+        &#47&#47  size = (length, batch, x.size(-1)) if x.dim() == 3 else (batch, x.size(-1))
+        &#47&#47  grad_x = x.new(*x.size()) if k_ == 3 else x.new(*size).zero_()
+
+        &#47&#47  Normal use
+        grad_x = x.new(*x.size()).zero_() if skip_type &gt; 0 and k_ == 3 else None
+
+        if skip_type &gt; 0 and k_ == 3:
+            x_ptr = x.contiguous()*scale_x if scale_x != 1 else x.contiguous()
+            x_ptr = x_ptr.data_ptr()
+        else:
+            x_ptr = 0
+
+        stream, _, _, bwd_func, bibwd_func = self.get_functions()
+        FUNC = bwd_func if not self.bidirectional else bibwd_func
+        FUNC(args=[
+            u.contiguous().data_ptr(),
+            x_ptr,
+            weight_c.data_ptr(),
+            bias.data_ptr(),
+            init_.contiguous().data_ptr(),
+            mask_h.data_ptr() if mask_h is not None else 0,
+            mask_pad.data_ptr() if mask_pad is not None else 0,
+            c.data_ptr(),
+            grad_h.contiguous().data_ptr(),
+            grad_last.contiguous().data_ptr(),
+            length,
+            batch,
+            d,
+            k_,
+            grad_u.data_ptr(),
+            grad_x.data_ptr() if skip_type &gt; 0 and k_ == 3 else 0,
+            grad_wc.data_ptr(),
+            grad_bias.data_ptr(),
+            grad_init.data_ptr(),
+            self.activation_type,
+            skip_type],
+            block=(thread_per_block, 1, 1),
+            grid=(num_block, 1, 1),
+            stream=stream
+        )
+
+        if skip_type &gt; 0 and k_ == 3 and scale_x != 1:
+            grad_x.mul_(scale_x)
+        <a id="change">return grad_u, grad_x, grad_wc.sum(1).view(-1), grad_bias.sum(1).view(-1), grad_init, None</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        init_ = x.new(ncols).zero_() if init is None else init
+        grad_u = u.new(*u.size()).zero_()
+        grad_wc = x.new(2*bidir*d).zero_()
+        grad_bias = <a id="change">x.new(2*bidir*d).zero_()</a>
+        grad_init = x.new(batch, d*bidir)
+        grad_x = x.new(*x.size()).zero_() if skip_type &gt; 0 and k_ == 3 else None
+
+        if skip_type &gt; 0 and k_ == 3:
+            x_ptr = x.contiguous()*scale_x if scale_x != 1 else x.contiguous()
+            x_ptr = x_ptr.data_ptr()
+        else:
+            x_ptr = 0
+
+        stream, _, _, bwd_func, bibwd_func = self.get_functions()
+        FUNC = bwd_func if not self.bidirectional else bibwd_func
+        FUNC(args=[
+            u.contiguous().data_ptr(),
+            x_ptr,
+            weight_c.data_ptr(),
+            bias.data_ptr(),
+            init_.contiguous().data_ptr(),
+            mask_h.data_ptr() if mask_h is not None else 0,
+            mask_pad.data_ptr() if mask_pad is not None else 0,
+            c.data_ptr(),
+            grad_h.contiguous().data_ptr(),
+            grad_last.contiguous().data_ptr(),
+            length,
+            batch,
+            d,
+            k_,
+            grad_u.data_ptr(),
+            grad_x.data_ptr() if skip_type &gt; 0 and k_ == 3 else 0,
+            grad_wc.data_ptr(),
+            grad_bias.data_ptr(),
+            grad_init.data_ptr(),
+            self.activation_type,
+            skip_type],
+            block=(thread_per_block, 1, 1),
+            grid=(num_block, 1, 1),
+            stream=stream
+        )
+
+        if skip_type &gt; 0 and k_ == 3 and scale_x != 1:
+            grad_x.mul_(scale_x)
+        <a id="change">return grad_u, grad_x, grad_wc, grad_bias, grad_init, None</a>
+</code></pre>

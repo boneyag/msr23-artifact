@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    args, _ = parser.parse_known_args()
+    ray.init()
+
+    <a id="change">tune_kwargs = {
+        "num_samples": 10 if args.smoke_test else 50,
+        "config": {
+            "iterations": 100,
+            "LiNO3_vol": tune.uniform(0, 7),
+            "Li2SO4_vol": tune.uniform(0, 7),
+            "NaClO4_vol": tune.uniform(0, 7)
+        },
+    }</a>
+
+    &#47&#47 Optional: Pass the parameter space yourself
+    &#47&#47 space = [{
+    &#47&#47     "name": "LiNO3_vol",
+    &#47&#47     "type": "float",
+    &#47&#47     "min": 0,
+    &#47&#47     "max": 7
+    &#47&#47 }, {
+    &#47&#47     "name": "Li2SO4_vol",
+    &#47&#47     "type": "float",
+    &#47&#47     "min": 0,
+    &#47&#47     "max": 7
+    &#47&#47 }, {
+    &#47&#47     "name": "NaClO4_vol",
+    &#47&#47     "type": "float",
+    &#47&#47     "min": 0,
+    &#47&#47     "max": 7
+    &#47&#47 }]
+
+    df_search = DragonflySearch(
+        optimizer="bandit",
+        domain="euclidean",
+        &#47&#47 space=space,  &#47&#47 If you want to set the space manually
+    )
+    df_search = ConcurrencyLimiter(df_search, max_concurrent=4)
+
+    scheduler = AsyncHyperBandScheduler()
+    <a id="change">tune.run(
+        objective,
+        metric="objective",
+        mode="max",
+        name="dragonfly_search",
+        search_alg=df_search,
+        scheduler=scheduler,
+        **tune_kwargs)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    )
+    df_search = ConcurrencyLimiter(df_search, max_concurrent=4)
+
+    <a id="change">scheduler</a> = AsyncHyperBandScheduler()
+    <a id="change">analysis = tune.run(
+        objective,
+        metric="objective",
+        mode="max",
+        name="dragonfly_search",
+        search_alg=df_search,
+        scheduler=scheduler,
+        num_samples=10 if args.smoke_test else 50,
+        config={
+            "iterations": 100,
+            "LiNO3_vol": tune.uniform(0, 7),
+            "Li2SO4_vol": tune.uniform(0, 7),
+            "NaClO4_vol": tune.uniform(0, 7)
+        },
+    )</a>
+
+    <a id="change">print("Best hyperparameters found were: ", analysis.best_config)</a>
+</code></pre>

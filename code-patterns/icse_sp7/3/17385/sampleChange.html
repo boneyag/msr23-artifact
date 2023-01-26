@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if self._study_id != study._study_id:
+                raise ValueError("`IntersectionSearchSpace` cannot handle multiple studies.")
+
+        for trial in <a id="change">study.get_trials(deepcopy=False)</a>:
+            if trial.state != optuna.trial.TrialState.COMPLETE:
+                continue
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                raise ValueError("`IntersectionSearchSpace` cannot handle multiple studies.")
+
+        next_cursor = self._cursor
+        for trial in reversed(<a id="change">study.get_trials(deepcopy=False)</a>):
+            if self._cursor &gt; trial.number:
+                break
+
+            if trial.state == optuna.trial.TrialState.RUNNING:
+                next_cursor = trial.number
+
+            if trial.state != optuna.trial.TrialState.COMPLETE:
+                continue
+
+            if self._search_space is None:
+                self._search_space = copy.copy(trial.distributions)
+                continue
+
+            delete_list = []
+            for param_name, param_distribution in self._search_space.items():
+                if param_name not in trial.distributions:
+                    delete_list.append(param_name)
+                elif trial.distributions[param_name] != param_distribution:
+                    delete_list.append(param_name)
+
+            for param_name in delete_list:
+                del self._search_space[param_name]
+
+        <a id="change">self._cursor = next_cursor</a>
+        search_space = self._search_space or {}
+
+        if ordered_dict:
+            search_space = OrderedDict(sorted(search_space.items(), key=lambda x: x[0]))</code></pre>

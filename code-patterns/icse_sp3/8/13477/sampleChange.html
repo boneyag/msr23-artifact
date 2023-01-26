@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    res2 = ols_mod.fit(&quotrobust&quot)
+    assert_results_equal(res, res2, test_fit=False)
+
+    clusters = <a id="change">mod.reformat_clusters(data.vc1)</a>
+    res = mod.fit(cov_type=&quotclustered&quot, clusters=clusters)
+    res2 = ols_mod.fit(&quotclustered&quot, clusters=clusters.dataframe)
+    assert_results_equal(res, res2, test_fit=False)
+
+    clusters = <a id="change">mod.reformat_clusters(data.vc2)</a>
+    res = mod.fit(cov_type=&quotclustered&quot, clusters=clusters)
+    res2 = ols_mod.fit(&quotclustered&quot, clusters=clusters.dataframe)
+    assert_results_equal(res, res2, test_fit=False)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_panel_time_lvsd_weighted(data):
+    <a id="change">mod</a> = PanelOLS(data.y, data.x, time_effect=True, weights=data.w)
+    res = mod.fit()
+
+    y = mod.dependent.dataframe
+    x = mod.exog.dataframe
+    w = mod.weights.dataframe
+    d = mod.dependent.dummies(&quottime&quot, drop_first=mod.has_constant)
+    d_cols = d.columns
+    d = d.values
+    if mod.has_constant:
+        z = np.ones_like(y)
+        root_w = np.sqrt(w.values)
+        wd = root_w * d
+        wz = root_w * z
+        d = d - z @ np.linalg.lstsq(wz, wd)[0]
+
+    xd = np.c_[x.values, d]
+    xd = pd.DataFrame(xd, index=x.index, columns=list(x.columns) + list(d_cols))
+
+    ols_mod = IV2SLS(y, xd, None, None, weights=w)
+    res2 = ols_mod.fit(&quotunadjusted&quot)
+    assert_results_equal(res, res2, test_fit=False)
+
+    res = mod.fit(cov_type=&quotrobust&quot)
+    res2 = ols_mod.fit(&quotrobust&quot)
+    assert_results_equal(res, res2, test_fit=False)
+
+    clusters = data.vc1
+    <a id="change">ols_clusters = mod.reformat_clusters(clusters)</a>
+    res = mod.fit(cov_type=&quotclustered&quot, clusters=clusters)
+    res2 = ols_mod.fit(&quotclustered&quot, clusters=ols_clusters.dataframe)
+    assert_results_equal(res, res2, test_fit=False)
+
+    clusters = data.vc2
+    <a id="change">ols_clusters = mod.reformat_clusters(clusters)</a>
+    res = mod.fit(cov_type=&quotclustered&quot, clusters=clusters)
+    res2 = ols_mod.fit(&quotclustered&quot, clusters=ols_clusters.dataframe)
+    assert_results_equal(res, res2, test_fit=False)
+</code></pre>

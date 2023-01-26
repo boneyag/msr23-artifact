@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.depth = num_layers
+        self.dropout = dropout
+        self.rnn_dropout = rnn_dropout
+        <a id="change">self.rnn_lst = nn.ModuleList()</a>
+        self.bidirectional = bidirectional
+        <a id="change">self.out_size</a> = hidden_size*2 if bidirectional else hidden_size
+
+        <a id="change">for i in range(num_layers):
+            l = SRUCell(
+                n_in = self.n_in if i==0 else self.out_size,
+                n_out = self.n_out,
+                dropout = dropout if i+1 != num_layers else 0,
+                rnn_dropout = rnn_dropout,
+                bidirectional = bidirectional,
+                use_tanh = use_tanh,
+                use_relu = use_relu,
+            )
+            self.rnn_lst.append(l)
+
+   </a> def set_bias(self, bias_val=0):
+        for l in self.rnn_lst:
+            l.set_bias(bias_val)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.dropout = dropout
+        self.bidirectional = bidirectional
+        self.activation_type = 2 if use_relu else (1 if use_tanh else 0)
+        <a id="change">self.use_kernel</a> = use_kernel
+        out_size = n_out*2 if bidirectional else n_out
+        k = 4 if n_in != out_size else 3
+        <a id="change">self.size_per_dir = n_out*k</a>
+        self.weight = nn.Parameter(torch.Tensor(
+            n_in,
+            self.size_per_dir*2 if bidirectional else <a id="change">self.size_per_dir</a>
+        ))
+        <a id="change">self.bias = nn.Parameter(torch.Tensor(
+            n_out*4 if bidirectional else n_out*2
+        ))</a>
+        self.init_weight()
+
+    def init_weight(self):
+        val_range = (3.0/self.n_in)**0.5</code></pre>

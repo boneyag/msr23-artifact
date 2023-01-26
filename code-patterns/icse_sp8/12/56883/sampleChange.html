@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return _client_api is not None
+
+    def init(self, *args, **kwargs):
+        <a id="change">if _is_client_test_env():
+            global _test_server
+            import ray.experimental.client.server.server as ray_client_server
+            _test_server, address_info = ray_client_server.init_and_serve(
+                "localhost:50051", test_mode=True, *args, **kwargs)
+            self.connect("localhost:50051")
+            return address_info
+        else:
+            raise NotImplementedError(
+                "Please call ray.connect() in client mode")
+
+
+</a>ray = RayAPIStub()
+
+_test_server = None
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        return self.api is not None
+
+    def init(self, *args, **kwargs):
+        <a id="change">if self._server is not None:
+            raise Exception("Trying to start two instances of ray via client")
+       </a> import ray.experimental.client.server.server as ray_client_server
+        self._server, address_info = ray_client_server.init_and_serve(
+            "localhost:50051", *args, **kwargs)
+        self.connect("localhost:50051")
+        <a id="change">self._connected_with_init</a> = True
+        return address_info
+
+    def shutdown(self, _exiting_interpreter=False):</code></pre>

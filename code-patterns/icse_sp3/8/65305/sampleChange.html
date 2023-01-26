@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return self.imported_transactions
+
+        &#47&#47 predict payees
+        <a id="change">self.transactions = self.imported_transactions</a>
+        if self.predict_payees:
+            logger.debug("About to generate predictions for payees...")
+            predicted_payees: List[str]
+            predicted_payees = self.pipeline.predict(self.transactions)
+            self.transactions = [ml.add_payee_to_transaction(*t_p, overwrite=self.overwrite_existing_payees)
+                            <a id="change">for</a> t_p in <a id="change">zip(self.transactions, predicted_payees)</a>]
+            logger.debug("Finished adding predicted payees to the transactions to be imported.")
+
+        &#47&#47 suggest likely payees</code></pre><h3>After Change</h3><pre><code class='java'>
+            return self.imported_entries
+
+        updated_transactions: List[Transaction]
+        updated_transactions = <a id="change">list(filter_txns(self.imported_entries))</a>
+
+        &#47&#47 predict payees
+        if self.predict_payees:
+            logger.debug("About to generate predictions for payees...")
+            predicted_payees: List[str]
+            predicted_payees = self.pipeline.predict(updated_transactions)
+            updated_transactions = [ml.add_payee_to_transaction(*t_p, overwrite=self.overwrite_existing_payees)
+                            for t_p in zip(updated_transactions, predicted_payees)]
+            logger.debug("Finished adding predicted payees to the transactions to be imported.")
+
+        &#47&#47 suggest likely payees
+        if self.suggest_payees:
+            &#47&#47 get values from the SVC decision function
+            logger.debug("About to generate suggestions about likely payees...")
+            <a id="change">decision_values = self.pipeline.decision_function(updated_transactions)</a>
+
+            &#47&#47 add a human-readable class label (i.e., payee&quots name) to each value, and sort by value:
+            suggested_payees = [[payee for _, payee in sorted(list(zip(distance_values, self.pipeline.classes_)),
+                                                              key=lambda x: x[0], reverse=True)]</code></pre>

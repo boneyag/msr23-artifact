@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.batch_id = 0
+
+    def on_batch_end(self, metrics, *args, **kwargs):
+        <a id="change">batch_loss = metrics[&quotbatch_loss&quot]</a>
+
+        <a id="change">self.epoch_loss_averager.send(batch_loss)</a>
+
+        logs = {&quotepoch_id&quot: self.epoch_id, &quotbatch_id&quot: self.batch_id, &quotbatch_loss&quot: batch_loss}
+
+        self.ctx.channel_send(&quotbatch_loss {}&quot.format(self.random_name), x=logs[&quotbatch_id&quot], y=logs[&quotbatch_loss&quot])</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.batch_id = 0
+
+    def on_batch_end(self, metrics, *args, **kwargs):
+        <a id="change">for name, loss in metrics.items():
+            loss = loss.data.cpu().numpy()[0]
+
+            if name in self.epoch_loss_averagers.keys():
+                self.epoch_loss_averagers[name].send(loss)
+            else:
+                self.epoch_loss_averagers[name] = Averager()
+
+            self.ctx.channel_send(&quotbatch {} loss&quot.format(name), x=self.batch_id, y=loss)
+
+       </a> self.batch_id += 1
+
+    def on_epoch_end(self, *args, **kwargs):
+        self._send_numeric_channels()</code></pre>

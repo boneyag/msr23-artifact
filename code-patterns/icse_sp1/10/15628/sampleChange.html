@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+R = pra.circular_2D_array([0, 0], 12, 0., 0.15)
+
+&#47&#47 propagation filter bank
+<a id="change">propagation_vector = -np.array([np.cos(azimuth), np.sin(azimuth)])</a>
+delays = np.dot(R.T, propagation_vector) / c * fs  &#47&#47 in fractional samples
+<a id="change">filter_bank = pra.fractional_delay_filter_bank(delays)</a>
+
+&#47&#47 we use a white noise signal for the source
+x = np.random.randn((nfft // 2 + 1) * nfft)
+
+&#47&#47 convolve the source signal with the fractional delay filters
+&#47&#47 to get the microphone input signals
+<a id="change">mic_signals = [ fftconvolve(x, filter, mode=&quotsame&quot) for filter in filter_bank ]</a>
+
+&#47&#47 Now add the microphone noise
+<a id="change">for signal in mic_signals:
+    signal += np.random.randn(*signal.shape) * 10**(- SNR / 20)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Compute the STFT frames needed
+</a>X = np.array([ 
+    pra.stft(signal, nfft, nfft // 2, transform=np.fft.rfft).T 
+    for signal in mic_signals ])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+&#47&#47 Location of original source
+azimuth = 61. / 180. * np.pi  &#47&#47 60 degrees
+<a id="change">distance = 3.</a>  &#47&#47 3 meters
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 algorithms parameters
+SNR = 0.    &#47&#47 signal-to-noise ratio
+c = 343.    &#47&#47 speed of sound
+fs = 16000  &#47&#47 sampling frequency
+nfft = 256  &#47&#47 FFT size
+freq_bins = np.arange(5, 60)  &#47&#47 FFT bins to use for estimation
+
+&#47&#47 compute the noise variance
+sigma2 = 10**(-SNR / 10) / (4. * np.pi * distance)**2
+
+&#47&#47 Create an anechoic room
+room_dim = <a id="change">np</a>.r_[10.,<a id="change">10.</a>]
+<a id="change">aroom = pra.ShoeBox(room_dim, fs=fs, max_order=0, sigma2_awgn=sigma2)</a>
+
+&#47&#47 add the source
+source_location = room_dim / 2 + distance * np.r_[np.cos(azimuth), np.sin(azimuth)]
+source_signal = np.random.randn((nfft // 2 + 1) * nfft)</code></pre>

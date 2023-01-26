@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        val_data = TransformDataset(val_data, ValTransform(extractor.mean))
+        print(&quotfinished loading dataset&quot)
+    else:
+        <a id="change">train_data</a>, val_data = None, None
+    train_data = chainermn.scatter_dataset(train_data, comm, shuffle=True)
+    val_data = chainermn.scatter_dataset(val_data, comm, shuffle=True)
+    train_iter = chainer.iterators.MultiprocessIterator(</code></pre><h3>After Change</h3><pre><code class='java'>
+    print(&quotfinished loading dataset&quot)
+
+    if comm.rank == 0:
+        train_indices = <a id="change">np.arange(len(train_data))</a>
+        val_indices = np.arange(len(val_data))
+    else:
+        train_indices = None
+        val_indices = None
+
+    train_indices = chainermn.scatter_dataset(
+        train_indices, comm, shuffle=True)
+    val_indices = chainermn.scatter_dataset(val_indices, comm, shuffle=True)
+    <a id="change">train_data = train_data.slice[train_indices]</a>
+    val_data = val_data.slice[val_indices]
+    train_iter = chainer.iterators.MultiprocessIterator(
+        train_data, args.batchsize, n_processes=args.loaderjob)
+    val_iter = iterators.MultiprocessIterator(</code></pre>

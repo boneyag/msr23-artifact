@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def get_gt_ranks(ranks, ans_ind):
+    ans_ind = ans_ind.view(-1)
+    num_opts = 100
+    ranks = <a id="change">ranks.view(-1, num_opts)</a>
+    gt_ranks = torch.LongTensor(ans_ind.size(0))
+    for i in range(ans_ind.size(0)):
+        gt_binary = torch.zeros(num_opts)
+        gt_binary[ans_ind[i]] = 1
+        sorted_gt = gt_binary.index_select(0, ranks[i].sort()[1].cpu())
+        <a id="change">gt_rank = (sorted_gt == 1).nonzero() + 1</a>
+        gt_ranks[i] = int(gt_rank)  &#47&#47 gt_rank is 1x1 LongTensor
+    return gt_ranks
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    ans_ind = ans_ind.view(-1)
+    gt_ranks = torch.LongTensor(ans_ind.size(0))
+    for i in range(ans_ind.size(0)):
+        gt_ranks[i] = <a id="change">int(ranks[i, ans_ind[i]])</a>
+    return gt_ranks
+
+
+def process_ranks(ranks):</code></pre>

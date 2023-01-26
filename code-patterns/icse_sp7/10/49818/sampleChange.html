@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                mask_num = masks[&quotweight&quot].numel()
+                _logger.info(&quotLayer: %s  Sparsity: %.2f&quot, name, 1 - mask_sum / mask_num)
+                m.weight.data = m.weight.data.mul(masks[&quotweight&quot])
+                <a id="change">if masks.__contains__(&quotbias&quot) and hasattr(m, &quotbias&quot) and m.bias is not None:
+                    m.bias.data = m.bias.data.mul(masks[&quotbias&quot])
+           </a> else:
+                _logger.info(&quotLayer: %s  NOT compressed&quot, name)
+        torch.save(self.bound_model.state_dict(), model_path)
+        _logger.info(&quotModel state_dict saved to %s&quot, model_path)</code></pre><h3>After Change</h3><pre><code class='java'>
+        mask_dict = {}
+        self._unwrap_model() &#47&#47 used for generating correct state_dict name without wrapper state
+
+        <a id="change">for wrapper in self.get_modules_wrapper():
+            weight_mask = wrapper.weight_mask
+            bias_mask = wrapper.bias_mask
+            if weight_mask is not None:
+                mask_sum = weight_mask.sum().item()
+                mask_num = weight_mask.numel()
+                _logger.info(&quotLayer: %s  Sparsity: %.2f&quot, wrapper.name, 1 - mask_sum / mask_num)
+                wrapper.module.weight.data = wrapper.module.weight.data.mul(weight_mask)
+            if bias_mask is not None:
+                wrapper.module.bias.data = wrapper.module.bias.data.mul(bias_mask)
+            &#47&#47 save mask to dict
+            mask_dict[wrapper.name] = {"weight": weight_mask, "bias": bias_mask}
+
+       </a> torch.save(self.bound_model.state_dict(), model_path)
+        _logger.info(&quotModel state_dict saved to %s&quot, model_path)
+        if mask_path is not None:
+            torch.save(mask_dict, mask_path)</code></pre>

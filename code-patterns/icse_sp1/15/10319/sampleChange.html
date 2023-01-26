@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+class _DataParallelMemoryNetwork(ModelBase):
+    def __init__(self, mem_net):
+        <a id="change">super(_DataParallelMemoryNetwork, self).__init__()</a>
+        self.num_hiddens = mem_net.num_hiddens
+        self.num_hidden_layers = mem_net.num_hidden_layers
+        self.state_dim = mem_net.state_dim
+        self.action_dim = mem_net.action_dim
+        self.num_gaussians = mem_net.num_gaussians
+
+        <a id="change">self.data_parallel</a> = <a id="change">torch.nn.DataParallel(mem_net.mdnrnn)</a>
+        self.mem_net = mem_net
+
+    def input_prototype(self):
+        return rlt.StateAction(</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.action_dim = mem_net.action_dim
+        self.num_gaussians = mem_net.num_gaussians
+
+        <a id="change">current_device = torch.cuda.current_device()</a>
+        <a id="change">self.data_parallel</a> = <a id="change">DistributedDataParallel(
+            mem_net.mdnrnn, device_ids=[current_device], output_device=current_device
+        )</a>
+        self.mem_net = mem_net
+
+    def input_prototype(self):
+        return rlt.StateAction(</code></pre>

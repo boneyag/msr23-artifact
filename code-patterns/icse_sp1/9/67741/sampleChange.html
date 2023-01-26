@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    with tfe.protocol.SecureNN():
+      tfe_model = tfe.keras.models.model_from_config(k_config)
+      x = <a id="change">tfe.define_private_variable(input_data)</a>
+
+    with tfe.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+      tfe_model.set_weights(k_weights)
+      <a id="change">y = tfe_model(x)</a>
+      actual = sess.run(y.reveal())
+
+      np.testing.assert_allclose(actual, expected, rtol=1e-2, atol=1e-2)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      k_config = model.get_config()
+
+    with tfe.protocol.SecureNN():
+      x = <a id="change">tfe.define_private_input(
+          "inputter",
+          lambda: tf.convert_to_tensor(input_data))</a>
+
+      tfe_model = tfe.keras.models.model_from_config(k_config)
+      tfe_model.set_weights(k_weights)
+      <a id="change">y = tfe_model(x)</a>
+
+    with KE.get_session() as sess:
+      actual = sess.run(y.reveal())
+
+      np.testing.assert_allclose(actual, expected, rtol=1e-2, atol=1e-2)
+
+    <a id="change">KE.clear_session()
+
+def _m</a>odel_predict_keras(input_data, input_shape):
+  with tf.Session():
+    model = tf.keras.models.Sequential()
+    model.add(tf.keras.layers.Dense(2, batch_input_shape=input_shape))</code></pre>

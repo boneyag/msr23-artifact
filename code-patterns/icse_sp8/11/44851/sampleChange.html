@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47if we&quotve already run EP, just use the existing approximation stored in self._ep_approximation
+            mu, Sigma, mu_tilde, tau_tilde, Z_tilde = self._ep_approximation
+
+        <a id="change">return super(EP, self).inference(kern, X, likelihood, mu_tilde[:,None], mean_function=mean_function, Y_metadata=Y_metadata, variance=1./tau_tilde, K=K, Z_tilde=np.log(Z_tilde).sum())</a>
+
+    def expectation_propagation(self, K, Y, likelihood, Y_metadata):
+
+        num_data, data_dim = Y.shape</code></pre><h3>After Change</h3><pre><code class='java'>
+        if K is None:
+            K = kern.K(X)
+
+        <a id="change">if self.ep_mode=="nested":
+            &#47&#47Force EP at each step of the optimization
+            self._ep_approximation = None
+            mu, Sigma, mu_tilde, tau_tilde, log_Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
+        elif self.ep_mode=="alternated":
+            if getattr(self, &quot_ep_approximation&quot, None) is None:
+                &#47&#47if we don&quott yet have the results of runnign EP, run EP and store the computed factors in self._ep_approximation
+                mu, Sigma, mu_tilde, tau_tilde, log_Z_tilde = self._ep_approximation = self.expectation_propagation(K, Y, likelihood, Y_metadata)
+            else:
+                &#47&#47if we&quotve already run EP, just use the existing approximation stored in self._ep_approximation
+                mu, Sigma, mu_tilde, tau_tilde, log_Z_tilde = self._ep_approximation
+        else:
+            raise ValueError("ep_mode value not valid")
+
+       </a> v_tilde = mu_tilde * tau_tilde
+        return self._inference(K, tau_tilde, v_tilde, likelihood, Y_metadata=Y_metadata,  Z_tilde=log_Z_tilde.sum())
+
+    def expectation_propagation(self, K, Y, likelihood, Y_metadata):</code></pre>

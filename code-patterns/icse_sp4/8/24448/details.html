@@ -1,0 +1,49 @@
+<html><h3>3b7c410840e6e8cb54e9290494acde04d2942c18,pyannote/audio/embedding/approaches/triplet_loss.py,TripletLoss,loss,#TripletLoss#Any#Any#,142
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                    &#47&#47 do not use += because autograd does not support it
+                    loss = loss + self.triplet_loss_(fX[anchor, :],
+                                                     <a id="change">fX[positive, :]</a>,
+                                                     fX[negative, :])
+                    n_comparisons = n_comparisons + 1
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        loss = 0.
+        n_comparisons = 0
+
+        <a id="change">distance = self.metric_(fX)</a>
+
+        &#47&#47 consider every embedding as anchor
+        for anchor, y_anchor in enumerate(y):
+
+            &#47&#47 consider every other embedding with the same label as positive
+            for positive, y_positive in enumerate(y):
+
+                &#47&#47 if same embedding or different labels, skip
+                if (anchor == positive) or (y_anchor != y_positive):
+                    continue
+
+                for negative, y_negative in enumerate(y):
+
+                    &#47&#47 if same label, skip
+                    if y_negative == y_positive:
+                        continue
+
+                    loss_ = distance[anchor, positive] - \
+                            distance[anchor, negative] + \
+                            self.margin * self.metric_max_
+
+                    if self.clamp == &quotpositive&quot:
+                        <a id="change">loss_ = ag_np.maximum(loss_, 0.)</a>
+
+                    elif self.clamp == &quotsigmoid&quot:
+                        loss_ = 1. / (1. + ag_np.exp(-loss_))
+
+                    &#47&#47 do not use += because autograd does not support it
+                    <a id="change">loss = loss + loss_</a>
+
+                    n_comparisons = n_comparisons + 1
+
+        return loss / n_comparisons</code></pre><img src="127684508.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pyannote/pyannote-audio/commit/3b7c410840e6e8cb54e9290494acde04d2942c18#diff-9053cea7162948d0c3200047fc4ab5634e178d8153e46996a60e794f7ebb3279L111' target='_blank'>Link</a></div><div id='project'> Project Name: pyannote/pyannote-audio</div><div id='commit'> Commit Name: 3b7c410840e6e8cb54e9290494acde04d2942c18</div><div id='time'> Time: 2017-05-03</div><div id='author'> Author: bredin@limsi.fr</div><div id='file'> File Name: pyannote/audio/embedding/approaches/triplet_loss.py</div><div id='class'> Class Name: TripletLoss</div><div id='method'> Method Name: loss</div><BR><BR><div id='link'><a href='https://github.com/interactiveaudiolab/nussl/commit/4f5bee81eeb9cecb9d040cb4436dd7f07e06b965#diff-3f0226f6e0d1b20347338a58cf10a4ac1154651b97bdb90508804c229c92a29eL172' target='_blank'>Link</a></div><div id='project'> Project Name: interactiveaudiolab/nussl</div><div id='commit'> Commit Name: 4f5bee81eeb9cecb9d040cb4436dd7f07e06b965</div><div id='time'> Time: 2020-03-22</div><div id='author'> Author: prem@u.northwestern.edu</div><div id='file'> File Name: nussl/separation/primitive/melodia.py</div><div id='class'> Class Name: Melodia</div><div id='method'> Method Name: create_harmonic_mask</div><BR><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/9c735a23b2ebc40233c787ee706b007b63503a26#diff-0fd32f5f810aa9b07146f14d003e3e16ad377f8ed182d642b424d162393f1560L177' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: 9c735a23b2ebc40233c787ee706b007b63503a26</div><div id='time'> Time: 2020-03-31</div><div id='author'> Author: pete.mahler.larsen@gmail.com</div><div id='file'> File Name: scipy/spatial/_spherical_voronoi.py</div><div id='class'> Class Name: SphericalVoronoi</div><div id='method'> Method Name: _handle_geodesic_input</div><BR>

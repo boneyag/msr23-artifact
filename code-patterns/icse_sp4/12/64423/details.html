@@ -1,0 +1,57 @@
+<html><h3>b523b464d8cafe29e352981c1c6df941f205592a,nilmtk/metrics.py,,mean_normalized_error_power,#Any#Any#,109
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    numerator = {}
+    denominator = {}
+
+    <a id="change">for appliance in predicted_power:
+        numerator[appliance] = np.sum(np.abs(predicted_power[appliance] -
+                                             df_appliances_ground_truth[appliance].values))
+        denominator[appliance] = np.sum(
+            df_appliances_ground_truth[appliance].values)
+        mne[appliance] = numerator[appliance] * 1.0 / denominator[appliance]
+   </a> return mne
+
+
+def rms_error_power(predicted_power, df_appliances_ground_truth):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 TODO: need to resample to keep things in step
+    mne = {}
+    <a id="change">for meter in predictions.submeters():
+        ground_truth_meter_identifier = meter.identifier._replace(
+            dataset=ground_truth.dataset())
+        ground_truth_meter = ground_truth[ground_truth_meter_identifier]
+        sections = meter.good_sections()
+        sample_period = meter.sample_period()
+        period_alias = &quot{:d}S&quot.format(sample_period)
+
+        &#47&#47 TODO: preprocessing=[Resample(sample_period)])
+        pred_generator = meter.power_series(periods=sections)
+        total_diff = 0
+        sum_of_ground_truth_power = 0
+        while True:
+            try:
+                pred_chunk = next(pred_generator)
+            except StopIteration:
+                break
+            else:
+                truth_generator = ground_truth_meter.power_series(
+                    periods=[pred_chunk.timeframe], chunksize=1E9)
+                truth_chunk = next(truth_generator)
+                
+                &#47&#47 TODO: do this resampling in the pipeline?
+                truth_chunk = truth_chunk.resample(period_alias)
+                pred_chunk = pred_chunk.resample(period_alias)
+
+                diff = (pred_chunk.icol(0) - truth_chunk.icol(0)).dropna() 
+                total_diff += sum(abs(diff))
+                sum_of_ground_truth_power += truth_chunk.icol(0).dropna().sum()
+
+        mne[meter.instance()] = total_diff / sum_of_ground_truth_power
+
+   </a> return pd.Series(mne)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47 FUNCTIONS BELOW THIS LINE HAVE NOT YET CONVERTED TO NILMTK v0.2 &#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+</code></pre><img src="298570698.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/nilmtk/nilmtk/commit/b523b464d8cafe29e352981c1c6df941f205592a#diff-0d2d2df8be36e4353c82d992be66fe5ea50caf12891ddd5485531856ef455ea2L128' target='_blank'>Link</a></div><div id='project'> Project Name: nilmtk/nilmtk</div><div id='commit'> Commit Name: b523b464d8cafe29e352981c1c6df941f205592a</div><div id='time'> Time: 2014-07-09</div><div id='author'> Author: jack-list@xlk.org.uk</div><div id='file'> File Name: nilmtk/metrics.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: mean_normalized_error_power</div><BR><BR><div id='link'><a href='https://github.com/nilmtk/nilmtk/commit/9ce99b87ced85d30b755c4bf8e94b1d592b963bd#diff-0d2d2df8be36e4353c82d992be66fe5ea50caf12891ddd5485531856ef455ea2L154' target='_blank'>Link</a></div><div id='project'> Project Name: nilmtk/nilmtk</div><div id='commit'> Commit Name: 9ce99b87ced85d30b755c4bf8e94b1d592b963bd</div><div id='time'> Time: 2014-07-10</div><div id='author'> Author: jack-list@xlk.org.uk</div><div id='file'> File Name: nilmtk/metrics.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: rms_error_power</div><BR><BR><div id='link'><a href='https://github.com/nilmtk/nilmtk/commit/f0e38a44c09452fc4675681a4e45c3c69612c791#diff-0d2d2df8be36e4353c82d992be66fe5ea50caf12891ddd5485531856ef455ea2L49' target='_blank'>Link</a></div><div id='project'> Project Name: nilmtk/nilmtk</div><div id='commit'> Commit Name: f0e38a44c09452fc4675681a4e45c3c69612c791</div><div id='time'> Time: 2014-07-09</div><div id='author'> Author: jack-list@xlk.org.uk</div><div id='file'> File Name: nilmtk/metrics.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: error_in_assigned_energy</div><BR>

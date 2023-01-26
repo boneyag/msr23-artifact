@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 ???????
+        &#47&#47 sequence_indices = [tf.range(start=indices[n], limit=(indices[n] + sequence_length)) for k in range(n)]
+        &#47&#47 sequence_indices = [indices[k: k + sequence_length] for k in tf.unstack(value=tf.range(start=0, limit=n), num=n)]
+        sequence_indices = <a id="change">tf.expand_dims(input=tf.range(start=0, limit=n), axis=1) + tf.expand_dims(input=tf.constant(value=list(range(sequence_length))), axis=0)</a>
+        sequence_indices = tf.reshape(tensor=sequence_indices, shape=(n * sequence_length,))
+        &#47&#47 sequence_indices = tf.concat(values=sequence_indices, axis=0)  &#47&#47 tf.stack !!!!!
+        terminal = tf.gather(params=self.memories[&quotterminal&quot], indices=indices)
+        sequence_indices = tf.boolean_mask(tensor=sequence_indices, mask=tf.logical_not(x=terminal))</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 sequence_indices = [tf.range(start=indices[n], limit=(indices[n] + sequence_length)) for k in range(n)]
+        &#47&#47 sequence_indices = [indices[k: k + sequence_length] for k in tf.unstack(value=tf.range(start=0, limit=n), num=n)]
+        sequence_indices = tf.expand_dims(input=tf.range(start=0, limit=n), axis=1)
+        <a id="change">sequence_indices += tf.expand_dims(input=tf.range(start=0, limit=sequence_length), axis=0)</a>
+        sequence_indices = tf.reshape(tensor=sequence_indices, shape=(n * sequence_length,))
+        &#47&#47 sequence_indices = tf.concat(values=sequence_indices, axis=0)  &#47&#47 tf.stack !!!!!
+        terminal = tf.gather(params=self.memories[&quotterminal&quot], indices=indices)
+        sequence_indices = tf.boolean_mask(tensor=sequence_indices, mask=tf.logical_not(x=terminal))</code></pre>

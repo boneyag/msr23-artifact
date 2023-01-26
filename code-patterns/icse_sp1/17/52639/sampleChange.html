@@ -1,0 +1,111 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    old_len = len(g.get_n_repr())
+    assert _pfc(g.pop_n_repr(&quoth&quot)) == [0.] * 10
+    assert len(g.get_n_repr()) == old_len - 1
+    <a id="change">g.set_n_repr({&quoth&quot : th.zeros((10, D))})</a>
+    &#47&#47 set partial nodes
+    u = th.tensor([1, 3, 5])
+    g.set_n_repr({&quoth&quot : th.ones((3, D))}, u)
+    assert _pfc(g.get_n_repr()[&quoth&quot]) == [0., 1., 0., 1., 0., 1., 0., 0., 0., 0.]
+    &#47&#47 get partial nodes
+    u = th.tensor([1, 2, 3])
+    assert _pfc(g.get_n_repr(u)[&quoth&quot]) == [1., 0., 1.]
+
+    &quot&quot&quot
+    s, d, eid
+    0, 1, 0
+    1, 9, 1
+    0, 2, 2
+    2, 9, 3
+    0, 3, 4
+    3, 9, 5
+    0, 4, 6
+    4, 9, 7
+    0, 5, 8
+    5, 9, 9
+    0, 6, 10
+    6, 9, 11
+    0, 7, 12
+    7, 9, 13
+    0, 8, 14
+    8, 9, 15
+    9, 0, 16
+    &quot&quot&quot
+    &#47&#47 set all edges
+    g.set_e_repr({&quotl&quot : th.zeros((17, D))})
+    assert _pfc(g.get_e_repr()[&quotl&quot]) == [0.] * 17
+    &#47&#47 pop edges
+    old_len = len(g.get_e_repr())
+    assert _pfc(g.pop_e_repr(&quotl&quot)) == [0.] * 17
+    assert len(g.get_e_repr()) == old_len - 1
+    g.set_e_repr({&quotl&quot : th.zeros((17, D))})
+    &#47&#47 set partial edges (many-many)
+    u = th.tensor([0, 0, 2, 5, 9])
+    v = th.tensor([1, 3, 9, 9, 0])
+    g.set_e_repr({&quotl&quot : th.ones((5, D))}, u, v)
+    truth = [0.] * 17
+    truth[0] = truth[4] = truth[3] = truth[9] = truth[16] = 1.
+    assert _pfc(g.get_e_repr()[&quotl&quot]) == truth
+    &#47&#47 set partial edges (many-one)
+    u = th.tensor([3, 4, 6])
+    v = th.tensor([9])
+    g.set_e_repr({&quotl&quot : th.ones((3, D))}, u, v)
+    truth[5] = truth[7] = truth[11] = 1.
+    assert _pfc(g.get_e_repr()[&quotl&quot]) == truth
+    &#47&#47 set partial edges (one-many)
+    u = th.tensor([0])
+    v = th.tensor([4, 5, 6])
+    <a id="change">g.set_e_repr({&quotl&quot : th.ones((3, D))}, u, v)</a>
+    truth[6] = truth[8] = truth[10] = 1.
+    assert _pfc(g.get_e_repr()[&quotl&quot]) == truth
+    &#47&#47 get partial edges (many-many)
+    u = th.tensor([0, 6, 0])</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_batch_setter_getter():
+    def _pfc(x):
+        return list(x.numpy()[:,0])
+    <a id="change">g</a> = generate_graph()
+    &#47&#47 set all nodes
+    g.ndata[&quoth&quot] = th.zeros((10, D))
+    assert th.allclose(g.ndata[&quoth&quot], th.zeros((10, D)))
+    &#47&#47 pop nodes
+    old_len = len(g.ndata)
+    assert _pfc(g.pop_n_repr(&quoth&quot)) == [0.] * 10
+    assert len(g.ndata) == old_len - 1
+    <a id="change">g.ndata[&quoth&quot] = th.zeros((10, D))</a>
+    &#47&#47 set partial nodes
+    u = th.tensor([1, 3, 5])
+    g.nodes[u].data[&quoth&quot] = th.ones((3, D))
+    assert _pfc(g.ndata[&quoth&quot]) == [0., 1., 0., 1., 0., 1., 0., 0., 0., 0.]
+    &#47&#47 get partial nodes
+    u = th.tensor([1, 2, 3])
+    assert _pfc(g.nodes[u].data[&quoth&quot]) == [1., 0., 1.]
+
+    &quot&quot&quot
+    s, d, eid
+    0, 1, 0
+    1, 9, 1
+    0, 2, 2
+    2, 9, 3
+    0, 3, 4
+    3, 9, 5
+    0, 4, 6
+    4, 9, 7
+    0, 5, 8
+    5, 9, 9
+    0, 6, 10
+    6, 9, 11
+    0, 7, 12
+    7, 9, 13
+    0, 8, 14
+    8, 9, 15
+    9, 0, 16
+    &quot&quot&quot
+    &#47&#47 set all edges
+    <a id="change">g.edata[&quotl&quot] = th.zeros((17, D))</a>
+    assert _pfc(g.edata[&quotl&quot]) == [0.] * 17
+    &#47&#47 pop edges
+    old_len = len(g.edata)
+    assert _pfc(g.pop_e_repr(&quotl&quot)) == [0.] * 17</code></pre>

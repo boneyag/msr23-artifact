@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+lit = LitModel(opt)
+&#47&#47 warning grad_clip_mode is ignored.
+trainer = pl.Trainer(
+    callbacks=<a id="change">[OnEpochStartCallback()]</a>,
+    default_root_dir=opt.checkpoint_path,
+    resume_from_checkpoint=resume_from,
+    distributed_backend=&quotddp&quot,</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 fast_dev_run=True,
+)
+
+<a id="change">if os.getenv(&quotEVALUATE&quot, &quot0&quot) == &quot1&quot:
+    lit.load_state_dict(torch.load(resume_from)[&quotstate_dict&quot])
+    &#47&#47 Because ddp cant work with test
+    trainer = pl.Trainer(
+        default_root_dir=opt.checkpoint_path,
+        resume_from_checkpoint=resume_from,
+        distributed_backend=&quotdp&quot,
+        gpus=torch.cuda.device_count(),
+        checkpoint_callback=checkpoint_callback,
+        profiler=True,
+        &#47&#47 limit_train_batches=500,
+        &#47&#47 progress_bar_refresh_rate=0,
+        &#47&#47 fast_dev_run=True,
+    )
+    trainer.test(lit)
+else:
+    trainer.fit(lit)</a>
+</code></pre>

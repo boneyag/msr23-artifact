@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            for _ in range(self.max_iter):
+                d = self.finite_diff * self._normalize(d)
+                e = self.finite_diff * self._normalize(e)
+                preds_new = self.classifier.predict(<a id="change">np.stack((val + d, val + e))</a>)
+
+                &#47&#47 Compute KL divergence between logits
+                from scipy.stats import entropy
+                kl_div1 = entropy(preds[ind], preds_new[0])
+                kl_div2 = entropy(preds[ind], preds_new[1])
+                <a id="change">d = (kl_div1 - kl_div2) / np.abs(d - e)</a>
+
+            &#47&#47 Apply perturbation and clip
+            val = np.clip(val + self.eps * self._normalize(d), clip_min, clip_max)
+            x_adv[ind] = val</code></pre><h3>After Change</h3><pre><code class='java'>
+                
+                &#47&#47 TODO remove for loop
+                d_new = d
+                <a id="change">for i in range(*dims):
+                    d[i] += self.finite_diff
+                    preds_new = self.classifier.predict((val + d)[None, ...], logits=False)
+                    kl_div2 = entropy(preds[ind], preds_new[0])                    
+                    d_new[i] = (kl_div2-kl_div1)/self.finite_diff
+                    d[i] -= self.finite_diff
+               </a> d = d_new
+
+            &#47&#47 Apply perturbation and clip
+            val = np.clip(val + self.eps * self._normalize(d), clip_min, clip_max)</code></pre>

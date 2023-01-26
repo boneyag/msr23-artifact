@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        use_cuda=use_cuda,
+        remove_module=args.remove_module)
+    if hasattr(net, "module"):
+        input_image_size = <a id="change">net.module.in_size[0] if hasattr(net.module, "in_size") else args.input_size</a>
+    else:
+        input_image_size = net.in_size[0] if hasattr(net, "in_size") else args.input_size
+
+    val_data = get_val_data_loader(</code></pre><h3>After Change</h3><pre><code class='java'>
+        log_packages=args.log_packages,
+        log_pip_packages=args.log_pip_packages)
+
+    <a id="change">ds_metainfo = get_dataset_metainfo(dataset_name=args.dataset)</a>
+    <a id="change">ds_metainfo.update(args=args)</a>
+    assert (ds_metainfo.ml_type != "imgseg") or (args.batch_size == 1)
+    assert (ds_metainfo.ml_type != "imgseg") or args.disable_cudnn_autotune
+
+    use_cuda, batch_size = prepare_pt_context(
+        num_gpus=args.num_gpus,
+        batch_size=args.batch_size)
+
+    net = prepare_model(
+        model_name=args.model,
+        use_pretrained=args.use_pretrained,
+        pretrained_model_file_path=args.resume.strip(),
+        use_cuda=use_cuda,
+        net_extra_kwargs=ds_metainfo.net_extra_kwargs,
+        load_ignore_extra=ds_metainfo.load_ignore_extra,
+        num_classes=args.num_classes,
+        in_channels=args.in_channels,
+        remove_module=args.remove_module)
+    real_net = net.module if hasattr(net, "module") else net
+    input_image_size = real_net.in_size[0] if hasattr(real_net, "in_size") else args.input_size
+
+    if args.data_subset == "val":
+        <a id="change">test_data = get_val_data_source(
+            ds_metainfo=ds_metainfo,
+            batch_size=batch_size,
+            num_workers=args.num_workers)</a>
+        test_metric = get_composite_metric(
+            metric_names=ds_metainfo.val_metric_names,
+            metric_extra_kwargs=ds_metainfo.val_metric_extra_kwargs)
+    else:
+        <a id="change">test_data = get_test_data_source(
+            ds_metainfo=ds_metainfo,
+            batch_size=batch_size,
+            num_workers=args.num_workers)</a>
+        test_metric = get_composite_metric(
+            metric_names=ds_metainfo.test_metric_names,
+            metric_extra_kwargs=ds_metainfo.test_metric_extra_kwargs)
+</code></pre>

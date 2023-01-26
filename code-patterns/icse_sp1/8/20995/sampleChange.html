@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def _sample(self):
+        self.inputs = self.gan.inputs.next(0).clone().detach()
+        self.gan.latent.z = self.z
+        <a id="change">g = self.gan.generator.forward(self.inputs)</a>
+        <a id="change">return [
+            (&quotinput&quot, self.inputs),
+            (&quotgenerator&quot, g)
+        ]</a>
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.inputs = self.gan.inputs.next(0).clone().detach()
+        self.gan.latent.z = self.z
+        b = self.z.shape[0]
+        <a id="change">y_ = torch.randint(0, len(self.gan.inputs.datasets), (b, )).to(self.z.device)</a>
+        posy_ = torch.ones_like(y_)
+        negy_ = torch.zeros_like(y_)
+        <a id="change">return [
+            (&quotinput&quot, self.inputs),
+            (&quotg1&quot,self.gan.generator.forward(self.inputs, context={"y": posy_.float().view(b,1)}))
+            &#47&#47(&quotg2&quot,self.gan.generator.forward(self.gan.inputs.next(1).clone().detach(), context={"y": negy_.float().view(b,1)}))
+        ]</a>
+
+</code></pre>

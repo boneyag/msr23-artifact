@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _get_mxts_increments_for_inputs(self):
+        input_act_vars = self._get_input_activation_vars() 
+        <a id="change">return B.pool2d_grad(
+                pool_out=self.get_mxts(),
+                pool_in=input_act_vars,
+                pool_size=self.pool_size,
+                strides=self.strides,
+                border_mode=self.border_mode,
+                ignore_border=self.ignore_border,
+                pool_mode=self.pool_mode
+            )</a>
+
+
+class Flatten(SingleInputMixin, OneDimOutputMixin, Node):
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+    def _get_mxts_increments_for_inputs(self):
+        input_act_vars = self._get_input_activation_vars() 
+
+        out_grads = <a id="change">self.get_mxts()</a>
+        if (<a id="change">self.pool_mode</a> == B.PoolMode.max):
+            &#47&#47For maxpooling, an addiitonal scale factor may be needed
+            &#47&#47in case all the inputs don&quott have the same reference.
+            &#47&#47multiply by diff-from-default of output here,
+            &#47&#47and divide by diff-from-default of output later
+            out_grads = out_grads*self._get_diff_from_default_vars()
+
+        <a id="change">to_return = B.pool2d_grad(
+                        out_grad=out_grads,
+                        pool_in=input_act_vars,
+                        pool_size=self.pool_size,
+                        strides=self.strides,
+                        border_mode=self.border_mode,
+                        ignore_border=self.ignore_border,
+                        pool_mode=self.pool_mode)</a>
+
+        if (<a id="change">self.pool_mode</a> == B.PoolMode.max):
+            &#47&#47rescale back down according to diff-from-default of inputs
+            pseudocounted_inp_diff_default = pseudocount_near_zero(to_return)
+            <a id="change">to_return = to_return/pseudocounted_inp_diff_default</a> 
+
+        <a id="change">return to_return</a>
+
+
+class Flatten(SingleInputMixin, OneDimOutputMixin, Node):
+    </code></pre>

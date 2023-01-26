@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def zero_mean_mvn_samples(self, num_samples):
+        base_samples = self.base_lazy_tensor.zero_mean_mvn_samples(num_samples)
+        <a id="change">if self.ndimension() == 3:
+            res = left_interp(
+                self.left_interp_indices, self.left_interp_values, base_samples.permute(1, 2, 0).contiguous()
+            )
+            return res.permute(2, 0, 1).contiguous()
+        else:
+            res = left_interp(
+                self.left_interp_indices, self.left_interp_values, base_samples.permute(1, 0).contiguous()
+            )
+            return res.permute(1, 0).contiguous()
+
+   </a> def _getitem_nonbatch(self, row_index, col_index, first_tensor_index_dim=None):
+        
+        Given an index over rows and columns, gets those items from the LazyTensor.
+        Implementing this is not necessary, but it improves performance</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def zero_mean_mvn_samples(self, num_samples):
+        base_samples = self.base_lazy_tensor.zero_mean_mvn_samples(num_samples)
+        batch_iter = tuple((i + 1) for i in range(<a id="change">base_samples.dim()</a> - 1))
+        base_samples = base_samples.permute(*batch_iter, 0)
+        res = left_interp(self.left_interp_indices, self.left_interp_values, base_samples).contiguous()
+        batch_iter = tuple(i for i in range(<a id="change">res.dim() - 1</a>))
+        return res.permute(-1, *batch_iter).contiguous()
+
+    def _getitem_nonbatch(self, row_index, col_index, first_tensor_index_dim=None):</code></pre>

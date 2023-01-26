@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def create_legacy_graph_tasks():
+  Create tasks to recursively parse the legacy graph.
+  return <a id="change">[
+    &#47&#47 Recursively requests LegacyGraphNodes for TargetAdaptors, which will result in a
+    &#47&#47 transitive graph walk.
+    (LegacyBuildGraphNode,
+     [Select(TargetAdaptor),
+      SelectDependencies(LegacyBuildGraphNode, TargetAdaptor)],
+     reify_legacy_graph),
+  ]</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def create_legacy_graph_tasks():
+  Create tasks to recursively parse the legacy graph.
+  return <a id="change">[
+    &#47&#47 Recursively requests the dependencies and adapted fields of TargetAdaptors, which
+    &#47&#47 will result in an eager, transitive graph walk.
+    (LegacyTarget,
+     [Select(TargetAdaptor),
+      SelectDependencies(LegacyTarget, TargetAdaptor, &quotdependencies&quot),
+      SelectDependencies(HydratedField, TargetAdaptor, &quotfield_adaptors&quot)],
+     reify_legacy_graph),
+    (HydratedField,
+     [Select(SourcesField),
+      SelectProjection(FilesContent, PathGlobs, (&quotpath_globs&quot,), SourcesField),
+      SelectProjection(Files, PathGlobs, (&quotexcluded_path_globs&quot,), SourcesField)],
+     hydrate_sources),
+    (HydratedField,
+     [Select(BundlesField),
+      SelectDependencies(FilesContent, BundlesField, &quotpath_globs_list&quot)],
+     hydrate_bundles),
+  ]</a>
+</code></pre>

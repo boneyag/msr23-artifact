@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            precise_matches = possible_matches[possible_matches.intersects(poly)]
+            points_within_geometry = points_within_geometry.append(precise_matches)
+
+    <a id="change">if len(points_within_geometry) &gt; 0:
+        &#47&#47 drop duplicate points if any
+        points_within_geometry = points_within_geometry.drop_duplicates(subset="node")
+    else:
+        &#47&#47 after simplifying the graph, and given the requested network type,
+        &#47&#47 there are no nodes inside the polygon - can&quott create graph from that
+        &#47&#47 so throw error
+        raise Exception("There are no nodes within the requested geometry")
+
+   </a> utils.log(f"Identified {len(points_within_geometry)} nodes inside polygon")
+    return points_within_geometry
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 loop through each chunk of the geometry to find approximate and then
+    &#47&#47 precisely intersecting points
+    <a id="change">points_in_geom = set()</a>
+    for poly in multipoly:
+        &#47&#47 find approximate matches with spatial index, then precise matches
+        &#47&#47 from those approximate ones
+        poly = poly.buffer(0)
+        if poly.is_valid and poly.area &gt; 0:
+            possible_matches_iloc = sindex.intersection(poly.bounds)
+            possible_matches = points.iloc[list(possible_matches_iloc)]
+            precise_matches = possible_matches[possible_matches.intersects(poly)]
+            points_in_geom.update(precise_matches.index)
+
+    <a id="change">if len(points_in_geom) &lt; 1:
+        &#47&#47 after simplifying the graph, and given the requested network type,
+        &#47&#47 there are no nodes inside the polygon - can&quott create graph from that
+        &#47&#47 so throw error
+        raise Exception("There are no nodes within the requested geometry")
+
+   </a> utils.log(f"Identified {len(points_in_geom)} nodes inside polygon")
+    return points_in_geom
+
+</code></pre>

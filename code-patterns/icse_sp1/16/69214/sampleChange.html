@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    where_data = [utc_point_in_time]
+
+    if entity_ids is not None:
+        <a id="change">where += "AND entity_id IN ({}) ".format(
+            ",".join([&quot?&quot] * len(entity_ids)))</a>
+        where_data.extend(entity_ids)
+
+    <a id="change">query = 
+        SELECT * FROM states
+        INNER JOIN (
+            SELECT max(state_id) AS max_state_id
+            FROM states WHERE {}
+            GROUP BY entity_id)
+        WHERE state_id = max_state_id
+    .format(where)</a>
+
+    return recorder.query_states(query, where_data)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    from sqlalchemy import and_, func
+
+    states = <a id="change">recorder.get_model(&quotStates&quot)</a>
+    most_recent_state_ids = recorder.query(
+        func.max(states.state_id).label(&quotmax_state_id&quot)
+    ).filter(
+        (<a id="change">states.created</a> &gt;= run.start) &
+        (<a id="change">states.created</a> &lt; utc_point_in_time)
+    )
+
+    if entity_ids is not None:
+        most_recent_state_ids = most_recent_state_ids.filter(
+            <a id="change">states</a>.entity_id.in_(entity_ids))
+
+    most_recent_state_ids = most_recent_state_ids.group_by(
+        <a id="change">states.entity_id</a>).subquery()
+
+    <a id="change">query = recorder.query(&quotStates&quot).join(most_recent_state_ids, and_(
+        states.state_id == most_recent_state_ids.c.max_state_id))</a>
+
+    return recorder.execute(query)
+
+</code></pre>

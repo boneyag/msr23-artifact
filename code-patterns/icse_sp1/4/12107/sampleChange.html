@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    [batch_size, list_size] tensor. The values in the last dimension are the
+    indices for an element in the input tensor.
+  
+  is_valid = <a id="change">ops.convert_to_tensor(is_valid)</a>
+  is_valid.get_shape().assert_has_rank(2)
+  <a id="change">output_shape = array_ops.shape(is_valid)</a>
+  rand = array_ops.where(is_valid,
+                         random_ops.random_uniform(output_shape, seed=seed),
+                         array_ops.ones(output_shape) * -1e-6)
+  &#47&#47 shape(indices) = [batch_size, list_size]
+  _, indices = nn_ops.top_k(rand, output_shape[1], sorted=True)
+  &#47&#47 shape(batch_ids) = [batch_size, list_size]
+  <a id="change">batch_ids = array_ops.ones_like(indices) * array_ops.expand_dims(
+      math_ops.range(output_shape[0]), 1)</a>
+  return array_ops.concat(
+      [array_ops.expand_dims(batch_ids, 2),
+       array_ops.expand_dims(indices, 2)],
+      axis=2)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def shuffle_valid_indices(is_valid, seed=None):
+  Returns a shuffle of indices with valid ones on top.
+  <a id="change">return organize_valid_indices(is_valid, shuffle=True, seed=seed)</a>
+
+
+def organize_valid_indices(is_valid, shuffle=True, seed=None):
+  Organizes indices in such a way that valid items appear first.</code></pre>

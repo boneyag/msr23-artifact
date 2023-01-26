@@ -1,0 +1,87 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    outer_class_name = camelcase(filename)
+    multiple_files = False
+    types = set()
+    <a id="change">for line in lines:
+      match = DEFAULT_PACKAGE_PARSER.match(line)
+      if match:
+        package = match.group(1)
+      else:
+        match = OPTION_PARSER.match(line)
+        if match:
+          name = match.group(1)
+          value = match.group(2)
+
+          def string_value():
+            return value.lstrip(&quot"&quot).rstrip(&quot"&quot)
+
+          def bool_value():
+            return value == &quottrue&quot
+
+          if &quotjava_package&quot == name:
+            package = string_value()
+          elif &quotjava_outer_classname&quot == name:
+            outer_class_name = string_value()
+          elif &quotjava_multiple_files&quot == name:
+            multiple_files = bool_value()
+        else:
+          match = TYPE_PARSER.match(line)
+          if match:
+            type_ = match.group(2)
+            types.add(type_)
+            if match.group(1) == &quotmessage&quot:
+              types.add(&quot%sOrBuilder&quot % type_)
+
+   </a> genfiles = defaultdict(set)
+    genfiles[&quotpy&quot].update(calculate_python_genfiles(source))
+    genfiles[&quotjava&quot].update(calculate_java_genfiles(package,
+                                                    outer_class_name,</code></pre><h3>After Change</h3><pre><code class='java'>
+    outer_types = set()
+    inner_types = set()
+    type_depth = 0
+    <a id="change">for line in lines:
+      match = DEFAULT_PACKAGE_PARSER.match(line)
+      if match:
+        package = match.group(1)
+      else:
+        match = OPTION_PARSER.match(line)
+        if match:
+          name = match.group(1)
+          value = match.group(2)
+
+          def string_value():
+            return value.lstrip(&quot"&quot).rstrip(&quot"&quot)
+
+          def bool_value():
+            return value == &quottrue&quot
+
+          if &quotjava_package&quot == name:
+            package = string_value()
+          elif &quotjava_outer_classname&quot == name:
+            outer_class_name = string_value()
+          elif &quotjava_multiple_files&quot == name:
+            multiple_files = bool_value()
+        else:
+          match = TYPE_PARSER.match(line)
+          if match:
+            type_depth += 1
+            type_ = match.group(2)
+            if type_depth == 1:
+              _record_type(outer_types, type_, match.group(1))
+            else:
+              _record_type(inner_types, type_, match.group(1))
+          else:
+            match = END_TYPE_PARSER.match(line)
+            if match:
+              type_depth -= 1
+
+    &#47&#47 TODO(Eric Ayers) replace with a real lex/parse understanding of protos
+    &#47&#47 This is a big hack.  The parsing for finding type definitions is not reliable.
+    &#47&#47 See https://github.com/pantsbuild/pants/issues/96
+   </a> types = set()
+    if multiple_files:
+      if type_depth == 0:
+        types = outer_types</code></pre>

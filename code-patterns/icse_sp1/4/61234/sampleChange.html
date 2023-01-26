@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      tf.get_logger().warning("No checkpoint to restore in %s", self._model_dir)
+      return None
+    is_v1 = os.path.basename(checkpoint_path).startswith("model")
+    <a id="change">if is_v1:
+      _restore_v1_checkpoint(
+          checkpoint_path,
+          self._model,
+          optimizer=self._optimizer if not weights_only else None)
+    else:
+      checkpoint.restore(checkpoint_path)
+   </a> tf.get_logger().info("Restored checkpoint %s", checkpoint_path)
+    return checkpoint_path
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      tf.get_logger().warning("No checkpoint to restore in %s", self._model_dir)
+      return None
+    is_v1 = os.path.basename(checkpoint_path).startswith("model")
+    <a id="change">if is_v1:
+      tf.get_logger().info("Upgrading V1 checkpoint...")
+      &#47&#47 Work with copies of model and optimizer as the downstream task might
+      &#47&#47 need to create the variable differently (e.g. under a distribution
+      &#47&#47 strategy scope).
+      tmp_model = copy.deepcopy(self._model)
+      tmp_optimizer = copy.deepcopy(self._optimizer) if self._optimizer is not None else None
+      tmp_model.create_variables(optimizer=tmp_optimizer)
+      step = _restore_v1_checkpoint(
+          checkpoint_path, tmp_model, optimizer=tmp_optimizer)
+      &#47&#47 Save an updated checkpoint in the model directory and restore this one instead.
+      tmp_checkpoint = Checkpoint(
+          tmp_model, optimizer=tmp_optimizer, model_dir=self._model_dir)
+      checkpoint_path = tmp_checkpoint.save(step)
+      return self.restore(checkpoint_path=checkpoint_path, weights_only=weights_only)
+   </a> checkpoint.restore(checkpoint_path)
+    tf.get_logger().info("Restored checkpoint %s", checkpoint_path)
+    return checkpoint_path
+</code></pre>

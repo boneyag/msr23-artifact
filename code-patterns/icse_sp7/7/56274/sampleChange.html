@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def audio(tag, tensor, sample_rate=44100):
+    tensor = make_np(tensor)
+    <a id="change">tensor = tensor.squeeze()</a>
+    if abs(tensor).max() &gt; 1:
+        print(&quotwarning: audio amplitude out of range, auto clipped.&quot)
+        tensor = tensor.clip(-1, 1)
+    assert(tensor.ndim == 1), &quotinput tensor should be 1 dimensional.&quot
+
+    tensor_list = <a id="change">[int(32767.0 * x) for x in tensor]</a>
+    import io
+    import wave
+    import struct
+    fio = io.BytesIO()
+    Wave_write = wave.open(fio, &quotwb&quot)
+    Wave_write.setnchannels(1)
+    Wave_write.setsampwidth(2)
+    Wave_write.setframerate(sample_rate)
+    tensor_enc = b&quot&quot
+    <a id="change">tensor_enc += struct.pack("&lt;" + "h" * len(tensor_list), *tensor_list)</a>
+
+    Wave_write.writeframes(tensor_enc)
+    Wave_write.close()
+    audio_string = fio.getvalue()</code></pre><h3>After Change</h3><pre><code class='java'>
+        print(&quotwarning: audio amplitude out of range, auto clipped.&quot)
+        tensor = tensor.clip(-1, 1)
+    if tensor.ndim == 1:  &#47&#47 old API, which expects single channel audio
+        <a id="change">tensor = np.expand_dims(tensor, axis=1)</a>
+
+    assert(tensor.ndim == 2), &quotInput tensor should be 2 dimensional.&quot
+    length_frames, num_channels = tensor.shape
+    assert num_channels == 1 or num_channels == 2, &quotThe second dimension should be 1 or 2.&quot
+
+    with io.BytesIO() as fio:
+        <a id="change">soundfile.write(fio, tensor, samplerate=sample_rate, format=&quotwav&quot)</a>
+        audio_string = fio.getvalue()
+
+    audio = Summary.Audio(sample_rate=sample_rate,
+                          num_channels=num_channels,</code></pre>

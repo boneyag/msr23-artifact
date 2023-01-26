@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        w = x.data.shape[3]
+        M = h * w
+        x = x.reshape(batch_size, channels, M)
+        <a id="change">I_hat = (-1. / M / M) * torch.ones(M, M, device=x.device) + (1. / M) * torch.eye(M, M, device=x.device)</a>
+        <a id="change">I_hat = I_hat.view(1, M, M).repeat(batch_size, 1, 1).type(x.dtype)</a>
+        y = x.bmm(I_hat).bmm(x.transpose(1, 2))
+        ctx.save_for_backward(input, I_hat)
+        return y
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    @staticmethod
+    def forward(ctx, x):
+        <a id="change">batch</a>, channels, height, width = x.size()
+        n = height * width
+        xn = x.reshape(batch, channels, n)
+        identity_bar = ((1.0 / n) * torch.eye(n, dtype=xn.dtype, device=xn.device)).unsqueeze(dim=0).repeat(batch, 1, 1)</code></pre>

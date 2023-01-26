@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        :param update: Whether to incrementally add/update new values.
+        :param lfs: The list of functions to use to generate labels.
+        
+        logger.debug(<a id="change">"Document: {}".format(doc)</a>)
+
+        if lfs is None:
+            raise ValueError("Must provide lfs kwarg.")</code></pre><h3>After Change</h3><pre><code class='java'>
+            raise ValueError("Please provide a list of labeling functions.")
+
+        if len(lfs) != len(self.candidate_classes):
+            <a id="change">raise ValueError("Please provide LFs for each candidate class.")</a>
+
+        self.lfs = lfs
+        if docs:
+            &#47&#47 Call apply on the specified docs for all splits
+            split = ALL_SPLITS
+            super(Labeler, self).apply(
+                docs, split=split, train=train, lfs=self.lfs, clear=clear, **kwargs
+            )
+            &#47&#47 Needed to sync the bulk operations
+            self.session.commit()
+        else:
+            &#47&#47 Only grab the docs containing candidates from the given split.
+            split_docs = get_docs_from_split(
+                self.session, self.candidate_classes, split
+            )
+            super(Labeler, self).apply(
+                split_docs,
+                split=split,
+                train=train,
+                lfs=self.lfs,
+                clear=clear,
+                **kwargs
+            )
+            &#47&#47 Needed to sync the bulk operations
+            <a id="change">self.session.commit()</a>
+
+    def get_lfs(self):
+        Return a list of lists of labeling functions for this Labeler.
+        return self.lfs</code></pre>

@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                  dist.MultivariateNormal(torch.zeros(self.state_size), torch.eye(self.state_size)))
+
+    def step(self, x=None, y=None):
+        <a id="change">v = pyro.sample("v_{}".format(self.t), dist.Normal(0., 1.))</a>
+        with pyro.plate("plate", self.plate_size):
+            w = pyro.sample("w_{}".format(self.t), dist.Normal(v, 1.))
+            x = pyro.sample("x_{}".format(self.t),
+                            dist.Normal(self.x_mean + w, 1), obs=x)
+            y = pyro.sample("y_{}".format(self.t),
+                            <a id="change">dist.MultivariateNormal(self.y_mean + w.unsqueeze(-1), torch.eye(self.state_size))</a>,
+                            obs=y)
+        self.t += 1
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def step(self, state, y=None):
+        self.t += 1
+        state["z"] = pyro.sample("z_{}".format(self.t),
+                                 dist.Normal(<a id="change">state</a>["z"].matmul(self.A),
+                                             self.B*self.sigma_z).to_event(1))
+        y = pyro.sample("y_{}".format(self.t),
+                        dist.Normal(state["z"][..., 0], self.sigma_y),</code></pre>

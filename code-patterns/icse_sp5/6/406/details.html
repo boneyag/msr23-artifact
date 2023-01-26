@@ -1,0 +1,108 @@
+<html><h3>4b8683341eef0e75edb6948e177bd436f2a85dec,coremltools/converters/keras/_topology2.py,NetGraph,_get_1d_interface_edges,#NetGraph#,541
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        operates on 1D blobs. An &quotout_edge e(u,v)&quot means u operates on 1D
+        blobs, but v operates on non-1D blobs. 
+        
+        in_edges = <a id="change">[]</a>
+        for layer in self.layer_list: 
+            if not self.is_1d_layer(layer):
+                continue
+            preds = self.get_predecessors(layer)
+            if len(preds) == 0:
+                in_edges.append((None, layer))
+            else: 
+                &#47&#47 because 1D layers are all 1-input, 
+                &#47&#47 there should only be 1 predecessor
+                u, v = preds[0], layer
+                while (u != None) and (self.is_activation(u) or type(u) in \
+                        _KERAS_NORMALIZATION_LAYERS):
+                    preds = self.get_predecessors(u)
+                    v = u
+                    u = preds[0] if len(preds) &gt; 0 else None
+                if u is None or (not self.is_1d_layer(u)):
+                    in_edges.append((u, v))
+
+        <a id="change">out_edges = []</a>
+        for layer in self.layer_list:
+            if not self.is_1d_layer(layer):
+                continue
+            &#47&#47 cases for 1d-&gt;output
+            if layer in self.output_layers:
+                out_edges.append((layer, None))
+            
+            succs = self.get_successors(layer)
+            if len(succs) &gt; 0:
+                &#47&#47 this should be handled in 1d-&gt;output already
+                if not self.is_activation(succs[0]):
+                    for succ in succs: 
+                        if not self.is_1d_layer(succ):
+                            out_edges.append((layer, succ))
+                else: 
+                    act_layer = succs[0]
+                    succs = self.get_successors(act_layer)
+                    if len(succs) == 0:
+                        out_edges.append((act_layer, None))
+                    else: 
+                        for succ in succs: 
+                            if not self.is_1d_layer(succ):
+                                out_edges.append((act_layer, succ))
+
+        <a id="change">return in_edges, out_edges</a>
+    
+    def insert_1d_permute_layers(self):
+        
+        Insert permutation layers before a 1D start point or after 1D end point </code></pre><h3>After Change</h3><pre><code class='java'>
+        operates on 1D blobs. An &quotout_edge e(u,v)&quot means u operates on 1D
+        blobs, but v operates on non-1D blobs. 
+        
+        <a id="change">in_edges = set()</a>
+        for layer in self.layer_list:
+            if not self.is_1d_layer(layer):
+                continue
+            preds = self.get_predecessors(layer)
+            if len(preds) == 0:
+                in_edges.add((None, layer))
+            else:
+                &#47&#47 because 1D layers are all 1-input, 
+                &#47&#47 there should only be 1 predecessor
+                u, v = preds[0], layer
+                while u and (self.is_activation(u) or type(u) in _KERAS_NORMALIZATION_LAYERS):
+                    preds = self.get_predecessors(u)
+                    v = u
+                    u = preds[0] if len(preds) &gt; 0 else None
+                if u is None or (not self.is_1d_layer(u)):
+                    in_edges.add((u, v))
+
+        out_edges = set()
+        for layer in self.layer_list:
+            if not self.is_1d_layer(layer):
+                continue
+            &#47&#47 cases for 1d-&gt;output
+            if layer in self.output_layers:
+                out_edges.add((layer, None))
+
+            succs = self.get_successors(layer)
+            if len(succs) &gt; 0:
+                &#47&#47 this should be handled in 1d-&gt;output already
+                if not self.is_activation(succs[0]):
+                    for succ in succs:
+                        if not self.is_1d_layer(succ):
+                            out_edges.add((layer, succ))
+                else:
+                    act_layer = succs[0]
+                    succs = self.get_successors(act_layer)
+                    if len(succs) == 0:
+                        out_edges.add((act_layer, None))
+                    else:
+                        for succ in succs:
+                            if not self.is_1d_layer(succ):
+                                out_edges.add((act_layer, succ))
+
+        <a id="change">return list(in_edges), list(out_edges)</a>
+
+    def insert_1d_permute_layers(self):
+        
+        Insert permutation layers before a 1D start point or after 1D end point </code></pre><img src="2301570.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/apple/coremltools/commit/4b8683341eef0e75edb6948e177bd436f2a85dec#diff-3b98e9444c65a4d04d6f795bc1e711fec43d5e54b035eddc5801a7b815ef0c25L547' target='_blank'>Link</a></div><div id='project'> Project Name: apple/coremltools</div><div id='commit'> Commit Name: 4b8683341eef0e75edb6948e177bd436f2a85dec</div><div id='time'> Time: 2019-08-05</div><div id='author'> Author: smq@apple.com</div><div id='file'> File Name: coremltools/converters/keras/_topology2.py</div><div id='class'> Class Name: NetGraph</div><div id='method'> Method Name: _get_1d_interface_edges</div><BR><BR><div id='link'><a href='https://github.com/rail-berkeley/softlearning/commit/459441e166ebcd176698041e260d4f467652e7ac#diff-cbb1f8079a190e0b795dc0a5866f21740149e766d88ab90cebca35d5a1f6a92dL25' target='_blank'>Link</a></div><div id='project'> Project Name: rail-berkeley/softlearning</div><div id='commit'> Commit Name: 459441e166ebcd176698041e260d4f467652e7ac</div><div id='time'> Time: 2018-07-21</div><div id='author'> Author: kristian.hartikainen@gmail.com</div><div id='file'> File Name: softlearning/policies/uniform_policy.py</div><div id='class'> Class Name: UniformPolicy</div><div id='method'> Method Name: get_action</div><BR><BR><div id='link'><a href='https://github.com/YerevaNN/mimic3-benchmarks/commit/3007e9a06ceeea9d3e1cc1b02adf67ab28d8adda#diff-b86e17d0afcbe9aadde425fe4696a1221ee13ca7e3a245236b0376baf5902d14L4' target='_blank'>Link</a></div><div id='project'> Project Name: YerevaNN/mimic3-benchmarks</div><div id='commit'> Commit Name: 3007e9a06ceeea9d3e1cc1b02adf67ab28d8adda</div><div id='time'> Time: 2018-01-17</div><div id='author'> Author: harhro@gmail.com</div><div id='file'> File Name: mimic3models/in_hospital_mortality/utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: read_chunk</div><BR>

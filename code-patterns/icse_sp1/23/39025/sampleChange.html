@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    flirt.inputs.out_matrix_file = &quot/tmp/out_flirt.mat&quot
+    flirt.inputs.in_matrix_file = "%s%s" % (dwi_dir, &quot/xfms/MNI2diff.mat&quot)
+    flirt.inputs.apply_xfm = True
+    <a id="change">flirt.run()</a>
+    args = &quot-bin&quot
+    maths = fsl.ImageMaths(in_file=out_file, op_string=args, out_file=out_file)
+    print(&quot\nBinarizing WM mask...&quot)
+    os.system(maths.cmdline)</code></pre><h3>After Change</h3><pre><code class='java'>
+        dwi_infile = "%s%s" % (dwi_dir, &quot/dwi.nii.gz&quot)
+
+    out_file = "%s%s" % (dwi_dir, &quot/wm_mask_diff.nii.gz&quot)
+    <a id="change">wm_transforms_wf = pe.Workflow(name=&quotwm_transforms&quot)</a>
+    inputnode = pe.Node(niu.IdentityInterface(fields=[&quotdwi_infile&quot, &quotwm_mask_loc&quot, &quotout_file&quot, &quotmat_file&quot, &quotdwi_dir&quot]),
+                        name=&quotinputnode&quot)
+    inputnode.inputs.dwi_infile = dwi_infile
+    inputnode.inputs.wm_mask_loc = wm_mask_loc
+    inputnode.inputs.out_file = out_file
+    inputnode.inputs.mat_file = "%s%s" % (dwi_dir, &quot/xfms/MNI2diff.mat&quot)
+    inputnode.inputs.dwi_dir = dwi_dir
+
+    flirt = pe.Node(interface=fsl.FLIRT(cost_func=&quotmutualinfo&quot), name=&quotcoregister_wm&quot)
+    flirt.inputs.apply_xfm = True
+    flirt.inputs.out_matrix_file = &quot/tmp/out_flirt.mat&quot
+
+    def bin_wm(out_file):
+        import nipype.interfaces.fsl as fsl
+        import os
+        args = &quot-bin&quot
+        maths = fsl.ImageMaths(in_file=out_file, op_string=args, out_file=out_file)
+        print(&quot\nBinarizing WM mask...&quot)
+        os.system(maths.cmdline)
+        return out_file
+
+    bin_wm = pe.Node(niu.Function(input_names=[&quotout_file&quot], output_names=[&quotout_file&quot],
+                                  function=bin_wm), name="bin_wm_node")
+
+    <a id="change">wm_transforms_wf.connect([(inputnode, flirt, [(&quotdwi_infile&quot, &quotreference&quot), (&quotwm_mask_loc&quot, &quotin_file&quot),
+                                                  (&quotout_file&quot, &quotout_file&quot), (&quotmat_file&quot, &quotin_matrix_file&quot)]),
+                              (flirt, bin_wm, [(&quotout_file&quot, &quotout_file&quot)])
+                              ])</a>
+
+    return wm_transforms_wf
+
+</code></pre>

@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        check_head_tail(neg_edges)
+        pos_tails = pos_edges.parent_nid[pos_edges.tail_nid]
+        neg_tails = <a id="change">neg_edges.parent_nid[neg_edges.tail_nid]</a>
+        pos_tails = np.sort(F.asnumpy(pos_tails))
+        neg_tails = np.sort(F.asnumpy(neg_tails))
+        np.testing.assert_equal(pos_tails, neg_tails)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        check_head_tail(neg_edges)
+        pos_tails = F.gather_row(pos_edges.parent_nid, pos_edges.tail_nid)
+        neg_tails = <a id="change">F.gather_row(neg_edges.parent_nid, neg_edges.tail_nid)</a>
+        pos_tails = np.sort(F.asnumpy(pos_tails))
+        neg_tails = np.sort(F.asnumpy(neg_tails))
+        np.testing.assert_equal(pos_tails, neg_tails)
+
+        exist = neg_edges.edata[&quotfalse_neg&quot]
+        if exclude_positive:
+            assert np.sum(F.asnumpy(exist) == 0) == len(exist)
+        else:
+            assert F.array_equal(g.has_edges_between(neg_src, neg_dst), exist)
+
+    &#47&#47 Test the knowledge graph.
+    for _, neg_edges in EdgeSampler(g, 50,
+                                    negative_mode=mode,
+                                    neg_sample_size=neg_size,
+                                    exclude_positive=exclude_positive,
+                                    relations=g.edata[&quotetype&quot],
+                                    return_false_neg=True):
+        neg_lsrc, neg_ldst, neg_leid = neg_edges.all_edges(form=&quotall&quot, order=&quoteid&quot)
+        neg_src = F.gather_row(neg_edges.parent_nid, neg_lsrc)
+        neg_dst = F.gather_row(neg_edges.parent_nid, neg_ldst)
+        neg_eid = <a id="change">F.gather_row(neg_edges.parent_eid, neg_leid)</a>
+        exists = neg_edges.edata[&quotfalse_neg&quot]
+        neg_edges.edata[&quotetype&quot] = g.edata[&quotetype&quot][neg_eid]
+        for i in range(len(neg_eid)):
+            u, v = F.asnumpy(neg_src[i]), F.asnumpy(neg_dst[i])</code></pre>

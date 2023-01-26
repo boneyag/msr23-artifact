@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    accs.append(tf.count_nonzero(tf.equal(tf.argmax(y, axis=-1),
+                                          tf.argmax(preds_adv, axis=-1))))
+  &#47&#47 Return the adv_x with worst accuracy
+  <a id="change">adv_xs = tf.stack(adv_xs)</a>
+  accs = tf.stack(accs)
+  <a id="change">return tf.gather(adv_xs, tf.argmin(accs))</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  worst_sample_idx = tf.argmax(all_xents, axis=0)  &#47&#47 B
+
+  batch_size = tf.shape(x)[0]
+  <a id="change">keys = tf.stack([
+      tf.range(batch_size, dtype=tf.int32),
+      tf.cast(worst_sample_idx, tf.int32)
+  ], axis=1)</a>
+  transformed_ims_bshwc = tf.einsum(&quotsbhwc-&gt;bshwc&quot, transformed_ims)
+  <a id="change">after_lookup = tf.gather_nd(transformed_ims_bshwc, keys)</a>  &#47&#47 BHWC
+  <a id="change">return after_lookup</a>
+
+
+def parallel_apply_transformations(x, transforms, black_border_size=0):
+  transforms = tf.convert_to_tensor(transforms, dtype=tf.float32)</code></pre>

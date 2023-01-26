@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            trainable=False,
+            validate_shape=bool(grad.get_shape())
+          )
+          accum_ops.append(<a id="change">tf.assign(grad_accum, grad_accum + grad / iter_size)</a>)
+          grads_and_vars_accum.append((grad_accum, var))
+
+        accum_op = tf.group(accum_ops)</code></pre><h3>After Change</h3><pre><code class='java'>
+            trainable=False,
+            validate_shape=bool(var.get_shape())
+          )
+          <a id="change">if isinstance(grad, tf.IndexedSlices):
+            add_grads = tf.scatter_nd_add(grad_accum, grad.indices,
+                                          grad.values / iter_size)
+          else:
+            add_grads = grad_accum + grad / iter_size
+
+         </a> accum_ops.append(tf.assign(grad_accum, add_grads))
+          grads_and_vars_accum.append((grad_accum, var))
+
+        accum_op = tf.group(accum_ops)</code></pre>

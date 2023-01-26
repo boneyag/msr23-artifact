@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        raise ImportError(&quotPackage `rdkit` could not be found.&quot)
+
+    if mol.GetNumAtoms() &lt;= 1:
+        return torch.tensor((2, 0)), <a id="change">torch.tensor((2, 0))</a>, 0
+
+    &#47&#47 Cliques = rings and bonds.
+    cliques = [list(x) for x in Chem.GetSymmSSSR(mol)]</code></pre><h3>After Change</h3><pre><code class='java'>
+                    count = len(set(cliques[c1]) & set(cliques[c2]))
+                    edges[(c1, c2)] = min(count, edges.get((c1, c2), 99))
+
+    <a id="change">if len(edges) &gt; 0:
+        edge_index_T, weight = zip(*edges.items())
+        row, col = torch.tensor(edge_index_T).t()
+        inv_weight = 100 - torch.tensor(weight)
+        clique_graph = SparseTensor(row=row, col=col, value=inv_weight,
+                                    sparse_sizes=(len(cliques), len(cliques)))
+        junc_tree = minimum_spanning_tree(clique_graph.to_scipy(&quotcsr&quot))
+        row, col, _ = SparseTensor.from_scipy(junc_tree).coo()
+        edge_index = torch.stack([row, col], dim=0)
+        edge_index = to_undirected(edge_index, num_nodes=len(cliques))
+    else:
+        edge_index = torch.tensor((2, 0), dtype=torch.long)
+
+   </a> rows = [[i] * len(atom2clique[i]) for i in range(mol.GetNumAtoms())]
+    row = torch.tensor(list(chain.from_iterable(rows)))
+    col = torch.tensor(list(chain.from_iterable(atom2clique)))
+    atom2clique = torch.stack([row, col], dim=0)</code></pre>

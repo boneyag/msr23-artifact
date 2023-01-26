@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def inv_matmul(self, right_tensor, left_tensor=None):
+        with settings.fast_computations(solves=False):
+            <a id="change">return super().inv_matmul(right_tensor, left_tensor=left_tensor)</a>
+
+    def inv_quad_logdet(self, inv_quad_rhs=None, logdet=False, reduce_inv_quad=True):
+        if not self.is_square:
+            raise RuntimeError(</code></pre><h3>After Change</h3><pre><code class='java'>
+    def inv_matmul(self, right_tensor, left_tensor=None):
+        is_vector = right_tensor.ndim == 1
+        if is_vector:
+            <a id="change">right_tensor = right_tensor.unsqueeze(-1)</a>
+        res = self.root._cholesky_solve(right_tensor, upper=self.upper)
+        if left_tensor is not None:
+            res = left_tensor @ res
+        if is_vector:
+            res = res.squeeze(-1)
+        <a id="change">return res</a>
+
+    def inv_quad(self, tensor, reduce_inv_quad=True):
+        if self.root.upper:
+            R = self.root._transpose_nonbatch().inv_matmul(tensor)</code></pre>

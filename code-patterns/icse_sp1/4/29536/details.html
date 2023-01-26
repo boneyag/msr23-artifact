@@ -1,0 +1,35 @@
+<html><h3>d9e6750759b78c68e7d98b80202c67bea7ba24ec,test/quantization/test_workflow_module.py,TestFakeQuantize,_test_forward_per_tensor_cachemask_impl,#TestFakeQuantize#Any#,865
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _test_forward_per_tensor_cachemask_impl(self, device):
+        for torch_type in (torch.qint8, torch.quint8):
+            <a id="change">X = torch.randn(4, 8).to(device)</a>
+            &#47&#47 pick the scale + zp so that some values get clipped
+            obs = torch.quantization.MinMaxObserver(torch_type)
+            obs(X * 0.75)
+            scale, zero_point = obs.calculate_qparams()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def _test_forward_per_tensor_cachemask_impl(self, device):
+        for torch_type in (torch.qint8, torch.quint8):
+            <a id="change">Xs = (torch.randn(4, 8, device=device), torch.randn(4, 16, device=device)[:, ::2])</a>
+            &#47&#47 pick the scale + zp so that some values get clipped
+            <a id="change">for X in Xs:
+                obs = torch.quantization.MinMaxObserver(torch_type)
+                obs(X * 0.75)
+                scale, zero_point = obs.calculate_qparams()
+                scale, zero_point = float(scale), int(zero_point)
+                quant_min, quant_max = obs._calculate_qmin_qmax()
+
+                Y_test, _mask = torch.fake_quantize_per_tensor_affine_cachemask(
+                    X, scale, zero_point, quant_min, quant_max)
+                Y_ref = _fake_quantize_per_tensor_affine_reference(
+                    X.cpu(), scale, zero_point, quant_min, quant_max).to(device)
+                self.assertTrue(torch.allclose(Y_test, Y_ref, rtol=tolerance, atol=tolerance))
+
+   </a> def test_forward_per_tensor_cachemask_cpu(self):
+        device = torch.device(&quotcpu&quot)
+        self._test_forward_per_tensor_cachemask_impl(device)
+</code></pre><img src="149194389.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/d9e6750759b78c68e7d98b80202c67bea7ba24ec#diff-a1ad3ccb2c291d8bbc6e0a986f133b7da6bb380e3dd5d2ae6e428c4efd780738L867' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: d9e6750759b78c68e7d98b80202c67bea7ba24ec</div><div id='time'> Time: 2021-02-08</div><div id='author'> Author: ngimel@fb.com</div><div id='file'> File Name: test/quantization/test_workflow_module.py</div><div id='class'> Class Name: TestFakeQuantize</div><div id='method'> Method Name: _test_forward_per_tensor_cachemask_impl</div><BR><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/ab1d74868183e211b8ae7aa155cdcbb5f43843d8#diff-9acf5424c6f6d87a791246f9b7ff6e43c8a8b369a4c3a147f0670c149c93e7c4L58' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: ab1d74868183e211b8ae7aa155cdcbb5f43843d8</div><div id='time'> Time: 2020-05-27</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: examples/cluster_gcn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test</div><BR><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/3f0f8ca3bda791ceba269ad98a9677180abbc9f0#diff-e5be5c442c435f0b8b2ab6bb6a19b95d5b5d095fda2293a3efc57551f22cad6bL66' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: 3f0f8ca3bda791ceba269ad98a9677180abbc9f0</div><div id='time'> Time: 2019-07-27</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: examples/node2vec.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/5d45140d6874be04c22c8abba55e4438c25d2fdb#diff-32bf0b34f90bc9c125c06a43801a4cbe5fcd8916744991761be00117b6a0bdf4L2204' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: 5d45140d6874be04c22c8abba55e4438c25d2fdb</div><div id='time'> Time: 2021-01-08</div><div id='author'> Author: kshitijkalambarkar@gmail.com</div><div id='file'> File Name: test/test_reductions.py</div><div id='class'> Class Name: TestReductions</div><div id='method'> Method Name: test_reduction_empty</div><BR>

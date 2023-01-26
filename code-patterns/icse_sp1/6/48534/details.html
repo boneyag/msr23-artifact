@@ -1,0 +1,42 @@
+<html><h3>9de6656a779e73ac61995bd87044af21b3f37951,models/experimental/amoeba_net/amoeba_net_model.py,InputPipeline,input_fn,#InputPipeline#Any#,454
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          tf.contrib.data.batch_and_drop_remainder(batch_size))
+
+      dataset = dataset.prefetch(2)  &#47&#47 Prefetch overlaps in-feed with training
+      <a id="change">images, labels = dataset.make_one_shot_iterator().get_next()</a>
+    else:
+      images = tf.random_uniform(
+          [batch_size, self.hparams.image_size,
+           self.hparams.image_size, 3], minval=-1, maxval=1)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 than a full batch size. As long as this validation is done with
+    &#47&#47 consistent batch size, exactly the same images will be used.
+    if not self.is_training:
+      <a id="change">dataset = dataset.apply(batching.filter_irregular_batches(batch_size))</a>
+
+    dataset = <a id="change">dataset.map(
+        lambda images, labels: (tf.transpose(images, [1, 2, 3, 0]), labels),
+        num_parallel_calls=8)</a>
+
+    &#47&#47 For XLA, we must used fixed shapes. Because we repeat the source training
+    &#47&#47 dataset indefinitely, this is not a dangerous operation.
+    &#47&#47
+    &#47&#47 When evaluating, prevent accidentally evaluating the same image twice by
+    &#47&#47 dropping the final batch if it is less than a full batch size. As long as
+    &#47&#47 this validation is done with consistent batch size, exactly the same
+    &#47&#47 images will be used.
+    def set_shapes(images, labels):
+      images.set_shape(images.get_shape().merge_with(
+          tf.TensorShape([None, None, None, batch_size])))
+      labels.set_shape(labels.get_shape().merge_with(
+          tf.TensorShape([batch_size])))
+      return images, labels
+
+    if self.is_training:
+      <a id="change">dataset = dataset.map(set_shapes)</a>
+
+    dataset = dataset.prefetch(32)  &#47&#47 Prefetch overlaps in-feed with training
+    return dataset  &#47&#47 Must return the dataset and not tensors for high perf!
+</code></pre><img src="224693826.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/9de6656a779e73ac61995bd87044af21b3f37951#diff-fb5991b6335eddfffa3b385b44f4b23250ad675125d0a93776b50155b96a9926L454' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 9de6656a779e73ac61995bd87044af21b3f37951</div><div id='time'> Time: 2018-04-19</div><div id='author'> Author: frankchn@google.com</div><div id='file'> File Name: models/experimental/amoeba_net/amoeba_net_model.py</div><div id='class'> Class Name: InputPipeline</div><div id='method'> Method Name: input_fn</div><BR><BR><div id='link'><a href='https://github.com/weinman/cnn_lstm_ctc_ocr/commit/96fad3497a4373cc289f9e7c4272d4722a22f381#diff-e890182f7dba54d8ed735d296797dbf830d695560535c914150dd721d275e7f4L87' target='_blank'>Link</a></div><div id='project'> Project Name: weinman/cnn_lstm_ctc_ocr</div><div id='commit'> Commit Name: 96fad3497a4373cc289f9e7c4272d4722a22f381</div><div id='time'> Time: 2018-06-20</div><div id='author'> Author: am.lamsal@gmail.com</div><div id='file'> File Name: src/mjsynth.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: threaded_input_pipeline</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/b13e6b6d19ba633e4f55f7ab5910f675d203e38a#diff-8ee4ac40c0e0b36676269c34e4f5730b7d7c86309006ce9e2454a25278c34516L368' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: b13e6b6d19ba633e4f55f7ab5910f675d203e38a</div><div id='time'> Time: 2018-12-03</div><div id='author'> Author: frankchn@google.com</div><div id='file'> File Name: models/experimental/inception/inception_v2.py</div><div id='class'> Class Name: InputPipeline</div><div id='method'> Method Name: input_fn</div><BR>

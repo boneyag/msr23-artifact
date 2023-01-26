@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Disable clipping to make sure we can see the difference in behavior
+    agent.policy._clip = False
+    &#47&#47 Remove policy_info, as BehavioralCloningAgent expects none.
+    <a id="change">traj = traj.replace(policy_info=())</a>
+    &#47&#47 TODO(b/123883319)
+    if tf.executing_eagerly():
+      train_and_loss = lambda: agent.train(traj)
+    else:
+      train_and_loss = agent.train(traj)
+    replay = trajectory_replay.TrajectoryReplay(agent.policy)
+    self.evaluate(tf.compat.v1.global_variables_initializer())
+    initial_actions = self.evaluate(replay.run(traj)[0])
+    for _ in range(TRAIN_ITERATIONS):
+      self.evaluate(train_and_loss)
+      <a id="change">post_training_actions = self.evaluate(replay.run(traj)[0])</a>
+    post_training_actions = self.evaluate(replay.run(traj)[0])
+    &#47&#47 We don&quott necessarily converge to the same actions as in trajectory after
+    &#47&#47 10 steps of an untuned optimizer, but the policy does change.
+    self.assertFalse(np.all(initial_actions == post_training_actions))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 We don&quott necessarily converge to the same actions as in trajectory after
+    &#47&#47 10 steps of an untuned optimizer, but the loss should go down.
+    <a id="change">self.assertGreater(initial_loss, loss)</a>
+
+  def testTrainWithSingleOuterDimension(self):
+    &#47&#47 Hard code a trajectory shaped (time=6, batch=1, ...).
+    traj, time_step_spec, action_spec = create_arbitrary_trajectory()</code></pre>

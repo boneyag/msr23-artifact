@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return self.logq(z) / self.normalizing_constant
+
+    def logp(self, z):
+        <a id="change">factors = ([tt.sum(var.logpt)for var in self.model.basic_RVs] +
+                   [tt.sum(var) for var in self.model.potentials])</a>
+        p = self.to_flat_input(tt.add(*factors))
+        p = theano.clone(p, {self.input: z})
+        <a id="change">return p</a>
+
+    def logp_norm(self, z):
+        t = self.normalizing_constant
+        factors = ([tt.sum(var.logpt) / t for var in self.model.basic_RVs] +</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def logp(self, nmc=None):
+        if nmc is None:
+            <a id="change">_logp = self.single_symbolic_logp</a>
+            nmc = 1
+        else:
+            <a id="change">_logp = self.sized_symbolic_logp</a>
+        <a id="change">_logp = _logp / pm.floatX(self._n_samples)</a>
+        <a id="change">return self.set_size_deterministic(_logp, nmc, 0)</a>
+
+    def logp_norm(self, nmc):
+        return self.logp(nmc) / self.normalizing_constant
+</code></pre>

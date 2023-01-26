@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    raise Exception(&quotUnknown metric type for {}: {}&quot.format(
+                        name, metadata.metric_type))
+
+        <a id="change">if target_objective is not None and self.target_metric(target_objective) not in metric_data:
+            raise Exception("Cannot find objective function")
+
+       </a> if target_objective is not None:
+            metric_data[target_objective] = metric_data[self.target_metric(target_objective)]
+        else:
+            &#47&#47 default
+            <a id="change">metric_data[&quotthroughput_txn_per_sec&quot] = \
+                metric_data[self.target_metric(target_objective)]</a>
+        return metric_data
+
+    def convert_dbms_knobs(self, knobs):
+        knob_data = {}</code></pre><h3>After Change</h3><pre><code class='java'>
+        return valid_metrics, diffs
+
+    def convert_dbms_metrics(self, metrics, observation_time, target_objective):
+        <a id="change">base_metric_data = {}</a>
+        metric_data = {}
+        for name, value in list(metrics.items()):
+            prt_name = self.partial_name(name)
+
+            if prt_name in self.numeric_metric_catalog_:
+                metadata = self.numeric_metric_catalog_[prt_name]
+
+                if metadata.vartype == VarType.INTEGER:
+                    converted = float(self.convert_integer(value, metadata))
+                elif metadata.vartype == VarType.REAL:
+                    converted = self.convert_real(value, metadata)
+                else:
+                    raise ValueError(
+                        ("Found non-numeric metric &quot{}&quot in the numeric "
+                         "metric catalog: value={}, type={}").format(
+                             name, value, VarType.name(metadata.vartype)))
+
+                if metadata.metric_type == MetricType.COUNTER:
+                    assert isinstance(converted, float)
+                    <a id="change">base_metric_data[name] = converted</a>
+                    metric_data[name] = converted / observation_time
+                elif metadata.metric_type == MetricType.STATISTICS:
+                    assert isinstance(converted, float)
+                    <a id="change">base_metric_data[name] = converted</a>
+                    metric_data[name] = converted
+                else:
+                    raise ValueError(
+                        &quotUnknown metric type for {}: {}&quot.format(name, metadata.metric_type))</code></pre>

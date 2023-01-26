@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    verify_has_parent_id_tag(child_run.info.run_uuid, parent_run.info.run_uuid)
+    verify_has_parent_id_tag(grand_child_run.info.run_uuid, child_run.info.run_uuid)
+
+    <a id="change">mlflow.end_run()</a>
+    mlflow.end_run()
+    mlflow.end_run()
+    assert mlflow.active_run() is None
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    with mlflow.start_run() as parent_run:
+        with pytest.raises(Exception, match=&quotTo start a nested run&quot):
+            mlflow.start_run()
+        <a id="change">with mlflow.start_run(nested=True) as child_run:
+            with mlflow.start_run(nested=True) as grand_child_run:
+                pass
+
+   </a> def verify_has_parent_id_tag(child_id, expected_parent_id):
+        tags = tracking.MlflowClient().get_run(child_id).data.tags
+        assert tags[MLFLOW_PARENT_RUN_ID] == expected_parent_id
+</code></pre>

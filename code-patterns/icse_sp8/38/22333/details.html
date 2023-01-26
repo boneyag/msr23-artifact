@@ -1,0 +1,114 @@
+<html><h3>f776b5bd09425a7a15a0bf9e3bea8d995e70281e,modules/Gyoi_SpiderControl.py,SpiderControl,run_spider,#SpiderControl#Any#Any#Any#Any#,44
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Running spider.
+    def run_spider(self, protocol, target_fqdn, target_port, target_path):
+        self.utility.write_log(20, <a id="change">&quot[In] Run spider [{}].&quot.format(self.file_name)</a>)
+
+        &#47&#47 Original log of GyoiThon.
+        now_time = self.utility.get_current_date(&quot%Y%m%d%H%M%S&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Running spider.
+    def run_spider(self, protocol, target_fqdn, target_port, target_path):
+        <a id="change">msg = self.utility.make_log_msg(self.utility.log_in,
+                                        self.utility.log_dis,
+                                        self.file_name,
+                                        action=self.action_name,
+                                        note=&quotRun spider&quot,
+                                        dest=self.utility.target_host)</a>
+        <a id="change">self</a>.utility.write_log(20, msg)
+
+        &#47&#47 Original log of GyoiThon.
+        now_time = self.utility.get_current_date(&quot%Y%m%d%H%M%S&quot)
+        gyoithon_log = protocol + &quot_&quot + target_fqdn + &quot_&quot + target_port + &quot_crawl_response_&quot + now_time + &quot.log&quot
+        target_dir_name = target_fqdn + &quot_&quot + str(target_port)
+        base_log_path = os.path.join(&quotlogs&quot, target_dir_name)
+        if os.path.exists(base_log_path) is False:
+            os.mkdir(base_log_path)
+        gyoithon_log_path = os.path.join(base_log_path, gyoithon_log)
+
+        &#47&#47 Default log of Scrapy (Required: Relative path).
+        scrapy_log_path = os.path.join(base_log_path, now_time + self.output_filename)
+
+        &#47&#47 Assemble command options.
+        target_url = protocol + &quot://&quot + target_fqdn + &quot:&quot + target_port + target_path
+
+        &#47&#47 Proxy setting.
+        proxy = &quot&quot
+        if self.utility.proxy != &quot&quot:
+            parsed = util.parse_url(self.utility.proxy)
+            if self.utility.proxy_user != &quot&quot:
+                proxy = parsed.scheme + &quot://&quot + \
+                        self.utility.proxy_user + &quot:&quot + self.utility.proxy_pass + &quot@&quot + \
+                        parsed.netloc
+            else:
+                proxy = parsed.scheme + &quot://&quot + parsed.netloc
+
+        &#47&#47 Assemble Scrapy command.
+        option = &quot -a target_url=&quot + target_url + &quot -a allow_domain=&quot + target_fqdn + \
+                 &quot -a concurrent=&quot + self.spider_concurrent_reqs + &quot -a depth_limit=&quot + self.spider_depth_limit + \
+                 &quot -a delay=&quot + self.spider_delay_time + &quot -a store_path=&quot + gyoithon_log_path + \
+                 &quot -a proxy_server=&quot + proxy + &quot -a user_agent="&quot + self.utility.ua + &quot"&quot\
+                 &quot -a encoding=&quot + self.utility.encoding + &quot -o &quot + scrapy_log_path
+        close_opton = &quot -s CLOSESPIDER_TIMEOUT=&quot + self.spider_time_out + \
+                      &quot -s CLOSESPIDER_ITEMCOUNT=&quot + self.spider_item_count + \
+                      &quot -s CLOSESPIDER_PAGECOUNT=&quot + self.spider_page_count + \
+                      &quot -s CLOSESPIDER_ERRORCOUNT=&quot + self.spider_error_count + &quot &quot
+        spider_path = os.path.join(self.full_path, &quotGyoi_Spider.py&quot)
+        command = &quotscrapy runspider&quot + close_opton + spider_path + option
+        msg = &quotExecute spider : {}.&quot.format(command)
+        self.utility.print_message(OK, msg)
+        <a id="change">msg = self.utility.make_log_msg(self.utility.log_mid,
+                                        self.utility.log_dis,
+                                        self.file_name,
+                                        action=self.action_name,
+                                        note=msg,
+                                        dest=self.utility.target_host)</a>
+        self.utility.write_log(20, msg)
+
+        &#47&#47 Execute Scrapy.
+        proc = Popen(command, shell=True)
+        proc.wait()
+
+        &#47&#47 Get crawling result.
+        all_targets_log = []
+        target_log = [target_url]
+        non_target_log = []
+        dict_json = {}
+        if os.path.exists(scrapy_log_path):
+            with codecs.open(scrapy_log_path, &quotr&quot, encoding=&quotutf-8&quot) as fin:
+                target_text = self.utility.delete_ctrl_char(fin.read())
+                if target_text != &quot&quot:
+                    dict_json = json.loads(target_text)
+                else:
+                    self.utility.print_message(WARNING, &quot[{}] is empty.&quot.format(scrapy_log_path))
+
+        &#47&#47 Exclude except allowed domains.
+        for idx in range(len(dict_json)):
+            items = dict_json[idx][&quoturls&quot]
+            for item in items:
+                try:
+                    if target_fqdn == util.parse_url(item).host:
+                        target_log.append(item)
+                    elif util.parse_url(item).scheme in [&quothttp&quot, &quothttps&quot]:
+                        non_target_log.append(item)
+                except Exception as e:
+                    msg = &quotExcepting allowed domain is failure : {}&quot.format(e)
+                    self.utility.print_message(FAIL, msg)
+                    self.utility.write_log(30, msg)
+
+        self.utility.write_log(20, &quotGet spider result.&quot)
+        all_targets_log.append([target_url, gyoithon_log_path, list(set(target_log))])
+
+        <a id="change">msg = self.utility.make_log_msg(self.utility.log_out,
+                                        self.utility.log_dis,
+                                        self.file_name,
+                                        action=self.action_name,
+                                        note=&quotRun spider&quot,
+                                        dest=self.utility.target_host)</a>
+        <a id="change">self</a>.utility.write_log(20, msg)
+        return all_targets_log, non_target_log
+</code></pre><img src="118871616.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 6</div><BR><div id='size'>Non-data size: 34</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/gyoisamurai/GyoiThon/commit/f776b5bd09425a7a15a0bf9e3bea8d995e70281e#diff-cc3f249f6d9cf81e8e10259bb11c2b7dddf6e0777f1f2ae872d21eee5d08ea91L45' target='_blank'>Link</a></div><div id='project'> Project Name: gyoisamurai/GyoiThon</div><div id='commit'> Commit Name: f776b5bd09425a7a15a0bf9e3bea8d995e70281e</div><div id='time'> Time: 2019-05-21</div><div id='author'> Author: gyoiler3@gmail.com</div><div id='file'> File Name: modules/Gyoi_SpiderControl.py</div><div id='class'> Class Name: SpiderControl</div><div id='method'> Method Name: run_spider</div><BR><BR><div id='link'><a href='https://github.com/gyoisamurai/GyoiThon/commit/f776b5bd09425a7a15a0bf9e3bea8d995e70281e#diff-a04cd1bea57cb01c4a2d6536cce696b7a9b7657a782ec229bf1d142839a77350L48' target='_blank'>Link</a></div><div id='project'> Project Name: gyoisamurai/GyoiThon</div><div id='commit'> Commit Name: f776b5bd09425a7a15a0bf9e3bea8d995e70281e</div><div id='time'> Time: 2019-05-21</div><div id='author'> Author: gyoiler3@gmail.com</div><div id='file'> File Name: modules/Gyoi_VersionCheckerML.py</div><div id='class'> Class Name: VersionCheckerML</div><div id='method'> Method Name: identify_product</div><BR><BR><div id='link'><a href='https://github.com/gyoisamurai/GyoiThon/commit/f776b5bd09425a7a15a0bf9e3bea8d995e70281e#diff-04de56ecd4f030b5927f9dcb475a6f0ccb3137b99291af74cfa3c25649f438a7L37' target='_blank'>Link</a></div><div id='project'> Project Name: gyoisamurai/GyoiThon</div><div id='commit'> Commit Name: f776b5bd09425a7a15a0bf9e3bea8d995e70281e</div><div id='time'> Time: 2019-05-21</div><div id='author'> Author: gyoiler3@gmail.com</div><div id='file'> File Name: modules/Gyoi_VersionChecker.py</div><div id='class'> Class Name: VersionChecker</div><div id='method'> Method Name: identify_product</div><BR><BR><div id='link'><a href='https://github.com/gyoisamurai/GyoiThon/commit/f776b5bd09425a7a15a0bf9e3bea8d995e70281e#diff-aab1abfbc91babb8b7702d91c1aaca3b27c08e2873d047f4de5b6751def190b3L66' target='_blank'>Link</a></div><div id='project'> Project Name: gyoisamurai/GyoiThon</div><div id='commit'> Commit Name: f776b5bd09425a7a15a0bf9e3bea8d995e70281e</div><div id='time'> Time: 2019-05-21</div><div id='author'> Author: gyoiler3@gmail.com</div><div id='file'> File Name: modules/Gyoi_CommentChecker.py</div><div id='class'> Class Name: CommentChecker</div><div id='method'> Method Name: get_bad_comment</div><BR><BR><div id='link'><a href='https://github.com/gyoisamurai/GyoiThon/commit/f776b5bd09425a7a15a0bf9e3bea8d995e70281e#diff-5a019ecf606fdf788ba5065bbbf5cc4425b1fee68b6f134259c6c3759c82e006L38' target='_blank'>Link</a></div><div id='project'> Project Name: gyoisamurai/GyoiThon</div><div id='commit'> Commit Name: f776b5bd09425a7a15a0bf9e3bea8d995e70281e</div><div id='time'> Time: 2019-05-21</div><div id='author'> Author: gyoiler3@gmail.com</div><div id='file'> File Name: modules/Gyoi_ErrorChecker.py</div><div id='class'> Class Name: ErrorChecker</div><div id='method'> Method Name: get_error_message</div><BR><BR><div id='link'><a href='https://github.com/gyoisamurai/GyoiThon/commit/f776b5bd09425a7a15a0bf9e3bea8d995e70281e#diff-22d935daf233bf70f6d9c19047dec91615bc43b1db12fc84b7e4ea817e383af4L70' target='_blank'>Link</a></div><div id='project'> Project Name: gyoisamurai/GyoiThon</div><div id='commit'> Commit Name: f776b5bd09425a7a15a0bf9e3bea8d995e70281e</div><div id='time'> Time: 2019-05-21</div><div id='author'> Author: gyoiler3@gmail.com</div><div id='file'> File Name: modules/Gyoi_ContentExplorer.py</div><div id='class'> Class Name: ContentExplorer</div><div id='method'> Method Name: content_explorer</div><BR>

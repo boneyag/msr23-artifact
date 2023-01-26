@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def is_invalid(target, dependency):
+      return self.jvm_version(dependency) &gt; self.jvm_version(target)
+
+    <a id="change">for target, deps in self.transitive_dependency_map.items():
+      invalid_dependencies = [dep for dep in deps if is_invalid(target, dep)]
+      if invalid_dependencies:
+        invalids.append((target, invalid_dependencies))
+
+   </a> if invalids:
+      error_message = self._create_full_error_message(invalids)
+      if self.check == &quotfatal&quot:
+        raise self.IllegalJavaTargetLevelDependency(error_message)</code></pre><h3>After Change</h3><pre><code class='java'>
+      return
+
+    try:
+      <a id="change">with self.invalidated(self.jvm_targets,
+                            fingerprint_strategy=self.PlatformFingerprintStrategy(),
+                            invalidate_dependents=True) as vts:
+        dependency_map = self.jvm_dependency_map
+        for vts_target in vts.invalid_vts:
+          for target in vts_target.targets:
+            if target in dependency_map:
+              deps = dependency_map[target]
+              invalid_dependencies = [dep for dep in deps if is_conflicting(target, dep)]
+              if invalid_dependencies:
+                conflicts.append((target, invalid_dependencies))
+        if conflicts:
+          &#47&#47 NB(gmalmquist): It&quots important to unconditionally raise an exception, then decide later
+          &#47&#47 whether to continue raising it or just print a warning, to make sure the targets aren&quott
+          &#47&#47 marked as valid if there are invalid platform dependencies.
+          error_message = self._create_full_error_message(conflicts)
+          raise self.IllegalJavaTargetLevelDependency(error_message)
+   </a> except self.IllegalJavaTargetLevelDependency as e:
+      if self.check == &quotfatal&quot:
+        raise e
+      else:</code></pre>

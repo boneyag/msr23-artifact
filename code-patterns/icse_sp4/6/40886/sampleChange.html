@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    @classmethod
+    def build_encoder(cls, args):
+        encoder = S2TTransformerEncoder(args)
+        if <a id="change">getattr(args, "load_pretrained_encoder_from", None)</a>:
+            encoder = checkpoint_utils.load_pretrained_component_from_model(
+                component=encoder, checkpoint=args.load_pretrained_encoder_from
+            )</code></pre><h3>After Change</h3><pre><code class='java'>
+    @classmethod
+    def build_encoder(cls, args):
+        encoder = S2TTransformerEncoder(args)
+        <a id="change">pretraining_path = getattr(args, "load_pretrained_encoder_from", None)</a>
+        <a id="change">if pretraining_path is not None:
+            if not Path(pretraining_path).exists():
+                logger.warning(
+                    f"skipped pretraining because {pretraining_path} does not exist"
+                )
+            else:
+                encoder = checkpoint_utils.load_pretrained_component_from_model(
+                    component=encoder, checkpoint=pretraining_path
+                )
+                logger.info(f"loaded pretrained encoder from: {pretraining_path}")
+       </a> return encoder
+
+    @classmethod
+    def build_decoder(cls, args, task, embed_tokens):</code></pre>

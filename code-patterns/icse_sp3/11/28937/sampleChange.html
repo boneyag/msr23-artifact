@@ -1,0 +1,231 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            part_of_population offsprings
+        
+        perm = np.random.permutation(self.population_size)
+        <a id="change">offsprings = []</a>
+        for i in range(self.population_size // 2):
+            parents = population[perm[2 * i]], population[perm[2 * i + 1]]
+            if self.decision(p_crossover):
+                params_perm = np.random.permutation(self.n_evolving_params)
+                train_params_perm = np.random.permutation(self.n_evolving_train_params)
+                nodes_perm = np.random.permutation(self.total_nodes)
+                binary_mask_perm = np.random.permutation(self.total_nodes * self.total_nodes)
+
+                curr_offsprings = [deepcopy(parents[0]),
+                                   deepcopy(parents[1])]
+
+                part = int(crossover_power * self.n_evolving_params)
+                train_part = int(crossover_power * self.n_evolving_train_params)
+                nodes_part = int(crossover_power * self.total_nodes)
+                binary_mask_part = int(crossover_power * self.total_nodes * self.total_nodes)
+
+                &#47&#47 exchange of model params (not layers params)
+                for j in range(self.n_evolving_params - part):
+                    curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]] = parents[0][
+                        "chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]]
+                    curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]] = parents[1][
+                        "chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]]
+                for j in range(self.n_evolving_params - part, self.n_evolving_params):
+                    curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]] = parents[1][
+                        "chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]]
+                    curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]] = parents[0][
+                        "chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]]
+
+                &#47&#47 exchange of train params
+                for j in range(self.n_evolving_train_params - train_part):
+                    curr_offsprings[0]["train"][
+                        self.evolving_train_params[train_params_perm[j]]] = parents[0]["train"][
+                        self.evolving_train_params[train_params_perm[j]]]
+                    curr_offsprings[1]["train"][
+                        self.evolving_train_params[train_params_perm[j]]] = parents[1]["train"][
+                        self.evolving_train_params[train_params_perm[j]]]
+                for j in range(self.n_evolving_train_params - train_part, self.n_evolving_train_params):
+                    curr_offsprings[0]["train"][
+                        self.evolving_train_params[train_params_perm[j]]] = parents[1]["train"][
+                        self.evolving_train_params[train_params_perm[j]]]
+                    curr_offsprings[1]["train"][
+                        self.evolving_train_params[train_params_perm[j]]] = parents[0]["train"][
+                        self.evolving_train_params[train_params_perm[j]]]
+
+                if self.evolve_binary_mask:
+                    &#47&#47 exchange of nodes
+                    for j in range(self.total_nodes - nodes_part):
+                        node_key = self.nodes[str(nodes_perm[j])]
+
+                        curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][node_key] = deepcopy(
+                            parents[0]["chainer"]["pipe"][self.model_to_evolve_index][node_key])
+                        curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][node_key] = deepcopy(
+                            parents[1]["chainer"]["pipe"][self.model_to_evolve_index][node_key])
+                    for j in range(self.total_nodes - nodes_part, self.total_nodes):
+                        node_key = self.nodes[str(nodes_perm[j])]
+
+                        curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][node_key] = deepcopy(
+                            parents[1]["chainer"]["pipe"][self.model_to_evolve_index][node_key])
+                        curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][node_key] = deepcopy(
+                            parents[0]["chainer"]["pipe"][self.model_to_evolve_index][node_key])
+
+                    &#47&#47 exchange of binary mask elements
+                    for j in range(self.total_nodes * self.total_nodes - binary_mask_part):
+                        node_x, node_y = binary_mask_perm[j] // self.total_nodes, binary_mask_perm[j] % self.total_nodes
+
+                        curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y] =\
+                            parents[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y]
+                        curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y] =\
+                            parents[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y]
+
+                    for j in range(self.total_nodes * self.total_nodes - binary_mask_part,
+                                   self.total_nodes * self.total_nodes):
+                        node_x, node_y = binary_mask_perm[j] // self.total_nodes, binary_mask_perm[j] % self.total_nodes
+
+                        curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y] =\
+                            parents[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y]
+                        curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y] =\
+                            parents[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y]
+
+                    curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"] = \
+                        check_and_correct_binary_mask(self.nodes,
+                                                      curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][
+                                                          "binary_mask"])
+                    curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"] = \
+                        check_and_correct_binary_mask(self.nodes,
+                                                      curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][
+                                                          "binary_mask"])
+                &#47&#47 if parent is one of the best and will be saved with weights
+                if perm[2 * i] in range(self.n_saved_best_with_weights):
+                    curr_offsprings[0] = deepcopy(parents[0])
+                if perm[2 * i + 1] in range(self.n_saved_best_with_weights):
+                    curr_offsprings[1] = deepcopy(parents[1])
+                offsprings.extend(curr_offsprings)
+            else:
+                <a id="change">offsprings.extend(deepcopy(parents))</a>
+
+        if self.population_size % 2 == 1:
+            offsprings.append(deepcopy(population[perm[-1]]))
+        return offsprings</code></pre><h3>After Change</h3><pre><code class='java'>
+            part_of_population offsprings
+        
+        perm = np.random.permutation(self.population_size)
+        <a id="change">offsprings = deepcopy(population)</a>
+        for i in range(self.population_size // 2):
+            parents = population[perm[2 * i]], population[perm[2 * i + 1]]
+            if self.decision(p_crossover):
+                params_perm = np.random.permutation(self.n_evolving_params)
+                train_params_perm = np.random.permutation(self.n_evolving_train_params)
+                nodes_perm = np.random.permutation(self.total_nodes)
+                binary_mask_perm = np.random.permutation(self.total_nodes * self.total_nodes)
+
+                curr_offsprings = [deepcopy(parents[0]),
+                                   deepcopy(parents[1])]
+
+                part = int(crossover_power * self.n_evolving_params)
+                train_part = int(crossover_power * self.n_evolving_train_params)
+                nodes_part = int(crossover_power * self.total_nodes)
+                binary_mask_part = int(crossover_power * self.total_nodes * self.total_nodes)
+
+                &#47&#47 exchange of model params (not layers params)
+                for j in range(self.n_evolving_params - part):
+                    curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]] = parents[0][
+                        "chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]]
+                    curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]] = parents[1][
+                        "chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]]
+                for j in range(self.n_evolving_params - part, self.n_evolving_params):
+                    curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]] = parents[1][
+                        "chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]]
+                    curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]] = parents[0][
+                        "chainer"]["pipe"][self.model_to_evolve_index][
+                        self.evolving_params[params_perm[j]]]
+
+                &#47&#47 exchange of train params
+                for j in range(self.n_evolving_train_params - train_part):
+                    curr_offsprings[0]["train"][
+                        self.evolving_train_params[train_params_perm[j]]] = parents[0]["train"][
+                        self.evolving_train_params[train_params_perm[j]]]
+                    curr_offsprings[1]["train"][
+                        self.evolving_train_params[train_params_perm[j]]] = parents[1]["train"][
+                        self.evolving_train_params[train_params_perm[j]]]
+                for j in range(self.n_evolving_train_params - train_part, self.n_evolving_train_params):
+                    curr_offsprings[0]["train"][
+                        self.evolving_train_params[train_params_perm[j]]] = parents[1]["train"][
+                        self.evolving_train_params[train_params_perm[j]]]
+                    curr_offsprings[1]["train"][
+                        self.evolving_train_params[train_params_perm[j]]] = parents[0]["train"][
+                        self.evolving_train_params[train_params_perm[j]]]
+
+                if self.evolve_binary_mask:
+                    &#47&#47 exchange of nodes
+                    for j in range(self.total_nodes - nodes_part):
+                        node_key = self.nodes[str(nodes_perm[j])]
+
+                        curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][node_key] = deepcopy(
+                            parents[0]["chainer"]["pipe"][self.model_to_evolve_index][node_key])
+                        curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][node_key] = deepcopy(
+                            parents[1]["chainer"]["pipe"][self.model_to_evolve_index][node_key])
+                    for j in range(self.total_nodes - nodes_part, self.total_nodes):
+                        node_key = self.nodes[str(nodes_perm[j])]
+
+                        curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][node_key] = deepcopy(
+                            parents[1]["chainer"]["pipe"][self.model_to_evolve_index][node_key])
+                        curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][node_key] = deepcopy(
+                            parents[0]["chainer"]["pipe"][self.model_to_evolve_index][node_key])
+
+                    &#47&#47 exchange of binary mask elements
+                    for j in range(self.total_nodes * self.total_nodes - binary_mask_part):
+                        node_x, node_y = binary_mask_perm[j] // self.total_nodes, binary_mask_perm[j] % self.total_nodes
+
+                        curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y] =\
+                            parents[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y]
+                        curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y] =\
+                            parents[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y]
+
+                    for j in range(self.total_nodes * self.total_nodes - binary_mask_part,
+                                   self.total_nodes * self.total_nodes):
+                        node_x, node_y = binary_mask_perm[j] // self.total_nodes, binary_mask_perm[j] % self.total_nodes
+
+                        curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y] =\
+                            parents[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y]
+                        curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y] =\
+                            parents[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"][node_x, node_y]
+
+                    curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"] = \
+                        check_and_correct_binary_mask(self.nodes,
+                                                      curr_offsprings[0]["chainer"]["pipe"][self.model_to_evolve_index][
+                                                          "binary_mask"])
+                    curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index]["binary_mask"] = \
+                        check_and_correct_binary_mask(self.nodes,
+                                                      curr_offsprings[1]["chainer"]["pipe"][self.model_to_evolve_index][
+                                                          "binary_mask"])
+                &#47&#47 if parent is one of the best and will be saved with weights
+                if perm[2 * i] in range(self.n_saved_best_with_weights):
+                    <a id="change">offsprings[perm[2 * i]] = deepcopy(population[perm[2 * i]])</a>
+                if perm[2 * i + 1] in range(self.n_saved_best_with_weights):
+                    <a id="change">offsprings[perm[2 * i + 1]] = deepcopy(population[perm[2 * i + 1]])</a>
+
+                offsprings[perm[2 * i]] = deepcopy(curr_offsprings[0])
+                offsprings[perm[2 * i + 1]] = deepcopy(curr_offsprings[1])
+            else:
+                pass
+
+        if self.population_size % 2 == 1:
+            <a id="change">offsprings[-1] = deepcopy(population[perm[-1]])</a>
+        return offsprings
+
+    def mutation(self, population, p_mutation, mutation_power):
+        </code></pre>

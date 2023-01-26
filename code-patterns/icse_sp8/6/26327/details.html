@@ -1,0 +1,92 @@
+<html><h3>62be0d7d2c880127c817b929dbde2c7fbadf87b1,models/experimental/amoeba_net/amoeba_net_model.py,AmoebaNetEstimatorModel,model_fn,#AmoebaNetEstimatorModel#Any#Any#Any#Any#,295
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    eval_active = (mode == tf.estimator.ModeKeys.EVAL)
+    is_predict = (mode == tf.estimator.ModeKeys.PREDICT)
+    features = tf.transpose(features, [3, 0, 1, 2])  &#47&#47 HWCN to NHWC
+    <a id="change">labels = tf.one_hot(labels, LABEL_CLASSES)</a>
+    loss, logits = self._build_network(features, labels, mode)
+
+    if is_predict:
+      predictions = {&quotlogits&quot: logits}
+      return tpu_estimator.TPUEstimatorSpec(mode=mode, predictions=predictions)
+
+    host_call = None
+    train_op = None
+
+    if is_training:
+      global_step = tf.train.get_or_create_global_step()
+      gs_t = tf.reshape(tf.cast(global_step, tf.int32), [1])
+
+      &#47&#47 Setup learning rate schedule
+      learning_rate = self._build_learning_rate_schedule(global_step)
+
+      &#47&#47 Setup optimizer.
+      optimizer = self._build_optimizer(learning_rate)
+
+      update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+      with tf.control_dependencies(update_ops):
+        train_op = self._build_train_op(optimizer, loss,
+                                        global_step=global_step)
+      if self.hparams.moving_average_decay &gt; 0:
+        ema = tf.train.ExponentialMovingAverage(
+            decay=self.hparams.moving_average_decay, num_updates=global_step)
+        variables_to_average = (tf.trainable_variables() +
+                                tf.moving_average_variables())
+        with tf.control_dependencies([train_op]):
+          with tf.name_scope(&quotmoving_average&quot):
+            train_op = ema.apply(variables_to_average)
+
+      lr_t = tf.reshape(learning_rate, [1])
+      host_call = None
+      if self.hparams.enable_hostcall:
+        def host_call_fn(gs, lr):
+          &#47&#47 Outfeed supports int32 but global_step is expected to be int64.
+          gs = tf.cast(tf.reduce_mean(gs), tf.int64)
+          with summary.create_file_writer(self.model_dir).as_default():
+            with summary.always_record_summaries():
+              summary.scalar(&quotlearning_rate&quot, tf.reduce_mean(lr), step=gs)
+              return summary.all_summary_ops()
+        host_call = (host_call_fn, [gs_t, lr_t])
+
+    eval_metrics = None
+    eval_metric_ops = None
+    if eval_active:
+      def metric_fn(labels, logits):
+        Evaluation metric fn. Performed on CPU, do not reference TPU ops.
+        &#47&#47 Outfeed supports int32 but global_step is expected to be int64.
+        predictions = tf.argmax(logits, axis=1)
+        categorical_labels = tf.argmax(labels, axis=1)
+        top_1_accuracy = tf.metrics.accuracy(categorical_labels, predictions)
+        in_top_5 = tf.cast(tf.nn.in_top_k(logits, categorical_labels, 5),
+                           tf.float32)
+        top_5_accuracy = tf.metrics.mean(in_top_5)
+
+        return {
+            &quottop_1_accuracy&quot: top_1_accuracy,
+            &quottop_5_accuracy&quot: top_5_accuracy,
+        }
+
+      eval_metrics = (metric_fn, [labels, logits])
+      eval_metric_ops = metric_fn(labels, logits)
+
+    if self.hparams.use_tpu:
+      <a id="change">return tpu_estimator.TPUEstimatorSpec(
+          mode=mode, loss=loss, train_op=train_op,
+          host_call=host_call, eval_metrics=eval_metrics)</a>
+    return tf.estimator.EstimatorSpec(
+        mode=mode, loss=loss, train_op=train_op,
+        eval_metric_ops=eval_metric_ops)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      eval_metric_ops = metric_fn(labels, logits)
+
+    if self.hparams.use_tpu:
+      <a id="change">return tf.contrib.tpu.TPUEstimatorSpec(
+          mode=mode, loss=loss, train_op=train_op,
+          host_call=host_call, eval_metrics=eval_metrics)</a>
+    return tf.estimator.EstimatorSpec(
+        mode=mode, loss=loss, train_op=train_op,
+        eval_metric_ops=eval_metric_ops)
+</code></pre><img src="134664134.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/62be0d7d2c880127c817b929dbde2c7fbadf87b1#diff-fb5991b6335eddfffa3b385b44f4b23250ad675125d0a93776b50155b96a9926L294' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 62be0d7d2c880127c817b929dbde2c7fbadf87b1</div><div id='time'> Time: 2018-07-17</div><div id='author'> Author: bignamehyp@users.noreply.github.com</div><div id='file'> File Name: models/experimental/amoeba_net/amoeba_net_model.py</div><div id='class'> Class Name: AmoebaNetEstimatorModel</div><div id='method'> Method Name: model_fn</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/9de6656a779e73ac61995bd87044af21b3f37951#diff-fb5991b6335eddfffa3b385b44f4b23250ad675125d0a93776b50155b96a9926L454' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 9de6656a779e73ac61995bd87044af21b3f37951</div><div id='time'> Time: 2018-04-19</div><div id='author'> Author: frankchn@google.com</div><div id='file'> File Name: models/experimental/amoeba_net/amoeba_net_model.py</div><div id='class'> Class Name: InputPipeline</div><div id='method'> Method Name: input_fn</div><BR><BR><div id='link'><a href='https://github.com/dpressel/mead-baseline/commit/ea556a8f0d9fb0ba1a18b8ee3a08df198dbe418d#diff-e2f3b4c703ea04e1880871ae0d9beb5d9ec37988868fc8746a4bf2583e0abed5L69' target='_blank'>Link</a></div><div id='project'> Project Name: dpressel/mead-baseline</div><div id='commit'> Commit Name: ea556a8f0d9fb0ba1a18b8ee3a08df198dbe418d</div><div id='time'> Time: 2018-11-13</div><div id='author'> Author: dpressel@gmail.com</div><div id='file'> File Name: python/baseline/tf/lm/model.py</div><div id='class'> Class Name: LanguageModelBase</div><div id='method'> Method Name: create_loss</div><BR>

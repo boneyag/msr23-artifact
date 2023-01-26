@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Graph mode
+
+    &#47&#47 First create necessary graph ops
+    <a id="change">ds_iters = [None] * len(flat_ds)</a>
+    with utils.maybe_with_graph(graph, create_if_none=False):
+      for i, ds_el in enumerate(flat_ds):
+        if isinstance(ds_el, tf.data.Dataset):
+          ds_iters[i] = tf.compat.v1.data.make_one_shot_iterator(
+              ds_el).get_next()
+
+    &#47&#47 Then create NumPy items
+    &#47&#47 Shared session for tf.Tensor runs
+    with utils.nogpu_session(graph) as sess:
+      for ds_iter, ds_el in zip(ds_iters, flat_ds):
+        if ds_iter is None:
+          &#47&#47 Tensor
+          np_el = sess.run(ds_el)
+        else:
+          &#47&#47 Dataset
+          np_el = _graph_dataset_iterator(ds_iter, graph)
+        <a id="change">flat_np.append(np_el)</a>
+
+  &#47&#47 Nest
+  return tf.contrib.framework.nest.pack_sequence_as(nested_ds, flat_np)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Merge the datasets iterators and np array
+    iter_ds = iter(ds_iters)
+    <a id="change">iter_array = iter(np_arrays)</a>
+    flat_np = [
+        next(iter_ds) if _is_ds(ds_el) else next(iter_array)
+        for ds_el in flat_ds
+    ]</code></pre>

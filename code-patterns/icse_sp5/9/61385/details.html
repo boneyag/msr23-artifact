@@ -1,0 +1,49 @@
+<html><h3>c3ca2456b96296326aa1d18f33ed72e8dd51ac5b,tensorflow_transform/analyzers.py,QuantilesCombiner,merge_accumulators,#QuantilesCombiner#Any#,1284
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    graph_state = self._get_graph_state()
+    result = None
+    for summary in summaries_iterable:
+      <a id="change">if summary is None:
+        continue
+      else:
+        &#47&#47 This conversion is necessary to maintain compatibility with previous
+        &#47&#47 versions, and will be removed in future (0.15).
+        &#47&#47 TODO(b/127336397): Remove this.
+        if isinstance(summary, (six.binary_type, six.text_type)):
+          assert not summary
+          continue
+        with graph_state.lock:
+          if self._use_core_quantile_ops:
+            graph_state.thread_hostile_merge_inputs_callable(*summary)
+            if result is not None:
+              graph_state.thread_hostile_merge_inputs_callable(*result)  &#47&#47 pylint: disable=not-an-iterable
+          else:
+            graph_state.thread_hostile_merge_inputs_callable(summary)
+            if result is not None:
+              graph_state.thread_hostile_merge_inputs_callable(result)
+          result = graph_state.thread_hostile_flush_summary_callable()
+   </a> return result
+
+  def extract_output(self, summary):
+    graph_state = self._get_graph_state()</code></pre><h3>After Change</h3><pre><code class='java'>
+    graph_state = self._get_graph_state()
+    while True:
+      batched_summaries = list(itertools.islice(summaries, 100))
+      <a id="change">if not batched_summaries:
+        break
+     </a> with graph_state.lock:
+        if self._use_core_quantile_ops:
+          graph_state.thread_hostile_merge_summary_callable(*result)
+          <a id="change">for summary in batched_summaries:
+            graph_state.thread_hostile_merge_summary_callable(*summary)
+       </a> else:
+          graph_state.thread_hostile_merge_summary_callable(result)
+          <a id="change">for summary in batched_summaries:
+            graph_state.thread_hostile_merge_summary_callable(summary)
+       </a> result = graph_state.thread_hostile_flush_summary_callable()
+    return result
+
+  def extract_output(self, summary):</code></pre><img src="285593637.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/transform/commit/c3ca2456b96296326aa1d18f33ed72e8dd51ac5b#diff-620c46de123f69799077d8daec3e824ef614036d8bafb7842961f52a3a282a81L1274' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/transform</div><div id='commit'> Commit Name: c3ca2456b96296326aa1d18f33ed72e8dd51ac5b</div><div id='time'> Time: 2019-09-01</div><div id='author'> Author: tf-transform-dev@google.com</div><div id='file'> File Name: tensorflow_transform/analyzers.py</div><div id='class'> Class Name: QuantilesCombiner</div><div id='method'> Method Name: merge_accumulators</div><BR><BR><div id='link'><a href='https://github.com/sahana/eden/commit/208e1c78399fd67ae75537489c8206943c523c52#diff-d79638bb6485e0b7549feb9fb92ef8fa60345d43d7f12adf2c3f4904025b5963L219' target='_blank'>Link</a></div><div id='project'> Project Name: sahana/eden</div><div id='commit'> Commit Name: 208e1c78399fd67ae75537489c8206943c523c52</div><div id='time'> Time: 2018-03-15</div><div id='author'> Author: dominic@nursix.org</div><div id='file'> File Name: modules/s3/s3model.py</div><div id='class'> Class Name: S3Model</div><div id='method'> Method Name: table</div><BR><BR><div id='link'><a href='https://github.com/jazzband/django-debug-toolbar/commit/70d3aa1b8c12d614f2ca1b1b550bb605d8c8a506#diff-86c491e336487d6991c384b5adb96c602f5eb2cc9a22776141b15058c7faac45L62' target='_blank'>Link</a></div><div id='project'> Project Name: jazzband/django-debug-toolbar</div><div id='commit'> Commit Name: 70d3aa1b8c12d614f2ca1b1b550bb605d8c8a506</div><div id='time'> Time: 2013-11-15</div><div id='author'> Author: aymeric.augustin@m4x.org</div><div id='file'> File Name: debug_toolbar/middleware.py</div><div id='class'> Class Name: DebugToolbarMiddleware</div><div id='method'> Method Name: process_request</div><BR>

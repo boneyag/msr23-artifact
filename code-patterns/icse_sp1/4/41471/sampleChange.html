@@ -1,0 +1,82 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        pretrained_var_map[v.op.name[6:]] = v
+
+    alexnet_saver = <a id="change">tf.train.Saver(pretrained_var_map)</a>
+
+    def init_fn(ses):
+        log.info(&quotInitializing parameters.&quot)
+        if not has_stuff(c.BVLC_CKPT_PATH):</code></pre><h3>After Change</h3><pre><code class='java'>
+def run(resume_dir=None, data_dir=c.RECORDING_DIR, agent_name=None):
+    &#47&#47 TODO: Clean up the net_name stuff
+    if agent_name is None:
+        <a id="change">net_name = net.ALEXNET_NAME</a>
+    elif agent_name == &quotdagger_mobilenet_v2&quot:
+        net_name = net.MOBILENET_V2_NAME
+    else:
+        raise NotImplementedError(&quot%r agent_name not associated with trunk net&quot % agent_name)
+    os.makedirs(c.TENSORFLOW_OUT_DIR, exist_ok=True)
+    if resume_dir is not None:
+        date_str = resume_dir[resume_dir.rindex(&quot/&quot) + 1:resume_dir.rindex(&quot_&quot)]
+    else:
+        date_str = c.DATE_STR
+    sess_train_dir = &quot%s/%s_train&quot % (c.TENSORFLOW_OUT_DIR, date_str)
+    sess_eval_dir = &quot%s/%s_eval&quot % (c.TENSORFLOW_OUT_DIR, date_str)
+    os.makedirs(sess_train_dir, exist_ok=True)
+    os.makedirs(sess_eval_dir, exist_ok=True)
+
+    &#47&#47 Decrease this to fit in your GPU&quots memory
+    &#47&#47 If you increase, remember that it decreases accuracy https://arxiv.org/abs/1711.00489
+    batch_size = 32
+
+    x = tf.placeholder(tf.float32, (None,) + c.BASELINE_IMAGE_SHAPE)
+    y = tf.placeholder(tf.float32, (None, c.NUM_TARGETS))
+    log.info(&quotcreating model&quot)
+    with tf.variable_scope("model"):
+        global_step = tf.get_variable("global_step", [], tf.int32, initializer=tf.zeros_initializer, trainable=False)
+
+    if net_name == net.ALEXNET_NAME:
+        eval_model_out, model_in, model_out = setup_alexnet(x, net_name)
+    elif net_name == net.MOBILENET_V2_NAME:
+        eval_model_out, model_in, model_out = setup_mobilenet_v2(net_name)
+    else:
+        raise NotImplementedError(&quot%r net not implemented&quot % net_name)
+
+    l2_norm = tf.global_norm(tf.trainable_variables())
+    loss = 0.5 * tf.reduce_sum(tf.square(model_out - y)) / tf.to_float(tf.shape(x)[0])
+    tf.summary.scalar("model/loss", loss)
+    tf.summary.scalar("model/l2_norm", l2_norm)
+    total_loss = loss + 0.0005 * l2_norm
+    tf.summary.scalar("model/total_loss", total_loss)
+    starter_learning_rate = 2e-6
+
+    &#47&#47 TODO: add polyak averaging.
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step=global_step,
+                                               decay_steps=73000, decay_rate=0.5, staircase=True)
+
+    opt = tf.train.AdamOptimizer(learning_rate)
+    tf.summary.scalar("model/learning_rate", learning_rate)
+    grads_and_vars = opt.compute_gradients(total_loss)
+    visualize_model(model_in, model_out, y)
+    visualize_gradients(grads_and_vars)
+    summary_op = tf.summary.merge_all()
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+        train_op = opt.apply_gradients(grads_and_vars, global_step)
+
+    init_op = tf.global_variables_initializer()
+
+    <a id="change">if net_name == net.ALEXNET_NAME:
+        init_fn = load_alexnet_pretrained(init_op)
+    else:
+        def init_fn(ses):
+            log.info(&quotInitializing parameters.&quot)
+            ses.run(init_op)
+
+   </a> saver = tf.train.Saver()
+    sv = tf.train.Supervisor(is_chief=True,
+                             logdir=sess_train_dir,
+                             summary_op=None,  &#47&#47 Automatic summaries don&quott work with placeholders.</code></pre>

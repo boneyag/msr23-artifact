@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+subplot(211)
+plot(mon_L.t/ms,mon_soma[0].v/mV,&quotk&quot)
+plot(mon_L.t/ms,<a id="change">mon_L</a>[<a id="change">49</a>].v/mV,&quotr&quot)
+plot(mon_L.t/ms,mon_R[49].v/mV,&quotb&quot)
+subplot(212)
+for i in [0,5,10,15,20,25,30,35,40,45]:</code></pre><h3>After Change</h3><pre><code class='java'>
+&#47&#47 Morphology
+morpho=Soma(30*um)
+morpho.L=Cylinder(diameter=1*um,length=100*um,n=50)
+<a id="change">morpho.R</a>=Cylinder(diameter=1*um,length=100*um,n=50)
+
+&#47&#47 Passive channels
+gL = 1e-4*siemens/cm**2
+EL = -70*mV
+Es = 0*mV
+taus = 1*ms
+eqs=&quot&quot&quot
+Im = gL*(EL-v)+gs*(Es-v)/area : amp/meter**2
+dgs/dt = -gs/taus : siemens
+&quot&quot&quot
+
+neuron = SpatialNeuron(morphology=morpho, model=eqs, Cm=1 * uF / cm ** 2, Ri=100 * ohm * cm)
+neuron.v = EL
+
+&#47&#47 Regular inputs
+stimulation = NeuronGroup(2,model=&quotdx/dt=300*Hz : 1&quot,threshold=&quotx&gt;1&quot,reset=&quotx=0&quot)
+stimulation.x = [0,0.5] &#47&#47 Asynchronous
+
+&#47&#47 Synapses
+w = 20*nS
+S = Synapses(stimulation,neuron,pre = &quotgs += w&quot)
+&#47&#47 Here we need a method that gives indices (compartment numbers) or spatial indexing
+S.connect(0,<a id="change">morpho</a>.L.compartment(100*um))
+S.connect(1,morpho.R.compartment(100*um))
+
+&#47&#47 Monitors
+mon_soma=StateMonitor(neuron,&quotv&quot,record=[0])
+mon_L=StateMonitor(neuron.L,&quotv&quot,record=True)
+mon_R=StateMonitor(neuron.R,&quotv&quot,record=<a id="change">morpho.R.compartment(100*um, local = True)</a>)
+
+run(50*ms,report=&quottext&quot)
+
+subplot(211)
+plot(mon_L.t/ms,mon_soma[0].v/mV,&quotk&quot)
+plot(mon_L.t/ms,mon_L[<a id="change">morpho</a>.L.compartment(100*um, local = True)].v/mV,&quotr&quot)
+plot(mon_L.t/ms,<a id="change">mon_R</a>[<a id="change">morpho.R.compartment(100*um, local = True)</a>].v/mV,&quotb&quot)
+subplot(212)
+for i in [0,5,10,15,20,25,30,35,40,45]:
+    plot(mon_L.t/ms,mon_L.v[i,:]/mV)</code></pre>

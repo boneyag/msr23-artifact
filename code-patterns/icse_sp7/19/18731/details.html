@@ -1,0 +1,111 @@
+<html><h3>25d18ec72f1a113ee42456125fc3557a0d5ce135,pgmpy/inference/continuous_sampling.py,HamiltonianMCda,sample,#HamiltonianMCda#Any#Any#Any#Any#Any#,348
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                theta_bar, momentum_bar = self.discretize_time(self.grad_log_pdf, self.model, theta_bar.copy(),
+                                                               momentum_bar.copy(), epsilon).discretize_time()
+
+            <a id="change">_, log_bar = self.grad_log_pdf(theta_bar.copy(), self.model).get_gradient_log_pdf()</a>
+            &#47&#47 log_m_1 = log(theta_m) or log(theta_m_1)
+            <a id="change">_, log_m_1 = self.grad_log_pdf(theta_m.copy(), self.model).get_gradient_log_pdf()</a>
+
+            &#47&#47 Metropolis acceptance probability
+            alpha = min(1, np.exp(log_bar - log_m_1 - 0.5 *
+                                  np.float(np.dot(momentum_bar.T, momentum_bar) - np.dot(momentum0.T, momentum0))))</code></pre><h3>After Change</h3><pre><code class='java'>
+        super(HamiltonianMCda, self).__init__(model=model, grad_log_pdf=grad_log_pdf,
+                                              discretize_time=discretize_time)
+
+    def sample(<a id="change">self</a>, theta0, num_adapt, num_samples, Lambda, epsilon=None):
+        
+        Method to return samples using Hamiltonian Monte Carlo
+
+        Parameters
+        ----------
+        theta0: A 1d array type object or a row matrix of shape 1 X d
+                or d X 1.(Will be converted to d X 1)
+                Vector representing values of parameter theta, the starting
+                state in markov chain.
+
+        num_adapt: int
+                The number of interations to run the adaptation of epsilon,
+                after Madapt iterations adaptation will be stopped
+
+        num_samples: int
+                     Number of samples to be generated
+
+        Lambda: int or float
+                Target trajectory length, epsilon * number of steps(L),
+                where L is the number of steps taken per HMC iteration,
+                and epsilon is step size for splitting time method.
+
+        epsilon: float , defaults to None
+                 The step size for descrete time method
+                 If None, then will be choosen suitably
+
+        Returns
+        -------
+        list: A list of numpy array type objects containing samples
+
+        Examples
+        ---------
+        &gt;&gt;&gt; from pgmpy.inference import HamiltonianMCda as HMCda
+        &gt;&gt;&gt; from pgmpy.inference import JointGaussianDistribution as JGD, GradLogPDFGaussian as GLPG
+        &gt;&gt;&gt; from pgmpy.inference import LeapFrog
+        &gt;&gt;&gt; import numpy as np
+        &gt;&gt;&gt; mean = np.array([1, 1])
+        &gt;&gt;&gt; cov_matrix = np.array([[1, 0.7], [0.7, 3]])
+        &gt;&gt;&gt; model = JGD(mean, cov_matrix)
+        &gt;&gt;&gt; sampler = HMCda(model=model, grad_log_pdf=GLPG, discretize_time=LeapFrog)
+        &gt;&gt;&gt; samples = sampler.sample(np.array([[1], [1]]), num_adapt=10000,
+        ...                          num_samples = 10000, Lambda=2, epsilon=None)
+        &gt;&gt;&gt; samples_array = np.concatenate(samples, axis=1)
+        &gt;&gt;&gt; np.cov(samples_array)
+        array([[ 0.98432155,  0.66517394],
+               [ 0.66517394,  2.95449533]])
+
+        
+        &#47&#47 TODO: Proper parameterization
+        if isinstance(theta0, (np.matrix, np.ndarray, list, tuple, set, frozenset)):
+            theta0 = np.array(theta0).flatten()
+            theta0 = np.reshape(theta0, (len(theta0), 1))
+        else:
+            raise TypeError("theta should be a 1d array type object")
+
+        if epsilon is None:
+            epsilon = self._find_reasonable_epsilon(theta0)
+
+        if num_adapt &lt;= 1:  &#47&#47 Return samples genrated using Simple HMC algorithm
+            return HamiltonianMC.sample(self, theta0, num_samples, epsilon)
+
+        mu = np.log(10.0 * epsilon)  &#47&#47 freely chosen point, after each iteration xt(/theta) is shrunk towards it
+        &#47&#47 log(10 * epsilon) large values to save computation
+        epsilon_bar = 1.0
+        hbar = 0.0
+        gamma = 0.05  &#47&#47 free parameter that controls the amount of shrinkage towards mu
+        t0 = 10.0  &#47&#47 free parameter that stabilizes the initial iterations of the algorithm
+        kappa = 0.75
+        &#47&#47 See equation (6) section 3.2.1 for details
+        samples = [theta0.copy()]
+        theta_m = theta0.copy()
+        for i in range(1, num_samples):
+            &#47&#47 Genrating sample
+            &#47&#47 Resampling momentum
+            momentum0 = np.reshape(np.random.normal(0, 1, len(theta0)), theta0.shape)
+            &#47&#47 theta_m here will be the previous sampled value of theta
+            theta_bar, momentum_bar = theta_m.copy(), momentum0.copy()
+            &#47&#47 Number of steps L to run discretize time algorithm
+            lsteps = int(max(1, round(Lambda / epsilon, 0)))
+
+            for _ in range(lsteps):
+                &#47&#47 Taking L steps in time
+                theta_bar, momentum_bar = self.discretize_time(self.grad_log_pdf, self.model, theta_bar.copy(),
+                                                               momentum_bar.copy(), epsilon).discretize_time()
+
+            <a id="change">acceptance_prob = self._acceptance_prob(theta_m.copy(), theta_bar.copy(), momentum0, momentum_bar)</a>
+            &#47&#47 Metropolis acceptance probability
+            <a id="change">alpha = min(1, acceptance_prob)</a>
+
+            &#47&#47 Accept or reject the new proposed value of theta, i.e theta_bar
+            if np.random.rand() &lt; alpha:
+                theta_m = theta_bar.copy()</code></pre><img src="103682478.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 16</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pgmpy/pgmpy/commit/25d18ec72f1a113ee42456125fc3557a0d5ce135#diff-a61a38418e4e1b12436cef4e2147e9b1c7a08e21617c6b34a14d09ee0c6bdde3L340' target='_blank'>Link</a></div><div id='project'> Project Name: pgmpy/pgmpy</div><div id='commit'> Commit Name: 25d18ec72f1a113ee42456125fc3557a0d5ce135</div><div id='time'> Time: 2016-06-17</div><div id='author'> Author: utkarsh.gupta550@gmail.com</div><div id='file'> File Name: pgmpy/inference/continuous_sampling.py</div><div id='class'> Class Name: HamiltonianMCda</div><div id='method'> Method Name: sample</div><BR><BR><div id='link'><a href='https://github.com/pgmpy/pgmpy/commit/25d18ec72f1a113ee42456125fc3557a0d5ce135#diff-a61a38418e4e1b12436cef4e2147e9b1c7a08e21617c6b34a14d09ee0c6bdde3L348' target='_blank'>Link</a></div><div id='project'> Project Name: pgmpy/pgmpy</div><div id='commit'> Commit Name: 25d18ec72f1a113ee42456125fc3557a0d5ce135</div><div id='time'> Time: 2016-06-17</div><div id='author'> Author: utkarsh.gupta550@gmail.com</div><div id='file'> File Name: pgmpy/inference/continuous_sampling.py</div><div id='class'> Class Name: HamiltonianMCda</div><div id='method'> Method Name: sample</div><BR><BR><div id='link'><a href='https://github.com/pgmpy/pgmpy/commit/25d18ec72f1a113ee42456125fc3557a0d5ce135#diff-a61a38418e4e1b12436cef4e2147e9b1c7a08e21617c6b34a14d09ee0c6bdde3L116' target='_blank'>Link</a></div><div id='project'> Project Name: pgmpy/pgmpy</div><div id='commit'> Commit Name: 25d18ec72f1a113ee42456125fc3557a0d5ce135</div><div id='time'> Time: 2016-06-17</div><div id='author'> Author: utkarsh.gupta550@gmail.com</div><div id='file'> File Name: pgmpy/inference/continuous_sampling.py</div><div id='class'> Class Name: HamiltonianMC</div><div id='method'> Method Name: sample</div><BR><BR><div id='link'><a href='https://github.com/pgmpy/pgmpy/commit/25d18ec72f1a113ee42456125fc3557a0d5ce135#diff-a61a38418e4e1b12436cef4e2147e9b1c7a08e21617c6b34a14d09ee0c6bdde3L464' target='_blank'>Link</a></div><div id='project'> Project Name: pgmpy/pgmpy</div><div id='commit'> Commit Name: 25d18ec72f1a113ee42456125fc3557a0d5ce135</div><div id='time'> Time: 2016-06-17</div><div id='author'> Author: utkarsh.gupta550@gmail.com</div><div id='file'> File Name: pgmpy/inference/continuous_sampling.py</div><div id='class'> Class Name: HamiltonianMCda</div><div id='method'> Method Name: generate_sample</div><BR><BR><div id='link'><a href='https://github.com/pgmpy/pgmpy/commit/25d18ec72f1a113ee42456125fc3557a0d5ce135#diff-a61a38418e4e1b12436cef4e2147e9b1c7a08e21617c6b34a14d09ee0c6bdde3L203' target='_blank'>Link</a></div><div id='project'> Project Name: pgmpy/pgmpy</div><div id='commit'> Commit Name: 25d18ec72f1a113ee42456125fc3557a0d5ce135</div><div id='time'> Time: 2016-06-17</div><div id='author'> Author: utkarsh.gupta550@gmail.com</div><div id='file'> File Name: pgmpy/inference/continuous_sampling.py</div><div id='class'> Class Name: HamiltonianMC</div><div id='method'> Method Name: generate_sample</div><BR>

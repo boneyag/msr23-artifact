@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        queue.put(model.output_shape)
+
+    global_image_data_format = K.image_data_format()
+    <a id="change">queue = Queue()</a>
+
+    K.set_image_data_format(&quotchannels_first&quot)
+    p = Process(target=target, args=(queue,))
+    p.start()
+    p.join()
+    K.set_image_data_format(global_image_data_format)
+    assert not queue.empty(), &quotModel creation failed.&quot
+    model_output_shape = queue.get_nowait()
+    assert model_output_shape == (None, 1536, None, None)
+
+    K.set_image_data_format(&quotchannels_last&quot)
+    <a id="change">p = Process(target=target, args=(queue,))</a>
+    <a id="change">p.start()</a>
+    <a id="change">p.join()</a>
+    K.set_image_data_format(global_image_data_format)
+    assert not queue.empty(), &quotModel creation failed.&quot
+    <a id="change">model_output_shape = queue.get_nowait()</a>
+    assert model_output_shape == (None, None, None, 1536)
+
+
+@keras_test</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_inceptionresnetv2_notop():
+    def model_fn():
+        return applications.InceptionResNetV2(weights=None, include_top=False)
+    <a id="change">output_shape = clean_run(model_fn)</a>
+    if K.image_data_format() == &quotchannels_first&quot:
+        assert output_shape == (None, 1536, None, None)
+    else:
+        assert output_shape == (None, None, None, 1536)</code></pre>

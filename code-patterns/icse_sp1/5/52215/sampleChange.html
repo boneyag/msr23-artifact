@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            q = q.view(batch_size, 1, self.in_channels)
+            e = (x * q).sum(dim=-1)  &#47&#47 Dot product.
+            a = torch.softmax(e, dim=-1)
+            a = <a id="change">a.view(batch_size, max_nodes, 1)</a>
+            r = (a * x).sum(dim=1, keepdim=True)
+            q_star = torch.cat([q, r], dim=-1)
+            <a id="change">q_star = q_star.view(1, batch_size, self.out_channels)</a>
+
+        <a id="change">q_star = q_star.view(batch_size, self.out_channels)</a>
+        return q_star
+
+    def __repr__(self):
+        return &quot{}({}, {})&quot.format(self.__class__.__name__, self.in_channels,</code></pre><h3>After Change</h3><pre><code class='java'>
+            q = q.view(batch_size, self.in_channels)
+            e = (x * q[batch]).sum(dim=-1, keepdim=True)
+            a = softmax(e, batch, num_nodes=batch_size)
+            r = <a id="change">scatter_add(a * x, batch, dim=0, dim_size=batch_size)</a>
+            q_star = torch.cat([q, r], dim=-1)
+
+        return q_star
+</code></pre>

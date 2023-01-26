@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    spatial_rank = layer_util.infer_spatial_rank(input_tensor)
+    &#47&#47 initialize conv kernels/strides and then apply
+    w_full_size = np.vstack((
+        <a id="change">[self.kernel_size] * spatial_rank</a>,
+        n_full_input_chns, self.n_output_chns)).flatten()
+    full_stride = <a id="change">np.vstack((
+        [self.stride] * spatial_rank)).flatten()</a>
+    conv_kernel = tf.get_variable(
+        &quotw&quot, shape=w_full_size.tolist(),
+        initializer=self.initializers[&quotw&quot],</code></pre><h3>After Change</h3><pre><code class='java'>
+    else:
+      _output_mask=output_mask
+    n_full_input_chns = _input_mask.get_shape().as_list()[0]
+    <a id="change">spatial_rank</a> = layer_util.infer_spatial_rank(input_tensor)
+    &#47&#47 initialize conv kernels/strides and then apply
+    w_full_size = <a id="change">layer_util.expand_spatial_params(
+        self.kernel_size, spatial_rank)</a>
+    &#47&#47 expand kernel size to include number of features
+    <a id="change">w_full_size = w_full_size + (n_full_input_chns, self.n_output_chns)</a>
+
+    full_stride = layer_util.expand_spatial_params(
+        self.stride, spatial_rank)
+
+    <a id="change">full_dilation = layer_util.expand_spatial_params(
+        self.dilation, spatial_rank)</a>
+
+    conv_kernel = tf.get_variable(
+        &quotw&quot, shape=w_full_size,</code></pre>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.proba_barplot is not None:
+            self.proba_barplot.add_fold(predictions)
+        columns = [&quotpredicted_proba&quot, &quotpredictions&quot, &quotground_truth&quot, &quotscores&quot]
+        fold_predictions = pd.DataFrame(<a id="change">np.zeros((predictions.num_instances(),
+                                                  len(columns)))</a>,
+                                        index=predictions.ids.ids,
+                                        columns=columns)
+        fold_predictions[&quotpredicted_proba&quot] = predictions.probas
+        fold_predictions[&quotpredictions&quot] = predictions.values
+        fold_predictions[&quotground_truth&quot] = predictions.ground_truth
+        fold_predictions[&quotscores&quot] = predictions.scores
+        if self.predictions is None:
+            self.predictions = fold_predictions
+        else:
+            <a id="change">self.predictions = pd.concat([self.predictions, fold_predictions])</a>
+
+    def final_computations(self):
+        sort_data_frame(self.predictions, &quotpredicted_proba&quot, True, True)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def add_fold(self, predictions):
+        if self.predictions is None:
+            ids = Ids(<a id="change">deepcopy(predictions.ids.ids)</a>,
+                      deepcopy(predictions.ids.idents),
+                      deepcopy(predictions.ids.timestamps))
+            <a id="change">self.predictions = Predictions(deepcopy(predictions.values), ids,
+                                           predictions.multiclass,
+                                           deepcopy(predictions.all_probas),
+                                           deepcopy(predictions.probas),
+                                           deepcopy(predictions.scores),
+                                           deepcopy(predictions.ground_truth))</a>
+        else:
+            self.predictions.union(predictions)
+        if self.proba_barplot is not None:
+            self.proba_barplot.add_fold(predictions)</code></pre>

@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.normalize_input = normalize_input
+        self.normalize_output = normalize_output
+
+        <a id="change">layers = {}</a>
+
+        if normalize_input:
+            <a id="change">layers[&quotinput_bn&quot]</a> = L.BatchNormalization(in_size)
+            layers[&quotinput_bn&quot].avg_var[:] = 1
+
+        if hidden_sizes:
+            hidden_layers = []
+            hidden_layers.append(LinearBN(in_size, hidden_sizes[0]))
+            for hin, hout in zip(hidden_sizes, hidden_sizes[1:]):
+                hidden_layers.append(LinearBN(hin, hout))
+            <a id="change">layers[&quothidden_layers&quot]</a> = chainer.ChainList(*hidden_layers)
+            <a id="change">layers[&quotoutput&quot]</a> = L.Linear(hidden_sizes[-1], out_size)
+        else:
+            <a id="change">layers[&quotoutput&quot]</a> = L.Linear(in_size, out_size)
+
+        if normalize_output:
+            <a id="change">layers[&quotoutput_bn&quot]</a> = L.BatchNormalization(out_size)
+            layers[&quotoutput_bn&quot].avg_var[:] = 1
+
+        super().__init__(**layers)</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.normalize_output = normalize_output
+
+        super().__init__()
+        <a id="change">with self.init_scope():
+            if normalize_input:
+                self.input_bn = L.BatchNormalization(in_size)
+                self.input_bn.avg_var[:] = 1
+
+            if hidden_sizes:
+                hidden_layers = []
+                hidden_layers.append(LinearBN(in_size, hidden_sizes[0]))
+                for hin, hout in zip(hidden_sizes, hidden_sizes[1:]):
+                    hidden_layers.append(LinearBN(hin, hout))
+                self.hidden_layers = chainer.ChainList(*hidden_layers)
+                self.output = L.Linear(hidden_sizes[-1], out_size)
+            else:
+                self.output = L.Linear(in_size, out_size)
+
+            if normalize_output:
+                self.output_bn = L.BatchNormalization(out_size)
+                self.output_bn.avg_var[:] = 1
+
+   </a> def __call__(self, x):
+        h = x
+        assert (not chainer.config.train) or x.shape[0] &gt; 1
+        if self.normalize_input:</code></pre>

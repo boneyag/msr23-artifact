@@ -1,0 +1,40 @@
+<html><h3>b939c910d036d8197ac7c63e5f188bc4c4fc4803,foolbox/batching.py,,run_parallel,#Any#Any#Any#Any#Any#Any#Any#Any#,94
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if len(attacks_requesting_batched_predictions) &gt; 0:
+            logging.debug(&quotcalling native forward with {}&quot.format(len(attacks_requesting_batched_predictions)))  &#47&#47 noqa: E501
+            batched_predictions_args = list(<a id="change">map(np.stack,
+                                                zip(*batched_predictions_args))</a>)
+            batched_predictions_args = list(batched_predictions_args)
+            &#47&#47 get original shape (&#47&#47attacks, batch size)
+            batch_shape = batched_predictions_args[0].shape
+            &#47&#47 merge individual batches into one super-batch
+            batched_predictions_args[0] = batched_predictions_args[0].reshape(
+                -1, *batch_shape[2:])
+
+            batched_predictions = model.forward(*batched_predictions_args)
+            &#47&#47 split super-batch back into individual batches
+            <a id="change">batched_predictions = batched_predictions.reshape(
+                *batch_shape[:2], -1)</a>
+        else:
+            batched_predictions = []
+
+        if len(attacks_requesting_gradients) &gt; 0:</code></pre><h3>After Change</h3><pre><code class='java'>
+            inputs = [x[0] for x in batched_predictions_args]
+
+            &#47&#47 merge individual batches into one larger super-batch
+            <a id="change">batch_lengths = [len(x) for x in inputs]</a>
+            <a id="change">batch_splits = np.cumsum(batch_lengths)</a>
+            <a id="change">inputs = np.concatenate([x for x in inputs])</a>
+
+            &#47&#47 split super-batch back into individual batches
+            batched_predictions = model.forward(inputs)
+            <a id="change">batched_predictions = np.split(batched_predictions, batch_splits,
+                                           axis=0)</a>
+
+        else:
+            batched_predictions = []
+</code></pre><img src="299795422.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/bethgelab/foolbox/commit/b939c910d036d8197ac7c63e5f188bc4c4fc4803#diff-603854e34ab2f4308ec27affcfadef2d10ba699ea41350cedcd6781f95eb08aeL141' target='_blank'>Link</a></div><div id='project'> Project Name: bethgelab/foolbox</div><div id='commit'> Commit Name: b939c910d036d8197ac7c63e5f188bc4c4fc4803</div><div id='time'> Time: 2019-07-20</div><div id='author'> Author: rzrolandzimmermann@gmail.com</div><div id='file'> File Name: foolbox/batching.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: run_parallel</div><BR><BR><div id='link'><a href='https://github.com/geomstats/geomstats/commit/35364f3d1dc129e68d8f5da1cf1d090073e4b556#diff-091879673fe742cddf2449ebd85c0ae76284812b226dd53c49c74e5b5e1ec4b7L124' target='_blank'>Link</a></div><div id='project'> Project Name: geomstats/geomstats</div><div id='commit'> Commit Name: 35364f3d1dc129e68d8f5da1cf1d090073e4b556</div><div id='time'> Time: 2017-10-25</div><div id='author'> Author: ninamio78@gmail.com</div><div id='file'> File Name: unittests.py</div><div id='class'> Class Name: TestGeomstatsMethods</div><div id='method'> Method Name: test_rigid_transformations_group_exp_log</div><BR><BR><div id='link'><a href='https://github.com/geomstats/geomstats/commit/35364f3d1dc129e68d8f5da1cf1d090073e4b556#diff-091879673fe742cddf2449ebd85c0ae76284812b226dd53c49c74e5b5e1ec4b7L163' target='_blank'>Link</a></div><div id='project'> Project Name: geomstats/geomstats</div><div id='commit'> Commit Name: 35364f3d1dc129e68d8f5da1cf1d090073e4b556</div><div id='time'> Time: 2017-10-25</div><div id='author'> Author: ninamio78@gmail.com</div><div id='file'> File Name: unittests.py</div><div id='class'> Class Name: TestGeomstatsMethods</div><div id='method'> Method Name: test_rigid_transformations_riemannian_exp_log</div><BR>

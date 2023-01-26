@@ -1,0 +1,129 @@
+<html><h3>051bd416d3c41002f6d58b9dd71516a27243d178,thumt/launcher/translator.py,,main,#Any#,137
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    model_cls = models.get_model(args.model)
+    params = default_parameters()
+    params = merge_parameters(params, model_cls.get_parameters())
+    <a id="change">params = override_parameters(params, args)</a>
+
+    &#47&#47 Build Graph
+    with tf.Graph().as_default():
+        &#47&#47 Read input file
+        sorted_keys, sorted_inputs = dataset.sort_input_file(params.input)
+        &#47&#47 Build input queue
+        features = dataset.get_inference_input(sorted_inputs, params)
+
+        &#47&#47 Build model
+        model = model_cls(params)
+        inference_fn = model.get_inference_func()
+        predictions = search.create_inference_graph(inference_fn, features,
+                                                    params)
+
+        if not tf.gfile.Exists(params.path):
+            raise ValueError("Path %s not found" % params.path)
+
+        sess_creator = tf.train.ChiefSessionCreator(
+            checkpoint_dir=params.path,
+            config=session_config(params)
+        )
+
+        results = []
+
+        with tf.train.MonitoredSession(session_creator=sess_creator) as sess:
+            while not sess.should_stop():
+                results.append(sess.run(predictions))
+                message = "Finished batch %d" % len(results)
+                tf.logging.log(tf.logging.INFO, message)
+
+        &#47&#47 Convert to plain text
+        vocab = params.vocabulary["target"]
+        outputs = []
+
+        for result in results:
+            outputs.append(result.tolist())
+
+        outputs = list(itertools.chain(*outputs))
+
+        restored_outputs = []
+
+        for index in range(len(sorted_inputs)):
+            restored_outputs.append(outputs[sorted_keys[index]])
+
+        &#47&#47 Write to file
+        with open(params.output, "w") as outfile:
+            for output in restored_outputs:
+                decoded = [vocab[idx] for idx in output]
+                decoded = " ".join(decoded)
+                idx = decoded.find(params.eos)
+
+                <a id="change">if idx &gt;= 0:
+                    output = decoded[:idx].strip()
+                else:
+                    output = decoded.strip()
+
+               </a> outfile.write("%s\n" % output)
+
+
+if __name__ == "__main__":</code></pre><h3>After Change</h3><pre><code class='java'>
+    model_cls = models.get_model(args.model)
+    params = default_parameters()
+    params = merge_parameters(params, model_cls.get_parameters())
+    <a id="change">params = import_params(args.path, args.model, params)</a>
+    override_parameters(params, args)
+
+    &#47&#47 Build Graph
+    with tf.Graph().as_default():
+        &#47&#47 Read input file
+        sorted_keys, sorted_inputs = dataset.sort_input_file(params.input)
+        &#47&#47 Build input queue
+        features = dataset.get_inference_input(sorted_inputs, params)
+
+        &#47&#47 Build model
+        model = model_cls(params)
+        inference_fn = model.get_inference_func()
+        predictions = search.create_inference_graph(inference_fn, features,
+                                                    params)
+
+        if not tf.gfile.Exists(params.path):
+            raise ValueError("Path %s not found" % params.path)
+
+        sess_creator = tf.train.ChiefSessionCreator(
+            checkpoint_dir=params.path,
+            config=session_config(params)
+        )
+
+        results = []
+
+        with tf.train.MonitoredSession(session_creator=sess_creator) as sess:
+            while not sess.should_stop():
+                results.append(sess.run(predictions))
+                message = "Finished batch %d" % len(results)
+                tf.logging.log(tf.logging.INFO, message)
+
+        &#47&#47 Convert to plain text
+        vocab = params.vocabulary["target"]
+        outputs = []
+
+        for result in results:
+            outputs.append(result.tolist())
+
+        outputs = list(itertools.chain(*outputs))
+
+        restored_outputs = []
+
+        for index in range(len(sorted_inputs)):
+            restored_outputs.append(outputs[sorted_keys[index]])
+
+        &#47&#47 Write to file
+        with open(params.output, "w") as outfile:
+            for output in restored_outputs:
+                decoded = []
+                for idx in output:
+                    <a id="change">if idx == params.mapping["target"][params.eos]:
+                        break
+                   </a> decoded.append(vocab[idx])
+
+                decoded = " ".join(decoded)
+                outfile.write("%s\n" % decoded)</code></pre><img src="143662032.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/THUNLP-MT/THUMT/commit/051bd416d3c41002f6d58b9dd71516a27243d178#diff-c74280defd5dfb95dc024e444f0285c9df8fb4d765fa0db975ef0574245bded4L142' target='_blank'>Link</a></div><div id='project'> Project Name: THUNLP-MT/THUMT</div><div id='commit'> Commit Name: 051bd416d3c41002f6d58b9dd71516a27243d178</div><div id='time'> Time: 2017-11-11</div><div id='author'> Author: playinf@stu.xmu.edu.cn</div><div id='file'> File Name: thumt/launcher/translator.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/cesium-ml/cesium/commit/1cf1a4c00ba6404bb7387c722187a22357b2f193#diff-197388b1c3dbf88ff1eebab551502dc6d8a2e12f92d5e7ad0a788bf4230288c3L356' target='_blank'>Link</a></div><div id='project'> Project Name: cesium-ml/cesium</div><div id='commit'> Commit Name: 1cf1a4c00ba6404bb7387c722187a22357b2f193</div><div id='time'> Time: 2015-02-13</div><div id='author'> Author: a.crellinquick@gmail.com</div><div id='file'> File Name: mltsp/custom_feature_tools.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: parse_tsdata_from_file</div><BR><BR><div id='link'><a href='https://github.com/biocore/scikit-bio/commit/a32b6ba661206b12841e0a7cf8abb16ab0782f0a#diff-acfc6f93eb0eb9b1f67c348bd2a6b345a322825a71ae0ccc60e6392865a022d1L167' target='_blank'>Link</a></div><div id='project'> Project Name: biocore/scikit-bio</div><div id='commit'> Commit Name: a32b6ba661206b12841e0a7cf8abb16ab0782f0a</div><div id='time'> Time: 2014-08-25</div><div id='author'> Author: jai.rideout@gmail.com</div><div id='file'> File Name: skbio/io/dm.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _dm_to_matrix</div><BR>

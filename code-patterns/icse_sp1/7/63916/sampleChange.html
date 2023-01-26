@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def read_from_sparse_memory(self, memory, indexes, keys, last_used_mem, usage):
+    b = keys.size(0)
+    read_positions = []
+    read_weights = <a id="change">[]</a>
+
+    &#47&#47 print(keys.squeeze())
+    &#47&#47 non-differentiable operations
+    for batch in range(b):
+      distances, positions = indexes[batch].search(keys[batch])
+      read_weights.append(distances)
+      read_positions.append(T.clamp(positions, 0, self.mem_size - 1))
+
+    &#47&#47 add least used mem to read positions
+    read_positions = T.stack(read_positions, 0)
+
+    &#47&#47 TODO: explore possibility of reading co-locations and such
+    &#47&#47 if read_collocations:
+      &#47&#47 read the previous and the next memory locations
+      &#47&#47 read_positions = T.cat([read_positions, read_positions-1, read_positions+1], -1)
+
+    read_positions = var(read_positions)
+    read_positions = T.cat([read_positions, last_used_mem.unsqueeze(1)], 2)
+    &#47&#47 print(read_positions.squeeze())
+
+    &#47&#47 add weight of 0 for least used mem block
+    read_weights = T.stack(read_weights, 0)
+    <a id="change">new_block = read_weights.new(b, 1, 1)</a>
+    new_block.fill_(δ)
+    read_weights = <a id="change">T.cat([read_weights, new_block], 2)</a>
+    <a id="change">read_weights = var(read_weights)</a>
+    &#47&#47 condition read weights by their usages
+    relevant_usages = usage.gather(1, read_positions.squeeze())
+    read_weights = (read_weights.squeeze(1) * relevant_usages).unsqueeze(1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 TODO: explore possibility of reading co-locations or ranges and such
+    (b, r, k) = read_positions.size()
+    read_positions = var(read_positions)
+    read_positions = T.cat(<a id="change">[read_positions.view(b, -1), last_used_mem]</a>, 1)
+
+    (b, m, w) = memory.size()
+    visible_memory = memory.gather(1, read_positions.unsqueeze(2).expand(b, r*k+1, w))
+
+    <a id="change">read_weights = F.softmax(θ(visible_memory, keys), dim=2)</a>
+    read_vectors = T.bmm(read_weights, visible_memory)
+
+    return read_vectors, read_positions, read_weights, visible_memory
+</code></pre>

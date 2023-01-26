@@ -1,0 +1,33 @@
+<html><h3>ad18add8ae7da04213813b5675b903bbf4be1ebd,gpytorch/lazy/kronecker_product_added_diag_lazy_tensor.py,KroneckerProductAddedDiagLazyTensor,_root_inv_decomposition,#KroneckerProductAddedDiagLazyTensor#Any#,219
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    evals_, evecs_ = lt_.symeig(eigenvectors=True)
+                    sub_evals.append(DiagLazyTensor(evals_ / dlt_.diag_values))
+                    sub_evecs.append(evecs_)
+                <a id="change">Lambda_I = KroneckerProductDiagLazyTensor(*sub_evals).add_jitter(1.0)</a>
+                <a id="change">S = KroneckerProductLazyTensor(*sub_evecs)</a>
+                <a id="change">return MatmulLazyTensor(S, Lambda_I.inverse().sqrt())</a>
+            else:
+                &#47&#47 again, we compute the root decomposition by pulling across the diagonals
+                dlt_sqrt, evals_p_i, evecs = _symmetrize_kpadlt_constructor(lt, dlt)
+                dlt_inv_root = dlt_sqrt.inverse()</code></pre><h3>After Change</h3><pre><code class='java'>
+        if isinstance(self.diag_tensor, KroneckerProductDiagLazyTensor):
+            if all(isinstance(tdiag, ConstantDiagLazyTensor) for tdiag in dlt.lazy_tensors):
+                evals_p_i, evecs = _constant_kpadlt_constructor(lt, dlt)
+                <a id="change">evals_p_i_inv_root = DiagLazyTensor(evals_p_i.diag().reciprocal().sqrt())</a>
+                &#47&#47 here we need to scale the eigenvectors by the constants as
+                &#47&#47 A = D^{1/2} Q (\kron a_i^{-1} \Lambda_i + I) Q^\top D^{1/2}
+                &#47&#47 so that we compute
+                &#47&#47 L^{-1/2} = D^{1/2} Q (\kron a_i^{-1} \Lambda_i + I)^{1/2}
+                &#47&#47       = (\kron a_i^{1/2} Q_i)(\kron a_i^{-1} \Lambda_i + I)^{-1/2}
+                <a id="change">scaled_evecs_list = []</a>
+                for evec_, dlt_ in zip(evecs.lazy_tensors, dlt.lazy_tensors):
+                    scaled_evecs_list.append(evec_ * dlt_.diag_values.sqrt())
+                <a id="change">scaled_evecs = KroneckerProductLazyTensor(*scaled_evecs_list)</a>
+                <a id="change">return MatmulLazyTensor(scaled_evecs, evals_p_i_inv_root)</a>
+
+            &#47&#47 again, we compute the root decomposition by pulling across the diagonals
+            dlt_sqrt, evals_p_i, evecs = _symmetrize_kpadlt_constructor(lt, dlt)
+            dlt_inv_root = dlt_sqrt.inverse()</code></pre><img src="171818173.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/ad18add8ae7da04213813b5675b903bbf4be1ebd#diff-0f50cb4e0b4cf9c73183d596ab2cb722f4c2449c8ff5dd220f4262f778146078L226' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: ad18add8ae7da04213813b5675b903bbf4be1ebd</div><div id='time'> Time: 2021-02-10</div><div id='author'> Author: wjm363@nyu.edu</div><div id='file'> File Name: gpytorch/lazy/kronecker_product_added_diag_lazy_tensor.py</div><div id='class'> Class Name: KroneckerProductAddedDiagLazyTensor</div><div id='method'> Method Name: _root_inv_decomposition</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/2bde0e217c491b62dd5e29f8150d4728e7880e8c#diff-fbff7f71ccfbf7ebde62f59690c8d068c23e65f9e02e63dcdc917d2b181e45f6L122' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 2bde0e217c491b62dd5e29f8150d4728e7880e8c</div><div id='time'> Time: 2017-08-18</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/__init__.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: mvn_kl_divergence</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/ad18add8ae7da04213813b5675b903bbf4be1ebd#diff-0f50cb4e0b4cf9c73183d596ab2cb722f4c2449c8ff5dd220f4262f778146078L199' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: ad18add8ae7da04213813b5675b903bbf4be1ebd</div><div id='time'> Time: 2021-02-10</div><div id='author'> Author: wjm363@nyu.edu</div><div id='file'> File Name: gpytorch/lazy/kronecker_product_added_diag_lazy_tensor.py</div><div id='class'> Class Name: KroneckerProductAddedDiagLazyTensor</div><div id='method'> Method Name: _root_decomposition</div><BR>

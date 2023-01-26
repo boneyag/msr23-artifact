@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        G_z1 = Gm.forward(z1_stop)
+        x2 = y2 - G_z1
+        <a id="change">x2_stop = Variable(x2.data, requires_grad=True)</a>
+
+        F_x2 = Fm.forward(x2_stop)
+        x1 = y1 - F_x2
+        x1_stop = Variable(x1.data, requires_grad=True)
+
+        &#47&#47 Compute outputs building a sub-graph
+        z1 = x1_stop + F_x2
+        y2_ = x2_stop + G_z1
+        <a id="change">y1_ = z1</a>
+
+        &#47&#47 Perform full backward pass on graph...
+        y = torch.cat([y1_, y2_], dim=1)
+        dd = torch.autograd.grad(y, <a id="change">(x1_stop, x2_stop)</a> + tuple(Gm.parameters()) + tuple(Fm.parameters()), grad_output, retain_graph=False)
+        GWeights = [p for p in Gm.parameters()]
+        GWgrads = dd[2:2+len(GWeights)]
+        FWgrads = dd[2+len(GWeights):]</code></pre><h3>After Change</h3><pre><code class='java'>
+        GWeights = [p for p in Gm.parameters()]
+        x2 = y2 - Gm.forward(z1_stop)
+        x1 = y1 - Fm.forward(x2)
+        x_stop = <a id="change">Variable(torch.cat([x1, x2], dim=1).data, requires_grad=True)</a>
+
+        &#47&#47 compute outputs building a sub-graph
+        <a id="change">x1_, x2_ = torch.chunk(x_stop, chunks=2, dim=1)</a>
+        y1_ = x1_ + Fm.forward(x2_)
+        y2_ = x2_ + Gm.forward(y1_)
+        y = torch.cat([y1_, y2_], dim=1)
+</code></pre>

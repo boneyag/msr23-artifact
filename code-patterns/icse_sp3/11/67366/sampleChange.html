@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 To properly test the performance of our model, we need to split the data
+    &#47&#47 according to time: we train on older pushes and evaluate on newer pushes.
+    def train_test_split(self, X, y):
+        <a id="change">pushes = OrderedDict()</a>
+        for test_data in test_scheduling.get_test_scheduling_history(self.granularity):
+            rev = test_data["revs"][0]
+            name = test_data["name"]
+
+            if self.granularity == "label" and not name.startswith("test-"):
+                continue
+
+            if rev in pushes:
+                pushes[rev] += 1
+            else:
+                pushes[rev] = 1
+
+        <a id="change">train_push_len = math.floor(0.9 * len(pushes))</a>
+        <a id="change">train_pushes = list(pushes.values())[:train_push_len]</a>
+        <a id="change">train_len = sum(count for count in train_pushes)</a>
+        print(
+            f"{train_push_len} pushes in the training set (corresponding to {train_len} push/jobs)"
+        )
+        return X[:train_len], X[train_len:], y[:train_len], y[train_len:]</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 according to time: we train on older pushes and evaluate on newer pushes.
+    def train_test_split(self, X, y):
+        pushes, train_push_len = self.get_pushes()
+        <a id="change">train_len = sum(
+            len(push["failures"]) + len(push["passes"])
+            for push in pushes[:train_push_len]
+        )</a>
+        print(
+            f"{train_push_len} pushes in the training set (corresponding to {train_len} push/jobs)"
+        )
+        return X[:train_len], X[train_len:], y[:train_len], y[train_len:]</code></pre>

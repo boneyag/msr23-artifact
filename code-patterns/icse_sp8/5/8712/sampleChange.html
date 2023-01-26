@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 important as it introduces a spatial model that ICA lacks and greatly
+&#47&#47 reduces the high-frequency signal
+from scipy import ndimage
+<a id="change">for image in fmri_data.T:
+    &#47&#47 This works efficiently because image is a view on fmri_data
+    image[...] = ndimage.gaussian_filter(image, 1.5)
+
+&#47&#47 Take the mean along axis 3: the direction of time
+</a>mean_img = np.mean(fmri_data, axis=3)
+
+&#47&#47 Mask non brain areas
+from nisl import masking</code></pre><h3>After Change</h3><pre><code class='java'>
+from nisl import io
+
+masker = io.NiftiMasker(smooth=1.5)
+<a id="change">data_masked = masker.fit_transform(dataset.func[0])</a>
+
+&#47&#47 Concatenate all the subjects
+&#47&#47fmri_data = np.concatenate(data_masked, axis=1)
+fmri_data = data_masked
+
+&#47&#47 Take the mean along axis 3: the direction of time
+mean_img = masker.inverse_transform(fmri_data.mean(axis=-1))
+
+
+&#47&#47&#47&#47&#47&#47 Apply ICA &#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+
+from sklearn.decomposition import FastICA
+n_components = 20
+ica = FastICA(n_components=n_components, random_state=42)
+components_masked = ica.fit_transform(data_masked)
+
+&#47&#47 We normalize the estimated components, for thresholding to make sens
+components_masked -= components_masked.mean(axis=0)
+components_masked /= components_masked.std(axis=0)
+&#47&#47 Threshold
+components_masked[np.abs(components_masked) &lt; .5] = 0
+
+&#47&#47 Now we inverting the masking operation, to go back to a full 3D
+&#47&#47 representation
+component_img = <a id="change">masker.inverse_transform(components_masked)</a>
+<a id="change">components = component_img.get_data()</a>
+
+&#47&#47 Using a masked array is important to have transparency in the figures
+components = np.ma.masked_equal(components, 0, copy=False)
+</code></pre>

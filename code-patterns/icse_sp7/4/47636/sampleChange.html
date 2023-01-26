@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.R2Y = pd.Series({x:sm.OLS(self.y.data, sm.add_constant(X.drop(x, axis=1))).fit().rsquared
+            for x in list(X.columns)})
+        self.SDX = X.std()
+        self.SDY = <a id="change">self.y.data.std()</a>
+        self.meanX = X.mean(0)
+
+        for t in self.terms.values():
+            t._setup() </code></pre><h3>After Change</h3><pre><code class='java'>
+            &quotr2_y&quot:pd.Series({x:pd.stats.api.ols(y=self.y.data.squeeze(), x=X.drop(x, axis=1)).r2
+                for x in list(X.columns)}),
+            &quotsd_x&quot:X.std(),
+            &quotsd_y&quot:<a id="change">self.y.data.std()</a>,
+            &quotmean_x&quot:X.mean(axis=0),
+            &quotmean_y&quot:self.y.data.mean()
+        }
+
+        &#47&#47 save some info possibly useful for diagnostics, and send to ModelResults
+        &#47&#47 mat = correlation matrix of X, w/ diagonal replaced by X means
+        mat = X.corr()
+        for x in list(mat.columns): mat.loc[x,x] = default_prior_info[&quotmean_x&quot][x]
+        self._diagnostics = {
+            &#47&#47 the Variance Inflation Factors (VIF), which is possibly useful for diagnostics
+            &quotVIF&quot:1/<a id="change">(1 - default_prior_info[&quotr2_x&quot])</a>,
+            &quotcorr_mean_X&quot:mat
+        }
+</code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  &#47&#47 tfos: /path/to/mnist/tfr/train/part-r-*
+  image_pattern = ctx.absolute_path(args.images_labels)
+
+  options = <a id="change">tf.data.Options()</a>
+  options.experimental_distribute.auto_shard = False
+
+  ds = tf.data.Dataset.list_files(image_pattern)
+  ds = ds.with_options(options)
+  ds = ds.repeat(args.epochs).shuffle(BUFFER_SIZE)
+  ds = ds.interleave(tf.data.TFRecordDataset)
+  <a id="change">train_datasets_unbatched = ds.map(parse_tfos)</a>
+
+  def build_and_compile_cnn_model():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Conv2D(32, 3, activation=&quotrelu&quot, input_shape=(28, 28, 1)),</code></pre><h3>After Change</h3><pre><code class='java'>
+  ds = ds.repeat(args.epochs).shuffle(BUFFER_SIZE)
+  ds = ds.interleave(tf.data.TFRecordDataset)
+
+  <a id="change">if args.data_format == &quottfds&quot:
+    train_datasets_unbatched = ds.map(parse_tfds)
+  else:  &#47&#47 &quottfos&quot
+    train_datasets_unbatched = ds.map(parse_tfos)
+
+ </a> def build_and_compile_cnn_model():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Conv2D(32, 3, activation=&quotrelu&quot, input_shape=(28, 28, 1)),
+        tf.keras.layers.MaxPooling2D(),</code></pre>

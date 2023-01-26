@@ -1,0 +1,64 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            end = self._capacity - 1
+        if end &lt; 0:
+            end += self._capacity
+        <a id="change">return self._reduce_helper(start, end, 1, 0, self._capacity - 1)</a>
+
+    def __setitem__(self, idx, val):
+        &#47&#47 index of the leaf
+        idx += self._capacity</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Init result with neutral element.
+        result = self.neutral_element
+        &#47&#47 Map start/end to our actual index space (second half of array).
+        <a id="change">start += self.capacity</a>
+        end += self.capacity
+
+        &#47&#47 Example:
+        &#47&#47 internal-array (first half=sums, second half=actual values):
+        &#47&#47 0 1 2 3 | 4 5 6 7
+        &#47&#47 - 6 1 5 | 1 0 2 3
+
+        &#47&#47 tree.sum(0, 3) = 3
+        &#47&#47 internally: start=4, end=7 -&gt; sum values 1 0 2 = 3.
+
+        &#47&#47 Iterate over tree starting in the actual-values (second half)
+        &#47&#47 section.
+        &#47&#47 1) start=4 is even -&gt; do nothing.
+        &#47&#47 2) end=7 is odd -&gt; end-- -&gt; end=6 -&gt; add value to result: result=2
+        &#47&#47 3) int-divide start and end by 2: start=2, end=3
+        &#47&#47 4) start still smaller end -&gt; iterate once more.
+        &#47&#47 5) start=2 is even -&gt; do nothing.
+        &#47&#47 6) end=3 is odd -&gt; end-- -&gt; end=2 -&gt; add value to result: result=1
+        &#47&#47    NOTE: This adds the sum of indices 4 and 5 to the result.
+
+        &#47&#47 Iterate as long as start != end.
+        <a id="change">while start &lt; end:
+
+            &#47&#47 If start is odd: Add its value to result and move start to
+            &#47&#47 next even value.
+            if start & 1:
+                result = self.operation(result, self.value[start])
+                start += 1
+
+            &#47&#47 If end is odd: Move end to previous even value, then add its
+            &#47&#47 value to result. NOTE: This takes care of excluding `end` in any
+            &#47&#47 situation.
+            if end & 1:
+                end -= 1
+                result = self.operation(result, self.value[end])
+
+            &#47&#47 Divide both start and end by 2 to make them "jump" into the
+            &#47&#47 next upper level reduce-index space.
+            start //= 2
+            end //= 2
+
+            &#47&#47 Then repeat till start == end.
+
+       </a> <a id="change">return result</a>
+
+    def __setitem__(self, idx, val):
+        
+        Inserts/overwrites a value in/into the tree.</code></pre>

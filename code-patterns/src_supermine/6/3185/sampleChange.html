@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        p = F.split(x, axis=-1, num_outputs=4)
+        ox = F.broadcast_add(F.broadcast_mul(p[0] * self._stds[0] + self._means[0], a[2]), a[0])
+        oy = F.broadcast_add(F.broadcast_mul(p[1] * self._stds[1] + self._means[1], a[3]), a[1])
+        ow = <a id="change">F.broadcast_mul(F.exp(p[2] * self._stds[2]) + self._means[2], a[2]) / 2</a>
+        oh = F.broadcast_mul(F.exp(p[3] * self._stds[3]) + self._means[3], a[3]) / 2
+        return F.concat(ox - ow, oy - oh, ox + ow, oy + oh, dim=-1)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        p = F.split(x, axis=-1, num_outputs=4)
+        ox = F.broadcast_add(F.broadcast_mul(p[0] * self._stds[0] + self._means[0], a[2]), a[0])
+        oy = F.broadcast_add(F.broadcast_mul(p[1] * self._stds[1] + self._means[1], a[3]), a[1])
+        tw = <a id="change">F.exp(p[2] * self._stds[2] + self._means[2])</a>
+        th = F.exp(p[3] * self._stds[3] + self._means[2])
+        if self._clip:
+            <a id="change">tw = F.minimum(tw, self._clip)</a>
+            th = F.minimum(th, self._clip)
+        <a id="change">ow = F.broadcast_mul(tw, a[2]) / 2</a>
+        oh = F.broadcast_mul(th, a[3]) / 2
+        return F.concat(ox - ow, oy - oh, ox + ow, oy + oh, dim=-1)
+
+</code></pre>

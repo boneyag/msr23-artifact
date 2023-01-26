@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def calc_q_loss(self, batch):
+        &quot&quot&quotCompute the Q value loss using predicted and target Q values from the appropriate networks&quot&quot&quot
+        q_preds = <a id="change">self.net(batch[&quotstates&quot])</a>
+        act_q_preds = q_preds.gather(-1, batch[&quotactions&quot].long().unsqueeze(-1)).squeeze(-1)
+        <a id="change">next_q_preds = self.net(batch[&quotnext_states&quot])</a>
+        &#47&#47 Bellman equation: compute max_q_targets using reward and max estimated Q values (0 if no next_state)
+        max_next_q_preds, _ = next_q_preds.max(dim=-1, keepdim=True)
+        max_q_targets = batch[&quotrewards&quot] + self.gamma * (1 - batch[&quotdones&quot]) * max_next_q_preds
+        max_q_targets = max_q_targets.detach()</code></pre><h3>After Change</h3><pre><code class='java'>
+    def calc_q_loss(self, batch):
+        &quot&quot&quotCompute the Q value loss using predicted and target Q values from the appropriate networks&quot&quot&quot
+        states = batch[&quotstates&quot]
+        <a id="change">next_states = batch[&quotnext_states&quot]</a>
+        <a id="change">if self.body.env.is_venv:
+            states = math_util.venv_unpack(states)
+            next_states = math_util.venv_unpack(next_states)
+       </a> <a id="change">q_preds = self.net(states)</a>
+        <a id="change">next_q_preds = self.net(next_states)</a>
+        <a id="change">if self.body.env.is_venv:
+            q_preds = math_util.venv_pack(q_preds, self.body.env.num_envs)
+            next_q_preds = math_util.venv_pack(next_q_preds, self.body.env.num_envs)
+       </a> act_q_preds = q_preds.gather(-1, batch[&quotactions&quot].long().unsqueeze(-1)).squeeze(-1)
+        &#47&#47 Bellman equation: compute max_q_targets using reward and max estimated Q values (0 if no next_state)
+        max_next_q_preds, _ = next_q_preds.max(dim=-1, keepdim=True)
+        max_q_targets = batch[&quotrewards&quot] + self.gamma * (1 - batch[&quotdones&quot]) * max_next_q_preds</code></pre>

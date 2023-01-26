@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            dataset_gen,
+        )
+        for softmax, params, output_seq_len in zip(*out):
+            softmax = <a id="change">np.roll(softmax, 1, axis=1)</a>  &#47&#47 fix bla
+            &#47&#47 decode encoded params from json. On python&lt;=3.5 this are bytes, else it already is a str
+            enc_param = params[0]
+            enc_param = json.loads(enc_param.decode("utf-8") if isinstance(enc_param, bytes) else enc_param)
+            <a id="change">decoded = self.ctc_decoder.decode(softmax[:output_seq_len[0]])</a>
+            &#47&#47 return prediction result
+            yield NetworkPredictionResult(softmax=softmax,
+                                          output_length=output_seq_len,
+                                          decoded=decoded,</code></pre><h3>After Change</h3><pre><code class='java'>
+    def predict_dataset(self, dataset) -&gt; Generator[NetworkPredictionResult, None, None]:
+        dataset_gen = self.create_dataset_inputs(dataset, self.batch_size, self.network_proto.features, self.network_proto.backend.shuffle_buffer_size,
+                                                 mode=&quottest&quot)
+        <a id="change">out = sum([list(zip(self.predict_raw_batch(d[0][&quotinput_data&quot], d[0][&quotinput_sequence_length&quot]), d[0][&quotinput_data_params&quot])) for d in dataset_gen], [])</a>
+        for pred, params in out:
+            enc_param = params[0].numpy()
+            pred.params = json.loads(enc_param.decode("utf-8") if isinstance(enc_param, bytes) else enc_param)
+            yield pred</code></pre>

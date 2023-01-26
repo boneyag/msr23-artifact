@@ -1,0 +1,91 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    cased_score, uncased_score = None, None
+    cased_score_history, uncased_score_history = [], []
+    <a id="change">for i in range(1, iterations + 1):
+      print("Start train iteration:{}/{}".format(i, iterations))
+      history = None
+      if params["use_ctl"]:
+        if not self.use_tpu:
+          raise NotImplementedError(
+              "Custom training loop on GPUs is not implemented.")
+        train_steps_per_eval = tf.convert_to_tensor(
+            flags_obj.steps_between_evals, dtype=tf.int32)
+
+        &#47&#47 Runs training steps.
+        train_steps(train_ds_iterator, train_steps_per_eval)
+        train_loss = train_loss_metric.result().numpy().astype(float)
+        logging.info("Train Step: %d/%d / loss = %s",
+                     i * flags_obj.steps_between_evals, flags_obj.train_steps,
+                     train_loss)
+
+        checkpoint_name = checkpoint.save(
+            os.path.join(
+                flags_obj.model_dir,
+                "ctl_step_{}.ckpt".format(i * flags_obj.steps_between_evals)))
+        logging.info("Saved checkpoint to %s", checkpoint_name)
+      else:
+        if self.use_tpu:
+          raise NotImplementedError(
+              "Keras model.fit on TPUs is not implemented.")
+        history = model.fit(
+            train_ds,
+            initial_epoch=i - 1,
+            epochs=i,
+            steps_per_epoch=flags_obj.steps_between_evals,
+            callbacks=callbacks,
+            &#47&#47 If TimeHistory is enabled, progress bar would be messy. Increase
+            &#47&#47 the verbose level to get rid of it.
+            verbose=(2 if flags_obj.enable_time_history else 1))
+        logging.info("Train history: {}".format(history.history))
+
+      print("End train iteration:{}/{} global step:{}".format(
+          i,
+          iterations,
+          i*flags_obj.steps_between_evals))
+
+      if (flags_obj.bleu_source and flags_obj.bleu_ref):
+        uncased_score, cased_score = self.eval()
+        cased_score_history.append([i, cased_score])
+        uncased_score_history.append([i, uncased_score])
+
+   </a> stats = ({
+        "loss": train_loss
+    } if history is None else misc.build_stats(history, callbacks))
+    if uncased_score and cased_score:</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Runs training steps.
+        train_steps(train_ds_iterator,
+                    tf.convert_to_tensor(train_steps_per_eval, dtype=tf.int32))
+        <a id="change">current_step += train_steps_per_eval</a>
+        train_loss = train_loss_metric.result().numpy().astype(float)
+        logging.info("Train Step: %d/%d / loss = %s",
+                     current_step, flags_obj.train_steps, train_loss)
+
+        checkpoint_name = checkpoint.save(
+            os.path.join(
+                flags_obj.model_dir,
+                "ctl_step_{}.ckpt".format(current_step)))
+        logging.info("Saved checkpoint to %s", checkpoint_name)
+      else:
+        if self.use_tpu:
+          raise NotImplementedError(
+              "Keras model.fit on TPUs is not implemented.")
+        history = model.fit(
+            train_ds,
+            initial_epoch=current_iteration,
+            epochs=current_iteration + 1,
+            steps_per_epoch=train_steps_per_eval,
+            callbacks=callbacks,
+            &#47&#47 If TimeHistory is enabled, progress bar would be messy. Increase
+            &#47&#47 the verbose level to get rid of it.
+            verbose=(2 if flags_obj.enable_time_history else 1))
+        <a id="change">current_step += train_steps_per_eval</a>
+        logging.info("Train history: {}".format(history.history))
+
+      print(<a id="change">"End train iteration at global step:{}".format(current_step)</a>)
+
+      if (flags_obj.bleu_source and flags_obj.bleu_ref):
+        uncased_score, cased_score = self.eval()</code></pre>

@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    all_snapshots: Iterable[Snapshot] = (*full_snapshots.values(), *snapshot_subsets)
+    if request.strip_source_roots:
+        all_sources_fields = (*full_snapshots.keys(), *digest_subset_requests.keys())
+        <a id="change">stripped_snapshots = await MultiGet(
+            Get(
+                SourceRootStrippedSources,
+                StripSourcesFieldRequest(
+                    sources_field,
+                    specified_files_snapshot=snapshot,
+                    for_sources_types=request.for_sources_types,
+                    enable_codegen=request.enable_codegen,
+                ),
+            )
+            for sources_field, snapshot in zip(all_sources_fields, all_snapshots)
+        )</a>
+        all_snapshots = (stripped_snapshot.snapshot for stripped_snapshot in stripped_snapshots)
+    result = await Get(Snapshot, MergeDigests(snapshot.digest for snapshot in all_snapshots))
+    return SourceFiles(result)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    all_snapshots: Iterable[Snapshot] = (*full_snapshots.values(), *snapshot_subsets)
+    result = await Get(Snapshot, MergeDigests(snapshot.digest for snapshot in all_snapshots))
+    unrooted_files = all_unrooted_files.intersection(result.files)
+    return SourceFiles(result, <a id="change">tuple(sorted(unrooted_files))</a>)
+
+
+def rules():</code></pre>

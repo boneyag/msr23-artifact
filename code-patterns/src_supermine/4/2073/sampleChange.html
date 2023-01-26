@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        policy_loss = -torch.mean(q_values_tp0_min)
+
+        &#47&#47 critic loss
+        actions_tp1 = <a id="change">self.target_actor(states_tp1).detach()</a>
+        actions_tp1 = self._add_noise_to_actions(actions_tp1)
+        q_values_t = [
+            x(states_t, actions_t).squeeze_(dim=3)
+            for x in self.critics</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 [bs; num_heads; 1] -&gt; many-heads view transform
+        &#47&#47 [{bs * num_heads}; 1]
+        q_target_t = <a id="change">(
+            rewards_t + (1 - done_t) * gammas * q_values_tp1
+        ).view(-1, 1).detach()</a>
+
+        value_loss = [
+            self.critic_criterion(x, q_target_t).mean() for x in q_values_t
+        ]</code></pre>

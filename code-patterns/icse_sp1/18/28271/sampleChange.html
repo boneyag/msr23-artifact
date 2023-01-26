@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def test_kissgp_gp_mean_abs_error():
+    train_x, train_y, test_x, test_y = make_data()
+    <a id="change">gp_model</a> = <a id="change">GPRegressionModel()</a>
+
+    &#47&#47 Optimize the model
+    gp_model.train()
+    optimizer = optim.Adam(<a id="change">gp_model.parameters()</a>, lr=0.1)
+    optimizer.n_iter = 0
+    for i in range(25):
+        optimizer.zero_grad()
+        output = gp_model(train_x)
+        loss = -gp_model.marginal_log_likelihood(output, train_y)
+        loss.backward()
+        optimizer.n_iter += 1
+        optimizer.step()
+
+    &#47&#47 Test the model
+    gp_model.eval()
+    <a id="change">gp_model.condition(train_x, train_y)</a>
+    test_preds = gp_model(test_x).mean()
+    mean_abs_error = torch.mean(torch.abs(test_y - test_preds))
+
+    assert(mean_abs_error.data.squeeze()[0] &lt; 0.05)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def test_kissgp_gp_mean_abs_error():
+    train_x, train_y, test_x, test_y = make_data()
+    <a id="change">likelihood = GaussianLikelihood()</a>
+    <a id="change">gp_model</a> = <a id="change">GPRegressionModel(train_x.data, train_y.data, likelihood)</a>
+
+    &#47&#47 Optimize the model
+    gp_model.train()
+    <a id="change">likelihood.train()</a>
+
+    optimizer = optim.Adam(<a id="change">list(gp_model.parameters()) + list(likelihood.parameters())</a>, lr=0.1)
+    optimizer.n_iter = 0
+    for i in range(25):
+        optimizer.zero_grad()
+        output = gp_model(train_x)
+        loss = -gp_model.marginal_log_likelihood(likelihood, output, train_y)
+        loss.backward()
+        optimizer.n_iter += 1
+        optimizer.step()
+
+    &#47&#47 Test the model
+    gp_model.eval()
+    <a id="change">likelihood.eval()</a>
+
+    test_preds = likelihood(gp_model(test_x)).mean()
+    mean_abs_error = torch.mean(torch.abs(test_y - test_preds))
+</code></pre>

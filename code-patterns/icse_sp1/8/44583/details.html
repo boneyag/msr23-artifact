@@ -1,0 +1,29 @@
+<html><h3>ef3f8d221a5afefb01d655448ce7e3f537399810,src/python/pants/engine/exp/engine.py,LocalMultiprocessEngine,reduce,#LocalMultiprocessEngine#Any#Any#,446
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      pending_submission[promise] = plan
+      submit_satisfied_pending()
+      &#47&#47 Saturate the pool before we block on a result for maximum processing parallelism.
+      if <a id="change">len(in_flight)</a> == self._pool_size:
+        process_one_result()
+
+    &#47&#47 Consume the tail of pending submissions and nodes in_flight.</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 1. Whenever we don&quott have enough work to saturate the pool, request more.
+    &#47&#47 2. Whenever the pool is not saturated, submit currently pending work.
+    for step_batch in self._scheduler.schedule(build_request):
+      <a id="change">if not step_batch:
+        &#47&#47 A batch should only be empty if all dependency work is currently blocked/running.
+        if not in_flight and not pending_submission:
+          raise Exception(&quotScheduler provided an empty batch while no work is in progress!&quot)
+      else:
+        &#47&#47 Submit and wait for work for as long as we&quotre able to keep the pool saturated.
+        pending_submission.update(step_batch)
+        while submit_until(self._pool_size) &gt; 0:
+          await_one()
+      &#47&#47 Await at least one entry per scheduling loop.
+     </a> submit_until(0)
+      if in_flight:
+        await_one()
+</code></pre><img src="208689024.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/ef3f8d221a5afefb01d655448ce7e3f537399810#diff-91d12bd664e3e21b34c345fd387c44f253199fe8ce9f00df083c0b24b58ebf62L183' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: ef3f8d221a5afefb01d655448ce7e3f537399810</div><div id='time'> Time: 2016-01-26</div><div id='author'> Author: stuhood@gmail.com</div><div id='file'> File Name: src/python/pants/engine/exp/engine.py</div><div id='class'> Class Name: LocalMultiprocessEngine</div><div id='method'> Method Name: reduce</div><BR><BR><div id='link'><a href='https://github.com/pysb/pysb/commit/47374cd825213029b578e5a22ba9836c0f55d97a#diff-9e0313a471a2f4efea3e10ad0725f0ebec706b97e75ca1c43e35b2934cf48d2cL135' target='_blank'>Link</a></div><div id='project'> Project Name: pysb/pysb</div><div id='commit'> Commit Name: 47374cd825213029b578e5a22ba9836c0f55d97a</div><div id='time'> Time: 2015-07-03</div><div id='author'> Author: oo.ortega2247@gmail.com</div><div id='file'> File Name: pysb/tools/pysb_pyurdme.py</div><div id='class'> Class Name: PyurdmeSimulator</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/18a26fcfb1983af7fba69db9bdce7ba5e6a9945f#diff-39a19a6cb643aa8a01d0427f3d711935b5ca51462388ac40f5a7bf0e20f87976L98' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: 18a26fcfb1983af7fba69db9bdce7ba5e6a9945f</div><div id='time'> Time: 2020-06-29</div><div id='author'> Author: VoVAllen@users.noreply.github.com</div><div id='file'> File Name: python/dgl/data/graph_serialize.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: save_graphs</div><BR>

@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            x = cnn_layer(x)
+
+        user_representations = x.view(batch_size, dim, -1)
+        pooled_representations = (<a id="change">user_representations</a>
+                                  .max(-1)[<a id="change">0</a>]
+                                  .view(batch_size, dim))
+
+        return pooled_representations</code></pre><h3>After Change</h3><pre><code class='java'>
+        for i, cnn_layer in enumerate(self.cnn_layers):
+            &#47&#47 Pad so that the CNN doesn&quott have the future
+            &#47&#47 of the sequence in its receptive field.
+            x = <a id="change">F.pad(x, (0, 0, self.kernel_width - min(i, 1), 0))</a>
+            x = F.relu(cnn_layer(x))
+
+        <a id="change">x = x.squeeze(3)</a>
+
+        return x[:, :, :-1], x[:, :, -1]
+
+    def forward(self, user_representations, targets):</code></pre>

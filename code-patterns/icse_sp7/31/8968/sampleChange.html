@@ -1,0 +1,64 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        Test the update_lights function with both lights and groups.
+        self.setup_mocks_for_update_lights()
+        self.mock_bridge.allow_hue_groups = True
+        <a id="change">self.mock_lights = [&quotsome&quot, &quotlight&quot]</a>
+        <a id="change">self.mock_groups</a> = [&quotand&quot, &quotgroups&quot]
+
+        with patch(&quothomeassistant.components.light.hue.process_lights&quot,
+                   return_value=<a id="change">self.mock_lights</a>) as mock_process_lights:
+            <a id="change">with patch(&quothomeassistant.components.light.hue.process_groups&quot,
+                       return_value=self.mock_groups) \
+                    as mock_process_groups:
+                hue_light.unthrottled_update_lights(
+                    self.hass, self.mock_bridge, self.mock_add_devices)
+
+                mock_process_lights.assert_called_once_with(
+                    self.hass, self.mock_api, self.mock_bridge, mock.ANY)
+                mock_process_groups.assert_called_once_with(
+                    self.hass, self.mock_api, self.mock_bridge, mock.ANY)
+                self.mock_add_devices.assert_called_once_with(
+                    self.mock_lights)
+
+   </a> @MockDependency(&quotphue&quot)
+    def test_update_lights_with_two_bridges(self, mock_phue):
+        Test the update_lights function with two bridges.
+        self.setup_mocks_for_update_lights()</code></pre><h3>After Change</h3><pre><code class='java'>
+        Test the update_lights function with both lights and groups.
+        self.setup_mocks_for_update_lights()
+        self.mock_bridge.allow_hue_groups = True
+        mock_lights = <a id="change">[
+            self.build_mock_light(self.mock_bridge, 42, &quotsome&quot),
+            self.build_mock_light(self.mock_bridge, 84, &quotlight&quot),
+        ]</a>
+        mock_groups = [
+            self.build_mock_light(self.mock_bridge, 15, &quotand&quot),
+            self.build_mock_light(<a id="change">self.mock_bridge</a>, 72, &quotgroups&quot),
+        ]
+
+        <a id="change">with patch(HUE_LIGHT_NS + &quotprocess_lights&quot,
+                   return_value=mock_lights) as mock_process_lights:
+            with patch(HUE_LIGHT_NS + &quotprocess_groups&quot,
+                       return_value=mock_groups) as mock_process_groups:
+                with patch.object(self.hass.helpers.dispatcher,
+                                  &quotdispatcher_send&quot) as dispatcher_send:
+                    hue_light.unthrottled_update_lights(
+                        self.hass, self.mock_bridge, self.mock_add_devices)
+
+                    mock_process_lights.assert_called_once_with(
+                        self.hass, self.mock_api, self.mock_bridge, mock.ANY)
+                    mock_process_groups.assert_called_once_with(
+                        self.hass, self.mock_api, self.mock_bridge, mock.ANY)
+                    &#47&#47 note that mock_lights has been modified in place and
+                    &#47&#47 now contains both lights and groups
+                    self.mock_add_devices.assert_called_once_with(
+                        mock_lights)
+                    dispatcher_send.assert_not_called()
+
+   </a> @MockDependency(&quotphue&quot)
+    def test_update_lights_with_two_bridges(self, mock_phue):
+        Test the update_lights function with two bridges.
+        self.setup_mocks_for_update_lights()</code></pre>

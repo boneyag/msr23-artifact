@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      model.compile()
+      with self.test_session(use_gpu=True) as sess:
+        tf.global_variables_initializer().run()
+        <a id="change">for num in range(0, 2):
+          for i, model_dict in enumerate(model.data_layer.iterate_one_epoch()):
+            loss, _ = sess.run(
+              [model.loss, model.train_op],
+              feed_dict=model_dict,
+            )
+
+
+</a>class BasicText2TextWithAttentionTestOnHorovod(tf.test.TestCase):
+  def setUp(self):
+    print("Setting Up BasicSeq2SeqWithAttention on Horovod")
+    create_data(train_corpus_size=500)</code></pre><h3>After Change</h3><pre><code class='java'>
+        tf.global_variables_initializer().run()
+        sess.run(model.get_data_layer().iterator.initializer)
+        while True:
+          <a id="change">try:
+            loss, _ = sess.run(
+              [model.loss, model.train_op]
+            )
+          except tf.errors.OutOfRangeError:
+            break
+         </a> step += 1
+          if step &gt;=25:
+            break
+</code></pre>

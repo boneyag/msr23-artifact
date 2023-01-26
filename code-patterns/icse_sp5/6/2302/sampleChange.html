@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      This means the newly created layers will share variables with the original
+      ones.
+    
+    if <a id="change">tfe.in_eager_mode()</a>:
+      raise ValueError(&quotcopy() is not supported in eager mode&quot)
+    if self in replacements:
+      return replacements[self]
+    copied_inputs = [
+        layer.copy(replacements, variables_graph, shared)
+        for layer in self.in_layers
+    ]
+    if shared:
+      copy = self.shared(copied_inputs)
+    else:
+      copy = self.clone(copied_inputs)
+    if variables_graph is not None:
+      if shared:
+        raise ValueError(&quotCannot specify variables_graph when shared==True&quot)
+      variables = variables_graph.get_layer_variables(self)
+      if len(variables) &gt; 0:
+        with variables_graph._get_tf("Graph").as_default():
+          <a id="change">values = variables_graph.session.run(variables)</a>
+          copy.set_variable_initial_values(values)
+    return copy
+
+  def _as_graph_element(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+      variables = variables_graph.get_layer_variables(self)
+      if len(variables) &gt; 0:
+        with variables_graph._get_tf("Graph").as_default():
+          if <a id="change">tfe.in_eager_mode()</a>:
+            <a id="change">values = [v.numpy() for v in variables]</a>
+          else:
+            <a id="change">values = variables_graph.session.run(variables)</a>
+          copy.set_variable_initial_values(values)
+    return copy
+
+  def _as_graph_element(self):</code></pre>

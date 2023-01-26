@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    eKuf = tf.transpose(expectation(pXnew, (kernel, feature)))  &#47&#47 M x N (psi1)
+    Kuu = feature.Kuu(kernel, jitter=default_jitter())  &#47&#47 M x M
+    <a id="change">Luu = tf.cholesky(Kuu)</a>  &#47&#47 M x M
+
+    if not white:
+        q_mu = tf.matrix_triangular_solve(Luu, q_mu, lower=True)</code></pre><h3>After Change</h3><pre><code class='java'>
+    q_sqrt_r = tf.matrix_band_part(q_sqrt, -1, 0)  &#47&#47 D x M x M
+
+    eKuf = tf.transpose(expectation(pXnew, (kernel, feature)))  &#47&#47 M x N (psi1)
+    Luu = <a id="change">tf.cholesky(Kuu(feature, kernel, jitter=default_jitter()))</a>
+
+    if not white:
+        q_mu = tf.matrix_triangular_solve(Luu, q_mu, lower=True)
+        Luu_tiled = tf.tile(Luu[None, :, :], [num_func, 1, 1])  &#47&#47 remove line once issue 216 is fixed</code></pre>

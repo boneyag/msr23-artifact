@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            new_model, father_id = self.maximize_acq(model_ids)
+
+            history_item = self.add_model(new_model, x_train, y_train, x_test, y_test)
+            <a id="change">self.search_tree.add_child(father_id, history_item[&quotmodel_id&quot])</a>
+            self.gpr.incremental_fit(Graph(new_model).extract_descriptor(), history_item[&quotaccuracy&quot])
+            pickle_to_file(self, os.path.join(self.path, &quotsearcher&quot))
+            del new_model
+            backend.clear_session()</code></pre><h3>After Change</h3><pre><code class='java'>
+            pickle_to_file(self, os.path.join(self.path, &quotsearcher&quot))
+            return
+
+        <a id="change">if self.init_search_queue:
+            graph = self.init_search_queue.pop()
+            model = graph.produce_model()
+            history_item = self.add_model(model, x_train, y_train, x_test, y_test, constant.SEARCH_MAX_ITER)
+            self.init_gpr_x.append(graph.extract_descriptor())
+            self.init_gpr_y.append(history_item[&quotaccuracy&quot])
+            pickle_to_file(self, os.path.join(self.path, &quotsearcher&quot))
+            return
+
+       </a> if not self.init_search_queue and not self.gpr.first_fitted:
+            self.gpr.first_fit(self.init_gpr_x, self.init_gpr_y)
+
+        new_model, father_id = self.maximize_acq()
+
+        history_item = self.add_model(new_model, x_train, y_train, x_test, y_test, constant.SEARCH_MAX_ITER)
+        <a id="change">self.search_tree.add_child(father_id, history_item[&quotmodel_id&quot])</a>
+        self.gpr.incremental_fit(Graph(new_model).extract_descriptor(), history_item[&quotaccuracy&quot])
+        pickle_to_file(self, os.path.join(self.path, &quotsearcher&quot))
+
+    def maximize_acq(self):</code></pre>

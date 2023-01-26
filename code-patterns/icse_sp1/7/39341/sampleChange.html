@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        super().to(device=device, *args, *kwargs)
+
+    def _pre_generate_layers(self, batch_generator_offline, auto_save_file_name_prefix=None):
+        <a id="change">if not isinstance(batch_generator_offline, BatchGeneratorOffline):
+            raise ValueError(&quotExpecting a BatchGeneratorOffline.&quot)
+
+       </a> if not self._layers_initialized:
+            self._init_layers_observe_embedding(self._observe_embeddings, example_trace=next(batch_generator_offline.batches(1))[0])
+            self._init_layers()
+            self._layers_initialized = True
+
+        self._generate_valid_batch(batch_generator_offline)
+
+        self._layers_pre_generated = True
+        <a id="change">num_batches = len(batch_generator_offline)</a>
+        util.progress_bar_init(&quotPre-generating layers...&quot, num_batches * batch_generator_offline._batch_size, &quotTraces&quot)
+        i = 0
+        for batch in batch_generator_offline.batches():
+            i += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 self._generate_valid_batch(batch_generator_offline)
+
+        self._layers_pre_generated = True
+        <a id="change">batch_size = 10</a>
+        <a id="change">dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0, collate_fn=lambda x: Batch(x))</a>
+        &#47&#47 num_batches = len(batch_generator_offline)
+        &#47&#47 util.progress_bar_init(&quotPre-generating layers...&quot, num_batches * batch_generator_offline._batch_size, &quotTraces&quot)
+        i = 0
+        for i_batch, batch in <a id="change">enumerate(dataloader)</a>:
+            i += 1
+            layers_changed = self._polymorph(batch)
+            &#47&#47 util.progress_bar_update(i * batch_generator_offline._batch_size)</code></pre>

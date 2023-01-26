@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+class MlpPolicy(object):
+    def __init__(self, sess, ob_space, ac_space, nbatch, nsteps, reuse=False): &#47&#47pylint: disable=W0613
+        ob_shape = (nbatch,) + ob_space.shape
+        <a id="change">actdim = ac_space.shape[0]</a>
+        X = tf.placeholder(tf.float32, ob_shape, name=&quotOb&quot) &#47&#47obs
+        with tf.variable_scope("model", reuse=reuse):
+            activ = tf.tanh
+            h1 = activ(fc(X, &quotpi_fc1&quot, nh=64, init_scale=np.sqrt(2)))
+            h2 = activ(fc(h1, &quotpi_fc2&quot, nh=64, init_scale=np.sqrt(2)))
+            pi = fc(h2, &quotpi&quot, actdim, init_scale=0.01)
+            h1 = activ(fc(X, &quotvf_fc1&quot, nh=64, init_scale=np.sqrt(2)))
+            h2 = activ(fc(h1, &quotvf_fc2&quot, nh=64, init_scale=np.sqrt(2)))
+            vf = fc(h2, &quotvf&quot, 1)[:,0]
+            <a id="change">logstd = tf.get_variable(name="logstd", shape=[1, actdim],
+                initializer=tf.zeros_initializer())</a>
+
+        <a id="change">pdparam = tf.concat([pi, pi * 0.0 + logstd], axis=1)</a>
+
+        self.pdtype = make_pdtype(ac_space)
+        self.pd = self.pdtype.pdfromflat(pdparam)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            vf_h2 = activ(fc(vf_h1, &quotvf_fc2&quot, nh=64, init_scale=np.sqrt(2)))
+            vf = fc(vf_h2, &quotvf&quot, 1)[:,0]
+
+            <a id="change">self</a>.pd, self.pi = self.pdtype.pdfromlatent(pi_h2, init_scale=0.01)
+
+
+        a0 = self.pd.sample()</code></pre>

@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        print(f"Rank {rank} worker: Running epoch &#47&#47{epoch} for {stage}")
+        report_metric = stage != Stage.TRAIN or self.config.report_train_metrics
+
+        <a id="change">timer = time_utils.StageTimer()</a>
+        for batch_id, (inputs, targets, context) in enumerate(data_iter):
+            pre_batch()
+            &#47&#47 pass context to model to use in forward call if needed
+            model.contextualize(context)</code></pre><h3>After Change</h3><pre><code class='java'>
+            pre_batch()
+            &#47&#47 pass context to model to use in forward call if needed
+            model.contextualize(context)
+            <a id="change">with time_utils.time("model.forward"):
+                logits = model(*inputs)
+
+           </a> with time_utils.time("compute loss"):
+                loss = model.get_loss(logits, targets, context)
+                if BatchContext.IGNORE_LOSS in context:
+                    loss *= 0
+
+            <a id="change">with time_utils.time("backprop"):
+                backprop(loss)
+
+           </a> if report_metric:
+                <a id="change">with time_utils.time("add metrics"):
+                    preds, scores = model.get_pred(
+                        logits, targets, context, stage, *inputs
+                    )
+                    metric_reporter.add_batch_stats(
+                        batch_id, preds, targets, scores, loss.item(), inputs, **context
+                    )
+
+           </a> if rank == 0 and (batch_id + 1) % num_samples_to_log_progress == 0:
+                print(
+                    f"Epoch {epoch}: finished training {batch_id + 1} samples.",
+                    flush=True,
+                )
+
+        metrics = None
+        if report_metric:
+            <a id="change">with time_utils.time("report metrics"):
+                metrics = metric_reporter.report_metric(
+                    stage, epoch, print_to_channels=(rank == 0)
+                )
+       </a> else:
+            metric_reporter._reset()
+
+        return metrics</code></pre>

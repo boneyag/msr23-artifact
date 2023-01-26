@@ -1,0 +1,148 @@
+<html><h3>7098738c9f3c41120cffcce7a76fa7e8e86df4ec,autosklearn/automl.py,AutoML,_fit,#AutoML#Any#,340
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self._queue.put([time_for_load_data, data_manager_path, proc_smac,
+                             proc_ensembles])
+        else:
+            <a id="change">proc_smac.wait()</a>
+            proc_ensembles.wait()
+
+        &#47&#47 Delete AutoSklearn environment variable
+        del_auto_seed()</code></pre><h3>After Change</h3><pre><code class='java'>
+                                             &quotpartial-cv&quot]:
+            raise ValueError(&quotIllegal resampling strategy: %s&quot %
+                             self._resampling_strategy)
+        <a id="change">if self._resampling_strategy == &quotpartial-cv&quot and \
+                self._ensemble_size != 0:
+            raise ValueError("Resampling strategy partial-cv cannot be used "
+                             "together with ensembles.")
+
+       </a> self._backend._make_internals_directory()
+        if self._keep_models:
+            os.mkdir(self._backend.get_model_dir())
+
+        self._metric = datamanager.info[&quotmetric&quot]
+        self._task = datamanager.info[&quottask&quot]
+        self._label_num = datamanager.info[&quotlabel_num&quot]
+
+        set_auto_seed(self._seed)
+
+        &#47&#47 load data
+        self._save_ensemble_data(
+            datamanager.data[&quotX_train&quot],
+            datamanager.data[&quotY_train&quot])
+
+        time_for_load_data = self._stopwatch.wall_elapsed(self._dataset_name)
+
+        if self._debug_mode:
+            self._print_load_time(
+                self._dataset_name,
+                self._time_for_task,
+                time_for_load_data,
+                self._logger)
+
+        &#47&#47 == Perform dummy predictions
+        self._do_dummy_prediction(datamanager)
+
+        &#47&#47 == Calculate metafeatures
+        meta_features = _calculate_metafeatures(
+            data_feat_type=datamanager.feat_type,
+            data_info_task=datamanager.info[&quottask&quot],
+            x_train=datamanager.data[&quotX_train&quot],
+            y_train=datamanager.data[&quotY_train&quot],
+            basename=self._dataset_name,
+            watcher=self._stopwatch,
+            metalearning_cnt=self._initial_configurations_via_metalearning,
+            logger=self._logger)
+
+        self._stopwatch.start_task(&quotOneHot&quot)
+        datamanager.perform1HotEncoding()
+        self._ohe = datamanager.encoder
+        self._stopwatch.stop_task(&quotOneHot&quot)
+
+        &#47&#47 == Pickle the data manager
+        data_manager_path = self._backend.save_datamanager(datamanager)
+
+        &#47&#47 = Create a searchspace
+        self.configuration_space, configspace_path = _create_search_space(
+            self._tmp_dir,
+            datamanager.info,
+            self._backend,
+            self._stopwatch,
+            self._logger,
+            self._include_estimators,
+            self._include_preprocessors)
+        self.configuration_space_created_hook(datamanager)
+
+        if meta_features is None:
+            initial_configurations = []
+        elif datamanager.info[&quottask&quot] in [MULTICLASS_CLASSIFICATION,
+                                     BINARY_CLASSIFICATION]:
+
+            meta_features_encoded = _calculate_metafeatures_encoded(
+                self._dataset_name,
+                datamanager.data[&quotX_train&quot],
+                datamanager.data[&quotY_train&quot],
+                self._stopwatch,
+                self._logger)
+
+            self._logger.debug(meta_features.__repr__(verbosity=2))
+            self._logger.debug(meta_features_encoded.__repr__(verbosity=2))
+
+            initial_configurations = _get_initial_configuration(
+                meta_features,
+                meta_features_encoded,
+                self._dataset_name,
+                self._metric,
+                self.configuration_space,
+                self._task,
+                self._metadata_directory,
+                self._initial_configurations_via_metalearning,
+                datamanager.info[
+                    &quotis_sparse&quot],
+                self._stopwatch,
+                self._logger)
+
+            _print_debug_info_of_init_configuration(
+                initial_configurations,
+                self._dataset_name,
+                self._time_for_task,
+                self._logger,
+                self._stopwatch)
+
+        else:
+            initial_configurations = []
+            self._logger(&quotMetafeatures encoded not calculated&quot)
+
+        &#47&#47 == RUN SMAC
+        proc_smac = run_smac(self._tmp_dir, self._dataset_name,
+                             self._time_for_task, self._ml_memory_limit,
+                             data_manager_path, configspace_path,
+                             initial_configurations, self._per_run_time_limit,
+                             self._stopwatch, self._backend, self._seed,
+                             self._resampling_strategy,
+                             self._resampling_strategy_arguments)
+
+        &#47&#47 == RUN ensemble builder
+        proc_ensembles = _run_ensemble_builder(
+            self._tmp_dir,
+            self._output_dir,
+            self._dataset_name,
+            self._time_for_task,
+            self._task,
+            self._metric,
+            self._ensemble_size,
+            self._ensemble_nbest,
+            self._stopwatch,
+            self._logger
+        )
+
+        procs = [proc_smac]
+        if proc_ensembles is not None:
+            <a id="change">procs.append(proc_ensembles)</a>
+
+        if self._queue is not None:
+            self._queue.put([time_for_load_data, data_manager_path, procs])
+        else:</code></pre><img src="74111736.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/automl/auto-sklearn/commit/7098738c9f3c41120cffcce7a76fa7e8e86df4ec#diff-71a7c6532aa2ecca1a67d87ea5cd1136e7a043b1f8be8f95f2fd79aea6003953L316' target='_blank'>Link</a></div><div id='project'> Project Name: automl/auto-sklearn</div><div id='commit'> Commit Name: 7098738c9f3c41120cffcce7a76fa7e8e86df4ec</div><div id='time'> Time: 2015-10-02</div><div id='author'> Author: feurerm@informatik.uni-freiburg.de</div><div id='file'> File Name: autosklearn/automl.py</div><div id='class'> Class Name: AutoML</div><div id='method'> Method Name: _fit</div><BR><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/6fe60e43efbac200052a76b0a849c4c7cd4654a5#diff-40253fa9934a7027a3f58a2f34132daba473bdf8451465778fb7bcc4904c9b11L158' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: 6fe60e43efbac200052a76b0a849c4c7cd4654a5</div><div id='time'> Time: 2018-04-25</div><div id='author'> Author: jonas.massa@iwr.uni-heidelberg.de</div><div id='file'> File Name: ilastik/applets/networkClassification/nnClassGui.py</div><div id='class'> Class Name: NNClassGui</div><div id='method'> Method Name: pred_nn</div><BR><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/ad6d3b2e0a43d45a5a00eb372e9063ac12d9dab1#diff-7279a1ed779a0335656cb1bd4fa3ee4c2434f2331430e7b9934415052a4fa8ceL490' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: ad6d3b2e0a43d45a5a00eb372e9063ac12d9dab1</div><div id='time'> Time: 2017-03-28</div><div id='author'> Author: bergs@janelia.hhmi.org</div><div id='file'> File Name: tests/testOpLazyConnectedComponents.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+@pytest.mark.parametrize("enable_pl_optimizer", [False, True])
+def test_cpu_slurm_save_load(enable_pl_optimizer, tmpdir):
+    Verify model save/load/checkpoint on CPU.
+    <a id="change">hparams = EvalModelTemplate.get_default_hparams()</a>
+    model = <a id="change">EvalModelTemplate(**hparams)</a>
+
+    &#47&#47 logger file to get meta
+    logger = tutils.get_default_logger(tmpdir)
+    version = logger.version
+
+    &#47&#47 fit model
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        max_epochs=1,
+        logger=logger,
+        limit_train_batches=0.2,
+        limit_val_batches=0.2,
+        callbacks=[ModelCheckpoint(dirpath=tmpdir)],
+        enable_pl_optimizer=enable_pl_optimizer,
+    )
+    result = trainer.fit(model)
+    real_global_step = trainer.global_step
+
+    &#47&#47 traning complete
+    assert result == 1, &quotcpu model failed to complete&quot
+
+    &#47&#47 predict with trained model before saving
+    &#47&#47 make a prediction
+    dataloaders = model.test_dataloader()
+    if not isinstance(dataloaders, list):
+        dataloaders = [dataloaders]
+
+    for dataloader in dataloaders:
+        for batch in dataloader:
+            break
+
+    x, y = batch
+    x = x.view(x.size(0), -1)
+
+    model.eval()
+    pred_before_saving = model(x)
+
+    &#47&#47 test HPC saving
+    &#47&#47 simulate snapshot on slurm
+    saved_filepath = trainer.checkpoint_connector.hpc_save(trainer.weights_save_path, logger)
+    assert os.path.exists(saved_filepath)
+
+    &#47&#47 new logger file to get meta
+    logger = tutils.get_default_logger(tmpdir, version=version)
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        max_epochs=1,
+        logger=logger,
+        callbacks=[ModelCheckpoint(dirpath=tmpdir)],
+        enable_pl_optimizer=enable_pl_optimizer,
+    )
+    model = <a id="change">EvalModelTemplate(**hparams)</a>
+
+    &#47&#47 set the epoch start hook so we can predict before the model does the full training
+    def assert_pred_same():
+        assert trainer.global_step == real_global_step and trainer.global_step &gt; 0</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 new logger file to get meta
+    logger = tutils.get_default_logger(tmpdir, version=version)
+
+    model = <a id="change">BoringModel()</a>
+
+    class _StartCallback(Callback):
+        &#47&#47 set the epoch start hook so we can predict before the model does the full training
+        def on_train_epoch_start(self, trainer, model):</code></pre>

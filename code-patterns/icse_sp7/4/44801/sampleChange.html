@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        return class_logits, gan_logits
+    num_classes = config[&quoty_dims&quot]+1
+    <a id="change">class_logits</a>, gan_logits = build_logits(net, num_classes)
+    return [tf.slice(class_logits, [0, 0], [single_batch_size, num_classes-1]),
+                tf.slice(gan_logits, [0], [single_batch_size]),
+                tf.slice(class_logits, [single_batch_size, 0], [single_batch_size, num_classes-1]),</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47net = linear(net, 1, scope="d_proj", stddev=0.03)
+    &#47&#47net = batch_norm(batch_size, name=&quotd_rp_bnend&quot)(net)
+
+    <a id="change">if config[&quoty_dims&quot] == 1:
+        net = linear(net, 1, scope="d_fc_end", stddev=0.003)
+        net = tf.reshape(net,  [config[&quotbatch_size&quot]*2, 1])
+        class_logits = net
+        gan_logits = net
+
+    else:
+        num_classes = config[&quoty_dims&quot]+1
+        net = linear(net, num_classes, scope="d_fc_end", stddev=0.003)
+        class_logits = tf.slice(net, [0,1], [single_batch_size*2,num_classes-1])
+        gan_logits = tf.squeeze(tf.slice(net, [0,0], [single_batch_size*2,1]))
+
+   </a> return [tf.slice(class_logits, [0, 0], [single_batch_size, num_classes-1]),
+                tf.slice(gan_logits, [0], [single_batch_size]),
+                tf.slice(class_logits, [single_batch_size, 0], [single_batch_size, num_classes-1]),
+                tf.slice(gan_logits, [single_batch_size], [single_batch_size]), </code></pre>

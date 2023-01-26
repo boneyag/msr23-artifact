@@ -1,0 +1,90 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            del infoDir[infoName]
+                
+        &#47&#47 Rebuild the list of infos
+        <a id="change">for index, slot in enumerate(self.mainOperator.Dataset):
+            infoGroup = infoDir.create_group(&quotinfo{:04d}&quot.format(index))
+            datasetInfo = slot.value
+            locationString = self.LocationStrings[datasetInfo.location]
+            infoGroup.create_dataset(&quotlocation&quot, data=locationString)
+            infoGroup.create_dataset(&quotfilePath&quot, data=datasetInfo.filePath)
+            infoGroup.create_dataset(&quotdatasetId&quot, data=datasetInfo.datasetId)
+            infoGroup.create_dataset(&quotallowLabels&quot, data=datasetInfo.allowLabels)
+        
+        &#47&#47 Write any missing local datasets to the local_data group
+       </a> localDataGroup = self.getOrCreateGroup(topGroup, &quotlocal_data&quot)
+        wroteInternalData = False
+        for index, slot in enumerate(self.mainOperator.Dataset):
+            info = slot.value</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.mainOperator.Dataset.notifyInserted( bind(handleNewDataset) )
+        
+    def _serializeToHdf5(self, topGroup, hdf5File, projectFilePath):
+        <a id="change">with Tracer(traceLogger):
+            &#47&#47 If the operator has a some other project file, something&quots wrong
+            if self.mainOperator.ProjectFile.connected():
+                assert self.mainOperator.ProjectFile.value == hdf5File
+            
+            &#47&#47 Access the info group
+            infoDir = self.getOrCreateGroup(topGroup, &quotinfos&quot)
+            
+            &#47&#47 Delete all infos
+            for infoName in infoDir.keys():
+                del infoDir[infoName]
+                    
+            &#47&#47 Rebuild the list of infos
+            for index, slot in enumerate(self.mainOperator.Dataset):
+                infoGroup = infoDir.create_group(&quotinfo{:04d}&quot.format(index))
+                datasetInfo = slot.value
+                locationString = self.LocationStrings[datasetInfo.location]
+                infoGroup.create_dataset(&quotlocation&quot, data=locationString)
+                infoGroup.create_dataset(&quotfilePath&quot, data=datasetInfo.filePath)
+                infoGroup.create_dataset(&quotdatasetId&quot, data=datasetInfo.datasetId)
+                infoGroup.create_dataset(&quotallowLabels&quot, data=datasetInfo.allowLabels)
+            
+            &#47&#47 Write any missing local datasets to the local_data group
+            localDataGroup = self.getOrCreateGroup(topGroup, &quotlocal_data&quot)
+            wroteInternalData = False
+            for index, slot in enumerate(self.mainOperator.Dataset):
+                info = slot.value
+                &#47&#47 If this dataset should be stored in the project, but it isn&quott there yet
+                if  info.location == DatasetInfo.Location.ProjectInternal \
+                and info.datasetId not in localDataGroup.keys():
+                    &#47&#47 Obtain the data from the corresponding output and store it to the project.
+                    &#47&#47 TODO: Optimize this for large datasets by streaming it chunk-by-chunk.
+                    dataSlot = self.mainOperator.Image[index]
+                    data = dataSlot[...].wait()
+    
+                    &#47&#47 Vigra thinks its okay to reorder the data if it has axistags,
+                    &#47&#47  but we don&quott want that. To avoid reordering, we write the data
+                    &#47&#47  ourselves and attach the axistags afterwards.
+                    dataset = localDataGroup.create_dataset(info.datasetId, data=data)
+                    dataset.attrs[&quotaxistags&quot] = dataSlot.meta.axistags.toJSON()
+                    wroteInternalData = True
+    
+            &#47&#47 Construct a list of all the local dataset ids we want to keep
+            localDatasetIds = [ slot.value.datasetId
+                                 for index, slot 
+                                 in enumerate(self.mainOperator.Dataset)
+                                 if slot.value.location == DatasetInfo.Location.ProjectInternal ]
+    
+            &#47&#47 Delete any datasets in the project that aren&quott needed any more
+            for datasetName in localDataGroup.keys():
+                if datasetName not in localDatasetIds:
+                    del localDataGroup[datasetName]
+    
+            if wroteInternalData:
+                &#47&#47 Force the operator to setupOutputs() again so it gets data from the project, not external files
+                &#47&#47 TODO: This will cause a slew of &quotdirty&quot operators for any inputs we saved.
+                &#47&#47       Is that a problem?
+                infoCopy = copy.copy(self.mainOperator.Dataset[0].value)
+                self.mainOperator.Dataset[0].setValue(infoCopy)
+            
+            self._dirty = False
+
+   </a> def _deserializeFromHdf5(self, topGroup, groupVersion, hdf5File, projectFilePath):
+        with Tracer(traceLogger):
+            &#47&#47 The &quotworking directory&quot for the purpose of constructing absolute 
+            &#47&#47  paths from relative paths is the project file&quots directory.</code></pre>

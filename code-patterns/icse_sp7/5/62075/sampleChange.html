@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    Given a prior covariance matrix, returns a Tikhonov matrix
+    [U, S, V] = np.linalg.svd(PriorCov, full_matrices=False)
+    Tau = np.dot(np.diag(1. / np.sqrt(S)), U)
+    Tau = <a id="change">1. / np.sqrt(np.float(n_samples)) * Tau / Tau.max()</a>
+    return Tau
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    Given a prior covariance matrix, returns a Tikhonov matrix
+    [U, S, V] = np.linalg.svd(PriorCov, full_matrices=False)
+
+    S_ratio = S / <a id="change">S.max()</a>
+    threshold = 0.0001
+
+    nonzero_indices = np.where(S_ratio &gt; threshold)[0]
+    zero_indices = np.where(S_ratio &lt;= threshold)[0]
+
+    S_inv = copy(np.sqrt(S))
+    S_inv[zero_indices] = threshold
+    <a id="change">S_inv[nonzero_indices] = 1. / S_inv[nonzero_indices]</a>
+
+    Tau = np.dot(np.diag(S_inv), V)
+    n_features = Tau.shape[0]
+    Tau = 1. / n_features * Tau</code></pre>

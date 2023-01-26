@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def _get_from_clause_for_tables(table_names, fk_relations):
+  Returns list of SqlSpan tuples for FROM clause.
+  if not table_names:
+    <a id="change">raise ParseError(&quotNo table names provided.&quot)</a>
+  if len(table_names) == 1:
+    return [make_sql_span(table_name=table_names[0])]
+
+  &#47&#47 Map of (table_a, table_b) to (column_a, column_b)
+  fk_relations_map = {}
+  for relation in fk_relations:
+    fk_relations_map[(relation.child_table,
+                      relation.parent_table)] = (relation.child_column,
+                                                 relation.parent_column)
+    &#47&#47 Also add the reverse.
+    <a id="change">fk_relations_map[(relation.parent_table,
+                      relation.child_table)] = (relation.parent_column,
+                                                relation.child_column)</a>
+
+  &#47&#47 Naively try every permutation of table_names until we get a hit.
+  &#47&#47 TODO(petershaw): Could probably speed up this up quite a bit and provide
+  &#47&#47 better error handling for ambiguous cases.</code></pre><h3>After Change</h3><pre><code class='java'>
+  for i in range(len(visited_tables) - 1):
+    table_a = visited_tables[i]
+    table_b = visited_tables[i + 1]
+    <a id="change">column_a</a>, column_b = fk_relations[i]
+    &#47&#47 join table_b on table_a.column_a = table_b.column_b
+    sql_spans.append(make_sql_span(sql_token=&quotjoin&quot))
+    sql_spans.append(make_sql_span(table_name=table_b))</code></pre>

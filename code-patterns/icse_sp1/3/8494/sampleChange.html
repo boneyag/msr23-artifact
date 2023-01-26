@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mask = tf.get_variable(op_name + &quot_mask&quot, initializer=tf.ones(weight.shape), trainable=False)
+        self.layer_mask[op_name] = mask
+
+        <a id="change">weight_assign_handler = tf.assign(weight, mask*weight)</a>
+        &#47&#47 use control_dependencies so that weight_assign_handler will be executed before mask_update_handler
+        with <a id="change">tf.control_dependencies([weight_assign_handler])</a>:
+            threshold = tf.contrib.distributions.percentile(weight, target_sparsity * 100)
+            &#47&#47 stop gradient in case gradient change the mask
+            new_mask = tf.stop_gradient(tf.cast(tf.math.greater(weight, threshold), weight.dtype))</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 stop gradient in case gradient change the mask
+            mask = tf.stop_gradient(tf.cast(tf.math.greater(weight, threshold), weight.dtype))
+            self.assign_handler.append(tf.assign(weight, weight * mask))
+            self.mask_list.update({op_name: <a id="change">tf.constant(mask)</a>})
+            self.if_init_list.update({op_name: False})
+        else:
+            mask = self.mask_list[op_name]</code></pre>

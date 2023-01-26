@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      with tf.compat.v1.Session().as_default() as session:
+        input_string = tf.compat.v1.placeholder(tf.string)
+        &#47&#47 Map string through a table, in this case based on a constant tensor.
+        table = <a id="change">lookup_ops.index_table_from_tensor(
+            tf.constant([&quotcat&quot, &quotdog&quot, &quotgiraffe&quot]))</a>
+        output = table.lookup(input_string)
+        inputs = {&quotinput&quot: input_string}
+        outputs = {&quotoutput&quot: output}
+        saved_transform_io.write_saved_transform_from_session(</code></pre><h3>After Change</h3><pre><code class='java'>
+        input_string = tf.compat.v1.placeholder(tf.string)
+        &#47&#47 Map string through a table, in this case based on a constant tensor.
+        table_keys = [&quotcat&quot, &quotdog&quot, &quotgiraffe&quot]
+        <a id="change">initializer = tf.lookup.KeyValueTensorInitializer(
+            keys=table_keys,
+            values=tf.cast(tf.range(len(table_keys)), tf.int64),
+            key_dtype=tf.string,
+            value_dtype=tf.int64)</a>
+        table = <a id="change">tf.lookup.StaticHashTable(initializer, default_value=-1)</a>
+
+        output = table.lookup(input_string)
+        inputs = {&quotinput&quot: input_string}
+        outputs = {&quotoutput&quot: output}</code></pre>

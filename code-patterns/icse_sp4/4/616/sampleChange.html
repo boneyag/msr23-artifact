@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if not options[&quotskip-downloads&quot]:
+            potential_user_ids = set()
+            potential_user_ids.update(
+                <a id="change">Download.objects.all().values_list(&quotuser_id&quot, flat=True)</a>)  &#47&#47 Add ids of downloaders
+            potential_user_ids.update(PackDownload.objects.all().values_list(&quotuser_id&quot, flat=True))
+            total = len(potential_user_ids)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                report_progress(&quotChecking number of downloaded sounds in %i users... %.2f%%&quot, total, count)
+
+            &#47&#47 Look at number of pack downloads for all active users (see note above)
+            <a id="change">for count, user in enumerate(User.objects.filter(is_active=True).select_related(&quotprofile&quot).
+                                         annotate(real_num_pack_downloads=Count(&quotpack_downloads&quot),).iterator()):
+                user_profile = user.profile
+
+                real_num_pack_downloads = user.real_num_pack_downloads
+                if real_num_pack_downloads != user_profile.num_pack_downloads:
+                    mismatches_report[&quotUser.num_pack_downloads&quot] += 1
+                    mismatches_object_ids[&quotUser.num_pack_downloads&quot].append(user.id)
+                    user_profile.num_pack_downloads = real_num_pack_downloads
+
+                    if not options[&quotno-changes&quot]:
+                        user_profile.save()
+
+                report_progress(&quotChecking number of downloaded packs in %i users... %.2f%%&quot, total, count)
+
+       </a> console_logger.info("Number of mismatched counts: ")
+        console_logger.info(&quot\n&quot + pprint.pformat(mismatches_report))
+        console_logger.info(&quot\n&quot + pprint.pformat(mismatches_object_ids))
+</code></pre>

@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    expected_output_shape = layer.get_output_shape_for(input_shape)
+    actual_output = model.predict(input_data)
+    actual_output_shape = actual_output.shape
+    <a id="change">assert expected_output_shape == actual_output_shape</a>
+    if expected_output is not None:
+        assert_allclose(actual_output, expected_output, rtol=1e-3)
+
+    &#47&#47 test serialization</code></pre><h3>After Change</h3><pre><code class='java'>
+            if e is None:
+                input_data_shape[i] = np.random.randint(1, 4)
+        input_data = (10 * np.random.random(input_data_shape))
+        input_data = <a id="change">input_data.astype(input_dtype)</a>
+    elif input_shape is None:
+        input_shape = input_data.shape
+
+    if expected_output_dtype is None:
+        expected_output_dtype = input_dtype
+
+    &#47&#47 instantiation
+    layer = layer_cls(**kwargs)
+
+    &#47&#47 test get_weights , set_weights
+    weights = layer.get_weights()
+    layer.set_weights(weights)
+
+    &#47&#47 test and instantiation from weights
+    if &quotweights&quot in inspect.getargspec(layer_cls.__init__):
+        kwargs[&quotweights&quot] = weights
+        layer = layer_cls(**kwargs)
+
+    &#47&#47 test in functional API
+    if fixed_batch_size:
+        x = Input(batch_shape=input_shape, dtype=input_dtype)
+    else:
+        x = Input(shape=input_shape[1:], dtype=input_dtype)
+    y = layer(x)
+    assert K.dtype(y) == expected_output_dtype
+
+    model = Model(input=x, output=y)
+    model.compile(&quotrmsprop&quot, &quotmse&quot)
+
+    expected_output_shape = layer.get_output_shape_for(input_shape)
+    actual_output = model.predict(input_data)
+    actual_output_shape = actual_output.shape
+    <a id="change">for expected_dim, actual_dim in zip(expected_output_shape,
+                                        actual_output_shape):
+        if expected_dim is not None:
+            assert expected_dim == actual_dim
+   </a> if expected_output is not None:
+        assert_allclose(actual_output, expected_output, rtol=1e-3)
+
+    &#47&#47 test serialization</code></pre>

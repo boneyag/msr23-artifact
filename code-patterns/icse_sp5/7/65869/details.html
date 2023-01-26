@@ -1,0 +1,73 @@
+<html><h3>2ef5a2c1e0ffc0fd8932debd03ab6a9e484957a2,cleverhans/utils_tf.py,,model_eval,#Any#Any#Any#Any#Any#Any#Any#Any#Any#,202
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                 tf.argmax(predictions,
+                                           axis=tf.rank(predictions) - 1))
+
+    <a id="change">acc_value = tf.reduce_mean(tf.to_float(correct_preds))</a>
+
+    &#47&#47 Init result var
+    accuracy = 0.0
+
+    with sess.as_default():
+        &#47&#47 Compute number of batches
+        nb_batches = int(math.ceil(float(len(X_test)) / args.batch_size))
+        assert nb_batches * args.batch_size &gt;= len(X_test)
+
+        for batch in range(nb_batches):
+            if batch % 100 == 0 and batch &gt; 0:
+                _logger.debug("Batch " + str(batch))
+
+            &#47&#47 Must not use the `batch_indices` function here, because it
+            &#47&#47 repeats some examples.
+            &#47&#47 It&quots acceptable to repeat during training, but not eval.
+            start = batch * args.batch_size
+            end = min(len(X_test), start + args.batch_size)
+            cur_batch_size = end - start
+
+            &#47&#47 The last batch may be smaller than all others, so we need to
+            &#47&#47 account for variable batch size here
+            feed_dict = {x: X_test[start:end], y: Y_test[start:end]}
+            if feed is not None:
+                feed_dict.update(feed)
+            cur_acc = acc_value.eval(feed_dict=feed_dict)
+
+            <a id="change">accuracy += (cur_batch_size * cur_acc)</a>
+
+        assert end &gt;= len(X_test)
+
+        &#47&#47 Divide by number of examples to get final value</code></pre><h3>After Change</h3><pre><code class='java'>
+        nb_batches = int(math.ceil(float(len(X_test)) / args.batch_size))
+        assert nb_batches * args.batch_size &gt;= len(X_test)
+
+        X_cur = np.zeros(<a id="change">(args.batch_size,)</a> + X_test.shape[1:],
+                         dtype=X_test.dtype)
+        <a id="change">Y_cur = np.zeros((args.batch_size,) + Y_test.shape[1:],
+                         dtype=Y_test.dtype)</a>
+        for batch in range(nb_batches):
+            if batch % 100 == 0 and batch &gt; 0:
+                _logger.debug("Batch " + str(batch))
+
+            &#47&#47 Must not use the `batch_indices` function here, because it
+            &#47&#47 repeats some examples.
+            &#47&#47 It&quots acceptable to repeat during training, but not eval.
+            start = batch * args.batch_size
+            end = min(len(X_test), start + args.batch_size)
+            cur_batch_size = end - start
+            X_cur[:cur_batch_size] = X_test[start:end]
+            Y_cur[:cur_batch_size] = Y_test[start:end]
+
+            &#47&#47 The last batch may be smaller than all others, so we need to
+            &#47&#47 account for variable batch size here
+            feed_dict = {x: X_cur, y: Y_cur}
+            if feed is not None:
+                feed_dict.update(feed)
+            cur_corr_preds = correct_preds.eval(feed_dict=feed_dict)
+
+            <a id="change">accuracy += cur_corr_preds[:cur_batch_size].sum()</a>
+
+        assert end &gt;= len(X_test)
+
+        &#47&#47 Divide by number of examples to get final value</code></pre><img src="304214562.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/cleverhans/commit/2ef5a2c1e0ffc0fd8932debd03ab6a9e484957a2#diff-dee98e4d1f3bc94a540f65d12bda9e366539b2deb2463af0a7395b2b7b1c8dc4L220' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/cleverhans</div><div id='commit'> Commit Name: 2ef5a2c1e0ffc0fd8932debd03ab6a9e484957a2</div><div id='time'> Time: 2017-09-26</div><div id='author'> Author: fartash@google.com</div><div id='file'> File Name: cleverhans/utils_tf.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: model_eval</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/a437991e12a334b40b082fdc8b1b6dcf4a68021f#diff-972803a74a51af2d54b7671dbbc4d2dd3f051e00445d4a58cf6bdfe53c4008f7L979' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: a437991e12a334b40b082fdc8b1b6dcf4a68021f</div><div id='time'> Time: 2017-04-17</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: deepchem/models/tensorgraph/layers.py</div><div id='class'> Class Name: NeighborList</div><div id='method'> Method Name: get_cells_for_atoms</div><BR><BR><div id='link'><a href='https://github.com/deepchem/deepchem/commit/a437991e12a334b40b082fdc8b1b6dcf4a68021f#diff-972803a74a51af2d54b7671dbbc4d2dd3f051e00445d4a58cf6bdfe53c4008f7L1032' target='_blank'>Link</a></div><div id='project'> Project Name: deepchem/deepchem</div><div id='commit'> Commit Name: a437991e12a334b40b082fdc8b1b6dcf4a68021f</div><div id='time'> Time: 2017-04-17</div><div id='author'> Author: bharath.ramsundar@gmail.com</div><div id='file'> File Name: deepchem/models/tensorgraph/layers.py</div><div id='class'> Class Name: NeighborList</div><div id='method'> Method Name: get_neighbor_cells</div><BR>

@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    outputs_for_monotonicity = [[], []]
+    for monotonicities, inputs_for_units in self._rtl_structure:
+      &#47&#47 Create inputs to lattice layer by concatenating all the inputs.
+      <a id="change">lattice_inputs = []</a>
+      <a id="change">for inputs_for_unit in inputs_for_units:
+        &#47&#47 Concat into (-1, lattice_rank) for a single lattice
+        lattice_inputs.append(
+            tf.concat([input_tensors[i] for i in inputs_for_unit], axis=1))
+     </a> if len(lattice_inputs) &gt; 1:
+        &#47&#47 Stack into (-1, units, lattice_rank) for multi-unit lattice layer
+        lattice_inputs = tf.stack(lattice_inputs, axis=1)
+      else:</code></pre><h3>After Change</h3><pre><code class='java'>
+    for monotonicities, inputs_for_units in self._rtl_structure:
+      if len(inputs_for_units) == 1:
+        inputs_for_units = inputs_for_units[0]
+      <a id="change">lattice_inputs = tf.gather(flattened_input, inputs_for_units, axis=1)</a>
+      output_monotonicity = max(monotonicities)
+      &#47&#47 Call each lattice layer and store based on output monotonicy.
+      outputs_for_monotonicity[output_monotonicity].append(
+          self._lattice_layers[str(monotonicities)](lattice_inputs))</code></pre>

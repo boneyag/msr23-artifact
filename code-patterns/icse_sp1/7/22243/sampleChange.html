@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        interp_values = torch.matmul(left_interp_values, right_interp_values)
+
+        &#47&#47 Batch compute values that will be non-zero for row k
+        <a id="change">if left_interp_indices.ndimension() == 3:
+            left_interp_indices = left_interp_indices.unsqueeze(-1).expand(n_data, n_interp, n_interp).contiguous()
+            right_interp_indices = right_interp_indices.unsqueeze(-2).expand(n_data, n_interp, n_interp).contiguous()
+        else:
+            left_interp_indices = left_interp_indices.unsqueeze(-1).expand(n_data, n_interp, n_interp).contiguous()
+            right_interp_indices = right_interp_indices.unsqueeze(-2).expand(n_data, n_interp, n_interp).contiguous()
+       </a> base_var_vals = self.base_lazy_tensor._get_indices(left_interp_indices.view(-1), right_interp_indices.view(-1))
+        base_var_vals = base_var_vals.view(left_interp_indices.size())
+        res = (interp_values * base_var_vals).sum(-1).sum(-1)
+        return res</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Batch compute values that will be non-zero for row k
+        left_interp_indices = left_interp_indices.unsqueeze(-1).expand(n_data, n_interp, n_interp).contiguous()
+        right_interp_indices = right_interp_indices.unsqueeze(-2).expand(n_data, n_interp, n_interp).contiguous()
+        <a id="change">batch_indices = [
+            batch_index.unsqueeze(1).repeat(1, n_interp ** 2).view(-1)
+            for batch_index in batch_indices
+        ]</a>
+        base_var_vals = self.base_lazy_tensor._get_indices(
+            left_interp_indices.view(-1), right_interp_indices.view(-1), *batch_indices
+        )
+        base_var_vals = base_var_vals.view(left_interp_indices.size())</code></pre>

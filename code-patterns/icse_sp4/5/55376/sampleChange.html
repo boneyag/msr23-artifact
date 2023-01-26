@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if i._grad is not None
+            ]
+            mxnet.gluon.utils.clip_global_norm(grads, optimizer.grad_clip)
+        <a id="change">if self._trainer:
+            self._trainer.step(1)
+       </a> for param in self._model.collect_params().values():
+            param.zero_grad()
+        self._update_mxnet_averages(optimizer)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def finish_update(self, optimizer: Optimizer):
+        for value in self._model.collect_params().values():
+            <a id="change">grad = cast(FloatsXd, mxnet2xp(value.grad()))</a>
+            param = cast(FloatsXd, mxnet2xp(value.data()))
+            <a id="change">param, _ = optimizer((value.name, value.name), param, grad)</a>
+            value.set_data(xp2mxnet(param))
+
+    def copy(self, ctx: "mx.context.Context" = None):
+        if ctx is None:</code></pre>

@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 This method gets called from inside the script&quots execution context.
+    def maybe_handle_execution_control_request(self):
+        if self._state_change_requested:
+            <a id="change">LOGGER.debug(&quotReceived execution control request: %s&quot, self._state)</a>
+
+            if self._state == State.STOP_REQUESTED:
+                raise StopException()
+            elif self._state == State.RERUN_REQUESTED:</code></pre><h3>After Change</h3><pre><code class='java'>
+        self._event_queue.enqueue(ScriptEvent.SHUTDOWN)
+
+    def maybe_handle_execution_control_request(self):
+        <a id="change">if self._run_loop_thread != threading.current_thread():
+            &#47&#47 We can only handle execution_control_request if we&quotre on the
+            &#47&#47 script execution thread. However, it&quots possible for deltas to
+            &#47&#47 be enqueued (and, therefore, for this function to be called)
+            &#47&#47 in separate threads, so we check for that here.
+            return
+
+        &#47&#47 Pop the next event from our queue. Don&quott block if there&quots no event
+       </a> event, event_data = self._event_queue.dequeue_nowait()
+        if event is None:
+            return
+</code></pre>

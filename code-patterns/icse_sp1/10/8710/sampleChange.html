@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _eval_covar_matrix(self):
+        var = self.var
+        <a id="change">eye = torch.eye(var.shape[-1], dtype=var.dtype, device=var.device)</a>
+        if len(self.batch_shape) &gt; 0:
+            eye = <a id="change">eye.view((1, var.shape[-1], var.shape[-1])).repeat(*self.batch_shape, 1, 1)</a>
+            <a id="change">D = var.repeat(1, var.shape[-1]).view(*self.batch_shape, var.shape[-1], var.shape[-1]) * eye</a>
+        else:
+            D = var * eye
+        return self.covar_factor.matmul(self.covar_factor.transpose(-1, -2)) + D
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.initialize(raw_var=self.raw_var_constraint.inverse_transform(value))
+
+    def _eval_covar_matrix(self):
+        <a id="change">self</a>._C[..., self.tidcs[0], self.tidcs[1]] = self.covar_factor
+        return self._C @ self._C.transpose(-1, -2) + torch.diag_embed(self.var)
+
+    @property</code></pre>

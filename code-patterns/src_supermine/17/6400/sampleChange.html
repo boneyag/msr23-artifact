@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def get_updates(self, params, constraints, loss):
+        grads = self.get_gradients(loss, params)
+        <a id="change">self.updates</a> = <a id="change">[(self.iterations, self.iterations + 1)]</a>
+
+        t = self.iterations + 1
+        lr_t = self.lr / (1. - K.pow(self.beta_1, t))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def get_updates(self, params, constraints, loss):
+        grads = self.get_gradients(loss, params)
+        <a id="change">self.updates</a> = <a id="change">[K.update_add(self.iterations, 1)]</a>
+
+        t = self.iterations + 1
+        lr_t = self.lr / (1. - K.pow(self.beta_1, t))
+
+        &#47&#47 zero init of 1st moment
+        ms = [K.variable(np.zeros(K.get_value(p).shape)) for p in params]
+        &#47&#47 zero init of exponentially weighted infinity norm
+        us = [K.variable(np.zeros(K.get_value(p).shape)) for p in params]
+        self.weights = ms + us
+
+        for p, g, m, u in zip(params, grads, ms, us):
+
+            m_t = (self.beta_1 * m) + (1. - self.beta_1) * g
+            u_t = K.maximum(self.beta_2 * u, K.abs(g))
+            p_t = p - lr_t * m_t / (u_t + self.epsilon)
+
+            self.updates.append(<a id="change">K.update(m, m_t)</a>)
+            self.updates.append(<a id="change">K.update(u, u_t)</a>)
+
+            new_p = p_t
+            &#47&#47 apply constraints
+            if p in constraints:
+                c = constraints[p]
+                new_p = c(new_p)
+            self.updates.append(<a id="change">K.update(p, new_p)</a>)
+        return self.updates
+
+    def get_config(self):</code></pre>

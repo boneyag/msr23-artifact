@@ -1,0 +1,117 @@
+<html><h3>9c05426517a2783d03ec88197b27706e9f877b12,nalaf/preprocessing/parsers.py,SpacyParser,parse,#SpacyParser#Any#,57
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        :type dataset: nalaf.structures.data.Dataset
+        
+        outer_bar = Bar(&quotProcessing [SpaCy]&quot, max=len(list(dataset.parts())))
+        <a id="change">for part in dataset.parts():
+
+            for sent_index, sentence in enumerate(part.sentences):
+
+                sentence_tokens = [nalaf_token.word for nalaf_token in sentence]
+
+                &#47&#47 Use spacy with custom tokenization.
+                &#47&#47
+                &#47&#47 Info:
+                &#47&#47  * https://github.com/explosion/spaCy/issues/668
+                &#47&#47  * https://github.com/explosion/spaCy/issues/245&#47&#47issuecomment-178014020
+                &#47&#47  * https://github.com/explosion/spaCy/issues/42&#47&#47issuecomment-135755528
+                &#47&#47  * also: https://books.google.de/books?id=1-4lDQAAQBAJ&pg=PA346&lpg=PA346&dq=spacy+tokens_from_list&source=bl&ots=26oMINRNXS&sig=hDDr29jnlKFlMZmfy_5U7XhCia8&hl=en&sa=X&sqi=2&ved=0ahUKEwi9r8P_lNXQAhVBWxoKHV4KDPIQ6AEIPDAF&#47&#47v=onepage&q=spacy%20tokens_from_list&f=false
+                &#47&#47  * finally: https://spacy.io/docs/usage/customizing-tokenizer
+
+                spacy_doc = self.nlp.tokenizer.tokens_from_list(sentence_tokens)
+                for pipe in filter(None, self.nlp.pipeline):
+                    pipe(spacy_doc)
+
+                for spacy_token in spacy_doc:
+                    assert spacy_token.tag_ != "" and spacy_token.dep_ != "", "The list of tokens was actually not tagged nor parsed"
+
+                    nalaf_token = part.sentences[sent_index][spacy_token.i]
+                    nalaf_token.features = {
+                        &quotid&quot: spacy_token.i,
+                        &quotpos&quot: spacy_token.tag_,
+                        &quotcoarsed_pos&quot: spacy_token.pos_,  &#47&#47 https://spacy.io/docs/usage/pos-tagging&#47&#47pos-tagging-english
+                        &quotdep&quot: spacy_token.dep_,
+                        &quotlemma&quot: spacy_token.lemma_,
+                        &quotprob&quot: spacy_token.prob,
+                        &quotis_punct&quot: spacy_token.is_punct,
+                        &quotis_stop&quot: spacy_token.is_stop,
+                        &quotcluster&quot: spacy_token.cluster,
+                        &quotdependency_from&quot: None,
+                        &quotdependency_to&quot: [],
+                        &quotuser_dependency_from&quot: [],  &#47&#47 User-defined dependency of any nature
+                        &quotuser_dependency_to&quot: [],  &#47&#47 User-defined dependency of any nature
+                        &quotis_root&quot: False,
+                    }
+
+                for spacy_token in spacy_doc:
+                    self._dependency_path(spacy_token, sent_index, part)
+
+            part.percolate_tokens_to_entities()
+            part.compute_tokens_depth()
+            part.set_entities_head_tokens()
+
+            outer_bar.next()
+
+       </a> outer_bar.finish()
+
+        if self.constituency_parser is True:
+            self.parser.parse(dataset)</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        outer_bar = Bar(&quotProcessing [SpaCy]&quot, max=len(dataset.documents))
+
+        <a id="change">for docid, document in dataset.documents.items():
+            for partid, part in document.parts.items():
+                for sent_index, sentence in enumerate(part.sentences):
+
+                    sentence_tokens = [nalaf_token.word for nalaf_token in sentence]
+
+                    &#47&#47 Use spacy with custom tokenization.
+                    &#47&#47
+                    &#47&#47 Info:
+                    &#47&#47  * https://github.com/explosion/spaCy/issues/668
+                    &#47&#47  * https://github.com/explosion/spaCy/issues/245&#47&#47issuecomment-178014020
+                    &#47&#47  * https://github.com/explosion/spaCy/issues/42&#47&#47issuecomment-135755528
+                    &#47&#47  * also: https://books.google.de/books?id=1-4lDQAAQBAJ&pg=PA346&lpg=PA346&dq=spacy+tokens_from_list&source=bl&ots=26oMINRNXS&sig=hDDr29jnlKFlMZmfy_5U7XhCia8&hl=en&sa=X&sqi=2&ved=0ahUKEwi9r8P_lNXQAhVBWxoKHV4KDPIQ6AEIPDAF&#47&#47v=onepage&q=spacy%20tokens_from_list&f=false
+                    &#47&#47  * finally: https://spacy.io/docs/usage/customizing-tokenizer
+
+                    spacy_doc = self.nlp.tokenizer.tokens_from_list(sentence_tokens)
+                    for pipe in filter(None, self.nlp.pipeline):
+                        pipe(spacy_doc)
+
+                    for spacy_token in spacy_doc:
+                        assert spacy_token.tag_ != "" and spacy_token.dep_ != "", "The list of tokens was actually not tagged nor parsed"
+
+                        nalaf_token = part.sentences[sent_index][spacy_token.i]
+                        nalaf_token.features = {
+                            &quotid&quot: spacy_token.i,
+                            &quotpos&quot: spacy_token.tag_,
+                            &quotcoarsed_pos&quot: spacy_token.pos_,  &#47&#47 https://spacy.io/docs/usage/pos-tagging&#47&#47pos-tagging-english
+                            &quotdep&quot: spacy_token.dep_,
+                            &quotlemma&quot: spacy_token.lemma_,
+                            &quotprob&quot: spacy_token.prob,
+                            &quotis_punct&quot: spacy_token.is_punct,
+                            &quotis_stop&quot: spacy_token.is_stop,
+                            &quotcluster&quot: spacy_token.cluster,
+                            &quotdependency_from&quot: None,
+                            &quotdependency_to&quot: [],
+                            &quotuser_dependency_from&quot: [],  &#47&#47 User-defined dependency of any nature
+                            &quotuser_dependency_to&quot: [],  &#47&#47 User-defined dependency of any nature
+                            &quotis_root&quot: False,
+                        }
+
+                    for spacy_token in spacy_doc:
+                        self._dependency_path(spacy_token, sent_index, part)
+
+                part.percolate_tokens_to_entities()
+                part.compute_tokens_depth()
+                part.set_entities_head_tokens()
+
+            outer_bar.next()
+
+       </a> outer_bar.finish()
+
+        if self.constituency_parser is True:
+            self.parser.parse(dataset)</code></pre><img src="254737946.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/Rostlab/nalaf/commit/9c05426517a2783d03ec88197b27706e9f877b12#diff-5f79f1170c9a756a2536ee9e50f68fa4e6586befdfe8b20709de0d6f5b041c63L61' target='_blank'>Link</a></div><div id='project'> Project Name: Rostlab/nalaf</div><div id='commit'> Commit Name: 9c05426517a2783d03ec88197b27706e9f877b12</div><div id='time'> Time: 2017-02-19</div><div id='author'> Author: i@juanmi.rocks</div><div id='file'> File Name: nalaf/preprocessing/parsers.py</div><div id='class'> Class Name: SpacyParser</div><div id='method'> Method Name: parse</div><BR><BR><div id='link'><a href='https://github.com/Rostlab/nalaf/commit/a7949425b0ff59786c9baf976e112ac2e07f3f77#diff-92979473700fddc9915a4b7222cb40d1f290d32930dda060f60bd807b0d0351eL133' target='_blank'>Link</a></div><div id='project'> Project Name: Rostlab/nalaf</div><div id='commit'> Commit Name: a7949425b0ff59786c9baf976e112ac2e07f3f77</div><div id='time'> Time: 2016-11-03</div><div id='author'> Author: i@juanmi.rocks</div><div id='file'> File Name: nalaf/learning/taggers.py</div><div id='class'> Class Name: StubSameSentenceRelationExtractor</div><div id='method'> Method Name: annotate</div><BR><BR><div id='link'><a href='https://github.com/Rostlab/nalaf/commit/88935c4463006f2fe8f2cee1d5b893461589ca24#diff-dc8f82fa934caf53e3d350ed394561083d7c996b1da1d84297682c3b4d5d975aL297' target='_blank'>Link</a></div><div id='project'> Project Name: Rostlab/nalaf</div><div id='commit'> Commit Name: 88935c4463006f2fe8f2cee1d5b893461589ca24</div><div id='time'> Time: 2017-03-25</div><div id='author'> Author: i@juanmi.rocks</div><div id='file'> File Name: nalaf/structures/data.py</div><div id='class'> Class Name: Dataset</div><div id='method'> Method Name: validate_entity_offsets</div><BR>

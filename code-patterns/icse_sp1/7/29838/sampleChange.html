@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    if comm.rank == 0:
+        &#47&#47 ChainerMN integration supports only RDB backend.
+        <a id="change">sqlite_file = tempfile.NamedTemporaryFile()</a>
+        sqlite_url = &quotsqlite:///{}&quot.format(sqlite_file.name)
+
+        study_uuid = pfnopt.create_study(storage=sqlite_url).study_uuid
+    else:
+        study_uuid, sqlite_url = None, None
+
+    &#47&#47 Please make sure common study and storage are shared among nodes.
+    <a id="change">study_uuid = comm.bcast_obj(study_uuid)</a>
+    sqlite_url = comm.bcast_obj(sqlite_url)
+
+    &#47&#47 Run optimization!
+    study = pfnopt.integration.minimize_chainermn(
+        objective, study_uuid, comm, storage=sqlite_url, n_trials=25)
+
+    print(&quotNumber of finished trials: &quot, len(study.trials))
+
+    print(&quotBest trial:&quot)
+    trial = study.best_trial
+
+    print(&quot  Value: &quot, trial.value)
+
+    print(&quot  Params: &quot)
+    for key, value in trial.params.items():
+        print(&quot    {}: {}&quot.format(key, value))
+
+    if comm.rank == 0:
+        <a id="change">sqlite_file.close()</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+if __name__ == &quot__main__&quot:
+    &#47&#47 Please make sure common study and storage are shared among nodes.
+    <a id="change">study_uuid = sys.argv[1]</a>
+    storage_url = sys.argv[2]
+
+    comm = chainermn.create_communicator(&quotnaive&quot)
+    if comm.rank == 0:
+        print(&quotStudy UUID: &quot, study_uuid)
+        print(&quotStorage URL: &quot, storage_url)
+        print(&quotNumber of nodes: &quot, comm.size)
+
+    &#47&#47 Run optimization!
+    study = pfnopt.integration.minimize_chainermn(
+        objective, study_uuid, comm, storage=storage_url, n_trials=25)
+
+    <a id="change">if comm.rank == 0:
+        print(&quotNumber of finished trials: &quot, len(study.trials))
+        print(&quotBest trial:&quot)
+        trial = study.best_trial
+        print(&quot  Value: &quot, trial.value)
+        print(&quot  Params: &quot)
+        for key, value in trial.params.items():
+            print(&quot    {}: {}&quot.format(key, value))</a>
+</code></pre>

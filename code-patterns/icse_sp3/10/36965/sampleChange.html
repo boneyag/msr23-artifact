@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if __version__ != _state[&quotversion&quot]:
+            logger.warning("Loaded model is from baseline version %s, running version is %s", _state[&quotversion&quot], __version__)
+        _state[&quotsess&quot] = kwargs.pop(&quotsess&quot, tf.Session())
+        <a id="change">embeddings_info = _state.pop(&quotembeddings&quot)</a>
+        embeddings = reload_embeddings(embeddings_info, basename)
+        &#47&#47 If there is a kwarg that is the same name as an embedding object that
+        &#47&#47 is taken to be the input of that layer. This allows for passing in
+        &#47&#47 subgraphs like from a tf.split (for data parallel) or preprocessing
+        &#47&#47 graphs that convert text to indices
+        <a id="change">for k in embeddings_info:
+            if k in kwargs:
+                _state[k] = kwargs[k]
+        &#47&#47 TODO: convert labels into just another vocab and pass number of labels to models.
+       </a> labels = read_json("{}.labels".format(basename))
+        model = cls.create(embeddings, labels, **_state)
+        model._state = _state
+        if kwargs.get(&quotinit&quot, True):</code></pre><h3>After Change</h3><pre><code class='java'>
+        if __version__ != _state[&quotversion&quot]:
+            logger.warning("Loaded model is from baseline version %s, running version is %s", _state[&quotversion&quot], __version__)
+        _state[&quotsess&quot] = kwargs.pop(&quotsess&quot, tf.Session())
+        <a id="change">with _state[&quotsess&quot].graph.as_default():
+            embeddings_info = _state.pop(&quotembeddings&quot)
+            embeddings = reload_embeddings(embeddings_info, basename)
+            &#47&#47 If there is a kwarg that is the same name as an embedding object that
+            &#47&#47 is taken to be the input of that layer. This allows for passing in
+            &#47&#47 subgraphs like from a tf.split (for data parallel) or preprocessing
+            &#47&#47 graphs that convert text to indices
+            for k in embeddings_info:
+                if k in kwargs:
+                    _state[k] = kwargs[k]
+            &#47&#47 TODO: convert labels into just another vocab and pass number of labels to models.
+            labels = read_json("{}.labels".format(basename))
+            model = cls.create(embeddings, labels, **_state)
+            model._state = _state
+            if kwargs.get(&quotinit&quot, True):
+                model.sess.run(tf.global_variables_initializer())
+            model.saver = tf.train.Saver()
+            model.saver.restore(model.sess, basename)
+            return model
+
+   </a> @property
+    def lengths_key(self):
+        return self._lengths_key
+</code></pre>

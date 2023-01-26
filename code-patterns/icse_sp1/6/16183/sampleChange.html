@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        err_prefix = "Cannot create endpoint. "
+        assert route not in self.get_all_routes(), \
+            "{} Route &quot{}&quot is already registered.".format(err_prefix, route)
+        <a id="change">assert endpoint_name not in self.get_all_endpoints(), \
+            "{} Endpoint &quot{}&quot is already registered.".format(err_prefix,
+                                                             endpoint_name)</a>
+        self.route_table.register_service(
+            route, endpoint_name, methods=methods)
+        [http_proxy] = self.get_http_proxy()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            &#47&#47 TODO(edoakes): move this to client side.
+            err_prefix = "Cannot create endpoint."
+            <a id="change">if route in self.routes:
+                if self.routes[route] == (endpoint, methods):
+                    return
+                else:
+                    raise ValueError(
+                        "{} Route &quot{}&quot is already registered.".format(
+                            err_prefix, route))
+
+           </a> if endpoint in self.get_all_endpoints():
+                raise ValueError(
+                    "{} Endpoint &quot{}&quot is already registered.".format(
+                        err_prefix, endpoint))
+
+            <a id="change">logger.info(
+                "Registering route {} to endpoint {} with methods {}.".format(
+                    route, endpoint, methods))</a>
+
+            <a id="change">self.routes[route] = (endpoint, methods)</a>
+
+            &#47&#47 NOTE(edoakes): we must write a checkpoint before pushing the
+            &#47&#47 update to avoid inconsistent state if we crash after pushing the
+            &#47&#47 update.</code></pre>

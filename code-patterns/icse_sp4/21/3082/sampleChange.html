@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      sess.run(init_op)
+      trained_saver = tf.train.Saver()
+      trained_saver.restore(sess, last_checkpoint)
+      <a id="change">saver = tf.train.Saver()</a>
+      <a id="change">saver.export_meta_graph(filename=os.path.join(output_dir, &quotexport.meta&quot))</a>
+      <a id="change">saver.save(
+          sess, os.path.join(output_dir, &quotexport&quot), write_meta_graph=False)</a>
+
+  def build_prediction_graph(self):
+    Builds prediction graph and registers appropriate endpoints.
+    examples = tf.placeholder(tf.string, shape=(None,))</code></pre><h3>After Change</h3><pre><code class='java'>
+    logging.info(&quotExporting prediction graph to %s&quot, output_dir)
+    with tf.Session(graph=tf.Graph()) as sess:
+      &#47&#47 Build and save prediction meta graph and trained variable values.
+      <a id="change">input_signatures</a>, output_signatures = self.build_prediction_graph()
+      &#47&#47 Remove this if once Tensorflow 0.12 is standard.
+      try:
+        init_op = tf.global_variables_initializer()
+      except AttributeError:
+        init_op = tf.initialize_all_variables()
+      sess.run(init_op)
+      trained_saver = tf.train.Saver()
+      trained_saver.restore(sess, last_checkpoint)
+
+      predict_signature_def = signature_def_utils.build_signature_def(
+          input_signatures, output_signatures,
+          signature_constants.PREDICT_METHOD_NAME)
+      &#47&#47 Create a saver for writing SavedModel training checkpoints.
+      <a id="change">build = builder.SavedModelBuilder(
+          os.path.join(output_dir, &quotsaved_model&quot))</a>
+      <a id="change">build.add_meta_graph_and_variables(
+          sess, [tag_constants.SERVING],
+          signature_def_map={
+              signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+                  predict_signature_def
+          },
+          assets_collection=tf.get_collection(tf.GraphKeys.ASSET_FILEPATHS))</a>
+      <a id="change">build.save()</a>
+
+  def build_prediction_graph(self):
+    Builds prediction graph and registers appropriate endpoints.
+    examples = tf.placeholder(tf.string, shape=(None,))</code></pre>

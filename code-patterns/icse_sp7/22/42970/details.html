@@ -1,0 +1,37 @@
+<html><h3>b1eeb934494ef1eee20cf2d35b718790cb9cb550,python/dgl/runtime/scheduler.py,,schedule_update_all,#Any#Any#Any#Any#,258
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    reduced_feat = _gen_send_reduce(call_type, graph,
+            message_func, reduce_func, (var_src, var_dst, var_eid), recv_nodes)
+    &#47&#47 generate optional apply
+    <a id="change">if apply_func:
+        &#47&#47 To avoid writing reduced features back to node frame and reading
+        &#47&#47 it again for apply phase. Instead, we first read the the node
+        &#47&#47 features and "merge" it with the reduced features.
+        v_nf = ir.READ_ROW(var_nf, var_recv_nodes)
+        v_nf = ir.UPDATE_DICT(v_nf, reduced_feat)
+        def _afunc_wrapper(node_data):
+            nb = NodeBatch(graph, recv_nodes, node_data)
+            return apply_func(nb)
+        afunc = var.FUNC(_afunc_wrapper)
+        applied_feat = ir.NODE_UDF(afunc, v_nf)
+        final_feat = ir.UPDATE_DICT(reduced_feat, applied_feat)
+    else:
+        final_feat = reduced_feat
+   </a> ir.WRITE_DICT_(var_nf, final_feat)
+
+def schedule_apply_nodes(graph, v, apply_func):
+    get apply nodes schedule</code></pre><h3>After Change</h3><pre><code class='java'>
+        var_dst = var.IDX(dst)
+        var_eid = var.IDX(eid)
+        &#47&#47 generate send + reduce
+        <a id="change">reduced_feat</a> = _gen_send_reduce(call_type, graph,
+                message_func, reduce_func, (var_src, var_dst, var_eid), recv_nodes)
+        &#47&#47 generate optional apply
+        <a id="change">final_feat = _apply_with_accum(graph, var_recv_nodes, var_nf, reduced_feat, apply_func)</a>
+        ir.WRITE_DICT_(var_nf, final_feat)
+
+def schedule_apply_nodes(graph, v, apply_func):
+    get apply nodes schedule</code></pre><img src="201529571.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 16</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/b1eeb934494ef1eee20cf2d35b718790cb9cb550#diff-361f85336af4b07603e46212d982d1d6a69a2d9c4cb402d92896a23b44c04400L124' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: b1eeb934494ef1eee20cf2d35b718790cb9cb550</div><div id='time'> Time: 2018-11-25</div><div id='author'> Author: minjie.wang@nyu.edu</div><div id='file'> File Name: python/dgl/runtime/scheduler.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: schedule_update_all</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/b1eeb934494ef1eee20cf2d35b718790cb9cb550#diff-361f85336af4b07603e46212d982d1d6a69a2d9c4cb402d92896a23b44c04400L131' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: b1eeb934494ef1eee20cf2d35b718790cb9cb550</div><div id='time'> Time: 2018-11-25</div><div id='author'> Author: minjie.wang@nyu.edu</div><div id='file'> File Name: python/dgl/runtime/scheduler.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: schedule_snr</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/b1eeb934494ef1eee20cf2d35b718790cb9cb550#diff-361f85336af4b07603e46212d982d1d6a69a2d9c4cb402d92896a23b44c04400L69' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: b1eeb934494ef1eee20cf2d35b718790cb9cb550</div><div id='time'> Time: 2018-11-25</div><div id='author'> Author: minjie.wang@nyu.edu</div><div id='file'> File Name: python/dgl/runtime/scheduler.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: schedule_recv</div><BR>

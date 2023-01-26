@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        ), "ImageFeatureEncoder require &quotin_dim&quot param in config"
+        params = config.params
+
+        <a id="change">if encoder_type == "default" or encoder_type == "identity":
+            self.module = Identity()
+            self.module.in_dim = params.in_dim
+            self.module.out_dim = params.in_dim
+        elif encoder_type == "projection":
+            if "module" not in params:
+                params = deepcopy(params)
+                params.module = "linear"
+            self.module = ProjectionEmbedding(**params)
+        elif encoder_type == "finetune_faster_rcnn_fpn_fc7":
+            self.module = FinetuneFasterRcnnFpnFc7(**params)
+        else:
+            raise NotImplementedError("Unknown Image Encoder: %s" % encoder_type)
+
+       </a> self.out_dim = self.module.out_dim
+
+    def forward(self, *args, **kwargs):
+        return self.module(*args, **kwargs)</code></pre><h3>After Change</h3><pre><code class='java'>
+        if isinstance(self._type, TextEncoderTypes):
+            self._type = self._type.value
+
+        <a id="change">if self._type == "identity":
+            self.module = nn.Identity()
+        elif self._type == "transformer":
+            self._module = TransformerEncoder(config.params)
+            self.module = self._module.module
+        elif self._type == "embedding":
+            self.module = TextEmbeddingEncoder(config.params)
+        else:
+            raise NotImplementedError(f"Unknown Text Encoder {self._type}")
+
+   </a> def forward(self, *args, **kwargs):
+        return self.module(*args, **kwargs)
+
+</code></pre>

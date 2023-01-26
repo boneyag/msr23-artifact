@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 NB: Watchman will never trigger an invalidation event for the root directory that
+    &#47&#47 is being watched. Instead, we treat any invalidation of a path directly in the
+    &#47&#47 root directory as an invalidation of the root.
+    <a id="change">if any(os.path.dirname(f) in (&quot&quot, &quot.&quot) for f in filenames):
+      filenames = tuple(filenames) + (&quot&quot, &quot.&quot)
+   </a> with self._product_graph_lock:
+      invalidated = self._scheduler.invalidate(filenames)
+      logger.debug(&quotinvalidated %d nodes for: %s&quot, invalidated, filenames)
+      return invalidated</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 NB: Watchman no longer triggers events when children are created/deleted under a directory,
+    &#47&#47 so we always need to invalidate the direct parent as well.
+    filenames = set(direct_filenames)
+    <a id="change">filenames.update(os.path.dirname(f) for f in direct_filenames)</a>
+    with self._product_graph_lock:
+      invalidated = self._scheduler.invalidate(filenames)
+      logger.debug(&quotinvalidated %d nodes for: %s&quot, invalidated, filenames)
+      return invalidated</code></pre>

@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        G_from.flat[::len(G_from) + 1] += alpha
+
+    n_channels = G_from.shape[0]  &#47&#47 G_from should be square matrix
+    C = np.r_[<a id="change">np</a>.c_[G_from, np.ones((n_channels, 1))],
+              <a id="change">np</a>.c_[<a id="change">np.ones((1, n_channels))</a>, 0]]
+    C_inv = linalg.pinv(C)
+
+    interpolation = <a id="change">np</a>.c_[G_to_from,
+                          np.ones((G_to_from.shape[0], 1))].dot(C_inv[:, :-1])
+    return interpolation
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if alpha is not None:
+        G_from.flat[::len(G_from) + 1] += alpha
+
+    <a id="change">C = np.vstack([np.hstack([G_from, np.ones((n_from, 1))]),
+                   np.hstack([np.ones((1, n_from)), [[0]]])])</a>
+    C_inv = linalg.pinv(C)
+
+    interpolation = np.hstack([G_to_from, np.ones((n_to, 1))]) @ C_inv[:, :-1]
+    assert interpolation.shape == (n_to, n_from)</code></pre>

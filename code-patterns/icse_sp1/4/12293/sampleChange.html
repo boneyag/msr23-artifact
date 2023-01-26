@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Bellman equation: compute max_q_targets using reward and max estimated Q values (0 if no next_state)
+        max_next_q_preds, _ = next_q_preds.max(dim=-1, keepdim=True)
+        max_q_targets = batch[&quotrewards&quot] + self.gamma * (1 - batch[&quotdones&quot]) * max_next_q_preds
+        <a id="change">max_q_targets = max_q_targets.detach()</a>
+        q_loss = self.net.loss_fn(act_q_preds, max_q_targets)
+
+        &#47&#47 TODO use the same loss_fn but do not reduce yet
+        if &quotPrioritized&quot in util.get_class_name(self.body.memory):  &#47&#47 PER</code></pre><h3>After Change</h3><pre><code class='java'>
+        states = batch[&quotstates&quot]
+        next_states = batch[&quotnext_states&quot]
+        q_preds = self.net(states)
+        <a id="change">with torch.no_grad():
+            next_q_preds = self.net(next_states)
+       </a> act_q_preds = q_preds.gather(-1, batch[&quotactions&quot].long().unsqueeze(-1)).squeeze(-1)
+        &#47&#47 Bellman equation: compute max_q_targets using reward and max estimated Q values (0 if no next_state)
+        max_next_q_preds, _ = next_q_preds.max(dim=-1, keepdim=True)
+        max_q_targets = batch[&quotrewards&quot] + self.gamma * (1 - batch[&quotdones&quot]) * max_next_q_preds</code></pre>

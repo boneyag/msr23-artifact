@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            &#47&#47 (5) calculate & apply current perturbation
+            x -= (
+                <a id="change">atleast_kd(delta / gradients_l2_norm.square(), gradients.ndim)</a>
+                * gradients
+            )
+            x = ep.clip(x, min_, max_)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 (1) get the scores and gradients
+            _, (scores, pred_scores), gradients = ep.value_aux_and_grad(loss_fun, x)
+
+            <a id="change">pred = scores.argmax(-1)</a>
+            num_classes = scores.shape[-1]
+
+            &#47&#47 (2) calculate gradient norm
+            gradients_l2_norm = flatten(gradients.square()).sum(1)
+
+            &#47&#47 (3) calculate delta
+            a = self.stepsize * x_l2_norm * gradients_l2_norm
+            b = pred_scores - 1.0 / num_classes
+
+            delta = ep.minimum(a, b)
+
+            &#47&#47 (4) stop the attack if an adversarial example has been found
+            &#47&#47 this is not described in the paper but otherwise once the prob. drops
+            &#47&#47 below chance level the likelihood is not decreased but increased
+            is_not_adversarial = (pred == classes).float32()
+            delta *= is_not_adversarial
+
+            &#47&#47 (5) calculate & apply current perturbation
+            a = <a id="change">atleast_kd(delta / gradients_l2_norm.square(), gradients.ndim)</a>
+            <a id="change">x -= a * gradients</a>
+
+            x = ep.clip(x, min_, max_)
+
+        return restore_type(x)</code></pre>

@@ -1,0 +1,38 @@
+<html><h3>d15a15df582f43d9bc65a434db0d64c9e276b724,python/magent/builtin/mx_model/dqn.py,DeepQNetwork,infer_action,#DeepQNetwork#Any#Any#Any#Any#,136
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        n = len(view)
+        self._reset_bind_size(n)
+        <a id="change">with self.ctx:
+            data_batch = mx.io.DataBatch(data=[mx.nd.array(view), mx.nd.array(feature)])
+            self.model.forward(data_batch, is_train=False)
+            qvalue_batch = self.model.get_outputs()[0]
+            best_actions = mx.nd.argmax(qvalue_batch, axis=1).asnumpy()
+
+       </a> random = np.random.randint(self.num_actions, size=(n,))
+        cond = np.random.uniform(0, 1, size=(n,)) &lt; eps
+        ret = np.where(cond, random, best_actions)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            eps = 0
+
+        n = len(view)
+        <a id="change">if n &lt; self.num_gpu:
+            view = np.tile(view, (self.num_gpu, 1, 1, 1))
+            feature = np.tile(feature, (self.num_gpu, 1))
+
+       </a> batch_size = min(len(view), self.infer_batch_size)
+        self._reset_bind_size(batch_size)
+        best_actions = []
+        infer_iter = mx.io.NDArrayIter(data=[view, feature], batch_size=batch_size)
+        <a id="change">for batch in infer_iter:
+            self.model.forward(batch, is_train=False)
+            qvalue_batch = self.model.get_outputs()[0]
+            batch_action = mx.nd.argmax(qvalue_batch, axis=1)
+            best_actions.append(batch_action)
+       </a> best_actions = np.array([x.asnumpy() for x in best_actions]).flatten()
+        best_actions = best_actions[:n]
+
+        random = np.random.randint(self.num_actions, size=(n,))</code></pre><img src="284451892.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/geek-ai/MAgent/commit/d15a15df582f43d9bc65a434db0d64c9e276b724#diff-bd772243ff816f61275864476a2bd3176dd7183846a3dcae9c9cdd19203758f2L136' target='_blank'>Link</a></div><div id='project'> Project Name: geek-ai/MAgent</div><div id='commit'> Commit Name: d15a15df582f43d9bc65a434db0d64c9e276b724</div><div id='time'> Time: 2017-11-23</div><div id='author'> Author: zhenglianmin96@163.com</div><div id='file'> File Name: python/magent/builtin/mx_model/dqn.py</div><div id='class'> Class Name: DeepQNetwork</div><div id='method'> Method Name: infer_action</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/45499cc575d9e555fd17605104cc2452698ecbad#diff-87af3ada63bed551bc7ecb24c15f225a2e8fade403ca01ca8cc138ec5631ac71L36' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: 45499cc575d9e555fd17605104cc2452698ecbad</div><div id='time'> Time: 2018-10-30</div><div id='author'> Author: jjg@fb.com</div><div id='file'> File Name: ml/rl/test/gym/gym_predictor.py</div><div id='class'> Class Name: GymDQNPredictor</div><div id='method'> Method Name: policy</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/45499cc575d9e555fd17605104cc2452698ecbad#diff-87af3ada63bed551bc7ecb24c15f225a2e8fade403ca01ca8cc138ec5631ac71L59' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: 45499cc575d9e555fd17605104cc2452698ecbad</div><div id='time'> Time: 2018-10-30</div><div id='author'> Author: jjg@fb.com</div><div id='file'> File Name: ml/rl/test/gym/gym_predictor.py</div><div id='class'> Class Name: GymDQNPredictor</div><div id='method'> Method Name: predict</div><BR>

@@ -1,0 +1,59 @@
+<html><h3>2feab9beb8c59f05ca2e1938f484b6bce638af47,models/experimental/mask_rcnn/dataloader.py,InputReader,__call__,#InputReader#Any#,293
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Parse the fetched records to input tensors for model function.
+    dataset = dataset.map(_dataset_parser, num_parallel_calls=64)
+    dataset = dataset.prefetch(batch_size)
+    dataset = <a id="change">dataset.batch(batch_size, drop_remainder=True)</a>
+
+    def _process_example(images, score_targets, box_targets, source_ids,
+                         image_info, boxes, is_crowds, areas, classes,
+                         cropped_gt_masks):
+      Processes one batch of data.
+      &#47&#47 Transposes images for TPU performance.
+      &#47&#47 Given the batch size, the batch dimesion (N) goes to either the minor
+      &#47&#47 ((H, W, C, N) when N &gt; C) or the second-minor ((H, W, N, C) when N &lt; C)
+      &#47&#47 dimension. Here, we assume N is 4 or 8 and C is 3, so we use
+      &#47&#47 (H, W, C, N).
+      if (params[&quottranspose_input&quot] and
+          self._mode == tf.estimator.ModeKeys.TRAIN):
+        images = tf.transpose(images, [1, 2, 3, 0])
+
+      labels = {}
+      for level in range(params[&quotmin_level&quot], params[&quotmax_level&quot] + 1):
+        labels[&quotscore_targets_%d&quot % level] = score_targets[level]
+        labels[&quotbox_targets_%d&quot % level] = box_targets[level]
+      &#47&#47 Concatenate groundtruth annotations to a tensor.
+      groundtruth_data = tf.concat([boxes, is_crowds, areas, classes], axis=2)
+      labels[&quotsource_ids&quot] = source_ids
+      labels[&quotgroundtruth_data&quot] = groundtruth_data
+      labels[&quotimage_info&quot] = image_info
+      labels[&quotcropped_gt_masks&quot] = cropped_gt_masks
+      if self._mode == tf.estimator.ModeKeys.PREDICT:
+        features = dict(
+            images=images,
+            image_info=image_info,
+            groundtruth_data=groundtruth_data,
+            source_ids=source_ids)
+        return features
+      else:
+        return images, labels
+
+    <a id="change">dataset = dataset.map(_process_example)</a>
+    dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
+
+    if self._num_examples &gt; 0:
+      dataset = dataset.take(self._num_examples)</code></pre><h3>After Change</h3><pre><code class='java'>
+      dataset = dataset.shuffle(64)
+
+    &#47&#47 Parse the fetched records to input tensors for model function.
+    dataset = <a id="change">dataset.apply(
+        tf.contrib.data.map_and_batch(
+            _dataset_parser, batch_size=batch_size,
+            num_parallel_batches=64, drop_remainder=True))</a>
+
+    &#47&#47 Transposes images for TPU performance.
+    &#47&#47 Given the batch size, the batch dimesion (N) goes to either the minor
+    &#47&#47 ((H, W, C, N) when N &gt; C) or the second-minor ((H, W, N, C) when N &lt; C)</code></pre><img src="284792671.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/2feab9beb8c59f05ca2e1938f484b6bce638af47#diff-1f93f290d06b278b86c20795a0d87c507a824041e8e0492a6699e866364776d1L413' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 2feab9beb8c59f05ca2e1938f484b6bce638af47</div><div id='time'> Time: 2019-01-22</div><div id='author'> Author: frankchn@google.com</div><div id='file'> File Name: models/experimental/mask_rcnn/dataloader.py</div><div id='class'> Class Name: InputReader</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/benchmarks/commit/dcbb03bc8454537b7f79955ec4dbbeb2c51afe74#diff-31b842b0b3051023dbaefc9948e341e51dfd1496d58886b9fba8da320f27f2feL333' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/benchmarks</div><div id='commit'> Commit Name: dcbb03bc8454537b7f79955ec4dbbeb2c51afe74</div><div id='time'> Time: 2018-09-11</div><div id='author'> Author: haoyuzhang@google.com</div><div id='file'> File Name: scripts/tf_cnn_benchmarks/ssd_dataloader.py</div><div id='class'> Class Name: SSDInputReader</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/google/deepvariant/commit/66d19dc2674995c96f66b65339ae5fdcd65c2b68#diff-6d7f3a52e99600160dcb6e9d885b284db9fc0f30f1475037a5e14d91685d16a1L236' target='_blank'>Link</a></div><div id='project'> Project Name: google/deepvariant</div><div id='commit'> Commit Name: 66d19dc2674995c96f66b65339ae5fdcd65c2b68</div><div id='time'> Time: 2019-03-28</div><div id='author'> Author: mdepristo@google.com</div><div id='file'> File Name: deepvariant/data_providers.py</div><div id='class'> Class Name: DeepVariantInput</div><div id='method'> Method Name: __call__</div><BR>

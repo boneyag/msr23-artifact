@@ -1,0 +1,85 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            kind_of_search = sources[source][&quotkind&quot]
+            domain = sources[source][&quotdomain&quot]
+            all_genes_searched_against = sources[source][&quotgenes&quot]
+            <a id="change">hmm_model = sources[source][&quotmodel&quot]</a>
+            <a id="change">reference = sources[source][&quotref&quot]</a>
+            noise_cutoff_terms = sources[source][&quotnoise_cutoff_terms&quot]
+
+            <a id="change">hmm_scan_hits_txt = commander.run_hmmscan(source,
+                                                      alphabet,
+                                                      context,
+                                                      kind_of_search,
+                                                      domain,
+                                                      len(all_genes_searched_against),
+                                                      hmm_model,
+                                                      reference,
+                                                      noise_cutoff_terms)</a>
+
+            if not hmm_scan_hits_txt:
+                search_results_dict = {}
+            else:
+                parser = parser_modules[&quotsearch&quot][&quothmmscan&quot](hmm_scan_hits_txt, alphabet=alphabet, context=context)
+                search_results_dict = parser.get_search_results()
+
+            if not len(search_results_dict):
+                run.info_single("The HMM source &quot%s&quot returned 0 hits. SAD (but it&quots stil OK)." % source, nl_before=1)
+
+
+            if context == &quotCONTIG&quot:
+                &#47&#47 we are in trouble here. because our search results dictionary contains no gene calls, but contig
+                &#47&#47 names that contain our hits. on the other hand, the rest of the code outside of this if statement
+                &#47&#47 expects a `search_results_dict` with gene callers id in it. so there are two things we need to do
+                &#47&#47 to do. one is to come up with some new gene calls and add them to the contigs database. so things
+                &#47&#47 will go smoothly downstream. two, we will need to update our `search_results_dict` so it looks
+                &#47&#47 like a a dictionary the rest of the code expects with `gene_callers_id` fields. both of these
+                &#47&#47 steps are going to be taken care of in the following function. magic.
+
+                if source != "Ribosomal_RNAs":
+                    self.run.warning("You just called an HMM profile that runs on contigs and not genes. Because this HMM\
+                                      operation is not directly working with gene calls anvi&quoto already knows about, the resulting\
+                                      hits will need to be added as &quotnew gene calls&quot into the contigs database. So far so good.\
+                                      But blecause we are in the contigs realm rater than genes realm, it is likely that\
+                                      resulting hits will not correspond to open reading frames that are supposed to be\
+                                      translated (such as ribosomal RNAs), because otherwise you would be working with genes\
+                                      instad of defining CONTIGS as your context in that HMM profile you just used unless you\
+                                      not sure what you are doing. Hence, anvi&quoto will not report amino acid sequences for the\
+                                      new gene calls it will recover through these HMMs. Please take a moment and you be the\
+                                      judge of whether this will influence your pangenomic analyses or other things you thought\
+                                      you would be doing with the result of this HMM search downstream. If you do not feel like\
+                                      being the judge of anything today you can move on yet remember to remember this if things\
+                                      look somewhat weird later on.",
+                                     header="Psst. Your fancy HMM profile &quot%s&quot speaking" % source,
+                                     lc="green")
+
+                num_hits_before = len(search_results_dict)
+                search_results_dict = utils.get_pruned_HMM_hits_dict(search_results_dict)
+                num_hits_after = len(search_results_dict)
+
+                if num_hits_before != num_hits_after:
+                    self.run.info(&quotPruned&quot, &quot%d out of %d hits were removed due to redundancy&quot % (num_hits_before - num_hits_after, num_hits_before))
+
+                search_results_dict = self.add_new_gene_calls_to_contigs_db_and_update_serach_results_dict(kind_of_search,
+                                                                                                           search_results_dict,
+                                                                                                           skip_amino_acid_sequences=True)
+
+            <a id="change">self.append(source, reference, kind_of_search, domain, all_genes_searched_against, search_results_dict)</a>
+
+        &#47&#47 FIXME: I have no clue why importing the anvio module is necessary at this point,
+        &#47&#47        but without this, mini test fails becasue "`anvio.DEBUG` is being used
+        &#47&#47        before initialization". nonsense.</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        for source in sources:
+            threads = []
+            <a id="change">for i in range(self.num_threads_to_use):
+                new_thread = Thread(target=hmm_worker, args=(i, source))
+                new_thread.start()
+                threads.append(new_thread)
+
+           </a> for t in threads:
+                t.join()
+
+        &#47&#47 FIXME: I have no clue why importing the anvio module is necessary at this point,</code></pre>

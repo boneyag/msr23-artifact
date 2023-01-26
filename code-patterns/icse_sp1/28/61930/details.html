@@ -1,0 +1,64 @@
+<html><h3>979b8c9efa551e8c948a4aca145367a2d87ac8d6,test/distributions/test_multitask_multivariate_normal.py,TestMultiTaskMultivariateNormal,test_multitask_multivariate_normal,#TestMultiTaskMultivariateNormal#Any#,39
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def test_multitask_multivariate_normal(self, cuda=False):
+        device = torch.device("cuda") if cuda else torch.device("cpu")
+        mean = torch.tensor([[0, 1], [2, 3]], dtype=<a id="change">torch.float</a>, device=device)
+        <a id="change">variance = 1 + torch.arange(4, dtype=torch.float, device=device)</a>
+        covmat = <a id="change">torch.diag(variance)</a>
+        mtmvn = MultitaskMultivariateNormal(mean=mean, covariance_matrix=covmat)
+        self.assertTrue(torch.equal(mtmvn.mean, mean))
+        self.assertTrue(approx_equal(mtmvn.variance, variance.view(2, 2)))
+        self.assertTrue(torch.equal(mtmvn.scale_tril, covmat.sqrt()))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def test_multitask_multivariate_normal(self, cuda=False):
+        device = torch.device("cuda") if cuda else torch.device("cpu")
+        <a id="change">for dtype in (torch.float, torch.double):
+            mean = torch.tensor([[0, 1], [2, 3]], dtype=dtype, device=device)
+            variance = torch.tensor([[1, 2], [3, 4]], dtype=dtype, device=device)
+
+            &#47&#47 interleaved
+            covmat = variance.view(-1).diag()
+            mtmvn = MultitaskMultivariateNormal(mean=mean, covariance_matrix=covmat)
+            self.assertTrue(torch.equal(mtmvn.mean, mean))
+            self.assertTrue(torch.allclose(mtmvn.variance, variance))
+            self.assertTrue(torch.allclose(mtmvn.scale_tril, covmat.sqrt()))
+            self.assertTrue(mtmvn.event_shape == torch.Size([2, 2]))
+            mvn_plus1 = mtmvn + 1
+            self.assertTrue(torch.equal(mvn_plus1.mean, mtmvn.mean + 1))
+            self.assertTrue(torch.equal(mvn_plus1.covariance_matrix, mtmvn.covariance_matrix))
+            mvn_times2 = mtmvn * 2
+            self.assertTrue(torch.equal(mvn_times2.mean, mtmvn.mean * 2))
+            self.assertTrue(torch.equal(mvn_times2.covariance_matrix, mtmvn.covariance_matrix * 4))
+            mvn_divby2 = mtmvn / 2
+            self.assertTrue(torch.equal(mvn_divby2.mean, mtmvn.mean / 2))
+            self.assertTrue(torch.equal(mvn_divby2.covariance_matrix, mtmvn.covariance_matrix / 4))
+            self.assertAlmostEqual(mtmvn.entropy().item(), 7.2648, places=4)
+            self.assertAlmostEqual(
+                mtmvn.log_prob(torch.zeros(2, 2, device=device, dtype=dtype)).item(), -7.3064, places=4
+            )
+            logprob = mtmvn.log_prob(torch.zeros(3, 2, 2, device=device, dtype=dtype))
+            logprob_expected = -7.3064 * torch.ones(3, device=device, dtype=dtype)
+            self.assertTrue(torch.allclose(logprob, logprob_expected))
+            conf_lower, conf_upper = mtmvn.confidence_region()
+            self.assertTrue(torch.allclose(conf_lower, mtmvn.mean - 2 * mtmvn.stddev))
+            self.assertTrue(torch.allclose(conf_upper, mtmvn.mean + 2 * mtmvn.stddev))
+            self.assertTrue(mtmvn.sample().shape == torch.Size([2, 2]))
+            self.assertTrue(mtmvn.sample(torch.Size([3])).shape == torch.Size([3, 2, 2]))
+            self.assertTrue(mtmvn.sample(torch.Size([3, 4])).shape == torch.Size([3, 4, 2, 2]))
+
+            &#47&#47 non-interleaved
+            covmat = variance.transpose(-1, -2).reshape(-1).diag()
+            mtmvn = MultitaskMultivariateNormal(mean=mean, covariance_matrix=covmat, interleaved=False)
+            self.assertTrue(torch.equal(mtmvn.mean, mean))
+            self.assertTrue(torch.allclose(mtmvn.variance, variance))
+            self.assertTrue(torch.allclose(mtmvn.scale_tril, covmat.sqrt()))
+            self.assertTrue(mtmvn.event_shape == torch.Size([2, 2]))
+
+   </a> def test_multitask_multivariate_normal_cuda(self):
+        if torch.cuda.is_available():
+            with least_used_cuda_device():
+                self.test_multitask_multivariate_normal(cuda=True)</code></pre><img src="285525189.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 18</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/979b8c9efa551e8c948a4aca145367a2d87ac8d6#diff-729a59be41b6f5324047dad261f313a34713eb23377309ead711d5c41aabe4ffL40' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 979b8c9efa551e8c948a4aca145367a2d87ac8d6</div><div id='time'> Time: 2019-02-26</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: test/distributions/test_multitask_multivariate_normal.py</div><div id='class'> Class Name: TestMultiTaskMultivariateNormal</div><div id='method'> Method Name: test_multitask_multivariate_normal</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/979b8c9efa551e8c948a4aca145367a2d87ac8d6#diff-729a59be41b6f5324047dad261f313a34713eb23377309ead711d5c41aabe4ffL113' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 979b8c9efa551e8c948a4aca145367a2d87ac8d6</div><div id='time'> Time: 2019-02-26</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: test/distributions/test_multitask_multivariate_normal.py</div><div id='class'> Class Name: TestMultiTaskMultivariateNormal</div><div id='method'> Method Name: test_multivariate_normal_correlated_sampels</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/979b8c9efa551e8c948a4aca145367a2d87ac8d6#diff-729a59be41b6f5324047dad261f313a34713eb23377309ead711d5c41aabe4ffL40' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 979b8c9efa551e8c948a4aca145367a2d87ac8d6</div><div id='time'> Time: 2019-02-26</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: test/distributions/test_multitask_multivariate_normal.py</div><div id='class'> Class Name: TestMultiTaskMultivariateNormal</div><div id='method'> Method Name: test_multitask_multivariate_normal</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/979b8c9efa551e8c948a4aca145367a2d87ac8d6#diff-729a59be41b6f5324047dad261f313a34713eb23377309ead711d5c41aabe4ffL131' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 979b8c9efa551e8c948a4aca145367a2d87ac8d6</div><div id='time'> Time: 2019-02-26</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: test/distributions/test_multitask_multivariate_normal.py</div><div id='class'> Class Name: TestMultiTaskMultivariateNormal</div><div id='method'> Method Name: test_multivariate_normal_batch_correlated_sampels</div><BR>

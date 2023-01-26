@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def execute(self):
+    safe_mkdir(self.workdir)
+    &#47&#47 TODO(mateor) map stderr and stdout to workunit streams (see CR 859)
+    <a id="change">with self.context.new_workunit(name=&quotapk-bundle&quot, labels=[WorkUnit.MULTITOOL]):
+      targets = self.context.targets(self.is_app)
+      with self.invalidated(targets) as invalidation_check:
+        invalid_targets = []
+        for vt in invalidation_check.invalid_vts:
+          invalid_targets.extend(vt.targets)
+        for target in invalid_targets:
+          &#47&#47 &quotinput_dirs&quot is the folder containing the Android dex file
+          input_dirs = []
+          &#47&#47 &quotgen_out&quot holds resource folders (e.g. &quotres&quot)
+          gen_out = []
+          mapping = self.context.products.get(&quotdex&quot)
+          for basedir in mapping.get(target):
+            input_dirs.append(basedir)
+
+          def gather_resources(target):
+            Gather the &quotresource_dir&quot of the target
+            if isinstance(target, AndroidResources):
+              gen_out.append(os.path.join(get_buildroot(), target.resource_dir))
+
+          target.walk(gather_resources)
+
+          process = subprocess.Popen(self.render_args(target, gen_out, input_dirs))
+          result = process.wait()
+          if result != 0:
+            raise TaskError(&quotAndroid aapt tool exited non-zero ({code})&quot.format(code=result))
+   </a> for target in targets:
+      self.context.products.get(&quotapk&quot).add(target, self.workdir).append(target.app_name + "-unsigned.apk")
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        target.walk(gather_resources)
+        args = self.render_args(target, gen_out, input_dirs)
+        with self.context.new_workunit(name=&quotapk-bundle&quot, labels=[WorkUnit.MULTITOOL]) as workunit:
+          returncode = <a id="change">subprocess.call(args, stdout=workunit.output(&quotstdout&quot),
+                                       stderr=workunit.output(&quotstderr&quot))</a>
+          if returncode:
+            raise TaskError(&quotAndroid aapt tool exited non-zero: {0}&quot.format(returncode))
+    for target in targets:
+      self.context.products.get(&quotapk&quot).add(target, self.workdir).append(&quot{0}.unsigned.apk&quot</code></pre>

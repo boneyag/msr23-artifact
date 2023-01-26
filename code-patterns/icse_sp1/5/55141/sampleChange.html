@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      raise NotImplementedError(
+          &quotMean and var only support SparseTensors with rank 2&quot)
+
+    col_count, col_indices = x.dense_shape[1], <a id="change">x.indices[:, 1]</a>
+    x_sum = tf.math.unsorted_segment_sum(x.values, col_indices, col_count)
+    x_mean = tf.where(tf.math.greater(x_count, 0),
+                      x_sum / x_count,
+                      tf.zeros_like(x_count, dtype=x.dtype))</code></pre><h3>After Change</h3><pre><code class='java'>
+    x_mean = tf.where(tf.math.greater(x_count, 0),
+                      x_sum / x_count,
+                      tf.zeros_like(x_count, dtype=x.dtype))
+    x_minus_mean = tf.sparse.add(x, -<a id="change">tf.broadcast_to(x_mean, tf.shape(x))</a>)
+    x_minus_mean_sparse = tf.SparseTensor(x.indices,
+                                          tf.gather_nd(x_minus_mean, x.indices),
+                                          x.dense_shape)</code></pre>

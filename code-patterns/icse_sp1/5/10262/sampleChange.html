@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      losses = ops.convert_to_tensor(losses)
+      input_dtype = losses.dtype
+      losses = math_ops.cast(losses, dtype=dtypes.float32)
+      <a id="change">weights = math_ops.cast(weights, dtype=dtypes.float32)</a>
+      weighted_losses = math_ops.multiply(losses, weights)
+      if reduction == Reduction.NONE:
+        loss = weighted_losses
+      else:
+        loss = math_ops.reduce_sum(weighted_losses)
+        if reduction == Reduction.MEAN:
+          loss = _safe_mean(
+              loss, math_ops.reduce_sum(array_ops.ones_like(losses) * weights))
+        elif (reduction == Reduction.SUM_BY_NONZERO_WEIGHTS or
+              reduction == Reduction.SUM_OVER_NONZERO_WEIGHTS):
+          loss = _safe_mean(loss, _num_present(losses, weights))
+        elif reduction == Reduction.SUM_OVER_BATCH_SIZE:
+          loss = _safe_mean(loss, _num_elements(losses))
+
+      &#47&#47 Convert the result back to the input type.
+      loss = math_ops.cast(loss, input_dtype)
+      <a id="change">util.add_loss(loss, loss_collection)</a>
+      return loss
+
+
+@tf_export(v1=["losses.absolute_difference"])</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 supported so it only causes unnecessary ops. Also skip it because it uses
+    &#47&#47 a DenseToDenseSetOperation op that is incompatible with XLA when
+    &#47&#47 the shape(s) are dynamic.
+    <a id="change">if control_flow_ops.get_enclosing_xla_context() is not None:
+      return compute_loss(losses, weights, loss_collection, reduction)
+    else:
+      with ops.control_dependencies(
+          (weights_broadcast_ops.assert_broadcastable(weights, losses),)):
+        return compute_loss(losses, weights, loss_collection, reduction)
+
+
+</a>@tf_export(v1=["losses.absolute_difference"])
+@dispatch.add_dispatch_support
+def absolute_difference(
+    labels, predictions, weights=1.0, scope=None,</code></pre>

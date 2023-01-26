@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                sample_size=opt.sample_size,
+                sample_duration=opt.sample_duration)
+
+    <a id="change">if not opt.no_cuda:
+        model = model.cuda()
+        model = nn.DataParallel(model, device_ids=None)
+
+   </a> if opt.pretrain_path:
+        print(&quotloading pretrained model {}&quot.format(opt.pretrain_path))
+        pretrain = torch.load(opt.pretrain_path)
+        assert opt.arch == pretrain[&quotarch&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+                sample_size=opt.sample_size,
+                sample_duration=opt.sample_duration)
+
+    <a id="change">if not opt.no_cuda:
+        model = model.cuda()
+        model = nn.DataParallel(model, device_ids=None)
+
+        if opt.pretrain_path:
+            print(&quotloading pretrained model {}&quot.format(opt.pretrain_path))
+            pretrain = torch.load(opt.pretrain_path)
+            assert opt.arch == pretrain[&quotarch&quot]
+
+            model.load_state_dict(pretrain[&quotstate_dict&quot])
+
+            if opt.model == &quotdensenet&quot:
+                model.module.classifier = nn.Linear(
+                    model.module.classifier.in_features, opt.n_finetune_classes)
+                model.module.classifier = model.module.classifier.cuda()
+            else:
+                model.module.fc = nn.Linear(model.module.fc.in_features,
+                                            opt.n_finetune_classes)
+                model.module.fc = model.module.fc.cuda()
+
+            parameters = get_fine_tuning_parameters(model, opt.ft_begin_index)
+            return model, parameters
+    else:
+        if opt.pretrain_path:
+            print(&quotloading pretrained model {}&quot.format(opt.pretrain_path))
+            pretrain = torch.load(opt.pretrain_path)
+            assert opt.arch == pretrain[&quotarch&quot]
+
+            model.load_state_dict(pretrain[&quotstate_dict&quot])
+
+            if opt.model == &quotdensenet&quot:
+                model.classifier = nn.Linear(
+                    model.classifier.in_features, opt.n_finetune_classes)
+            else:
+                model.fc = nn.Linear(model.fc.in_features,
+                                            opt.n_finetune_classes)
+
+            parameters = get_fine_tuning_parameters(model, opt.ft_begin_index)
+            return model, parameters
+
+   </a> return model, model.parameters()
+</code></pre>

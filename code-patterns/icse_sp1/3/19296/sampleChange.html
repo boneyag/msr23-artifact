@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    res_mu2_grad = mu2.grad.data
+    res_U_grad = U.grad.data
+
+    <a id="change">assert utils.approx_equal(res_c_grad, actual_c_grad)</a>
+    assert utils.approx_equal(res_mu1_grad, actual_mu1_grad)
+    assert utils.approx_equal(res_mu2_grad, actual_mu2_grad)
+    assert utils.approx_equal(res_U_grad, actual_U_grad)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    U = torch.randn(4, 4).triu()
+    U = Variable(U.mul(U.diag().sign().unsqueeze(1).expand_as(U).triu()), requires_grad=True)
+
+    <a id="change">actual = 0.5 * (_det(T).log() +
+                    mu_diff.dot(T.inverse().mv(mu_diff)) +
+                    T.inverse().mm(U.t().mm(U)).trace() -
+                    U.diag().log().sum(0) * 2 - len(mu_diff))</a>
+    actual.backward()
+
+    actual_c_grad = c.grad.data.clone()
+    actual_mu1_grad = mu1.grad.data.clone()</code></pre>

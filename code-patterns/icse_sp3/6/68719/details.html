@@ -1,0 +1,59 @@
+<html><h3>4ac4dca40d8a123e90f2cf2d4a81d07d70a0b45d,onnx_tf/handlers/backend/scatter_elements.py,ScatterElements,version_11,#Any#Any#,11
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    updates = kwargs["tensor_dict"][node.inputs[2]]
+
+    &#47&#47 Calculate shape of the tensorflow version of indices tensor.
+    <a id="change">sparsified_dense_idx_shape = updates.get_shape().as_list()</a>
+
+    &#47&#47 Move on to convert ONNX indices to tensorflow indices in 2 steps:
+    &#47&#47
+    &#47&#47 Step 1:</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 check are there any indices are out of bounds
+    result = cls.chk_idx_out_of_bounds_along_axis(data, axis, indices)
+    msg = &quotScatterElements indices are out of bounds, please double check the indices and retry.&quot
+    <a id="change">with tf.control_dependencies(
+        [tf.compat.v1.assert_equal(result, True, message=msg)]):
+      &#47&#47 process negative indices
+      indices = cls.process_neg_idx_along_axis(data, axis, indices)
+
+      &#47&#47 Calculate shape of the tensorflow version of indices tensor.
+      sparsified_dense_idx_shape = tf_shape(updates)
+
+      &#47&#47 Move on to convert ONNX indices to tensorflow indices in 2 steps:
+      &#47&#47
+      &#47&#47 Step 1:
+      &#47&#47   What would the index tensors look like if updates are all
+      &#47&#47   dense? In other words, produce a coordinate tensor for updates:
+      &#47&#47
+      &#47&#47   coordinate[i, j, k ...] = [i, j, k ...]
+      &#47&#47   where the shape of "coordinate" tensor is same as that of updates.
+      &#47&#47
+      &#47&#47 Step 2:
+      &#47&#47   But the coordinate tensor needs some correction because coord
+      &#47&#47   vector at position axis is wrong (since we assumed update is dense,
+      &#47&#47   but it is not at the axis specified).
+      &#47&#47   So we update coordinate vector tensor elements at psotion=axis with
+      &#47&#47   the sparse coordinate indices.
+
+      idx_tensors_per_axis = tf.meshgrid(
+          *list(
+              map(lambda x: tf.range(x, dtype=tf.dtypes.int64),
+                  sparsified_dense_idx_shape)),
+          indexing=&quotij&quot)
+      idx_tensors_per_axis[axis] = indices
+      dim_expanded_idx_tensors_per_axis = list(
+          map(lambda x: tf.expand_dims(x, axis=-1), idx_tensors_per_axis))
+      coordinate = tf.concat(dim_expanded_idx_tensors_per_axis, axis=-1)
+
+      &#47&#47 Now the coordinate tensor is in the shape
+      &#47&#47 [updates.shape, updates.rank]
+      &#47&#47 we need it to flattened into the shape:
+      &#47&#47 [product(updates.shape), updates.rank]
+      indices = tf.reshape(coordinate, [-1, tf.rank(data)])
+      updates = tf.reshape(updates, [-1])
+
+      return [tf.tensor_scatter_nd_update(data, indices, updates)]</a>
+</code></pre><img src="317870320.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/onnx/onnx-tensorflow/commit/4ac4dca40d8a123e90f2cf2d4a81d07d70a0b45d#diff-bdc40015c4427e6f3ff69bd9ae82b9f808c3139640836cfcd948fec63a1d8460L14' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnx-tensorflow</div><div id='commit'> Commit Name: 4ac4dca40d8a123e90f2cf2d4a81d07d70a0b45d</div><div id='time'> Time: 2020-01-10</div><div id='author'> Author: wtsang@us.ibm.com</div><div id='file'> File Name: onnx_tf/handlers/backend/scatter_elements.py</div><div id='class'> Class Name: ScatterElements</div><div id='method'> Method Name: version_11</div><BR><BR><div id='link'><a href='https://github.com/onnx/onnx-tensorflow/commit/6dad4c27ab4ffa96e0b699b8d5925fbe2a1f9d38#diff-ea7d1ce6cf899f64634591f56a9e68ac7699fbf8548d43d6bd65c410c35b6ad5L34' target='_blank'>Link</a></div><div id='project'> Project Name: onnx/onnx-tensorflow</div><div id='commit'> Commit Name: 6dad4c27ab4ffa96e0b699b8d5925fbe2a1f9d38</div><div id='time'> Time: 2020-10-22</div><div id='author'> Author: pluradj@us.ibm.com</div><div id='file'> File Name: onnx_tf/handlers/backend/upsample.py</div><div id='class'> Class Name: Upsample</div><div id='method'> Method Name: version_7</div><BR><BR><div id='link'><a href='https://github.com/asyml/texar/commit/da37438735fd4b845bb0874562bd071865c480bb#diff-f47320df592dd176c8bd8a1b51f140207c729656a81dc8bdcc0354daa287115aL49' target='_blank'>Link</a></div><div id='project'> Project Name: asyml/texar</div><div id='commit'> Commit Name: da37438735fd4b845bb0874562bd071865c480bb</div><div id='time'> Time: 2018-03-17</div><div id='author'> Author: zhitinghu@gmail.com</div><div id='file'> File Name: texar/modules/encoders/rnn_encoders.py</div><div id='class'> Class Name: RNNEncoderBase</div><div id='method'> Method Name: __init__</div><BR>

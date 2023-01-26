@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def get_output(self, train):
+        if not train and not self.output_reconstruction:
+            <a id="change">return self._get_hidden(train)</a>
+
+        if self.tie_weights:
+            for e,d in zip(self.encoders, self.decoders):
+                map(self._tranpose_weights, e.get_weights(), d.get_weights())</code></pre><h3>After Change</h3><pre><code class='java'>
+        return self.encoder.get_output(train)
+
+    def get_output(self, train):
+        decoded = <a id="change">self.decoder.get_output(train)</a>
+
+        if self.tie_weights:
+            encoder_params = self.encoder.get_weights()
+            decoder_params = self.decoder.get_weights()
+            for dec_param, enc_param in zip(decoder_params, encoder_params):
+                if len(dec_param.shape) &gt; 1:
+                    enc_param = dec_param.T
+
+        <a id="change">return decoded</a>
+
+    def get_config(self):
+        return {"name":self.__class__.__name__,
+                "encoder_config":self.encoder.get_config(),</code></pre>

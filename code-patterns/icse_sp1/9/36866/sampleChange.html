@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if self.combine_terms:
+            res = log_likelihood - kl_divergence
+            <a id="change">for _, param, prior in self.named_parameter_priors():
+                res.add_(prior.log_prob(param).sum().div(self.num_data))
+           </a> for _, params, transform, prior in self.named_derived_priors():
+                res.add_(prior.log_prob(transform(*params)).sum().div(self.num_data))
+            return res
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+        else:
+            log_prior = torch.zeros_like(log_likelihood)
+            for _, prior, params, tf in self.named_priors():
+                lp_arg = <a id="change">params[0]</a> if tf is None else tf(*params)
+                log_prior.add_(prior.log_prob(lp_arg).sum())
+            return log_likelihood, kl_divergence, log_prior.div(self.num_data)
+</code></pre>

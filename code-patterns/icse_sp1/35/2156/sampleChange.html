@@ -1,0 +1,77 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.model.train = False
+        total_correct = 0
+        total_sum = 0
+        <a id="change">total_gold_count = 0</a>
+        <a id="change">total_guess_count = 0</a>
+        <a id="change">total_overlap_count = 0</a>
+        metrics = {}
+        steps = len(ts)
+        conll_output = kwargs.get(&quotconll_output&quot, None)
+        txts = kwargs.get(&quottxts&quot, None)
+        handle = None
+        if conll_output is not None and txts is not None:
+            handle = open(conll_output, "w")
+        pg = create_progress_bar(steps)
+        for batch_dict in pg(ts):
+
+            lengths = batch_dict[self.model.lengths_key]
+            ids = batch_dict[&quotids&quot]
+            y = batch_dict[&quoty&quot]
+            pred = self.model.predict(batch_dict)
+            correct, count, overlaps, golds, guesses = self.process_output(pred, y, lengths, ids, handle, txts)
+            total_correct += correct
+            total_sum += count
+            <a id="change">total_gold_count += golds</a>
+            <a id="change">total_guess_count += guesses</a>
+            <a id="change">total_overlap_count += overlaps</a>
+
+        total_acc = total_correct / float(total_sum)
+        &#47&#47 Only show the fscore if requested
+        <a id="change">metrics[&quotf1&quot]</a> = <a id="change">f_score(total_overlap_count, total_gold_count, total_guess_count)</a>
+        metrics[&quotacc&quot] = total_acc
+        return metrics
+
+    @staticmethod</code></pre><h3>After Change</h3><pre><code class='java'>
+        total_correct = 0
+        total_sum = 0
+
+        <a id="change">gold_spans = []</a>
+        <a id="change">pred_spans = []</a>
+
+        metrics = {}
+        steps = len(ts)
+        conll_output = kwargs.get(&quotconll_output&quot, None)
+        txts = kwargs.get(&quottxts&quot, None)
+        handle = None
+        if conll_output is not None and txts is not None:
+            handle = open(conll_output, "w")
+        pg = create_progress_bar(steps)
+        for batch_dict in pg(ts):
+
+            lengths = batch_dict[self.model.lengths_key]
+            ids = batch_dict[&quotids&quot]
+            y = batch_dict[&quoty&quot]
+            pred = self.model.predict(batch_dict)
+            correct, count, golds, guesses = self.process_output(pred, y, lengths, ids, handle, txts)
+            total_correct += correct
+            total_sum += count
+            <a id="change">gold_spans.extend(golds)</a>
+            <a id="change">pred_spans.extend(guesses)</a>
+
+        total_acc = total_correct / float(total_sum)
+        metrics[&quotacc&quot] = total_acc
+        &#47&#47 Only show the fscore if requested
+        <a id="change">metrics[&quotf1&quot]</a> = <a id="change">span_f1(gold_spans, pred_spans)</a>
+        <a id="change">if self.verbose:
+            conll_metrics = per_entity_f1(gold_spans, pred_spans)
+            conll_metrics[&quotacc&quot] = total_acc * 100
+            conll_metrics[&quottokens&quot] = total_sum
+            logger.info(conlleval_output(conll_metrics))
+       </a> return metrics
+
+    @staticmethod
+    def _get_batchsz(y):</code></pre>

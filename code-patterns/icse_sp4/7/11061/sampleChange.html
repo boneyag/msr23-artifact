@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 prev_layers is a list with elements of size
+    &#47&#47 (batch_size, layer_sizes[i-1])
+    prev_layer = Concat(axis=1, in_layers=prev_layers)
+    <a id="change">with self._get_tf("Graph").as_default():
+      alpha = TensorWrapper(
+          tf.Variable(
+              tf.truncated_normal((1,), stddev=alpha_init_stddev),
+              name="alpha_layer_%d_task%d" % (i, task)))
+      trainable_layers.append(alpha)
+
+   </a> prev_layer = prev_layer * alpha
+    dense1 = Dense(
+        in_layers=[prev_layer],
+        out_channels=layer_sizes[i - 1],</code></pre><h3>After Change</h3><pre><code class='java'>
+    alpha = layers.Variable(tf.truncated_normal((1,), stddev=alpha_init_stddev))
+    trainable_layers.append(alpha)
+
+    prev_layer = Multiply()(<a id="change">[prev_layer, alpha([])]</a>)
+    dense1 = Dense(
+        layer_sizes[i - 1],
+        kernel_initializer=tf.truncated_normal_initializer(
+            stddev=weight_init_stddev),
+        bias_initializer=tf.constant_initializer(value=bias_init_const))
+    prev_layer = dense1(prev_layer)
+    trainable_layers.append(dense1)
+
+    dense2 = Dense(
+        layer_sizes[i],
+        kernel_initializer=tf.truncated_normal_initializer(
+            stddev=weight_init_stddev),
+        use_bias=False)
+    <a id="change">prev_layer = dense2(prev_layer)</a>
+    trainable_layers.append(dense2)
+
+    return prev_layer, trainable_layers
+</code></pre>

@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47
+                if env.config[&quotrun_mode&quot] == &quotinteractive&quot:
+                    &#47&#47 need to catch output and send to python output, which will in trun be hijacked by SoS notebook
+                    <a id="change">p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)</a>
+                    out, err = p.communicate()
+                    if out and env.verbosity &gt; 1:
+                        sys.stdout.write(out.decode())
+                    if err and env.verbosity &gt; 0:
+                        sys.stderr.write(err.decode())
+                    <a id="change">ret = p.returncode</a>
+                    sys.stdout.flush()
+                    sys.stderr.flush()
+                elif &quot__std_out__&quot in env.sos_dict and &quot__std_err__&quot in env.sos_dict:
+                    if env.verbosity &gt; 1:</code></pre><h3>After Change</h3><pre><code class='java'>
+                if env.config[&quotrun_mode&quot] == &quotinteractive&quot:
+                    &#47&#47 need to catch output and send to python output, which will in trun be hijacked by SoS notebook
+                    import pexpect
+                    <a id="change">try:
+                        if isinstance(cmd, str):
+                            child = pexpect.spawn(cmd, timeout=None)
+                        else:
+                            child = pexpect.spawn(subprocess.list2cmdline(cmd), timeout=None)
+                        while True:
+                            try:
+                                child.expect(&quot\n&quot)
+                                if env.verbosity &gt; 0:
+                                    sys.stdout.write(child.before.decode() + &quot\n&quot)
+                            except pexpect.EOF:
+                                break
+                    except Exception as e:
+                        sys.stderr.write(str(e))
+                    &#47&#47 NOTE:
+                    &#47&#47 because of the use of pexpect, we do not know the
+                    &#47&#47 return code of the process at all.
+                   </a> ret = 0
+                elif &quot__std_out__&quot in env.sos_dict and &quot__std_err__&quot in env.sos_dict:
+                    if env.verbosity &gt; 1:
+                        with open(env.sos_dict[&quot__std_out__&quot], &quotab&quot) as so, open(env.sos_dict[&quot__std_err__&quot], &quotab&quot) as se:</code></pre>

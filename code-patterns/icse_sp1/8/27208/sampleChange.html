@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if issubclass(super_class_candidate, FromParams):
+            super_class = super_class_candidate
+            break
+    <a id="change">if not super_class:
+        raise RuntimeError("found a kwargs parameter with no inspectable super class")
+   </a> super_parameters = infer_params(super_class)
+
+    return {**super_parameters, **parameters}  &#47&#47 Subclass parameters overwrite superclass ones
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+def infer_params(cls: Type[T], constructor: Callable[..., T] = None) -&gt; Dict[str, Any]:
+    if cls == FromParams:
+        return <a id="change">{}</a>
+    if constructor is None:
+        constructor = cls.__init__
+
+    signature = inspect.signature(constructor)
+    parameters = dict(signature.parameters)
+
+    has_kwargs = False
+    for param in parameters.values():
+        if param.kind == param.VAR_KEYWORD:
+            has_kwargs = True
+
+    if not has_kwargs:
+        return parameters
+
+    &#47&#47 "mro" is "method resolution order".  The first one is the current class, the next is the
+    &#47&#47 first superclass, and so on.  We take the first superclass we find that inherits from
+    &#47&#47 FromParams.
+    super_class = None
+    for super_class_candidate in cls.mro()[1:]:
+        if issubclass(super_class_candidate, FromParams):
+            super_class = super_class_candidate
+            break
+    if super_class:
+        super_parameters = infer_params(super_class)
+    else:
+        super_parameters = <a id="change">{}</a>
+
+    return {**super_parameters, **parameters}  &#47&#47 Subclass parameters overwrite superclass ones
+
+</code></pre>

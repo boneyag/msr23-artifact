@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        for output_node in G.graph[&quotoutputs&quot]:
+            if dep_graph.has_node(output_node):
+                <a id="change">nodes.update([output_node])</a>
+                nodes.update(nx.ancestors(dep_graph, output_node))
+
+        return [n for n in order if n in nodes]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        
+        &#47&#47 Get the cache dict if it exists
+        <a id="change">cache = G.graph.get(&quot_executor_cache&quot, {})</a>
+
+        output_nodes = G.graph[&quotoutputs&quot]
+        &#47&#47 Filter those output nodes who have an operation to run
+        needed = tuple(sorted(node for node in output_nodes if &quotoperation&quot in G.node[node]))
+
+        <a id="change">if needed not in cache:
+            &#47&#47 Resolve the nodes that need to be executed in the graph
+            nodes_to_execute = set(needed)
+
+            if &quotsort_order&quot not in cache:
+                cache[&quotsort_order&quot] = nx_constant_topological_sort(G)
+            sort_order = cache[&quotsort_order&quot]
+
+            &#47&#47 Resolve the dependencies of needed
+            dep_graph = nx.DiGraph(G.edges())
+            for node in sort_order:
+                attr = G.node[node]
+                if attr.keys() &gt;= {&quotoperation&quot, &quotoutput&quot}:
+                    raise ValueError(&quotGenerative graph has both op and output present&quot)
+
+                &#47&#47 Remove those nodes from the dependency graph whose outputs are present
+                if &quotoutput&quot in attr:
+                    dep_graph.remove_node(node)
+                elif &quotoperation&quot not in attr:
+                    raise ValueError(&quotGenerative graph has no op or output present&quot)
+
+            &#47&#47 Add the dependencies of the needed nodes
+            for needed_node in needed:
+                nodes_to_execute.update(nx.ancestors(dep_graph, needed_node))
+
+            &#47&#47 Turn in to a sorted list and cache
+            cache[needed] = [n for n in sort_order if n in nodes_to_execute]
+
+       </a> return cache[needed]
+
+    @staticmethod
+    def _run(fn, node, G):</code></pre>

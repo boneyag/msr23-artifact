@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  optimizer = tf.train.MomentumOptimizer(learning_rate, FLAGS.momentum)
+
+  tower_grads = []
+  <a id="change">tower_summaries = None</a>
+  for i in range(FLAGS.num_clones):
+    with tf.device(&quot/gpu:%d&quot % i):
+      with tf.name_scope(&quotclone_%d&quot % i) as scope:
+        loss = _tower_loss(
+            iterator=iterator,
+            num_of_classes=num_of_classes,
+            ignore_label=ignore_label,
+            scope=scope,
+            reuse_variable=(i != 0))
+        grads = optimizer.compute_gradients(loss)
+        tower_grads.append(grads)
+
+        &#47&#47 Retain the summaries from the first tower.
+        if not i:
+          tower_summaries = tf.summary.merge_all(scope=scope)
+
+  with tf.device(&quot/cpu:0&quot):
+    grads_and_vars = _average_gradients(tower_grads)
+    if tower_summaries is not None:
+      <a id="change">summaries.append(tower_summaries)</a>
+
+    &#47&#47 Modify the gradients for biases and last layer variables.
+    last_layers = model.get_extra_layer_scopes(
+        FLAGS.last_layers_contain_logits_only)</code></pre><h3>After Change</h3><pre><code class='java'>
+  for i in range(FLAGS.num_clones):
+    with tf.device(&quot/gpu:%d&quot % i):
+      name_scope = (&quotclone_%d&quot % i) if i else &quot&quot
+      <a id="change">with tf.name_scope(name_scope) as scope:
+        grads = optimizer.compute_gradients(tower_losses[i])
+        tower_grads.append(grads)
+
+ </a> with tf.device(&quot/cpu:0&quot):
+    grads_and_vars = _average_gradients(tower_grads)
+
+    &#47&#47 Modify the gradients for biases and last layer variables.</code></pre>

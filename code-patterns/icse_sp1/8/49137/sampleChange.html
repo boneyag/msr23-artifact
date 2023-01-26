@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            running_sum += samples.sum().item()
+            running_sum_of_squares += samples.pow(2).sum().item()
+
+        N = <a id="change">float(num_time_steps * num_chains)</a>  &#47&#47 total number of samples
+        mean = running_sum / N
+
+        <a id="change">variance = running_sum_of_squares - ((running_sum ** 2) / N)</a>
+        variance /= N - 1
+
+        std_error = np.sqrt(variance / N)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        running_mean = 0.0
+        running_variance = 0.0
+        <a id="change">running_length = 0</a>
+
+        chains = None
+        num_chains = num_chains if num_chains != 0 else num_samples
+        num_time_steps = int(np.ceil(num_samples / num_chains))
+        for i in range(num_time_steps):
+            num_gibbs_steps = burn_in if i == 0 else steps
+
+            chains = nn_state.sample(
+                num_samples=num_chains,
+                k=num_gibbs_steps,
+                initial_state=chains,
+                overwrite=True,
+            )
+
+            samples = self.apply(nn_state, chains).data
+            current_mean = samples.mean().item()
+            current_variance = samples.var().item()
+
+            <a id="change">running_mean, running_variance, running_length = self._update_statistics(
+                running_mean,
+                running_variance,
+                running_length,
+                current_mean,
+                current_variance,
+                num_chains,
+            )</a>
+
+        <a id="change">N = running_length</a>  &#47&#47 total number of samples
+
+        std_error = np.sqrt(running_variance / N)
+</code></pre>

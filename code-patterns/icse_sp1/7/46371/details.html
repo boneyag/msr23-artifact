@@ -1,0 +1,47 @@
+<html><h3>20d1da406aaa2ae2a32c48a28e3efe4f475d7398,ch12/train_crossent.py,,,#,18
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    data.save_embeddings(saves_path, emb_dict, emb)
+
+    &#47&#47 initialize embedding lookup table
+    embeddings = nn.Embedding(num_embeddings=<a id="change">emb.shape[0]</a>, embedding_dim=emb.shape[1])
+    embeddings.weight.data.copy_(<a id="change">torch.from_numpy(emb)</a>)
+    embeddings.weight.requires_grad = False
+    if args.cuda:
+        embeddings.cuda()</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 if args.cuda:
+    &#47&#47     embeddings.cuda()
+
+    net = model.PhraseModel(emb_size=model.EMBEDDING_DIM, dict_size=<a id="change">len(emb_dict)</a>, hid_size=model.HIDDEN_STATE_SIZE)
+    if args.cuda:
+        net.cuda()
+    log.info("Model: %s", net)
+
+    writer = SummaryWriter(comment="-" + args.name)
+
+    optimiser = optim.Adam(net.parameters(), lr=LEARNING_RATE)
+    best_bleu = None
+    for epoch in range(MAX_EPOCHES):
+        random.shuffle(train_data)
+        losses = []
+        bleu_sum = 0.0
+        bleu_count = 0
+        for batch in data.iterate_batches(train_data, BATCH_SIZE):
+            optimiser.zero_grad()
+            input_seq, out_seq_list, _, out_idx = model.pack_batch(batch, net.emb, cuda=args.cuda)
+            enc = net.encode(input_seq)
+
+            net_results = []
+            net_targets = []
+            for idx, out_seq in enumerate(out_seq_list):
+                ref_indices = out_idx[idx][1:]
+                if random.random() &lt; TEACHER_PROB:
+                    r = net.decode_teacher(net.get_encoded_item(enc, idx), out_seq)
+                    bleu_sum += model.seq_bleu(r, ref_indices)
+                else:
+                    r, seq = net.decode_chain_argmax(<a id="change">net.emb</a>, net.get_encoded_item(enc, idx),
+                                                     out_seq.data[0], len(ref_indices))
+                    bleu_sum += utils.calc_bleu(seq, ref_indices)
+                net_results.append(r)</code></pre><img src="216743947.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/PacktPublishing/Deep-Reinforcement-Learning-Hands-On/commit/20d1da406aaa2ae2a32c48a28e3efe4f475d7398#diff-67c7be1e7c26487e70450e11ed1a97f95dee1feb27d72923a87ab3a3764cb99eL37' target='_blank'>Link</a></div><div id='project'> Project Name: PacktPublishing/Deep-Reinforcement-Learning-Hands-On</div><div id='commit'> Commit Name: 20d1da406aaa2ae2a32c48a28e3efe4f475d7398</div><div id='time'> Time: 2018-01-06</div><div id='author'> Author: max.lapan@gmail.com</div><div id='file'> File Name: ch12/train_crossent.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/PacktPublishing/Deep-Reinforcement-Learning-Hands-On/commit/8d36775e23b0cea21b7996ec4c0c21915a8afed7#diff-c463350707266c42a8cb2bce5e931c5427c3a42b68d42f37d431978a179891c0L38' target='_blank'>Link</a></div><div id='project'> Project Name: PacktPublishing/Deep-Reinforcement-Learning-Hands-On</div><div id='commit'> Commit Name: 8d36775e23b0cea21b7996ec4c0c21915a8afed7</div><div id='time'> Time: 2018-01-06</div><div id='author'> Author: max.lapan@gmail.com</div><div id='file'> File Name: ch12/train_scst.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/kevinzakka/recurrent-visual-attention/commit/520e8fb57b890a7249334d9e90c9ad209d0b849f#diff-ae5323d7b76e8ae717b053d5c11b6e16ad4c1cfb3e978c0403a6c6b795078b87L42' target='_blank'>Link</a></div><div id='project'> Project Name: kevinzakka/recurrent-visual-attention</div><div id='commit'> Commit Name: 520e8fb57b890a7249334d9e90c9ad209d0b849f</div><div id='time'> Time: 2018-02-10</div><div id='author'> Author: kevinarmandzakka@gmail.com</div><div id='file'> File Name: modules.py</div><div id='class'> Class Name: retina</div><div id='method'> Method Name: foveate</div><BR>

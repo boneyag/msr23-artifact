@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      model.compile()
+      with self.test_session(use_gpu=True) as sess:
+        tf.global_variables_initializer().run()
+        <a id="change">for num in range(0, 2):
+          for i, model_dict in enumerate(model.data_layer.iterate_one_epoch()):
+            loss, _ = sess.run(
+              [model.loss, model.train_op],
+              feed_dict=model_dict,
+            )
+
+
+</a>if __name__ == &quot__main__&quot:
+  tf.test.main()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    train_config[&quotdata_layer_params&quot][&quottarget_file&quot] = "./toy_data/train/target.txt"
+    train_config["use_horovod"] = True
+    &#47&#47train_config[&quotdata_layer_params&quot]["repeat"] = False
+    <a id="change">step = 0</a>
+    with tf.Graph().as_default():
+      model = config_module[&quotbase_model&quot](train_config, "train", None)
+      model.compile()
+      with self.test_session(use_gpu=True) as sess:
+        tf.global_variables_initializer().run()
+        sess.run(model.get_data_layer().iterator.initializer)
+        while True:
+          try:
+            loss, _ = sess.run(
+              [model.loss, model.train_op]
+            )
+          except tf.errors.OutOfRangeError:
+            break
+          <a id="change">step += 1</a>
+          <a id="change">if step &gt;=25:
+            break
+
+</a>if __name__ == &quot__main__&quot:
+  tf.test.main()
+</code></pre>

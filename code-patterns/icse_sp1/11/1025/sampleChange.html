@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+		if isinstance(loss, Loss):
+			loss = [loss]
+
+		<a id="change">if len(loss) != len(model.outputs):
+			raise ValueError(&quotModel has {} outputs, but only {} loss &quot
+				&quotfunctions were specified.&quot
+				.format(len(model.outputs), len(loss)))
+
+	</a>	if isinstance(loss, (list, tuple)):
+			loss = dict(zip(model.outputs, loss))
+
+		if not isinstance(loss, (dict, OrderedDict)):</code></pre><h3>After Change</h3><pre><code class='java'>
+			loss: Loss instance, list/tuple of Loss instances, or a dictionary
+				of model layer names mapped to Loss instances.
+		
+		if <a id="change">not loss</a>:
+			num_outputs = len(model.outputs)
+			logger.error(&quotYou are trying to construct a training/validation&quot
+				&quot/testing model, but you haven\&quott specified any loss &quot
+				&quotfunctions. Your model has %d outputs: %s. You need to &quot
+				&quotspecify %d loss functions, one for each output.&quot,
+				num_outputs, &quot, &quot.join(model.outputs), num_outputs)
+			raise ValueError(&quotNo loss functions were specified, but are &quot
+				&quotrequired for training, testing, and validation.&quot)
+
+		if isinstance(loss, Loss):
+			loss = [loss]
+
+		output_only = set(model.outputs) - <a id="change">set(loss)</a>
+		if output_only:
+			logger.debug(&quotThese layers will be output-only layers, without &quot
+				&quotloss functions attached: %s&quot, &quot, &quot.join(output_only))
+
+		if isinstance(loss, (list, tuple)):
+			loss = {x.get(&quottarget&quot) : x <a id="change">for</a> x in loss}
+
+		if not isinstance(loss, (dict, OrderedDict)):
+			raise ValueError(&quotLoss functions given to "compile" should be &quot</code></pre>

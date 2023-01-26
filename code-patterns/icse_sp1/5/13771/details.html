@@ -1,0 +1,33 @@
+<html><h3>a233fceb859593143dbc29226f483f29253976ae,fairseq/multiprocessing_trainer.py,MultiprocessingTrainer,_async_backward_and_opt,#MultiprocessingTrainer#Any#Any#Any#,197
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.loss.backward()
+
+        &#47&#47 get model parameters as a flattened (contiguous) tensor
+        <a id="change">flat_grads = self._flat_model_grads()</a>
+
+        &#47&#47 all-reduce grads
+        <a id="change">nccl.all_reduce(flat_grads)</a>
+
+        &#47&#47 normalize grads
+        if grad_denom != 0:
+            flat_grads.div_(grad_denom)</code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 backward pass
+                self.loss.backward()
+            except RuntimeError as e:
+                <a id="change">if &quotout of memory&quot in str(e):
+                    print(&quot| WARNING: ran out of memory on GPU &#47&#47{}, skipping batch&quot.format(device_id))
+                    oom = True
+                    if hasattr(torch.cuda, &quotempty_cache&quot):
+                        torch.cuda.empty_cache()
+                    self.optimizer.zero_grad()
+                else:
+                    raise e
+
+        &#47&#47 all-reduce grads and rescale by grad_denom
+       </a> self._all_reduce_and_rescale_grads(grad_denom)
+
+        &#47&#47 clip grads
+        grad_norm = torch.nn.utils.clip_grad_norm(self.model.parameters(), self.args.clip_norm)</code></pre><img src="84862878.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/a233fceb859593143dbc29226f483f29253976ae#diff-36ec1cd879930255f947df92f12a0d19d01c01c5d90f4e16fde1c566ae4af15aL197' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: a233fceb859593143dbc29226f483f29253976ae</div><div id='time'> Time: 2017-12-06</div><div id='author'> Author: myleott@fb.com</div><div id='file'> File Name: fairseq/multiprocessing_trainer.py</div><div id='class'> Class Name: MultiprocessingTrainer</div><div id='method'> Method Name: _async_backward_and_opt</div><BR><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/87a61ad92a9e0129e5c81c242f0ea96d77e6b0af#diff-c71b8de1b2186fa412b72d67cca4d84f53802947496fe96281ac06a67951beb9L71' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: 87a61ad92a9e0129e5c81c242f0ea96d77e6b0af</div><div id='time'> Time: 2020-08-19</div><div id='author'> Author: akshita23bhagia@gmail.com</div><div id='file'> File Name: allennlp/training/metrics/pearson_correlation.py</div><div id='class'> Class Name: PearsonCorrelation</div><div id='method'> Method Name: get_metric</div><BR>

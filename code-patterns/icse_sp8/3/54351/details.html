@@ -1,0 +1,43 @@
+<html><h3>ab15bc09577a2ca2616a5f662f63d66438c4403e,foolbox/ext/native/evaluate.py,,evaluate_l2,#Any#Any#Any#,8
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def evaluate_l2(fmodel, inputs, labels, *, attacks, epsilons):
+    x = ep.astensor(inputs)
+    y = <a id="change">ep.astensor(labels)</a>
+
+    attack_success = np.zeros((len(attacks), len(epsilons), len(x)), dtype=np.float32)
+
+    for i, attack in enumerate(attacks):
+        attack = attack(fmodel)
+        sig = signature(attack.__call__)
+        minimizing = "epsilon" not in sig.parameters
+
+        if minimizing:
+            &#47&#47 TODO: support hyperparameters
+            xp = ep.astensor(attack(x.tensor, y.tensor))
+            logits = fmodel(xp)
+            predictions = logits.argmax(axis=-1)
+            correct = (predictions == labels).float32().numpy().astype(np.bool)
+            perturbations = xp - x
+            norms = flatten(perturbations).square().sum(axis=-1).sqrt().numpy()
+            for j, epsilon in enumerate(epsilons):
+                attack_success[i, j] = np.logical_and(
+                    np.logical_not(correct), norms &lt;= epsilon
+                )
+        else:
+            for j, epsilon in enumerate(epsilons):
+                xp = ep.astensor(attack(x.tensor, y.tensor, epsilon=epsilon))
+                logits = fmodel(<a id="change">xp.tensor</a>)
+                predictions = logits.argmax(axis=-1)
+                correct = (predictions == labels).float32().numpy().astype(np.bool)
+                perturbations = xp - x</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def evaluate_l2(fmodel, inputs, labels, *, attacks, epsilons):
+    <a id="change">inputs</a>, labels = wrap_(inputs, labels)
+    x = inputs
+    y = labels
+</code></pre><img src="252089718.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/bethgelab/foolbox/commit/ab15bc09577a2ca2616a5f662f63d66438c4403e#diff-19a2ac31ebd0bbf3b519abc0111685eba33eb08732a47206bbb4f796aa874506L9' target='_blank'>Link</a></div><div id='project'> Project Name: bethgelab/foolbox</div><div id='commit'> Commit Name: ab15bc09577a2ca2616a5f662f63d66438c4403e</div><div id='time'> Time: 2020-01-29</div><div id='author'> Author: git@jonasrauber.de</div><div id='file'> File Name: foolbox/ext/native/evaluate.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: evaluate_l2</div><BR><BR><div id='link'><a href='https://github.com/bethgelab/foolbox/commit/2f1905529d25e62179850aa222f65ed685ff682f#diff-f519081e3d07a1b49af69bbf41ac666a7ca49ccc4ba2ad6c0364472f5453a086L20' target='_blank'>Link</a></div><div id='project'> Project Name: bethgelab/foolbox</div><div id='commit'> Commit Name: 2f1905529d25e62179850aa222f65ed685ff682f</div><div id='time'> Time: 2020-01-31</div><div id='author'> Author: git@jonasrauber.de</div><div id='file'> File Name: foolbox/ext/native/attacks/inversion.py</div><div id='class'> Class Name: InversionAttack</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/bethgelab/foolbox/commit/bf635f90dae66e4ddd3e1f342dca925b3c99faf7#diff-a7a04c81ff322c2d5ba15942841f0d9c820ffd9bf67d26c5c8c243d58b7e0600L35' target='_blank'>Link</a></div><div id='project'> Project Name: bethgelab/foolbox</div><div id='commit'> Commit Name: bf635f90dae66e4ddd3e1f342dca925b3c99faf7</div><div id='time'> Time: 2020-02-11</div><div id='author'> Author: git@jonasrauber.de</div><div id='file'> File Name: foolbox/attacks/binarization.py</div><div id='class'> Class Name: BinarizationRefinementAttack</div><div id='method'> Method Name: __call__</div><BR>

@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 initialize embedding lookup table
+    embeddings = nn.Embedding(num_embeddings=emb.shape[0], embedding_dim=emb.shape[1])
+    embeddings.weight.data.copy_(<a id="change">torch.from_numpy(emb)</a>)
+    embeddings.weight.requires_grad = False
+    if args.cuda:
+        embeddings.cuda()
+
+    net = model.PhraseModel(emb_size=<a id="change">emb.shape[1]</a>, dict_size=emb.shape[0], hid_size=model.HIDDEN_STATE_SIZE)
+    if args.cuda:
+        net.cuda()
+    log.info("Model: %s", net)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 if args.cuda:
+    &#47&#47     embeddings.cuda()
+
+    net = model.PhraseModel(emb_size=model.EMBEDDING_DIM, dict_size=<a id="change">len(emb_dict)</a>, hid_size=model.HIDDEN_STATE_SIZE)
+    if args.cuda:
+        net.cuda()
+    log.info("Model: %s", net)
+
+    writer = SummaryWriter(comment="-" + args.name)
+
+    optimiser = optim.Adam(net.parameters(), lr=LEARNING_RATE)
+    best_bleu = None
+    for epoch in range(MAX_EPOCHES):
+        random.shuffle(train_data)
+        losses = []
+        bleu_sum = 0.0
+        bleu_count = 0
+        for batch in data.iterate_batches(train_data, BATCH_SIZE):
+            optimiser.zero_grad()
+            input_seq, out_seq_list, _, out_idx = model.pack_batch(batch, <a id="change">net.emb</a>, cuda=args.cuda)
+            enc = net.encode(input_seq)
+
+            net_results = []</code></pre>

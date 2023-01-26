@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        modname = module.__name__
+        path = self.get_src_path(module, append_base=False)
+        path = "[{}]({})".format(path, os.path.join(self.github_link, path))
+        <a id="change">found = []</a>
+
+        classes = []
+        line_nos = []
+        for name, obj in getmembers(module, inspect.isclass):</code></pre><h3>After Change</h3><pre><code class='java'>
+        modname = module.__name__
+        path = self.get_src_path(module, append_base=False)
+        path = "[{}]({})".format(path, os.path.join(self.github_link, path))
+        <a id="change">found = set()</a>
+
+        classes = []
+        line_nos = []
+        for name, obj in getmembers(module, inspect.isclass):
+            &#47&#47 handle classes
+            found.add(name)
+            if not name.startswith("_") and hasattr(obj, "__module__") and obj.__module__ == modname:
+                classes.append(self.class2md(obj))
+                line_nos.append(self.get_line_no(obj) or 0)
+        classes = order_by_line_nos(classes, line_nos)
+
+        &#47&#47 Since functions can have multiple aliases.
+        func2names = defaultdict(list)
+        for name, obj in getmembers(module, inspect.isfunction):
+            func2names[obj].append(name)
+
+        functions = []
+        line_nos = []
+        <a id="change">for obj in func2names:
+            names = func2names[obj]
+            found.update(names)
+
+            &#47&#47 Include if within module or included modules within __init__.py and exclude from global variables
+            is_module_within_init = &quot__init__.py&quot in path and obj.__module__.startswith(modname)
+            if is_module_within_init:
+                found.add(obj.__module__.replace(modname + &quot.&quot, &quot&quot))
+
+            if hasattr(obj, "__module__") and (obj.__module__ == modname or is_module_within_init):
+                names = list(filter(lambda name: not name.startswith("_"), names))
+                if len(names) &gt; 0:
+                    functions.append(self.func2md(obj, names=names))
+                    line_nos.append(self.get_line_no(obj) or 0)
+       </a> functions = order_by_line_nos(functions, line_nos)
+
+        variables = []
+        line_nos = []</code></pre>

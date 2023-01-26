@@ -1,0 +1,35 @@
+<html><h3>28876638114948711fd4bd4e350fdd6809013f1e,fairseq/modules/dynamicconv_layer/dynamicconv_layer.py,DynamicconvLayer,_forward_expanded,#DynamicconvLayer#Any#Any#Any#,175
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            weight_expanded = weight_expanded.narrow(2, self.padding_l, T)
+            &#47&#47 normalize the weight over valid positions like self-attention
+            weight_expanded = F.softmax(weight_expanded, dim=2)
+            <a id="change">weight_expanded = F.dropout(weight_expanded, self.weight_dropout, training=self.training, inplace=False)</a>
+        else:
+            P = self.padding_l
+            &#47&#47 For efficieny, we cut the kernel size and reduce the padding when the kernel is larger than the length
+            if K &gt; T and P == K-1:</code></pre><h3>After Change</h3><pre><code class='java'>
+        output = output.view(T, B, C)
+        return output
+
+    def _forward_expanded(<a id="change">self</a>, x, incremental_stat, query):
+        &quot&quot&quotTurn the convolution filters into band matrices and do matrix multiplication.
+        This is faster when the sequence is short, but less memory efficient.
+        This is not used in the decoder during inference.
+        &quot&quot&quot
+        T, B, C = x.size()
+        K, H = self.kernel_size, self.num_heads
+        R = C // H
+        assert R * H == C == self.input_size
+        weight = self.weight_linear(query).view(T*B*H, -1)
+
+        if not self.renorm_padding:
+            if self.weight_softmax:
+                weight = F.softmax(weight, dim=1)
+            <a id="change">weight = self.weight_dropout_module(weight, inplace=False)</a>
+        weight = weight.narrow(1, 0, K).contiguous()
+        weight = weight.view(T, B*H, K).transpose(0, 1)
+
+        x = x.view(T, B*H, R).transpose(0, 1)</code></pre><img src="213264048.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-e38cf3bf8a41ca472ed6c00c1197873edfbfe2033aa106f554d9e67cdfeccd61L175' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/modules/dynamicconv_layer/dynamicconv_layer.py</div><div id='class'> Class Name: DynamicconvLayer</div><div id='method'> Method Name: _forward_expanded</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-783821725a608d4ead1c738a9a44b2ac282b29e969212c81e2b48d0a7bde99acL175' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/modules/dynamic_convolution.py</div><div id='class'> Class Name: DynamicConv1dTBC</div><div id='method'> Method Name: _forward_expanded</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-783821725a608d4ead1c738a9a44b2ac282b29e969212c81e2b48d0a7bde99acL123' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/modules/dynamic_convolution.py</div><div id='class'> Class Name: DynamicConv1dTBC</div><div id='method'> Method Name: _forward_unfolded</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-e38cf3bf8a41ca472ed6c00c1197873edfbfe2033aa106f554d9e67cdfeccd61L175' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/modules/dynamicconv_layer/dynamicconv_layer.py</div><div id='class'> Class Name: DynamicconvLayer</div><div id='method'> Method Name: _forward_expanded</div><BR><BR><div id='link'><a href='https://github.com/pytorch/fairseq/commit/28876638114948711fd4bd4e350fdd6809013f1e#diff-e38cf3bf8a41ca472ed6c00c1197873edfbfe2033aa106f554d9e67cdfeccd61L128' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/fairseq</div><div id='commit'> Commit Name: 28876638114948711fd4bd4e350fdd6809013f1e</div><div id='time'> Time: 2020-07-08</div><div id='author'> Author: mari.fomicheva@gmail.com</div><div id='file'> File Name: fairseq/modules/dynamicconv_layer/dynamicconv_layer.py</div><div id='class'> Class Name: DynamicconvLayer</div><div id='method'> Method Name: _forward_unfolded</div><BR>

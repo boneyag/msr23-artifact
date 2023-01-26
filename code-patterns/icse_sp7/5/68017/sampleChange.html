@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        x_adv = np.zeros_like(x, dtype=ART_NUMPY_DTYPE)
+
+        &#47&#47 Compute perturbation with implicit batching
+        <a id="change">for i_batch in range(int(np.ceil(x.shape[0] / self.batch_size))):
+
+            batch_index_1, batch_index_2 = i_batch * self.batch_size, (i_batch + 1) * self.batch_size
+            x_batch = x[batch_index_1:batch_index_2]
+            y_batch = y[batch_index_1:batch_index_2]
+
+            perturbation = (
+                np.random.uniform(
+                    low=self.estimator.clip_values[0], high=self.estimator.clip_values[1], size=x_batch.shape
+                ).astype(ART_NUMPY_DTYPE)
+                - (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2
+            )
+
+            for _ in range(self.nb_steps):
+
+                gradients_ce = self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch, sampling=False) * (
+                    1 - 2 * int(self.targeted)
+                )
+
+                gradients = gradients_ce - self._get_regularisation_loss_gradients(perturbation)
+
+                perturbation += self.learning_rate * gradients
+
+            x_p = x_batch + perturbation
+
+            x_p = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
+
+            perturbation = x_p - x_batch
+
+            x_adv[batch_index_1:batch_index_2] = x_batch + perturbation
+
+       </a> return x_adv
+
+    def _get_regularisation_loss_gradients(self, perturbation):
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        x = x.astype(ART_NUMPY_DTYPE)
+
+        <a id="change">x_batch = np.repeat(x, repeats=self.batch_size, axis=0)</a>
+
+        <a id="change">x_batch = x_batch + np.random.normal(scale=self.sigma, size=x_batch)</a>
+
+        y_batch = np.repeat(y, repeats=self.batch_size, axis=0)
+
+        perturbation = (</code></pre>

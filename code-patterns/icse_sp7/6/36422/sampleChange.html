@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    logger.debug(&quotRPN regression loss (bbox to original anchors, with the smoothL1Loss)&quot)
+    target = pred_dict[&quotrpn_prediction&quot][&quotrpn_cls_target&quot]
+    <a id="change">target = target.reshape([-1, 1])</a>
+    &#47&#47 Get anchors with positive label.
+    positive_indices = np.nonzero(np.squeeze(target) &gt; 0)[0]
+    random_indices = np.random.choice(np.arange(<a id="change">len(positive_indices)</a>), n)
+
+    loss_per_anchor = pred_dict[&quotrpn_prediction&quot][&quotreg_loss_per_anchor&quot]
+
+    &#47&#47 Get only n random to avoid overloading image.
+    positive_indices = positive_indices[random_indices]
+    loss_per_anchor = loss_per_anchor[random_indices]
+    <a id="change">target = target[positive_indices]</a>
+
+    bbox_pred = pred_dict[&quotrpn_prediction&quot][&quotrpn_bbox_pred&quot]
+    bbox_pred = bbox_pred.reshape([-1, 4])
+    bbox_pred = bbox_pred[positive_indices]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    loss_per_anchor = pred_dict[&quotrpn_prediction&quot][&quotreg_loss_per_anchor&quot]
+
+    <a id="change">top_losses_idx = np.argsort(loss_per_anchor)[::-1][:top_k]</a>
+
+    loss_per_anchor = loss_per_anchor[top_losses_idx]
+    bbox_pred = bbox_pred[top_losses_idx]
+    all_anchors = <a id="change">all_anchors[top_losses_idx]</a>
+
+    bbox_final = decode(all_anchors, bbox_pred)
+
+    image_pil, draw = get_image_draw(pred_dict)</code></pre>

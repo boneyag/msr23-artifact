@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if self.shared:  &#47&#47 shared network
+                loss = policy_loss + val_loss
+                self.net.training_step(loss, self.optim, self.lr_scheduler, lr_clock=clock)
+                self.net.load_state_dict(<a id="change">self.global_net.state_dict()</a>)
+            else:
+                self.net.training_step(policy_loss, self.optim, self.lr_scheduler, lr_clock=clock)
+                self.critic_net.training_step(val_loss, self.critic_optim, self.critic_lr_scheduler, lr_clock=clock)
+                &#47&#47 TODO add method in net_util
+                <a id="change">self</a>.net.load_state_dict(<a id="change">self</a>.global_net.state_dict())
+                <a id="change">self</a>.critic_net.load_state_dict(<a id="change">self</a>.critic_net.state_dict())
+                loss = policy_loss + val_loss
+            &#47&#47 reset
+            self.to_train = 0</code></pre><h3>After Change</h3><pre><code class='java'>
+                self.critic_net.training_step(val_loss, self.critic_optim, self.critic_lr_scheduler, lr_clock=clock)
+                loss = policy_loss + val_loss
+            &#47&#47 reset
+            <a id="change">if self.hogwild:
+                net_util.sync_global_nets(self)
+           </a> self.to_train = 0
+            logger.debug(f&quotTrained {self.name} at epi: {clock.epi}, total_t: {clock.total_t}, t: {clock.t}, total_reward so far: {self.body.total_reward}, loss: {loss:g}&quot)
+            return loss.item()
+        else:</code></pre>

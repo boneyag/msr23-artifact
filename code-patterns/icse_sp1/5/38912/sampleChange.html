@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    :param str filename:
+    :param tf.compat.v1.Session session:
+    
+    if any([layer.custom_param_importer for layer in <a id="change">self.layers.values()</a>]):
+      &#47&#47 Need to use CustomCheckpointLoader because only that handles custom_param_importer correctly.
+      loader = CustomCheckpointLoader(
+        filename=filename, saveable_params=self.get_saveable_params_list(), network=self)</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    saveable_params = self.get_saveable_params_list()
+    must_use_custom_checkpoint_loader = False
+    <a id="change">if any([have_custom_post_init(param) for param in saveable_params]):
+      &#47&#47 We must keep the behavior consistent.
+      &#47&#47 CustomCheckpointLoader will not load any params with a custom init.
+      must_use_custom_checkpoint_loader = True
+   </a> if any([layer.custom_param_importer for layer in self._get_all_layers()]):
+      &#47&#47 Need to use CustomCheckpointLoader because only that handles custom_param_importer correctly.
+      must_use_custom_checkpoint_loader = True
+    if must_use_custom_checkpoint_loader:</code></pre>

@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        vec = tf.expand_dims(Xmu, 1) - tf.expand_dims(Z, 0)  &#47&#47 NxMxD
+        scalemat = tf.expand_dims(tf.diag(lengthscales ** 2.0), 0) + Xcov  &#47&#47 NxDxD
+        rsm = tf.tile(tf.expand_dims(scalemat, 1), <a id="change">(1, M, 1, 1)</a>)  &#47&#47 Reshaped scalemat
+        <a id="change">smIvec = tf.matrix_solve(rsm, tf.expand_dims(vec, 3))[:, :, :, 0]</a>  &#47&#47 NxMxD
+        q = tf.reduce_sum(smIvec * vec, [2])  &#47&#47 NxM
+        det = tf.matrix_determinant(
+            tf.expand_dims(eye(D), 0) + tf.reshape(lengthscales ** -2.0, (1, 1, -1)) * Xcov</code></pre><h3>After Change</h3><pre><code class='java'>
+        D = tf.shape(Xmu)[1]
+        lengthscales = self.lengthscales if self.ARD else tf.zeros((D,), dtype=float_type) + self.lengthscales
+
+        vec = tf.expand_dims(Xmu, 2) - tf.expand_dims(<a id="change">tf.transpose(Z)</a>, 0)  &#47&#47 NxDxM
+        scalemat = tf.expand_dims(tf.diag(lengthscales ** 2.0), 0) + Xcov  &#47&#47 NxDxD
+        <a id="change">smIvec = tf.matrix_solve(scalemat, vec)</a> &#47&#47 NxDxM
+        q = tf.reduce_sum(smIvec * vec, [1]) &#47&#47 NxM
+
+        det = tf.matrix_determinant(</code></pre>

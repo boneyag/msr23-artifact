@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 Using a placeholder to update the variable during restore to avoid memory leak.
+        &#47&#47 Ref: https://github.com/tensorflow/tensorflow/issues/4151
+        <a id="change">self._variable_placeholders = [tf.placeholder(v.dtype, shape=v.get_shape()) for v in self._variables]</a>
+        self._variable_update_ops = []
+        for i in range(len(self._variables)):
+            self._variable_update_ops.append(<a id="change">self._variables[i].assign(self._variable_placeholders[i])</a>)
+
+        self._saver = tf.train.Saver(self._variables)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        for v in self._variables:
+            variable_placeholder = tf.placeholder(v.dtype, shape=v.get_shape())
+            self._variable_placeholders.append(variable_placeholder)
+            <a id="change">self._variable_update_ops.append(v.assign(variable_placeholder))</a>
+
+        self._saver = tf.train.Saver(self._variables)
+
+    @property</code></pre>

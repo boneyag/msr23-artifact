@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                n *= tt.ones(m)
+            self.n = tt.shape_padright(n)
+            self.p = p if p.ndim &gt; 1 else tt.shape_padleft(p)
+            lst = list(lst <a id="change">for</a> _ in range(m))
+        else:
+            &#47&#47 n is a scalar, p is a 1d array
+            self.n = tt.as_tensor_variable(n)
+            self.p = tt.as_tensor_variable(p)
+
+        self.mean = self.n * self.p
+        mode = tt.cast(tt.round(self.mean), &quotint32&quot)
+        diff = self.n - tt.sum(mode, axis=-1, keepdims=True)
+        inc_bool_arr = tt.as_tensor_variable(lst) &lt; diff
+        mode = tt.inc_subtensor(mode[inc_bool_arr.nonzero()], 1)
+        <a id="change">dec_bool_arr = tt.as_tensor_variable(lst) &lt; -diff</a>
+        <a id="change">mode = tt.inc_subtensor(mode[dec_bool_arr.nonzero()], -1)</a>
+        self.mode = mode
+
+    def _random(self, n, p, size=None):
+        original_dtype = p.dtype</code></pre><h3>After Change</h3><pre><code class='java'>
+        diff = self.n - tt.sum(mode, axis=-1, keepdims=True)
+        inc_bool_arr = tt.abs_(diff) &gt; 0
+        mode = tt.inc_subtensor(mode[inc_bool_arr.nonzero()],
+                                <a id="change">diff[inc_bool_arr.nonzero()]</a>)
+        self.mode = mode
+
+    def _random(self, n, p, size=None):</code></pre>

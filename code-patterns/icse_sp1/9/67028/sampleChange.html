@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 extract the edges&quot endpoint nodes&quot coordinates
+    try:
+        coords = (
+            (u, v, k, G.nodes[u]["y"], G.nodes[u]["x"], <a id="change">G</a>.nodes[v]["y"], G.nodes[v]["x"])
+            for u, v, k in G.edges
+        )
+    except KeyError:  &#47&#47 pragma: no cover</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 extract edge IDs and corresponding coordinates from their nodes
+    uvk = tuple(G.edges)
+    x = G.nodes(data="x")
+    <a id="change">y = G.nodes(data="y")</a>
+    try:
+        coords = np.array([(y[u], x[u], y[v], x[v]) for u, v, k in uvk])
+    except KeyError:  &#47&#47 pragma: no cover
+        raise KeyError("some edges missing nodes, possibly due to input data clipping issue")
+
+    &#47&#47 calculate great circle distances, fill nulls with zeros, then round
+    <a id="change">dists = great_circle_vec(coords[:, 0], coords[:, 1], coords[:, 2], coords[:, 3])</a>
+    <a id="change">dists[np.isnan(dists)] = 0</a>
+    values = zip(uvk, dists.round(precision))
+    nx.set_edge_attributes(G, values=dict(values), name="length")
+
+    utils.log("Added length attributes to graph edges")</code></pre>

@@ -1,0 +1,108 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        _models = self._models[arch][n_layer]
+        blocks = self._blocks[n_layer]
+
+        <a id="change">if n_class is None:
+            if pretrained_model in _models:
+                n_class = _models[pretrained_model][&quotn_class&quot]
+            else:
+                n_class = 1000
+
+       </a> if mean is None:
+            if pretrained_model in _models:
+                mean = _models[pretrained_model][&quotmean&quot]
+            else:
+                mean = _imagenet_mean
+        self.mean = mean
+
+        if initialW is None:
+            initialW = initializers.HeNormal(scale=1., fan_option=&quotfan_out&quot)
+        if &quotinitialW&quot not in fc_kwargs:
+            fc_kwargs[&quotinitialW&quot] = initializers.Normal(scale=0.01)
+        if pretrained_model:
+            &#47&#47 As a sampling process is time-consuming,
+            &#47&#47 we employ a zero initializer for faster computation.
+            initialW = initializers.constant.Zero()
+            fc_kwargs[&quotinitialW&quot] = initializers.constant.Zero()
+        kwargs = {&quotinitialW&quot: initialW, &quotstride_first&quot: stride_first}
+
+        super(ResNet, self).__init__()
+        with self.init_scope():
+            self.conv1 = Conv2DBNActiv(None, 64, 7, 2, 3, nobias=conv1_no_bias,
+                                       initialW=initialW)
+            self.pool1 = lambda x: F.max_pooling_2d(x, ksize=3, stride=2)
+            self.res2 = ResBlock(blocks[0], None, 64, 256, 1, **kwargs)
+            self.res3 = ResBlock(blocks[1], None, 128, 512, 2, **kwargs)
+            self.res4 = ResBlock(blocks[2], None, 256, 1024, 2, **kwargs)
+            self.res5 = ResBlock(blocks[3], None, 512, 2048, 2, **kwargs)
+            self.pool5 = _global_average_pooling_2d
+            self.fc6 = L.Linear(None, n_class, **fc_kwargs)
+            self.prob = F.softmax
+
+        <a id="change">if pretrained_model in _models:
+            if not _available:
+                warnings.warn(&quotcv2 is not installed on your environment. &quot
+                              &quotThe scores of ResNets reported in the &quot
+                              &quotREADME of the ChainerCV\&quots classification &quot
+                              &quotexample are calculated using OpenCV as the &quot
+                              &quotbackend. With Pillow as the &quot
+                              &quotbackend, the scores would change.&quot,
+                              RuntimeWarning)
+            path = download_model(_models[pretrained_model][&quoturl&quot])
+            chainer.serializers.load_npz(path, self)
+        elif pretrained_model:
+            chainer.serializers.load_npz(pretrained_model, self)
+
+
+</a>def _global_average_pooling_2d(x):
+    n, channel, rows, cols = x.data.shape
+    h = F.average_pooling_2d(x, (rows, cols), stride=1)
+    h = h.reshape((n, channel))</code></pre><h3>After Change</h3><pre><code class='java'>
+        _models = self._models[arch][n_layer]
+        blocks = self._blocks[n_layer]
+
+        <a id="change">n_class, path = prepare_link_initialization(
+            n_class, pretrained_model, _models, False, 1000)</a>
+
+        if mean is None:
+            if pretrained_model in _models:
+                mean = _models[pretrained_model][&quotmean&quot]
+            else:
+                mean = _imagenet_mean
+        self.mean = mean
+
+        if initialW is None:
+            initialW = initializers.HeNormal(scale=1., fan_option=&quotfan_out&quot)
+        if &quotinitialW&quot not in fc_kwargs:
+            fc_kwargs[&quotinitialW&quot] = initializers.Normal(scale=0.01)
+        if pretrained_model:
+            &#47&#47 As a sampling process is time-consuming,
+            &#47&#47 we employ a zero initializer for faster computation.
+            initialW = initializers.constant.Zero()
+            fc_kwargs[&quotinitialW&quot] = initializers.constant.Zero()
+        kwargs = {&quotinitialW&quot: initialW, &quotstride_first&quot: stride_first}
+
+        super(ResNet, self).__init__()
+        with self.init_scope():
+            self.conv1 = Conv2DBNActiv(None, 64, 7, 2, 3, nobias=conv1_no_bias,
+                                       initialW=initialW)
+            self.pool1 = lambda x: F.max_pooling_2d(x, ksize=3, stride=2)
+            self.res2 = ResBlock(blocks[0], None, 64, 256, 1, **kwargs)
+            self.res3 = ResBlock(blocks[1], None, 128, 512, 2, **kwargs)
+            self.res4 = ResBlock(blocks[2], None, 256, 1024, 2, **kwargs)
+            self.res5 = ResBlock(blocks[3], None, 512, 2048, 2, **kwargs)
+            self.pool5 = _global_average_pooling_2d
+            self.fc6 = L.Linear(None, n_class, **fc_kwargs)
+            self.prob = F.softmax
+
+        <a id="change">if path:
+            chainer.serializers.load_npz(path, self)
+
+
+</a>def _global_average_pooling_2d(x):
+    n, channel, rows, cols = x.data.shape
+    h = F.average_pooling_2d(x, (rows, cols), stride=1)
+    h = h.reshape((n, channel))</code></pre>

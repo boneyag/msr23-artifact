@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    chunks = np.asanyarray(chunks, dtype=int)
+    chunk_mask, chunked_data = _chunk_mean_centering(X_t, chunks)
+
+    inner_cov = <a id="change">np.cov(chunked_data, rowvar=0, bias=1)</a>
+    dim = self._check_dimension(np.linalg.matrix_rank(inner_cov), X_t)
+
+    &#47&#47 Fisher Linear Discriminant projection
+    if dim &lt; X_t.shape[1]:
+      total_cov = np.cov(X_t[chunk_mask], rowvar=0)
+      tmp = np.linalg.lstsq(total_cov, inner_cov)[0]
+      vals, vecs = np.linalg.eig(tmp)
+      inds = np.argsort(vals)[:dim]
+      A = vecs[:, inds]
+      inner_cov = A.T.dot(inner_cov).dot(A)
+      <a id="change">self.transformer_</a> = _inv_sqrtm(inner_cov).dot(A.T)
+    else:
+      self.transformer_ = _inv_sqrtm(inner_cov).T
+
+    if M_pca is not None:
+        <a id="change">self.transformer_</a> = self.transformer_.dot(M_pca)
+
+    return self
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    chunks = np.asanyarray(chunks, dtype=int)
+    chunk_mask, chunked_data = _chunk_mean_centering(X_t, chunks)
+
+    inner_cov = <a id="change">np.atleast_2d(np.cov(chunked_data, rowvar=0, bias=1))</a>
+    dim = self._check_dimension(np.linalg.matrix_rank(inner_cov), X_t)
+
+    &#47&#47 Fisher Linear Discriminant projection
+    if dim &lt; X_t.shape[1]:
+      total_cov = np.cov(X_t[chunk_mask], rowvar=0)
+      tmp = np.linalg.lstsq(total_cov, inner_cov)[0]
+      vals, vecs = np.linalg.eig(tmp)
+      inds = np.argsort(vals)[:dim]
+      A = vecs[:, inds]
+      inner_cov = np.atleast_2d(A.T.dot(inner_cov).dot(A))
+      <a id="change">self.transformer_</a> = _inv_sqrtm(inner_cov).dot(A.T)
+    else:
+      self.transformer_ = _inv_sqrtm(inner_cov).T
+
+    if M_pca is not None:
+        <a id="change">self.transformer_</a> = np.atleast_2d(self.transformer_.dot(M_pca))
+
+    return self
+</code></pre>

@@ -1,0 +1,94 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    per_file_caching: bool,
+    include_sources: bool = True,
+) -&gt; str:
+    <a id="change">console = MockConsole(use_colors=False)</a>
+    union_membership = UnionMembership({LanguageFmtTargets: language_target_collection_types})
+    result: Fmt = run_rule_with_mocks(
+        fmt,
+        rule_args=[
+            console,
+            Targets(targets),
+            create_goal_subsystem(
+                FmtSubsystem, per_file_caching=per_file_caching, per_target_caching=False
+            ),
+            Workspace(rule_runner.scheduler),
+            union_membership,
+        ],
+        mock_gets=[
+            MockGet(
+                output_type=LanguageFmtResults,
+                input_type=LanguageFmtTargets,
+                mock=lambda language_targets_collection: language_targets_collection.language_fmt_results(
+                    result_digest
+                ),
+            ),
+            MockGet(
+                output_type=TargetsWithSources,
+                input_type=TargetsWithSourcesRequest,
+                mock=lambda tgts: TargetsWithSources(tgts if include_sources else ()),
+            ),
+            MockGet(
+                output_type=Digest,
+                input_type=MergeDigests,
+                mock=lambda _: result_digest,
+            ),
+        ],
+        union_membership=union_membership,
+    )
+    assert result.exit_code == 0
+    assert not console.stdout.getvalue()
+    <a id="change">return cast(str, console.stderr.getvalue())</a>
+
+
+def assert_workspace_modified(
+    rule_runner: RuleRunner, *, fortran_formatted: bool, smalltalk_formatted: bool</code></pre><h3>After Change</h3><pre><code class='java'>
+    per_file_caching: bool,
+    include_sources: bool = True,
+) -&gt; str:
+    <a id="change">with mock_console(rule_runner.options_bootstrapper) as (console, stdio_reader):
+        union_membership = UnionMembership({LanguageFmtTargets: language_target_collection_types})
+        result: Fmt = run_rule_with_mocks(
+            fmt,
+            rule_args=[
+                console,
+                Targets(targets),
+                create_goal_subsystem(
+                    FmtSubsystem, per_file_caching=per_file_caching, per_target_caching=False
+                ),
+                Workspace(rule_runner.scheduler),
+                union_membership,
+            ],
+            mock_gets=[
+                MockGet(
+                    output_type=LanguageFmtResults,
+                    input_type=LanguageFmtTargets,
+                    mock=lambda language_targets_collection: language_targets_collection.language_fmt_results(
+                        result_digest
+                    ),
+                ),
+                MockGet(
+                    output_type=TargetsWithSources,
+                    input_type=TargetsWithSourcesRequest,
+                    mock=lambda tgts: TargetsWithSources(tgts if include_sources else ()),
+                ),
+                MockGet(
+                    output_type=Digest,
+                    input_type=MergeDigests,
+                    mock=lambda _: result_digest,
+                ),
+            ],
+            union_membership=union_membership,
+        )
+        assert result.exit_code == 0
+        assert not stdio_reader.get_stdout()
+        return stdio_reader.get_stderr()
+
+
+</a>def assert_workspace_modified(
+    rule_runner: RuleRunner, *, fortran_formatted: bool, smalltalk_formatted: bool
+) -&gt; None:
+    fortran_file = Path(rule_runner.build_root, FORTRAN_FILE.path)</code></pre>

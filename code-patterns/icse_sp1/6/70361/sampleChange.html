@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.z = gan.latent.sample.eval()
+            self.target = gan.latent.sample.eval()
+            self.input = gan.session.run(gan.inputs.x)
+            self.input = np.tile(self.input[0], [<a id="change">gan.batch_size()</a>, 1, 1, 1])
+
+        if self.step &gt; self.steps:
+            self.z = self.target
+            self.target = gan.latent.sample.eval()
+            self.step = 0
+
+        percent = float(self.step)/self.steps
+        z_interp = self.z*(1.0-percent) + self.target*percent
+        self.step+=1
+        output = gan.session.run(gan.generator.sample, feed_dict={z_t: z_interp, inputs_t: self.input})
+        <a id="change">output[0] = self.input[0]</a>
+        g=tf.get_default_graph()
+        with g.as_default():
+            tf.set_random_seed(1)
+            return {</code></pre><h3>After Change</h3><pre><code class='java'>
+        percent = float(self.step % self.steps)/self.steps
+        z_interp = self.z*(1.0-percent) + self.target*percent
+        self.step+=1
+        <a id="change">if self.step % 360 == 0:
+            gan.session.run(gan.set_x)
+            self.input = gan.session.run(gan.inputs.x)
+       </a> output = gan.session.run(gan.generator.sample, feed_dict={z_t: z_interp, inputs_t: self.input})
+        g=tf.get_default_graph()
+        with g.as_default():
+            tf.set_random_seed(1)</code></pre>

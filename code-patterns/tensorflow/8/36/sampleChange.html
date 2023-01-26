@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        b_id = tf.concat([b_id, knots_id], axis=-1)
+
+        samples = tf.gather_nd(inputs, b_id)  &#47&#47 output 8, 2, 2, n_channels
+        samples = <a id="change">tf.reduce_sum(
+            samples * tf.expand_dims(point_weights, axis=-1), axis=0)</a>
+        samples = samples / tf.reduce_sum(point_weights, axis=0)
+        return samples
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        point_weights = tf.pow(point_weights, self.power / 2.0)
+        point_weights = tf.reciprocal(point_weights)
+        &#47&#47 workaround for zero weights
+        <a id="change">point_weights = tf.minimum(point_weights, 1e12)</a>
+
+        &#47&#47 transpose to shape inds: [0, -1, others]
+        all_coords = tf.transpose(
+            all_coords, [0, len(out_size)] + range(1, len(out_size)))
+        knots_id = tf.gather_nd(all_coords, weight_id)
+        knots_id = tf.transpose(
+            knots_id, [0] + range(2, out_spatial_rank + 3) + [1])
+        knots_shape = knots_id.get_shape().as_list()
+        b_id = tf.reshape(
+            tf.range(batch_size),
+            [1] + [batch_size] + [1] * (len(knots_shape) - 2))
+        b_id = tf.tile(
+            b_id, [knots_shape[0]] + [1] + out_spatial_size + [1])
+        b_id = tf.concat([b_id, knots_id], axis=-1)
+
+        point_weights = tf.expand_dims(point_weights, axis=-1)
+        samples = tf.gather_nd(inputs, b_id)
+        samples = <a id="change">tf.reduce_sum(samples * point_weights, axis=0)</a>
+        samples = samples / tf.reduce_sum(point_weights, axis=0)
+        return samples
+
+</code></pre>

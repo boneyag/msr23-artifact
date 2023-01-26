@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 actor loss
+        actions_tp0 = self.actor(states_t)
+        atoms_tp0 = [
+            <a id="change">x(states_t, actions_tp0).squeeze_(dim=2)</a> for x in self.critics
+        ]
+        q_values_tp0_min = torch.cat(
+            atoms_tp0, dim=-1</code></pre><h3>After Change</h3><pre><code class='java'>
+        actions_tp0 = self.actor(states_t)
+        &#47&#47 {num_critics} * [bs; num_heads; num_atoms; 1]
+        atoms_tp0 = [
+            <a id="change">x</a>(states_t, actions_tp0).squeeze_(dim=2).unsqueeze_(-1)
+            for x in self.critics
+        ]
+        &#47&#47 [bs; num_heads, num_atoms; num_critics] -&gt; many-heads view transform
+        &#47&#47 [{bs * num_heads}; num_atoms; num_critics] -&gt;  quantile value
+        &#47&#47 [{bs * num_heads}; num_critics] -&gt;  min over all critics
+        &#47&#47 [{bs * num_heads};]
+        q_values_tp0_min = (
+            <a id="change">torch</a>.cat(atoms_tp0, dim=-1)
+            .view(-1, self.num_atoms, self._num_critics)
+            .mean(dim=1)
+            .min(dim=1)[0]</code></pre>

@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        raise ValueError("Inputs must have same batch size dimension. Got center {}, angle {} and scale {}"
+                         .format(center.shape, angle.shape, scale.shape))
+    &#47&#47 convert angle and apply scale
+    scaled_rotation: torch.Tensor = angle_to_rotation_matrix(angle) * <a id="change">scale.view(-1, 1, 1)</a>
+    alpha: torch.Tensor = scaled_rotation[:, 0, 0]
+    beta: torch.Tensor = scaled_rotation[:, 0, 1]
+
+    &#47&#47 unpack the center to x, y coordinates</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 convert angle and apply scale
+    rotation_matrix: torch.Tensor = angle_to_rotation_matrix(angle)
+    scaling_matrix: torch.Tensor = torch.zeros((2, 2)).fill_diagonal_(1).repeat(rotation_matrix.size(0), 1, 1)
+    scaling_matrix = scaling_matrix * <a id="change">scale.unsqueeze(dim=2).repeat(1, 1, 2)</a>
+    scaled_rotation: <a id="change">torch.Tensor = rotation_matrix @ scaling_matrix.to(rotation_matrix)</a>
+    alpha: torch.Tensor = scaled_rotation[:, 0, 0]
+    beta: torch.Tensor = scaled_rotation[:, 0, 1]
+
+    &#47&#47 unpack the center to x, y coordinates</code></pre>

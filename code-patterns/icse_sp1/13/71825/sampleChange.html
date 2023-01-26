@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if a[&quotbbox&quot][2] &lt; 1 or a[&quotbbox&quot][3] &lt; 1:
+                continue
+
+            <a id="change">annotation        = np.zeros((1, 5))</a>
+            annotation[0, :4] = a[&quotbbox&quot]
+            annotation[0, 4]  = self.coco_label_to_label(a[&quotcategory_id&quot])
+            annotations       = np.append(annotations, annotation, axis=0)
+
+        &#47&#47 transform from [x, y, w, h] to [x1, y1, x2, y2]
+        annotations[:, 2] = annotations[:, 0] + <a id="change">annotations[:, 2]</a>
+        annotations[:, 3] = annotations[:, 1] + annotations[:, 3]
+
+        return annotations
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        &#47&#47 get ground truth annotations
+        annotations_ids = self.coco.getAnnIds(imgIds=self.image_ids[image_index], iscrowd=False)
+        <a id="change">annotations     = {&quotlabels&quot: np.empty((0,)), &quotbboxes&quot: np.empty((0, 4))}</a>
+
+        &#47&#47 some images appear to miss annotations (like image with id 257034)
+        if len(annotations_ids) == 0:
+            return annotations
+
+        &#47&#47 parse annotations
+        coco_annotations = self.coco.loadAnns(annotations_ids)
+        for idx, a in enumerate(coco_annotations):
+            &#47&#47 some annotations have basically no width / height, skip them
+            if a[&quotbbox&quot][2] &lt; 1 or a[&quotbbox&quot][3] &lt; 1:
+                continue
+
+            annotations[&quotlabels&quot] = np.concatenate([<a id="change">annotations[&quotlabels&quot]</a>, [self.coco_label_to_label(a[&quotcategory_id&quot])]], axis=0)
+            annotations[&quotbboxes&quot] = np.concatenate([annotations[&quotbboxes&quot], [[
+                a[&quotbbox&quot][0],
+                a[&quotbbox&quot][1],</code></pre>

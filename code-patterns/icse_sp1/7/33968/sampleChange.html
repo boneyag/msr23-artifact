@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    manifest = _extract_docker_image_file(model, instance, "manifest.json")
+    manifest = json.loads(manifest)
+
+    if <a id="change">len(manifest) != 1:
+   </a>     model.objects.filter(pk=pk).update(
+            status=(
+                f"The container image file should only have 1 image. "
+                f"This file contains {len(manifest)}."
+            )
+        )
+        raise ValidationError("Invalid Dockerfile")
+
+    image_sha256 = manifest[0]["Config"][:64]
+
+    config = _extract_docker_image_file(
+        model, instance, f"{image_sha256}.json"
+    )
+    config = json.loads(config)
+
+    <a id="change">if str(config["config"]["User"].lower()) in ["", "root", "0"]:
+        model.objects.filter(pk=pk).update(
+            status=(
+                "The container runs as root. Please add a user, group and USER "
+                "instruction to your Dockerfile, rebuild, test and upload the "
+                "container again, see https://docs.docker.com/develop/develop-images/dockerfile_best-practices/&#47&#47user"
+            )
+        )
+        raise ValidationError("Invalid Dockerfile")
+
+   </a> model.objects.filter(pk=pk).update(
+        image_sha256=f"sha256:{image_sha256}", ready=True
+    )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        with uploaded_image.open() as f:
+            instance.image.save(uploaded_image.name, File(f))
+
+    <a id="change">try:
+        image_sha256 = _validate_docker_image_manifest(
+            model=model, instance=instance
+        )
+    except ValidationError:
+        send_invalid_dockerfile_email(container_image=instance)
+        raise
+
+   </a> model.objects.filter(pk=instance.pk).update(
+        image_sha256=f"sha256:{image_sha256}", ready=True
+    )
+</code></pre>

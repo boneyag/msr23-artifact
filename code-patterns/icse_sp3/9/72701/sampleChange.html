@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        print(&quotinit MultiLayerBinaryClassifier with layers %s and dropout %s&quot % (self.layer_sizes, self.dropout))
+
+    def forward(self, X, **kwargs):
+        <a id="change">return (self.model(X).float())</a>
+
+    &#47&#47 HACK -- parameter to measure *variation* between last layer of the MLP.
+    &#47&#47 Why? To support multihead -- for the same category, where we want multiple heads to predict with different functions
+    &#47&#47 (similar to training a mixture of models) -- useful for uncertainty sampling</code></pre><h3>After Change</h3><pre><code class='java'>
+        clf_out = self.model(X).float()
+        if self.heads_per_class &lt;= 1:
+            return clf_out
+        clf_out = <a id="change">clf_out.view(clf_out.size(0), -1, self.heads_per_class)</a>
+        <a id="change">probs = clf_out</a>
+        if self.softmax:
+            <a id="change">probs = F.softmax(probs, 1)</a>
+        clf_mean = probs.mean(dim=2)
+        clf_std = probs.std(dim=2)
+        <a id="change">return clf_out, clf_mean, clf_std</a>
+
+    &#47&#47 HACK -- parameter to measure *variation* between last layer of the MLP.
+    &#47&#47 Why? To support multihead -- for the same category, where we want multiple heads to predict with different functions
+    &#47&#47 (similar to training a mixture of models) -- useful for uncertainty sampling</code></pre>

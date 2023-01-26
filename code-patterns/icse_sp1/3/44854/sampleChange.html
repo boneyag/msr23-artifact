@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    @classmethod
+    def _promote(cls, obj):
+        try:
+            return <a id="change">super</a>(Array, cls)._promote(obj)
+        except TypeError:
+            &#47&#47 `_promote` contract expectes ProxyTypeError, not TypeError
+            raise ProxyTypeError("Cannot promote {} to {}".format(obj, cls))</code></pre><h3>After Change</h3><pre><code class='java'>
+        if isinstance(obj, (Int, Float, Bool)):
+            return cls(obj)
+
+        <a id="change">try:
+            return obj.cast(cls)
+        except Exception:
+            if not isinstance(obj, np.ndarray):
+                obj = np.asarray(obj)
+            numpy_promoter = (
+                MaskedArray.from_numpy if isinstance(obj, np.ma.MaskedArray) else Array
+            )
+            try:
+                return numpy_promoter(obj)
+            except Exception:
+                raise ProxyTypeError("Cannot promote {} to {}".format(obj, cls))
+
+   </a> @property
+    def literal_value(self):
+        "Python literal value this proxy object was constructed with, or None if not constructed from a literal value."
+        return getattr(self, "_literal_value", None)</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        log = sign * self.linthresh * (
+            self._linscale_adj +
+            ma.log(np.abs(masked) / self.linthresh) / self._log_base)
+        <a id="change">if masked.mask.any():
+            return ma.where(masked.mask, a * self._linscale_adj, log)
+        else:
+            return log
+
+   </a> def inverted(self):
+        return InvertedSymmetricalLogTransform(self.base, self.linthresh,
+                                               self.linscale)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def transform_non_affine(self, a):
+        abs_a = np.abs(a)
+        <a id="change">with np.errstate(divide="ignore", invalid="ignore"):
+            out = np.sign(a) * self.linthresh * (
+                self._linscale_adj +
+                np.log(abs_a / self.linthresh) / self._log_base)
+            inside = abs_a &lt;= self.linthresh
+       </a> out[inside] = a[inside] * self._linscale_adj
+        return out
+
+    def inverted(self):</code></pre>

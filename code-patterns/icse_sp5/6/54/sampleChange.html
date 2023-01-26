@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                data = common_utils.sort_and_shuffle(data, B)
+
+                for i in range(0, current_size, B):
+                    <a id="change">yield (nn_utils.pad_zeros(data[0][i:i + B]),
+                           np.array(data[1][i:i + B]))</a>
+
+    def __iter__(self):
+        return self.generator
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                ret = common_utils.read_chunk(self.reader, current_size)
+                data = ret["X"]
+                <a id="change">ts = ret["t"]</a>
+                labels = ret["y"]
+                <a id="change">names = ret["name"]</a>
+
+                data = preprocess_chunk(data, ts, self.discretizer, self.normalizer)
+                data = (data, labels)
+                data = common_utils.sort_and_shuffle(data, B)
+
+                for i in range(0, current_size, B):
+                    X = nn_utils.pad_zeros(data[0][i:i + B])
+                    y = np.array(data[1][i:i + B])
+                    batch_data = (X, y)
+                    if not self.return_names:
+                        <a id="change">yield batch_data</a>
+                    else:
+                        <a id="change">yield {"data": batch_data, "names": names, "ts": ts}</a>
+
+    def __iter__(self):
+        return self.generator
+</code></pre>

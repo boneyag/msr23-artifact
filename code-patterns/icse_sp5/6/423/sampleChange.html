@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    protocol = database.get_protocol(task_name, protocol_name, progress=True)
+
+    if isinstance(protocol, SpeakerDiarizationProtocol):
+        items = itertools.chain(<a id="change">protocol.train()</a>,
+                                protocol.development(),
+                                protocol.test())
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    f.attrs[&quotdimension&quot] = dimension
+    f.close()
+
+    <a id="change">for subset in [&quotdevelopment&quot, &quottest&quot, &quottrain&quot]:
+
+        try:
+            file_generator = getattr(protocol, subset)()
+            first_item = next(file_generator)
+        except NotImplementedError as e:
+            continue
+
+        file_generator = getattr(protocol, subset)()
+
+        for current_file in file_generator:
+
+            uri = get_unique_identifier(current_file)
+            path = Precomputed.get_path(experiment_dir, current_file)
+
+            if os.path.exists(path):
+                continue
+
+            try:
+                &#47&#47 NOTE current_file contains the &quotchannel&quot key
+                features = feature_extraction(current_file)
+            except PyannoteFeatureExtractionError as e:
+                if robust:
+                    msg = &quotFeature extraction failed for file "{uri}".&quot
+                    msg = msg.format(uri=uri)
+                    warnings.warn(msg)
+                    continue
+                else:
+                    raise e
+
+            if features is None:
+                msg = &quotFeature extraction returned None for file "{uri}".&quot
+                msg = msg.format(uri=uri)
+                if not robust:
+                    raise PyannoteFeatureExtractionError(msg)
+                warnings.warn(msg)
+                continue
+
+            data = features.data
+
+            if np.any(np.isnan(data)):
+                msg = &quotFeature extraction returned NaNs for file "{uri}".&quot
+                msg = msg.format(uri=uri)
+                if not robust:
+                    raise PyannoteFeatureExtractionError(msg)
+                warnings.warn(msg)
+                continue
+
+            &#47&#47 create parent directory
+            mkdir_p(os.path.dirname(path))
+
+            f = h5py.File(path)
+            f.attrs[&quotstart&quot] = sliding_window.start
+            f.attrs[&quotduration&quot] = sliding_window.duration
+            f.attrs[&quotstep&quot] = sliding_window.step
+            f.attrs[&quotdimension&quot] = dimension
+            f.create_dataset(&quotfeatures&quot, data=data)
+            f.close()
+
+
+</a>def main():
+
+    arguments = docopt(__doc__, version=&quotFeature extraction&quot)
+</code></pre>

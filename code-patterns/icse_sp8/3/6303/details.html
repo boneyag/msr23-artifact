@@ -1,0 +1,72 @@
+<html><h3>ccad9100803437a48c5a6d212e5b284c7bb680bc,thumt/bin/dist_trainer.py,,main,#Any#,317
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 Build input queue
+            src_inputs = get_dataset(params.input[0])
+            tgt_inputs = get_dataset(params.input[1])
+            inputs = <a id="change">[src_inputs, tgt_inputs]</a>
+            features = dataset.get_training_input(inputs, params)
+        else:
+            features = record.get_input_features(
+                os.path.join(params.record, "*train*"), "train", params
+            )
+
+        &#47&#47 Build model
+        initializer = get_initializer(params)
+        regularizer = tf.contrib.layers.l1_l2_regularizer(
+            scale_l1=params.scale_l1, scale_l2=params.scale_l2)
+        model = model_cls(params)
+        &#47&#47 Create global step
+        global_step = tf.train.get_or_create_global_step()
+
+        training_func = model.get_training_func(initializer, regularizer)
+        loss = training_func(features)
+        loss = loss + tf.losses.get_regularization_loss()
+
+        &#47&#47 Print parameters
+        all_weights = {v.name: v for v in tf.trainable_variables()}
+        total_size = 0
+
+        for v_name in sorted(list(all_weights)):
+            v = all_weights[v_name]
+            tf.logging.info("%s\tshape    %s", v.name[:-2].ljust(80),
+                            str(v.shape).ljust(20))
+            v_size = np.prod(np.array(v.shape.as_list())).tolist()
+            total_size += v_size
+        tf.logging.info("Total trainable variables size: %d", total_size)
+
+        learning_rate = get_learning_rate_decay(params.learning_rate,
+                                                global_step, params)
+        learning_rate = tf.convert_to_tensor(learning_rate, dtype=tf.float32)
+        tf.summary.scalar("learning_rate", learning_rate)
+
+        &#47&#47 Create optimizer
+        if params.optimizer == "Adam":
+            opt = tf.train.AdamOptimizer(learning_rate,
+                                         beta1=params.adam_beta1,
+                                         beta2=params.adam_beta2,
+                                         epsilon=params.adam_epsilon)
+            opt = hvd.DistributedOptimizer(opt)
+        elif params.optimizer == "LazyAdam":
+            opt = tf.contrib.opt.LazyAdamOptimizer(learning_rate,
+                                                   beta1=params.adam_beta1,
+                                                   beta2=params.adam_beta2,
+                                                   epsilon=params.adam_epsilon)
+            opt = hvd.DistributedOptimizer(opt)
+        else:
+            raise RuntimeError("Optimizer %s not supported" % params.optimizer)
+
+        <a id="change">train_op = opt.minimize(loss, global_step=global_step)</a>
+        restore_op = restore_variables(args.checkpoint)
+
+        &#47&#47 Validation
+        if params.validation and params.references[0]:</code></pre><h3>After Change</h3><pre><code class='java'>
+    override_parameters(params, args)
+
+    &#47&#47 Export all parameters and model specific parameters
+    if <a id="change">hvd.rank()</a> == 0:
+        export_params(params.output, "params.json", params)
+        export_params(
+            params.output,</code></pre><img src="40139557.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/THUNLP-MT/THUMT/commit/ccad9100803437a48c5a6d212e5b284c7bb680bc#diff-6b8673944992eb0305bd73760e5e0964177a9a0d68eeb392a3a9387c07b35c46L318' target='_blank'>Link</a></div><div id='project'> Project Name: THUNLP-MT/THUMT</div><div id='commit'> Commit Name: ccad9100803437a48c5a6d212e5b284c7bb680bc</div><div id='time'> Time: 2019-03-07</div><div id='author'> Author: playinf@stu.xmu.edu.cn</div><div id='file'> File Name: thumt/bin/dist_trainer.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/NVIDIA/OpenSeq2Seq/commit/3578019be301ae9d8e9b7518daa5fb113d00d2db#diff-54b396fe98334621418387fc4c966b9a4102ab55934ad30408db73ddae7268beL147' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/OpenSeq2Seq</div><div id='commit'> Commit Name: 3578019be301ae9d8e9b7518daa5fb113d00d2db</div><div id='time'> Time: 2018-05-07</div><div id='author'> Author: igor.a.gitman@gmail.com</div><div id='file'> File Name: open_seq2seq/utils/hooks.py</div><div id='class'> Class Name: RunEvaluationHook</div><div id='method'> Method Name: after_run</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/55d342a0d0e44f3420877a8e9452adba7933ae72#diff-71207977c6d6e8e6bcba6035bf24bc4ca250aa956d596478cec3ed9d8a07972cL46' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: 55d342a0d0e44f3420877a8e9452adba7933ae72</div><div id='time'> Time: 2019-04-11</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: gpflow/conditionals/util.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: base_conditional</div><BR>

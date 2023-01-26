@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    @staticmethod
+    def __utils(dbms_id=None):
+        if Parser.__DBMS_UTILS_IMPLS is None:
+            <a id="change">Parser.__DBMS_UTILS_IMPLS = {
+                DBMSCatalog.objects.get(
+                    type=DBMSType.POSTGRES, version=&quot9.3&quot).pk: PostgresOldParser(&quot9.3&quot),
+                DBMSCatalog.objects.get(
+                    type=DBMSType.POSTGRES, version=&quot9.2&quot).pk: PostgresOldParser(&quot9.2&quot),
+                DBMSCatalog.objects.get(
+                    type=DBMSType.POSTGRES, version=&quot9.6&quot).pk: Postgres96Parser(&quot9.6&quot),
+                DBMSCatalog.objects.get(
+                    type=DBMSType.POSTGRES, version=&quot9.4&quot).pk: Postgres96Parser(&quot9.4&quot),
+                DBMSCatalog.objects.get(
+                    type=DBMSType.MYROCKS, version=&quot5.6&quot).pk: MyRocks56Parser(),
+                DBMSCatalog.objects.get(
+                    type=DBMSType.ORACLE, version=&quot19.0.0.0.0&quot).pk: Oracle19Parser()
+            }</a>
+        try:
+            if dbms_id is None:
+                return Parser.__DBMS_UTILS_IMPLS
+            return Parser.__DBMS_UTILS_IMPLS[dbms_id]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            parsers = {}
+            for obj in DBMSCatalog.objects.all():
+                <a id="change">if obj.type == DBMSType.POSTGRES:
+                    clz = PostgresParser
+                elif obj.type == DBMSType.MYROCKS:
+                    clz = MyRocksParser
+                elif obj.type == DBMSType.ORACLE:
+                    clz = OracleParser
+                else:
+                    raise NotImplementedError(&quotImplement me! {}&quot.format(obj))
+
+               </a> parsers[obj.pk] = clz(obj)
+
+            Parser.__DBMS_UTILS_IMPLS = parsers
+</code></pre>

@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        rename_count = 0
+        for src, dst in tqdm(filename_mappings, desc="Renaming Faces"):
+            <a id="change">if src == dst:
+                logger.debug("Skipping rename of &quot%s&quot as destination name is same as souce", src)
+                continue
+           </a> old = os.path.join(self._faces.folder, src)
+            new = os.path.join(self._faces.folder, dst)
+            if os.path.exists(new):
+                &#47&#47 This should never happen, but is a safety measure to prevent deletion of faces</code></pre><h3>After Change</h3><pre><code class='java'>
+        int
+            The number of faces that have been renamed
+        
+        <a id="change">if not filename_mappings:
+            return 0
+
+       </a> rename_count = 0
+        conflicts = []
+        for src, dst in tqdm(filename_mappings, desc="Renaming Faces"):
+            old = os.path.join(self._faces.folder, src)
+            new = os.path.join(self._faces.folder, dst)
+
+            if os.path.exists(new):
+                &#47&#47 Interim add .tmp extension to files that will cause a rename conflict, to
+                &#47&#47 process afterwards
+                logger.debug("interim renaming file to avoid conflict: (src: &quot%s&quot, dst: &quot%s&quot)",
+                             src, dst)
+                new = new + ".tmp"
+                conflicts.append(new)
+
+            logger.verbose("Renaming &quot%s&quot to &quot%s&quot", old, new)
+            os.rename(old, new)
+            rename_count += 1
+        if conflicts:
+            for old in tqdm(conflicts, desc="Renaming Faces"):
+                new = old[:-4]  &#47&#47 Remove .tmp extension
+                if os.path.exists(new):
+                    &#47&#47 This should only be running on faces. If there is still a conflict
+                    &#47&#47 then the user has done something stupid, so we will delete the file and
+                    &#47&#47 replace. They can always re-extract :/
+                    os.remove(new)
+                <a id="change">logger.verbose("Renaming &quot%s&quot to &quot%s&quot", old, new)</a>
+                os.rename(old, new)
+        return rename_count
+
+</code></pre>

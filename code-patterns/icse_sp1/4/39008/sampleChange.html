@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    with tvm.transform.PassContext(opt_level=3, disabled_pass=["FoldScaleAxis"]):
+        vm_exec = relay.vm.compile(mod, target=target, params=params)
+
+    <a id="change">ctx = tvm.cpu()</a>
+    vm = VirtualMachine(vm_exec, ctx)
+    data = process_image(img)
+    pt_res = scripted_model(data)
+    data = data.detach().numpy()
+    vm.set_input("main", **{input_name: data})
+    tvm_res = vm.run()
+
+    &#47&#47 Note: due to accumulated numerical error, we can&quott directly compare results
+    &#47&#47 with pytorch output. Some boxes might have a quite tiny difference in score
+    &#47&#47 and the order can become different. We just measure how many valid boxes
+    &#47&#47 there are for input image.
+    pt_scores = pt_res[1].detach().numpy().tolist()
+    <a id="change">tvm_scores = tvm_res[1].asnumpy().tolist()</a>
+    num_pt_valid_scores = num_tvm_valid_scores = 0
+
+    for score in pt_scores:
+        if score &gt;= score_threshold:</code></pre><h3>After Change</h3><pre><code class='java'>
+        tvm_res = vm.run()
+
+        &#47&#47 Bounding boxes
+        <a id="change">tvm.testing.assert_allclose(
+            pt_res[0].cpu().numpy(), tvm_res[0].asnumpy(), rtol=1e-5, atol=1e-5
+        )</a>
+        &#47&#47 Scores
+        tvm.testing.assert_allclose(
+            pt_res[1].cpu().numpy(), tvm_res[1].asnumpy(), rtol=1e-5, atol=1e-5
+        )</code></pre>

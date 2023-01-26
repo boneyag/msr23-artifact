@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 gramVBV is now R^{-1}.
+    blockVectorV = np.dot(blockVectorV, gramVBV)
+    if B is not None:
+        blockVectorBV = <a id="change">np.dot(blockVectorBV, gramVBV)</a>
+    else:
+        blockVectorBV = None
+
+    if retInvR:</code></pre><h3>After Change</h3><pre><code class='java'>
+    else:
+        blockVectorBV = blockVectorBV / normalization
+    VBV = blockVectorV.T.conj() @ blockVectorBV
+    <a id="change">try:
+        &#47&#47 VBV is a Cholesky factor from now on...
+        VBV = cholesky(VBV, overwrite_a=True)
+        VBV = inv(VBV, overwrite_a=True)
+        blockVectorV = blockVectorV @ VBV
+        &#47&#47 blockVectorV = (cho_solve((VBV.T, True), blockVectorV.T)).T
+        if B is not None:
+            blockVectorBV = blockVectorBV @ VBV
+            &#47&#47 blockVectorBV = (cho_solve((VBV.T, True), blockVectorBV.T)).T
+        else:
+            blockVectorBV = None
+    except LinAlgError:
+        &#47&#47raise ValueError(&quotCholesky has failed&quot)
+        blockVectorV = None
+        blockVectorBV = None
+        VBV = None
+
+   </a> if retInvR:
+        return blockVectorV, blockVectorBV, VBV, normalization
+    else:
+        return blockVectorV, blockVectorBV</code></pre>

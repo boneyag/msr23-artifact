@@ -1,0 +1,37 @@
+<html><h3>d6e8ea4250b2a48262bae0276047371ea2dcccf1,onmt/utils/loss.py,,shards,#Any#Any#Any#,246
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            yield dict(zip(keys, shard_tensors))
+
+        &#47&#47 Assumed backprop&quotd
+        <a id="change">variables = ((state[k], v.grad.data) for k, v in non_none.items()
+                     if isinstance(v, Variable) and v.grad is not None)</a>
+        inputs, grads = zip(*variables)
+        torch.autograd.backward(inputs, grads)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 want a sequence of dictionaries of tensors.
+        &#47&#47 First, unzip the dictionary into a sequence of keys and a
+        &#47&#47 sequence of tensor-like sequences.
+        keys, values = zip(*((k, [v_chunk <a id="change">for</a> v_chunk in v_split])
+                             for k, (_, v_split) in non_none.items()))
+
+        &#47&#47 Now, yield a dictionary for each shard. The keys are always
+        &#47&#47 the same. values is a sequence of length &#47&#47keys where each
+        &#47&#47 element is a sequence of length &#47&#47shards. We want to iterate
+        &#47&#47 over the shards, not over the keys: therefore, the values need
+        &#47&#47 to be re-zipped by shard and then each shard can be paired
+        &#47&#47 with the keys.
+        for shard_tensors in zip(*values):
+            yield dict(zip(keys, shard_tensors))
+
+        &#47&#47 Assumed backprop&quotd
+        variables = []
+        for k, (v, v_split) in non_none.items():
+            <a id="change">if isinstance(v, torch.Tensor) and state[k].requires_grad:
+                variables.extend(zip(torch.split(state[k], shard_size),
+                                     [v_chunk.grad for v_chunk in v_split]))
+       </a> inputs, grads = zip(*variables)
+        torch.autograd.backward(inputs, grads)
+</code></pre><img src="149748415.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/d6e8ea4250b2a48262bae0276047371ea2dcccf1#diff-e0527f126ce14737ed14390cba62763d9d0855fe381d47217ac7cfdb91ba0fc6L263' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: d6e8ea4250b2a48262bae0276047371ea2dcccf1</div><div id='time'> Time: 2018-06-15</div><div id='author'> Author: vince62s@yahoo.com</div><div id='file'> File Name: onmt/utils/loss.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: shards</div><BR><BR><div id='link'><a href='https://github.com/biolab/orange3/commit/8d4d199c35f5163ed21ae705a16ce3c8548d60c6#diff-048724bfc81d355b9b693097eb2f3eb634750e239b04c4c723ae2f1e994eefa6L191' target='_blank'>Link</a></div><div id='project'> Project Name: biolab/orange3</div><div id='commit'> Commit Name: 8d4d199c35f5163ed21ae705a16ce3c8548d60c6</div><div id='time'> Time: 2012-11-28</div><div id='author'> Author: janez.demsar@fri.uni-lj.si</div><div id='file'> File Name: Orange/data/io.py</div><div id='class'> Class Name: BasketReader</div><div id='method'> Method Name: prescan_file</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/ab89e458bdec863f2dc2f7232ffd38d49758b31a#diff-1961b3f9e0c12b9c5df99157edf99f3fd547f7d3e60528b68a03c0d79b27f264L240' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: ab89e458bdec863f2dc2f7232ffd38d49758b31a</div><div id='time'> Time: 2018-06-08</div><div id='author'> Author: srush@seas.harvard.edu</div><div id='file'> File Name: onmt/Loss.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: shards</div><BR>

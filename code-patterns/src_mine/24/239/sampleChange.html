@@ -1,0 +1,76 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      ("WithBias_Stride2", True, 2), ("WithoutBias_Stride2", False, 2))
+  def testConv3DTransposeDataFormats(self, use_bias, stride):
+    Check the module produces the same result for supported data formats.
+    <a id="change">input_shape</a> = (self.INPUT_SHAPE.input_batch,
+                   np.ceil(self.INPUT_SHAPE.input_depth / stride),
+                   np.ceil(self.INPUT_SHAPE.input_height / stride),
+                   <a id="change">np.ceil(self.INPUT_SHAPE.input_width / stride)</a>,
+                   self.INPUT_SHAPE.input_channels)
+
+    func = functools.partial(
+        snt.Conv3DTranspose,
+        output_channels=self.OUT_CHANNELS,
+        kernel_shape=self.KERNEL_SHAPE,
+        output_shape=(self.INPUT_SHAPE.input_depth,
+                      self.INPUT_SHAPE.input_height,
+                      self.INPUT_SHAPE.input_width),
+        use_bias=use_bias,
+        stride=stride,
+        initializers=create_initializers(use_bias))
+
+    conv_ndhwc = func(name="NDHWC", data_format="NDHWC")
+    <a id="change">x</a> = tf.constant(np.random.random(input_shape).astype(np.float32))
+    <a id="change">result_ndhwc</a> = conv_ndhwc(x)
+
+    &#47&#47 We will force both modules to share the same weights by creating
+    &#47&#47 a custom getter that returns the weights from the first conv module when
+    &#47&#47 tf.get_variable is called.
+    custom_getter = {"w": create_custom_field_getter(conv_ndhwc, "w"),
+                     "b": create_custom_field_getter(conv_ndhwc, "b")}
+    conv_ncdhw = func(name="NCDHW", data_format="NCDHW",
+                      custom_getter=custom_getter)
+    <a id="change">x_transpose</a> = tf.transpose(x, perm=(0, 4, 1, 2, 3))
+    <a id="change">result_ncdhw</a> = tf.transpose(conv_ncdhw(x_transpose), perm=(0, 2, 3, 4, 1))
+
+    self.checkEquality(result_ndhwc, result_ncdhw)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      ("WithBias_Stride2", True, 2), ("WithoutBias_Stride2", False, 2))
+  def testConv3DTransposeDataFormats(self, use_bias, stride):
+    Check the module produces the same result for supported data formats.
+    <a id="change">input_shape</a> = (self.INPUT_SHAPE.input_batch,
+                   int(np.ceil(self.INPUT_SHAPE.input_depth / stride)),
+                   int(np.ceil(self.INPUT_SHAPE.input_height / stride)),
+                   <a id="change">int(np.ceil(self.INPUT_SHAPE.input_width / stride))</a>,
+                   self.INPUT_SHAPE.input_channels)
+
+    func = functools.partial(
+        snt.Conv3DTranspose,
+        output_channels=self.OUT_CHANNELS,
+        kernel_shape=self.KERNEL_SHAPE,
+        output_shape=(self.INPUT_SHAPE.input_depth,
+                      self.INPUT_SHAPE.input_height,
+                      self.INPUT_SHAPE.input_width),
+        use_bias=use_bias,
+        stride=stride,
+        initializers=create_initializers(use_bias))
+
+    conv_ndhwc = func(name="NDHWC", data_format="NDHWC")
+    <a id="change">x</a> = tf.constant(np.random.random(input_shape).astype(np.float32))
+    <a id="change">result_ndhwc</a> = conv_ndhwc(x)
+
+    &#47&#47 We will force both modules to share the same weights by creating
+    &#47&#47 a custom getter that returns the weights from the first conv module when
+    &#47&#47 tf.get_variable is called.
+    custom_getter = {"w": create_custom_field_getter(conv_ndhwc, "w"),
+                     "b": create_custom_field_getter(conv_ndhwc, "b")}
+    conv_ncdhw = func(name="NCDHW", data_format="NCDHW",
+                      custom_getter=custom_getter)
+    <a id="change">x_transpose</a> = tf.transpose(x, perm=(0, 4, 1, 2, 3))
+    <a id="change">result_ncdhw</a> = tf.transpose(conv_ncdhw(x_transpose), perm=(0, 2, 3, 4, 1))
+
+    self.checkEquality(result_ndhwc, result_ncdhw)
+</code></pre>

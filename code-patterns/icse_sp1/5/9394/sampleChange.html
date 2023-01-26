@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        guesses = []
+        out = self.model(input_dict, lengths_dict, qnums)
+        probs = F.softmax(out)
+        <a id="change">scores, preds = torch.max(probs, 1)</a>
+        scores = scores.data.cpu().numpy()
+        preds = preds.data.cpu().numpy()
+
+        for p, s in zip(preds, scores):</code></pre><h3>After Change</h3><pre><code class='java'>
+        out = self.model(input_dict, lengths_dict, qnums)
+        probs = [p for p in F.softmax(out).data.cpu().numpy()]
+        logits = [l for l in out.data.cpu().numpy()]
+        <a id="change">preds = [np.argsort(-l)[:10] for l in logits]</a>
+        guesses = []
+        for i, ps in enumerate(preds):
+            guesses.append([])
+            for p in ps:
+                guesses[-1].append((self.i_to_ans[p], logits[i][p], <a id="change">probs</a>[i][p]))
+        return guesses
+
+    def generate_guesses(self, max_n_guesses: int, folds: List[str], word_skip=-1):</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tensor[4, 1:, :] = 0
+
+        input_tensor = Variable(tensor)
+        <a id="change">sequence_lengths = Variable(torch.LongTensor([7, 6, 4, 2, 1]))</a>
+        packed_sequence = pack_padded_sequence(input_tensor, list(sequence_lengths.data), batch_first=True)
+        _, state = lstm(packed_sequence)
+        &#47&#47 Transpose output state, extract the last forward and backward states and
+        &#47&#47 reshape to be of dimension (batch_size, 2 * hidden_size).</code></pre><h3>After Change</h3><pre><code class='java'>
+        tensor[2, 4:, :] = 0
+        tensor[3, 2:, :] = 0
+        tensor[4, 1:, :] = 0
+        <a id="change">mask = torch.ones(5, 7)</a>
+        <a id="change">mask[1, 6:] = 0</a>
+        <a id="change">mask[2, 4:] = 0</a>
+        <a id="change">mask[3, 2:] = 0</a>
+        <a id="change">mask[4, 1:] = 0</a>
+
+        input_tensor = Variable(tensor)
+        <a id="change">mask = Variable(mask)</a>
+        <a id="change">sequence_lengths = get_lengths_from_binary_sequence_mask(mask)</a>
+        packed_sequence = pack_padded_sequence(input_tensor, list(sequence_lengths.data), batch_first=True)
+        _, state = lstm(packed_sequence)
+        &#47&#47 Transpose output state, extract the last forward and backward states and
+        &#47&#47 reshape to be of dimension (batch_size, 2 * hidden_size).</code></pre>

@@ -1,0 +1,58 @@
+<html><h3>383ea0326ae103b5d5e0b62ed9c3cb18510c5b9e,distributed/comm/tcp.py,TCP,write,#TCP#Any#Any#Any#,229
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        try:
+            nframes = len(frames)
+            <a id="change">lengths = [nbytes(frame) for frame in frames]</a>
+            length_bytes = struct.pack(f"Q{nframes}Q", nframes, *lengths)
+
+            frames = [length_bytes, *frames]
+            lengths = [len(length_bytes), *lengths]
+
+            if sum(lengths) &lt; 2 ** 17:  &#47&#47 128kiB
+                &#47&#47 small enough, send in one go
+                stream.write(b"".join(frames))
+            else:
+                &#47&#47 avoid large memcpy, send in many
+                <a id="change">for frame, frame_bytes in zip(frames, lengths):
+                    &#47&#47 Can&quott wait for the write() Future as it may be lost
+                    &#47&#47 ("If write is called again before that Future has resolved,
+                    &#47&#47   the previous future will be orphaned and will never resolve")
+                    if frame_bytes:
+                        future = stream.write(frame)
+                        bytes_since_last_yield += frame_bytes
+                        if bytes_since_last_yield &gt; 32e6:
+                            await future
+                            bytes_since_last_yield = 0
+       </a> except StreamClosedError as e:
+            self.stream = None
+            self._closed = True
+            if not shutting_down():</code></pre><h3>After Change</h3><pre><code class='java'>
+        frames_nbytes = sum(map(nbytes, frames))
+
+        header = pack_frames_prelude(frames)
+        header = <a id="change">struct.pack("Q", nbytes(header) + frames_nbytes)</a> + header
+
+        frames = [header, *frames]
+        frames_nbytes += nbytes(header)
+
+        if frames_nbytes &lt; 2 ** 17:  &#47&#47 128kiB
+            &#47&#47 small enough, send in one go
+            frames = [b"".join(frames)]
+
+        try:
+            &#47&#47 trick to enque all frames for writing beforehand
+            <a id="change">for each_frame in frames:
+                each_frame_nbytes = nbytes(each_frame)
+                if each_frame_nbytes:
+                    stream._write_buffer.append(each_frame)
+                    stream._total_write_index += each_frame_nbytes
+
+            &#47&#47 start writing frames
+           </a> stream.write(b"")
+        except StreamClosedError as e:
+            self.stream = None
+            self._closed = True</code></pre><img src="164812496.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dask/distributed/commit/383ea0326ae103b5d5e0b62ed9c3cb18510c5b9e#diff-854f6953f0f6e2ff496dca25db11d30dd8ee321de1917e6c7191ecf87e684dd3L230' target='_blank'>Link</a></div><div id='project'> Project Name: dask/distributed</div><div id='commit'> Commit Name: 383ea0326ae103b5d5e0b62ed9c3cb18510c5b9e</div><div id='time'> Time: 2021-02-17</div><div id='author'> Author: jakirkham@gmail.com</div><div id='file'> File Name: distributed/comm/tcp.py</div><div id='class'> Class Name: TCP</div><div id='method'> Method Name: write</div><BR><BR><div id='link'><a href='https://github.com/tensorpack/tensorpack/commit/ba9d179311e86a6a7aed125970e7c5bd1c41627e#diff-f15be671bddca922c5879af7d8d52531ebec1d0b28ea051e0e64860b696e2cf5L300' target='_blank'>Link</a></div><div id='project'> Project Name: tensorpack/tensorpack</div><div id='commit'> Commit Name: ba9d179311e86a6a7aed125970e7c5bd1c41627e</div><div id='time'> Time: 2019-08-21</div><div id='author'> Author: ppwwyyxx@users.noreply.github.com</div><div id='file'> File Name: tensorpack/dataflow/parallel.py</div><div id='class'> Class Name: _Worker</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/lanpa/tensorboardX/commit/05b17d125cfd1a0dddb2ae599a2eb72b39bedcf3#diff-10164159ce3dfa627c27b01c81cd4bbd4c1a8355a033e1e9fbf0deee56933392L366' target='_blank'>Link</a></div><div id='project'> Project Name: lanpa/tensorboardX</div><div id='commit'> Commit Name: 05b17d125cfd1a0dddb2ae599a2eb72b39bedcf3</div><div id='time'> Time: 2019-04-16</div><div id='author'> Author: drothchild@berkeley.edu</div><div id='file'> File Name: tensorboardX/summary.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: audio</div><BR>

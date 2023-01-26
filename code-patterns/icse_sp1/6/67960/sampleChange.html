@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    layers.append(new)
+
+def net(data_path, input_image):
+    <a id="change">layers = [
+        &quotconv1_1&quot, &quotrelu1_1&quot, &quotconv1_2&quot, &quotrelu1_2&quot, &quotpool1&quot,
+
+        &quotconv2_1&quot, &quotrelu2_1&quot, &quotconv2_2&quot, &quotrelu2_2&quot, &quotpool2&quot,
+
+        &quotconv3_1&quot, &quotrelu3_1&quot, &quotconv3_2&quot, &quotrelu3_2&quot, &quotconv3_3&quot,
+        &quotrelu3_3&quot, &quotconv3_4&quot, &quotrelu3_4&quot, &quotpool3&quot,
+
+        &quotconv4_1&quot, &quotrelu4_1&quot, &quotconv4_2&quot, &quotrelu4_2&quot, &quotconv4_3&quot,
+        &quotrelu4_3&quot, &quotconv4_4&quot, &quotrelu4_4&quot, &quotpool4&quot,
+
+        &quotconv5_1&quot, &quotrelu5_1&quot, &quotconv5_2&quot, &quotrelu5_2&quot, &quotconv5_3&quot,
+        &quotrelu5_3&quot, &quotconv5_4&quot, &quotrelu5_4&quot
+    ]</a>
+
+
+    data = sio.loadmat(data_path)
+    mean = data[&quotnormalization&quot][0][0][0]
+    mean_pixel = np.mean(mean, axis=(0, 1))
+    constants = data[&quotlayers&quot][0]
+
+    net = []
+    for i, kind in enumerate(layers):
+        short = kind[:4]
+        if short == &quotconv&quot:
+            weights = constants[i][0][0][0][0][0]
+            &#47&#47 in matconvnet, weights are [width, height, depth, num_filters]
+            &#47&#47 but in tensorflow, [height, width, in_channels, out_channels]
+            weights = np.transpose(weights, (1, 0, 2, 3))
+            bias = <a id="change">constants</a>[i][0][0][<a id="change">0</a>][0][1].reshape(-1)
+            new = _conv_layer(weights, bias)
+        elif short == &quotrelu&quot:
+            new = tf.nn.relu</code></pre><h3>After Change</h3><pre><code class='java'>
+    weights = data[&quotlayers&quot][0]
+
+    net = {}
+    <a id="change">current = input_image</a>
+    for i, name in enumerate(layers):
+        kind = name[:4]
+        if kind == &quotconv&quot:
+            kernels, bias = weights[i][0][0][0][0]
+            &#47&#47 matconvnet: weights are [width, height, in_channels, out_channels]
+            &#47&#47 tensorflow: weights are [height, width, in_channels, out_channels]
+            kernels = np.transpose(kernels, (1, 0, 2, 3))
+            bias = bias.reshape(-1)
+            current = _conv_layer(current, kernels, bias)
+        elif kind == &quotrelu&quot:
+            current = <a id="change">tf.nn.relu(current)</a>
+        elif kind == &quotpool&quot:
+            current = _pool_layer(current)
+        <a id="change">net[name] = current</a>
+
+    assert len(net) == len(layers)
+    return net, mean_pixel
+</code></pre>

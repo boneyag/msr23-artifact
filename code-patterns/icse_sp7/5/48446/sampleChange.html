@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.optim = optim(self.partition_parameters()[self.rank], **default)
+
+        &#47&#47 - Sync local and global param_groups keys
+        <a id="change">for global_group, local_group in zip(
+            self.param_groups, self.optim.param_groups
+        ):
+            for k, v in local_group.items():
+                if k != "params":
+                    global_group[k] = v
+
+        &#47&#47  Optional consolidated optimizer state
+       </a> self._all_states: List[Dict[str, Any]] = []
+
+        &#47&#47 Current default device is set by the parameters allocated to this rank
+        self._device = list(self.per_device_params.keys())[0]</code></pre><h3>After Change</h3><pre><code class='java'>
+        self._partition_parameters_cache: List[List[Dict]] = []
+        self._index_to_param_cache: Dict[int, torch.Tensor] = {}
+        self._all_params = params
+        self._reference_is_trainable_mask = list(<a id="change">map(_is_trainable, self._all_params)</a>)
+
+        &#47&#47 Build the wrapped optimizer, responsible for a shard of the params
+        self.group = group if group is not None else dist.group.WORLD</code></pre>

@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+@register_metric(&quotrank_response&quot)
+def rank_response(y_true, y_pred):
+    <a id="change">labels = np.array(y_true)</a>
+    predictions = np.array(y_pred)
+    predictions = np.argsort(predictions, -1)
+    ranks = []
+    for i in range(predictions.shape[0]):
+        for j in range(predictions.shape[1]):
+            <a id="change">if predictions[i][j] in np.arange(labels[i][j]):
+                ranks.append(j)
+                break
+   </a> return np.mean(np.asarray(ranks).astype(float))
+
+
+@register_metric(&quotloss&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+@register_metric(&quotrank_response&quot)
+def rank_response(y_true, y_pred):
+    num_examples = float(<a id="change">len(y_pred)</a>)
+    predictions = np.array(y_pred)
+    predictions = np.flip(np.argsort(predictions, -1), -1)
+    rank_tot = 0
+    for el in predictions:
+        for i, x in enumerate(el):
+            if x == 0:
+                rank_tot += i
+                break
+    return <a id="change">float(rank_tot)/num_examples</a>
+
+@register_metric(&quotr@1_insQA&quot)
+def r_at_1_insQA(y_true, y_pred):
+    return recall_at_k_insQA(y_true, y_pred, k=1)</code></pre>

@@ -1,0 +1,102 @@
+<html><h3>da73514fe9af58f35dc62a5c0c91ab60fd55f134,tensorforce/core/models/model.py,Model,api_act,#Model#,765
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return tf.group(*assignments)
+
+        with tf.control_dependencies(control_inputs=util.flatten(xs=actions)):
+            <a id="change">reversed_variable_noise = self.cond(
+                pred=skip_variable_noise, true_fn=no_variable_noise,
+                false_fn=reverse_variable_noise
+            )</a>
+
+        &#47&#47 Update states/internals/actions buffers
+        def update_buffers():
+            operations = list()
+            buffer_index = self.buffer_index[parallel]
+            for name in self.states_spec:
+                operations.append(
+                    self.states_buffer[name].scatter_nd_update(
+                        indices=[(parallel, buffer_index)], updates=states[name]
+                    )
+                )
+            for name in self.internals_spec:
+                operations.append(
+                    self.internals_buffer[name].scatter_nd_update(
+                        indices=[(parallel, buffer_index)], updates=internals[name]
+                    )
+                )
+            for name in self.actions_spec:
+                operations.append(
+                    self.actions_buffer[name].scatter_nd_update(
+                        indices=[(parallel, buffer_index)], updates=actions[name]
+                    )
+                )
+
+            &#47&#47 Increment buffer index
+            with tf.control_dependencies(control_inputs=operations):
+                one = tf.constant(value=1, dtype=util.tf_dtype(dtype=&quotint&quot))
+                incremented_buffer_index = self.buffer_index.scatter_nd_add(
+                    indices=[(parallel,)], updates=[one]
+                )
+
+            with tf.control_dependencies(control_inputs=(incremented_buffer_index,)):
+                return tf.no_op()
+
+        with <a id="change">tf.control_dependencies(control_inputs=(reversed_variable_noise,))</a>:
+            updated_buffers = self.cond(
+                pred=independent, true_fn=tf.no_op, false_fn=update_buffers
+            )</code></pre><h3>After Change</h3><pre><code class='java'>
+                    assignments.append(variable.assign_sub(delta=noise, read_value=False))
+                return tf.group(*assignments)
+
+            <a id="change">reversed_variable_noise = self.cond(
+                pred=skip_variable_noise, true_fn=no_variable_noise,
+                false_fn=reverse_variable_noise
+            )</a>
+
+        &#47&#47 Update states/internals/actions buffers
+        <a id="change">with tf.control_dependencies(control_inputs=(reversed_variable_noise,)):
+
+            def update_buffers():
+                operations = list()
+                buffer_index = self.buffer_index[parallel]
+                for name in self.states_spec:
+                    operations.append(
+                        self.states_buffer[name].scatter_nd_update(
+                            indices=[(parallel, buffer_index)], updates=states[name]
+                        )
+                    )
+                for name in self.internals_spec:
+                    operations.append(
+                        self.internals_buffer[name].scatter_nd_update(
+                            indices=[(parallel, buffer_index)], updates=internals[name]
+                        )
+                    )
+                for name in self.actions_spec:
+                    operations.append(
+                        self.actions_buffer[name].scatter_nd_update(
+                            indices=[(parallel, buffer_index)], updates=actions[name]
+                        )
+                    )
+
+                &#47&#47 Increment buffer index
+                with tf.control_dependencies(control_inputs=operations):
+                    one = tf.constant(value=1, dtype=util.tf_dtype(dtype=&quotint&quot))
+                    incremented_buffer_index = self.buffer_index.scatter_nd_add(
+                        indices=[(parallel,)], updates=[one]
+                    )
+
+                with tf.control_dependencies(control_inputs=(incremented_buffer_index,)):
+                    return tf.no_op()
+
+            updated_buffers = self.cond(
+                pred=independent, true_fn=tf.no_op, false_fn=update_buffers
+            )
+
+        &#47&#47 Return timestep
+       </a> with tf.control_dependencies(control_inputs=(updated_buffers,)):
+            &#47&#47 Function-level identity operation for retrieval (plus enforce dependency)
+            for name, spec in self.actions_spec.items():
+                actions[name] = util.identity_operation(</code></pre><img src="315397694.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 6</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/da73514fe9af58f35dc62a5c0c91ab60fd55f134#diff-933f130a56cda49625210922b7fe2c555519d6fee8e99aba0746e417b3aaa475L765' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: da73514fe9af58f35dc62a5c0c91ab60fd55f134</div><div id='time'> Time: 2019-01-18</div><div id='author'> Author: alexkuhnle@t-online.de</div><div id='file'> File Name: tensorforce/core/models/model.py</div><div id='class'> Class Name: Model</div><div id='method'> Method Name: api_act</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/kfac/commit/19f17e68bd591d4aa13a535ef857b2ae56d1a10a#diff-fe3048e0063c172d5774e5d82da816cef581664152ec3a45d0a70828c460c159L576' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/kfac</div><div id='commit'> Commit Name: 19f17e68bd591d4aa13a535ef857b2ae56d1a10a</div><div id='time'> Time: 2019-08-13</div><div id='author'> Author: no-reply@google.com</div><div id='file'> File Name: kfac/python/ops/optimizer.py</div><div id='class'> Class Name: KfacOptimizer</div><div id='method'> Method Name: apply_gradients</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/0655e4a2bd89ccc20f4f1157f65b3e5a61f140e1#diff-26361c19aab805062e5deaa8756cfaf795d60d329095e244dd721dec1834a97eL70' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: 0655e4a2bd89ccc20f4f1157f65b3e5a61f140e1</div><div id='time'> Time: 2019-01-20</div><div id='author'> Author: alexkuhnle@t-online.de</div><div id='file'> File Name: tensorforce/core/optimizers/tf_optimizer.py</div><div id='class'> Class Name: TFOptimizer</div><div id='method'> Method Name: tf_step</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/e26c77a5caff9b47404eca5ff6f50e8c5106719c#diff-83fff23791320419bdee22c4dcabe239ebebf2a8d3c8c65f06cd638a3f6f9fb3L440' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: e26c77a5caff9b47404eca5ff6f50e8c5106719c</div><div id='time'> Time: 2019-08-31</div><div id='author'> Author: alexkuhnle@t-online.de</div><div id='file'> File Name: tensorforce/core/memories/queue.py</div><div id='class'> Class Name: Queue</div><div id='method'> Method Name: tf_successors</div><BR><BR><div id='link'><a href='https://github.com/HyperGAN/HyperGAN/commit/828381fe30ae454cda23b971991861346afd1b97#diff-7a3c10d85903b56c353b27d6c00fcda4ddb12ab65f92b57592334cacbeda4ba8L45' target='_blank'>Link</a></div><div id='project'> Project Name: HyperGAN/HyperGAN</div><div id='commit'> Commit Name: 828381fe30ae454cda23b971991861346afd1b97</div><div id='time'> Time: 2018-11-02</div><div id='author'> Author: martyn@255bits.com</div><div id='file'> File Name: hypergan/optimizers/curl_optimizer.py</div><div id='class'> Class Name: CurlOptimizer</div><div id='method'> Method Name: apply_gradients</div><BR><BR><div id='link'><a href='https://github.com/reinforceio/tensorforce/commit/39573ca03c7f1a268b39df332f68805f642bf7d0#diff-354cfd5a606dde80c876f2b6be720bf27f9c8c83fdcc30855282abc3168dcf36L540' target='_blank'>Link</a></div><div id='project'> Project Name: reinforceio/tensorforce</div><div id='commit'> Commit Name: 39573ca03c7f1a268b39df332f68805f642bf7d0</div><div id='time'> Time: 2019-11-17</div><div id='author'> Author: alexkuhnle@t-online.de</div><div id='file'> File Name: tensorforce/core/models/tensorforce.py</div><div id='class'> Class Name: TensorforceModel</div><div id='method'> Method Name: tf_core_update</div><BR>

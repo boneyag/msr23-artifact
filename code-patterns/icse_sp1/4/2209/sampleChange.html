@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if compute_loss:
+      total_samples_all = MPI.COMM_WORLD.gather(total_samples)
+      total_loss_all = MPI.COMM_WORLD.gather(total_loss)
+    <a id="change">results_per_batch_all = MPI.COMM_WORLD.gather(results_per_batch)</a>
+
+    MPI.COMM_WORLD.Barrier()
+    if MPI.COMM_WORLD.Get_rank() != 0:
+      &#47&#47 returning dummy tuple of correct shape
+      if compute_loss:
+        return None, None
+      else:
+        return None
+
+    if compute_loss:
+      total_loss = np.sum(total_loss_all)
+      total_samples = np.sum(total_samples_all)
+    &#47&#47 moving GPU dimension into the batch dimension
+    results_per_batch = [item <a id="change">for</a> sl in results_per_batch_all for item in sl]
+
+  if compute_loss:
+    total_loss /= total_samples</code></pre><h3>After Change</h3><pre><code class='java'>
+    else:
+      return None
+
+  <a id="change">if compute_loss:
+    return results_per_batch, total_loss / total_samples
+  else:
+    return results_per_batch
+
+
+</a>def log_summaries_from_dict(dict_to_log, output_dir, step):
+  &#47&#47 this returns the same writer as was created by
+  &#47&#47 the first call to this function
+  sm_writer = tf.summary.FileWriterCache.get(output_dir)</code></pre>

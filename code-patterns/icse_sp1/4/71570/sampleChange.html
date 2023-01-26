@@ -1,0 +1,71 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                &#47&#47 Append the OFF transition to the ON. Add to
+                                &#47&#47 dataframe.
+                                matchedpair = val[0:self._num_measurements] + compval[0:self._num_measurements]
+                                self.matched_pairs.loc[<a id="change">len(self.matched_pairs)</a>] = matchedpair
+
+                    &#47&#47 Iterate Index
+                    idx += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 I wonder if we sort but then check the time... maybe. TO DO
+        &#47&#47 (perhaps!).
+
+        <a id="change">new_matched_pairs = []</a>
+        
+        &#47&#47 Start the element distance at 1, go up to current length of buffer
+        for eDistance in range(1, tlength):
+            idx = 0
+            while idx &lt; tlength - 1:
+                &#47&#47 We don&quott want to go beyond length of array
+                compindex = idx + eDistance
+                if compindex &lt; tlength:
+                    val = self.transition_list[idx]
+                    &#47&#47 val[1] is the active power and
+                    &#47&#47 val[self._num_measurements] is match status
+                    if (val[1] &gt; 0) and (val[self._num_measurements] is False):
+                        compval = self.transition_list[compindex]
+                        if compval[self._num_measurements] is False:
+                            &#47&#47 Add the two elements for comparison
+                            vsum = np.add(
+                                val[1:self._num_measurements],
+                                compval[1:self._num_measurements])
+                            &#47&#47 Set the allowable tolerance for reactive and
+                            &#47&#47 active
+                            matchtols = [self._min_tol, self._min_tol]
+                            for ix in range(1, self._num_measurements):
+                                matchtols[ix - 1] = (
+                                    self._min_tol 
+                                    if (max(np.fabs([val[ix], compval[ix]])) &lt; self._large_transition) 
+                                    else (self._percent_tol * max(np.fabs([val[ix], compval[ix]])))
+                                )
+                            if self._num_measurements == 3:
+                                condition = (np.fabs(vsum[0]) &lt; matchtols[0]) and (np.fabs(vsum[1]) &lt; matchtols[1])
+
+                            elif self._num_measurements == 2:
+                                condition = np.fabs(vsum[0]) &lt; matchtols[0]
+
+                            if condition:
+                                &#47&#47 Mark the transition as complete
+                                self.transition_list[idx][self._num_measurements] = True
+                                self.transition_list[compindex][self._num_measurements] = True
+                                pairmatched = True
+
+                                &#47&#47 Append the OFF transition to the ON. Add to the list.
+                                matchedpair = val[0:self._num_measurements] + compval[0:self._num_measurements]
+                                new_matched_pairs.append(matchedpair)
+
+                    &#47&#47 Iterate Index
+                    idx += 1
+                else:
+                    break
+
+        &#47&#47 Process new pairs in a single operation (faster than growing the dataframe)
+        if pairmatched:
+            if self.matched_pairs.empty:
+                <a id="change">self.matched_pairs = pd.DataFrame(new_matched_pairs, columns=self.pair_columns)</a>
+            else:
+                self.matched_pairs = self.matched_pairs.append(pd.DataFrame(new_matched_pairs, columns=self.pair_columns)) 
+        
+        return pairmatched</code></pre>

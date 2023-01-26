@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            total_loss += self.crit(output, y).data
+            if hidden is not None:
+                hidden = self.repackage_hidden(hidden)
+            <a id="change">iters += nctx</a>
+        self.valid_epochs += 1
+
+        avg_loss = <a id="change">float(total_loss) / iters / batchsz</a>
+        metrics[&quotavg_loss&quot] = avg_loss
+        <a id="change">metrics[&quotperplexity&quot] = np.exp(avg_loss)</a>
+
+        duration = <a id="change">time.time() - start_time</a>
+        print(&quot%s time (%.3f sec)&quot % (phase, duration))
+        <a id="change">self.log.debug({&quotphase&quot: phase, &quottime&quot: duration})</a>
+
+        <a id="change">for reporting in reporting_fns:
+            reporting(metrics, self.valid_epochs, phase)
+       </a> return metrics
+
+    def train(self, ts, reporting_fns):
+        start_time = time.time()</code></pre><h3>After Change</h3><pre><code class='java'>
+            inputs = self.model.make_input(batch_dict)
+            y = inputs.pop(&quoty&quot)
+            output, hidden = self.model(inputs, hidden)
+            <a id="change">toks = self._num_toks(batch_dict)</a>
+            total_loss += self.crit(output, y).item() * toks
+            <a id="change">total_toks += toks</a>
+            if hidden is not None:
+                hidden = self.repackage_hidden(hidden)
+        <a id="change">metrics = self.calc_metrics(total_loss, total_toks)</a>
+        <a id="change">self.report(
+            epoch, metrics, start,
+            phase, &quotEPOCH&quot, reporting_fns
+        )</a>
+        return metrics
+
+    def train(self, ts, reporting_fns):
+        start = time.time()</code></pre>

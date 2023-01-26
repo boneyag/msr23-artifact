@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tgt_sent_log_scores = torch.gather(log_scores, 1, flattened_tgt_sents.unsqueeze(1)).squeeze(1)
+        tgt_sent_log_scores = tgt_sent_log_scores * (1. - torch.eq(flattened_tgt_sents, 0).float())  &#47&#47 0 is pad
+        &#47&#47 (batch_size)
+        tgt_sent_log_scores = <a id="change">tgt_sent_log_scores.view(-1, batch_size).sum(dim=0)</a>
+
+        return tgt_sent_log_scores
+
+    def score(self, src_sents_var, src_sents_len, tgt_sents_var):</code></pre><h3>After Change</h3><pre><code class='java'>
+            tgt_sent_log_scores = -self.label_smoothing_layer(log_scores, tgt_sents_var_sos_omitted)
+        else:
+            &#47&#47 (tgt_sent_len, batch_size)
+            tgt_sent_log_scores = <a id="change">torch.gather(log_scores, -1, tgt_sents_var_sos_omitted.unsqueeze(-1)).squeeze(-1)</a>
+
+        tgt_sent_log_scores = tgt_sent_log_scores * (1. - torch.eq(tgt_sents_var_sos_omitted, 0).float())  &#47&#47 0 is pad
+
+        &#47&#47 (batch_size)
+        <a id="change">tgt_sent_log_scores = tgt_sent_log_scores.sum(dim=0)</a>
+
+        return tgt_sent_log_scores
+
+    def step(self, x, h_tm1, src_encodings, src_encodings_att_linear, src_sent_masks=None):</code></pre>

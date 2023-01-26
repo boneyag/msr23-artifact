@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.cardinality == x.shape[1]:
+            return x.sum(1)
+
+        x_split = <a id="change">list(torch.split(x, self.cardinality, dim=1))</a>
+
+        &#47&#47 Check if splits have the same shape (If split cannot be made even, the last chunk will be smaller)
+        if x_split[-1].shape != x_split[0].shape:
+            &#47&#47 How much is the last chunk smaller
+            diff = x_split[0].shape[1] - x_split[-1].shape[1]
+
+            &#47&#47 Pad the last chunk by the difference with zeros (=maginalized nodes)
+            x_split[-1] = F.pad(
+                x_split[-1], pad=[0, 0, 0, diff], mode="constant", value=0.0
+            )
+
+        &#47&#47 Stack along new split axis
+        <a id="change">x_split_stack = torch.stack(x_split, dim=2)</a>
+
+        &#47&#47 Sum over feature axis
+        result = torch.sum(x_split_stack, dim=1)
+        return result</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 - The channel dimension (c) will be the width dimension
+        &#47&#47 Convolution is then applied along the width with stride/ksize &#47&#47children and along
+        &#47&#47 the height with stride/ksize 1
+        x = <a id="change">x.unsqueeze(1)</a>
+        result = F.conv2d(x, weight=self._conv_weights, stride=(self.cardinality, 1))
+
+        &#47&#47 Remove simulated channel
+        result = result.squeeze(1)</code></pre>

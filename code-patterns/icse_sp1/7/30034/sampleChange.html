@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 decode the tf records to get the training data
+    decoder = data_utils.TextFeatureIO(char_dict_path=ops.join(cfg.PATH.CHAR_DICT_DIR, &quotchar_dict.json&quot),
+                                       ord_map_dict_path=ops.join(cfg.PATH.CHAR_DICT_DIR, &quotord_map.json&quot)).reader
+    <a id="change">images, labels, imagenames = decoder.read_features(ops.join(cfg.PATH.TFRECORDS_DIR, &quottrain_feature.tfrecords&quot),
+                                                       num_epochs=None, input_size=cfg.ARCH.INPUT_SIZE,
+                                                       input_channels=cfg.ARCH.INPUT_CHANNELS)</a>
+    inputdata, input_labels, input_imagenames = tf.train.shuffle_batch(
+        tensors=[images, labels, imagenames], batch_size=cfg.TRAIN.BATCH_SIZE,
+        capacity=1000 + 2*cfg.TRAIN.BATCH_SIZE, min_after_dequeue=100, num_threads=num_threads)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    decoder = data_utils.TextFeatureIO(char_dict_path=ops.join(cfg.PATH.CHAR_DICT_DIR, &quotchar_dict.json&quot),
+                                       ord_map_dict_path=ops.join(cfg.PATH.CHAR_DICT_DIR, &quotord_map.json&quot)).reader
+
+    <a id="change">dataset = tf.data.TFRecordDataset(cfg.PATH.TFRECORDS_DIR)</a>
+    dataset = dataset.batch(cfg.TRAIN.BATCH_SIZE, drop_remainder=True)
+    <a id="change">dataset = dataset.map(decoder.extract_features_batch, num_parallel_calls=num_threads)</a>
+    &#47&#47 dataset = dataset.apply(tf.contrib.data.map_and_batch(map_func=decoder.extract_features,
+    &#47&#47                                                       batch_size=config.cfg.TRAIN.BATCH_SIZE,
+    &#47&#47                                                       num_parallel_batches=num_threads,
+    &#47&#47                                                       drop_remainder=True))</code></pre>

@@ -1,0 +1,60 @@
+<html><h3>8edfa441b61a8ecf11515e6007a9e21054dbad19,deeplift/blobs/convolution.py,Conv2D,get_contribs_of_inputs_with_filter_refs,#Conv2D#,150
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                subsample=self.strides)*self._get_input_activation_vars()
+        mult_times_filter_ref_on_layer_below = B.conv2d_grad(
+                out_grad=effective_mxts,
+                conv_in=<a id="change">self._get_input_activation_vars()</a>,
+                &#47&#47reverse the rows and cols of filter_input_references
+                &#47&#47so that weights line up with the actual position they
+                &#47&#47act on (remember, convolutions flip things)
+                filters=self.W*self.filter_input_references[:,:,::-1,::-1],
+                border_mode=self.border_mode,
+                subsample=self.strides)
+        <a id="change">return (mult_times_input_on_layer_below
+                - mult_times_filter_ref_on_layer_below)</a>
+         
+    def _get_mxts_increments_for_inputs(self): 
+        return B.conv2d_grad(
+                out_grad=self.get_mxts(),</code></pre><h3>After Change</h3><pre><code class='java'>
+    def get_contribs_of_inputs_with_filter_refs(self):
+
+        effective_mxts = self.get_mxts()
+        <a id="change">input_act_vars = self._get_input_activation_vars()</a>
+        <a id="change">if (self.channels_come_last):
+            effective_mxts = B.dimshuffle(effective_mxts,(0,3,1,2))   
+            input_act_vars = B.dimshuffle(input_act_vars, (0,3,1,2))
+
+        &#47&#47apply silencer if applicable
+       </a> if (hasattr(self, &quotfilter_diff_from_ref_silencer&quot)):
+            silencer_mask = (B.abs(self._get_diff_from_reference_vars())
+                             &gt; self.filter_diff_from_ref_silencer)
+            effective_mxts = self.get_mxts()*silencer_mask
+
+        &#47&#47efficiently compute the contributions of the layer below
+        mult_times_input_on_layer_below = B.conv2d_grad(
+                out_grad=effective_mxts,
+                conv_in=input_act_vars,
+                filters=self.W,
+                border_mode=self.border_mode,
+                subsample=self.strides)*<a id="change">self._get_input_activation_vars()</a>
+        mult_times_filter_ref_on_layer_below = B.conv2d_grad(
+                out_grad=effective_mxts,
+                conv_in=input_act_vars,
+                &#47&#47reverse the rows and cols of filter_input_references
+                &#47&#47so that weights line up with the actual position they
+                &#47&#47act on (remember, convolutions flip things)
+                filters=self.W*self.filter_input_references[:,:,::-1,::-1],
+                border_mode=self.border_mode,
+                subsample=self.strides)
+        <a id="change">to_return = (mult_times_input_on_layer_below
+                     - mult_times_filter_ref_on_layer_below)</a>
+        <a id="change">if (self.channels_come_last):
+            to_return = B.dimshuffle(to_return,(0,2,3,1))   
+       </a> <a id="change">return to_return</a>
+         
+    def _get_mxts_increments_for_inputs(self): 
+        effective_mxts = self.get_mxts()
+        input_act_vars = self._get_input_activation_vars()</code></pre><img src="173109841.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 17</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/kundajelab/deeplift/commit/8edfa441b61a8ecf11515e6007a9e21054dbad19#diff-d58a4a7683d2c64298fa6b60968e5a6d6ff9793f9a553d2538c82c1f11489e52L150' target='_blank'>Link</a></div><div id='project'> Project Name: kundajelab/deeplift</div><div id='commit'> Commit Name: 8edfa441b61a8ecf11515e6007a9e21054dbad19</div><div id='time'> Time: 2016-12-09</div><div id='author'> Author: avanti.shrikumar@gmail.com</div><div id='file'> File Name: deeplift/blobs/convolution.py</div><div id='class'> Class Name: Conv2D</div><div id='method'> Method Name: get_contribs_of_inputs_with_filter_refs</div><BR><BR><div id='link'><a href='https://github.com/kundajelab/deeplift/commit/8edfa441b61a8ecf11515e6007a9e21054dbad19#diff-d58a4a7683d2c64298fa6b60968e5a6d6ff9793f9a553d2538c82c1f11489e52L150' target='_blank'>Link</a></div><div id='project'> Project Name: kundajelab/deeplift</div><div id='commit'> Commit Name: 8edfa441b61a8ecf11515e6007a9e21054dbad19</div><div id='time'> Time: 2016-12-09</div><div id='author'> Author: avanti.shrikumar@gmail.com</div><div id='file'> File Name: deeplift/blobs/convolution.py</div><div id='class'> Class Name: Conv2D</div><div id='method'> Method Name: get_contribs_of_inputs_with_filter_refs</div><BR><BR><div id='link'><a href='https://github.com/kundajelab/deeplift/commit/8edfa441b61a8ecf11515e6007a9e21054dbad19#diff-d58a4a7683d2c64298fa6b60968e5a6d6ff9793f9a553d2538c82c1f11489e52L179' target='_blank'>Link</a></div><div id='project'> Project Name: kundajelab/deeplift</div><div id='commit'> Commit Name: 8edfa441b61a8ecf11515e6007a9e21054dbad19</div><div id='time'> Time: 2016-12-09</div><div id='author'> Author: avanti.shrikumar@gmail.com</div><div id='file'> File Name: deeplift/blobs/convolution.py</div><div id='class'> Class Name: Conv2D</div><div id='method'> Method Name: _get_mxts_increments_for_inputs</div><BR><BR><div id='link'><a href='https://github.com/kundajelab/deeplift/commit/8edfa441b61a8ecf11515e6007a9e21054dbad19#diff-d58a4a7683d2c64298fa6b60968e5a6d6ff9793f9a553d2538c82c1f11489e52L66' target='_blank'>Link</a></div><div id='project'> Project Name: kundajelab/deeplift</div><div id='commit'> Commit Name: 8edfa441b61a8ecf11515e6007a9e21054dbad19</div><div id='time'> Time: 2016-12-09</div><div id='author'> Author: avanti.shrikumar@gmail.com</div><div id='file'> File Name: deeplift/blobs/convolution.py</div><div id='class'> Class Name: Conv1D</div><div id='method'> Method Name: _get_mxts_increments_for_inputs</div><BR>

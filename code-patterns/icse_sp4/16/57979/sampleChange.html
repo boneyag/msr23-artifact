@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                tensor = tf.ones([5] * dim) * rank
+            if dtype == tf.bool:
+                tensor = tensor % 2
+            <a id="change">if _executing_eagerly():
+                with tf.GradientTape() as tape:
+                    tensor = tf.cast(tensor, dtype=dtype)
+                    broadcasted_tensor = hvd.broadcast(tensor, root_rank)
+                with tf.device("/cpu:0"):
+                    grad_out = tape.gradient(broadcasted_tensor, tensor)
+            else:
+                tensor = tf.cast(tensor, dtype=dtype)
+                broadcasted_tensor = hvd.broadcast(tensor, root_rank)
+
+                grad_ys = tf.ones([5] * dim)
+                with tf.device("/cpu:0"):
+                    grad = tf.gradients(broadcasted_tensor, tensor, grad_ys)[0]
+                grad_out = self.evaluate(grad)
+
+           </a> c = size if rank == root_rank else 0
+            expected = np.ones([5] * dim) * c
+            err = np.linalg.norm(expected - grad_out)
+            self.assertLess(err, 0.00000001,</code></pre><h3>After Change</h3><pre><code class='java'>
+        dims = [1, 2, 3]
+        root_ranks = list(range(size))
+        for dtype, dim, root_rank in itertools.product(dtypes, dims, root_ranks):
+            <a id="change">with tf.device("/cpu:0"):
+                if _executing_eagerly():
+                    tensor = self.tfe.Variable(tf.ones([5] * dim) * rank)
+                else:
+                    tensor = tf.ones([5] * dim) * rank
+                if dtype == tf.bool:
+                    tensor = tensor % 2
+                if _executing_eagerly():
+                    with tf.GradientTape() as tape:
+                        tensor = tf.cast(tensor, dtype=dtype)
+                        broadcasted_tensor = hvd.broadcast(tensor, root_rank)
+                    grad_out = tape.gradient(broadcasted_tensor, tensor)
+                else:
+                    tensor = tf.cast(tensor, dtype=dtype)
+                    broadcasted_tensor = hvd.broadcast(tensor, root_rank)
+                    grad_ys = tf.ones([5] * dim)
+                    grad = tf.gradients(broadcasted_tensor, tensor, grad_ys)[0]
+                    grad_out = self.evaluate(grad)
+
+           </a> c = size if rank == root_rank else 0
+            expected = np.ones([5] * dim) * c
+            err = np.linalg.norm(expected - grad_out)
+            self.assertLess(err, 0.00000001,</code></pre>

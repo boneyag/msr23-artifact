@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if label_vecs is not None:
+            assert label_vecs.dim() == 2
+            <a id="change">if self.use_cuda:
+                label_vecs.cuda()
+       </a> label_inds = None
+
+        if source == &quotbatch&quot:
+            self._warn_once(</code></pre><h3>After Change</h3><pre><code class='java'>
+            cands = batch.candidates
+            &#47&#47 batch.candidate_vecs is a [batchsize] list of [num_cand] lists of
+            &#47&#47 [seq_len] LongTensors
+            max_len = max(len(t) for t_list in batch.candidate_vecs <a id="change">for</a> t in t_list)
+            cand_tensor_list = <a id="change">[self._cat_and_pad(cand_list, max_len=max_len,
+                use_cuda=self.use_cuda) for cand_list in batch.candidate_vecs]</a>
+            &#47&#47 cand_tensor_list is a [batchsize] list of [num_cand, seq_len] LongTensors
+            <a id="change">cand_vecs = torch.stack(cand_tensor_list, 0)</a>
+            &#47&#47 cands is a [batchsize, cand_len, seq_len] LongTensor
+            if label_vecs is not None:
+                label_inds = label_vecs.new_empty(batchsize)
+                for i, label_vec in enumerate(label_vecs):</code></pre>

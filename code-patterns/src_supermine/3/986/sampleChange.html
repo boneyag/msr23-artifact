@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        r, u = array_ops.split(1, 2, r_u)
+        r, u = self.activation(r), self.activation(u)
+
+        self.W[1], self.b[1], c = <a id="change">_linear([inputs, r * state], self._num_units,
+                                          self.bias, self.W[1],
+                                          self.b[1], self.W_init,
+                                          trainable=self.trainable,
+                                          restore=self.restore,
+                                          scope=scope + "/Candidate")</a>
+        c = self.inner_activation(c)
+        new_h = u * state + (1 - u) * c
+        return new_h, new_h
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                    self.trainable, self.restore, self.reuse))
+                r, u = self._inner_activation(r), self._inner_activation(u)
+            with tf.variable_scope("Candidate"):
+                <a id="change">c = self._activation(
+                    _linear([inputs, r * state], self._num_units, True, 0.,
+                            self.weights_init, self.trainable, self.restore,
+                            self.reuse))</a>
+            new_h = u * state + (1 - u) * c
+
+            self.W, self.b = list(), list()
+            &#47&#47 Retrieve RNN Variables</code></pre>

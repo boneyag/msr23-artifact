@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    super(TensorflowBackend, cls).run_node(node, inputs, device)
+    node_graph = tf.Graph()
+    <a id="change">with node_graph.as_default():
+      node = OnnxNode(node)
+      device_option = get_device_option(Device(device))
+      input_tensors = []
+      for i in inputs:
+        input_tensors.append(tf.constant(i))
+
+      if isinstance(inputs, dict):
+        feed_dict_raw = inputs
+      else:
+        assert len(node.inputs) == len(inputs)
+        feed_dict_raw = dict(zip(node.inputs, inputs))
+
+      &#47&#47 TODO: is constant the best way for feeding inputs?
+      input_dict = dict([
+          (x[0], tf.constant(x[1])) for x in feed_dict_raw.items()
+      ])
+      ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
+
+      with tf.compat.v1.Session() as sess:
+        with tf.device(device_option):
+          sess.run(tf.compat.v1.global_variables_initializer())
+          output_vals = sess.run(ops)
+
+   </a> return namedtupledict(&quotOutputs&quot, node.outputs)(*output_vals)
+
+  @classmethod
+  def _onnx_initializer_to_input_dict_items(cls, initializer):</code></pre><h3>After Change</h3><pre><code class='java'>
+    module = TFModule(node)
+
+    output_vals = module(**input_dict)
+    output_vals = [<a id="change">val.numpy()</a> if isinstance(val, tf.Tensor) else val <a id="change">for</a> val in output_vals]
+
+    return namedtupledict(&quotOutputs&quot, node.outputs)(*output_vals)
+</code></pre>

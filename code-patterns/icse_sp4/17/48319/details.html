@@ -1,0 +1,209 @@
+<html><h3>6a50ac671a17a3820ba273065b5feda54bf73ef4,src/pudl/transform/eia860.py,,generators,#Any#Any#,63
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    gens_df.dropna(subset=[&quotgenerator_id&quot, &quotplant_id_eia&quot], inplace=True)
+
+    &#47&#47 Replace empty strings, whitespace, and &quot.&quot fields with real NA values
+    <a id="change">gens_df = pudl.helpers.fix_eia_na(gens_df)</a>
+
+    &#47&#47 A subset of the columns have zero values, where NA is appropriate:
+    columns_to_fix = [
+        &quotplanned_retirement_month&quot,
+        &quotplanned_retirement_year&quot,
+        &quotplanned_uprate_month&quot,
+        &quotplanned_uprate_year&quot,
+        &quotother_modifications_month&quot,
+        &quotother_modifications_year&quot,
+        &quotplanned_derate_month&quot,
+        &quotplanned_derate_year&quot,
+        &quotplanned_repower_month&quot,
+        &quotplanned_repower_year&quot,
+        &quotplanned_net_summer_capacity_derate_mw&quot,
+        &quotplanned_net_summer_capacity_uprate_mw&quot,
+        &quotplanned_net_winter_capacity_derate_mw&quot,
+        &quotplanned_net_winter_capacity_uprate_mw&quot,
+        &quotplanned_new_capacity_mw&quot,
+        &quotnameplate_power_factor&quot,
+        &quotminimum_load_mw&quot,
+        &quotwinter_capacity_mw&quot,
+        &quotsummer_capacity_mw&quot
+    ]
+
+    for column in columns_to_fix:
+        <a id="change">gens_df[column]</a> = gens_df[column].replace(
+            to_replace=[" ", 0], value=np.nan)
+
+    &#47&#47 A subset of the columns have "X" values, where other columns_to_fix
+    &#47&#47 have "N" values. Replacing these values with "N" will make for uniform
+    &#47&#47 values that can be converted to Boolean True and False pairs.
+
+    gens_df.duct_burners = \
+        gens_df.duct_burners.replace(to_replace=&quotX&quot, value=&quotN&quot)
+    gens_df.heat_bypass_recovery = \
+        gens_df.heat_bypass_recovery.replace(to_replace=&quotX&quot, value=&quotN&quot)
+    gens_df.syncronized_transmission_grid = \
+        gens_df.heat_bypass_recovery.replace(to_replace=&quotX&quot, value=&quotN&quot)
+
+    &#47&#47 A subset of the columns have "U" values, presumably for "Unknown," which
+    &#47&#47 must be set to None in order to convert the columns to datatype Boolean.
+
+    gens_df.multiple_fuels = \
+        gens_df.multiple_fuels.replace(to_replace=&quotU&quot, value=None)
+    gens_df.switch_oil_gas = \
+        gens_df.switch_oil_gas.replace(to_replace=&quotU&quot, value=None)
+
+    boolean_columns_to_fix = [
+        &quotduct_burners&quot,
+        &quotmultiple_fuels&quot,
+        &quotdeliver_power_transgrid&quot,
+        &quotsyncronized_transmission_grid&quot,
+        &quotsolid_fuel_gasification&quot,
+        &quotpulverized_coal_tech&quot,
+        &quotfluidized_bed_tech&quot,
+        &quotsubcritical_tech&quot,
+        &quotsupercritical_tech&quot,
+        &quotultrasupercritical_tech&quot,
+        &quotcarbon_capture&quot,
+        &quotstoker_tech&quot,
+        &quotother_combustion_tech&quot,
+        &quotcofire_fuels&quot,
+        &quotswitch_oil_gas&quot,
+        &quotheat_bypass_recovery&quot,
+        &quotassociated_combined_heat_power&quot,
+        &quotplanned_modifications&quot,
+        &quotother_planned_modifications&quot,
+        &quotuprate_derate_during_year&quot,
+        &quotpreviously_canceled&quot
+    ]
+
+    for column in boolean_columns_to_fix:
+        <a id="change">gens_df[column]</a> = gens_df[column].fillna(&quotFalse&quot)
+        <a id="change">gens_df[column]</a> = gens_df[column].replace(
+            to_replace=["Y", "N"], value=[True, False])
+
+    gens_df = (
+        gens_df.
+        pipe(pudl.helpers.month_year_to_date).
+        assign(fuel_type_code_pudl=lambda x: pudl.helpers.cleanstrings_series(
+            x[&quotenergy_source_code_1&quot], pc.fuel_type_eia860_simple_map)).
+        pipe(pudl.helpers.strip_lower,
+             columns=[&quotrto_iso_lmp_node_id&quot,
+                      &quotrto_iso_location_wholesale_reporting_id&quot]).
+        astype({
+            &quotplant_id_eia&quot: int,
+            &quotgenerator_id&quot: str,
+            &quotutility_id_eia&quot: int
+        }).
+        pipe(pudl.helpers.convert_to_date)
+    )
+
+    <a id="change">eia860_transformed_dfs[&quotgenerators_eia860&quot]</a> = gens_df
+
+    return eia860_transformed_dfs
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    ge_df[&quotoperational_status&quot] = &quotexisting&quot
+    gr_df[&quotoperational_status&quot] = &quotretired&quot
+
+    <a id="change">gens_df</a> = <a id="change">(
+        pd.concat([ge_df, gp_df, gr_df], sort=True)
+        .dropna(subset=[&quotgenerator_id&quot, &quotplant_id_eia&quot])
+        .pipe(pudl.helpers.fix_eia_na)
+    )</a>
+
+    &#47&#47 A subset of the columns have zero values, where NA is appropriate:
+    columns_to_fix = [
+        &quotplanned_retirement_month&quot,
+        &quotplanned_retirement_year&quot,
+        &quotplanned_uprate_month&quot,
+        &quotplanned_uprate_year&quot,
+        &quotother_modifications_month&quot,
+        &quotother_modifications_year&quot,
+        &quotplanned_derate_month&quot,
+        &quotplanned_derate_year&quot,
+        &quotplanned_repower_month&quot,
+        &quotplanned_repower_year&quot,
+        &quotplanned_net_summer_capacity_derate_mw&quot,
+        &quotplanned_net_summer_capacity_uprate_mw&quot,
+        &quotplanned_net_winter_capacity_derate_mw&quot,
+        &quotplanned_net_winter_capacity_uprate_mw&quot,
+        &quotplanned_new_capacity_mw&quot,
+        &quotnameplate_power_factor&quot,
+        &quotminimum_load_mw&quot,
+        &quotwinter_capacity_mw&quot,
+        &quotsummer_capacity_mw&quot
+    ]
+
+    for column in columns_to_fix:
+        <a id="change">gens_df[column]</a> = gens_df[column].replace(
+            to_replace=[" ", 0], value=np.nan)
+
+    &#47&#47 A subset of the columns have "X" values, where other columns_to_fix
+    &#47&#47 have "N" values. Replacing these values with "N" will make for uniform
+    &#47&#47 values that can be converted to Boolean True and False pairs.
+
+    gens_df.duct_burners = \
+        gens_df.duct_burners.replace(to_replace=&quotX&quot, value=&quotN&quot)
+    gens_df.heat_bypass_recovery = \
+        gens_df.heat_bypass_recovery.replace(to_replace=&quotX&quot, value=&quotN&quot)
+    gens_df.syncronized_transmission_grid = \
+        gens_df.heat_bypass_recovery.replace(to_replace=&quotX&quot, value=&quotN&quot)
+
+    &#47&#47 A subset of the columns have "U" values, presumably for "Unknown," which
+    &#47&#47 must be set to None in order to convert the columns to datatype Boolean.
+
+    gens_df.multiple_fuels = \
+        gens_df.multiple_fuels.replace(to_replace=&quotU&quot, value=None)
+    gens_df.switch_oil_gas = \
+        gens_df.switch_oil_gas.replace(to_replace=&quotU&quot, value=None)
+
+    boolean_columns_to_fix = [
+        &quotduct_burners&quot,
+        &quotmultiple_fuels&quot,
+        &quotdeliver_power_transgrid&quot,
+        &quotsyncronized_transmission_grid&quot,
+        &quotsolid_fuel_gasification&quot,
+        &quotpulverized_coal_tech&quot,
+        &quotfluidized_bed_tech&quot,
+        &quotsubcritical_tech&quot,
+        &quotsupercritical_tech&quot,
+        &quotultrasupercritical_tech&quot,
+        &quotcarbon_capture&quot,
+        &quotstoker_tech&quot,
+        &quotother_combustion_tech&quot,
+        &quotcofire_fuels&quot,
+        &quotswitch_oil_gas&quot,
+        &quotheat_bypass_recovery&quot,
+        &quotassociated_combined_heat_power&quot,
+        &quotplanned_modifications&quot,
+        &quotother_planned_modifications&quot,
+        &quotuprate_derate_during_year&quot,
+        &quotpreviously_canceled&quot
+    ]
+
+    for column in boolean_columns_to_fix:
+        <a id="change">gens_df[column]</a> = gens_df[column].fillna(&quotFalse&quot)
+        <a id="change">gens_df[column]</a> = gens_df[column].replace(
+            to_replace=["Y", "N"], value=[True, False])
+
+    gens_df = (
+        gens_df.
+        pipe(pudl.helpers.month_year_to_date).
+        assign(fuel_type_code_pudl=lambda x: pudl.helpers.cleanstrings_series(
+            x[&quotenergy_source_code_1&quot], pc.fuel_type_eia860_simple_map)).
+        pipe(pudl.helpers.strip_lower,
+             columns=[&quotrto_iso_lmp_node_id&quot,
+                      &quotrto_iso_location_wholesale_reporting_id&quot]).
+        astype({
+            &quotplant_id_eia&quot: int,
+            &quotgenerator_id&quot: str,
+            &quotutility_id_eia&quot: int
+        }).
+        pipe(pudl.helpers.convert_to_date)
+    )
+
+    <a id="change">eia860_transformed_dfs[&quotgenerators_eia860&quot]</a> = gens_df
+
+    return eia860_transformed_dfs
+</code></pre><img src="223674869.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 14</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/catalyst-cooperative/pudl/commit/6a50ac671a17a3820ba273065b5feda54bf73ef4#diff-d73a84f3203a5153da3f1c33b3277288a8a29acd10e9ab62fcbebbc77d047688L99' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-cooperative/pudl</div><div id='commit'> Commit Name: 6a50ac671a17a3820ba273065b5feda54bf73ef4</div><div id='time'> Time: 2020-01-16</div><div id='author'> Author: zane.selvans@catalyst.coop</div><div id='file'> File Name: src/pudl/transform/eia860.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: generators</div><BR><BR><div id='link'><a href='https://github.com/catalyst-cooperative/pudl/commit/d0665df5d2d037d737410995ed8983a76204fc70#diff-d73a84f3203a5153da3f1c33b3277288a8a29acd10e9ab62fcbebbc77d047688L226' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-cooperative/pudl</div><div id='commit'> Commit Name: d0665df5d2d037d737410995ed8983a76204fc70</div><div id='time'> Time: 2020-02-13</div><div id='author'> Author: zane.selvans@catalyst.coop</div><div id='file'> File Name: src/pudl/transform/eia860.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: plants</div><BR><BR><div id='link'><a href='https://github.com/catalyst-cooperative/pudl/commit/6a50ac671a17a3820ba273065b5feda54bf73ef4#diff-d73a84f3203a5153da3f1c33b3277288a8a29acd10e9ab62fcbebbc77d047688L32' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-cooperative/pudl</div><div id='commit'> Commit Name: 6a50ac671a17a3820ba273065b5feda54bf73ef4</div><div id='time'> Time: 2020-01-16</div><div id='author'> Author: zane.selvans@catalyst.coop</div><div id='file'> File Name: src/pudl/transform/eia860.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: ownership</div><BR>

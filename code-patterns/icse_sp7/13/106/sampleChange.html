@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    dm = np.zeros((mA, mB), dtype=np.double)
+
+    &#47&#47 compute blacklist for deprecated kwargs
+    <a id="change">if(metric in _METRICS[&quotminkowski&quot].aka or
+       metric == &quottest_minkowski&quot or metric == minkowski):
+        kwargs_blacklist = ["w", "V", "VI"]
+    elif(metric in _METRICS[&quotwminkowski&quot].aka or
+         metric == &quottest_wminkowski&quot or metric == wminkowski):
+        kwargs_blacklist = ["V", "VI"]
+    elif(metric in _METRICS[&quotseuclidean&quot].aka or
+         metric == &quottest_seuclidean&quot or metric == seuclidean):
+        kwargs_blacklist = ["p", "w", "VI"]
+    elif(metric in _METRICS[&quotmahalanobis&quot].aka or
+         metric == &quottest_mahalanobis&quot or metric == mahalanobis):
+        kwargs_blacklist = ["p", "w", "V"]
+    else:
+        kwargs_blacklist = ["p", "w", "V", "VI"]
+   </a> _filter_deprecated_kwargs(kwargs, kwargs_blacklist)
+
+    if callable(metric):
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        mstr = metric.lower()
+
+        &#47&#47 NOTE: C-version still does not support weights
+        <a id="change">if "w" in kwargs and not mstr.startswith("test_"):
+            if mstr in [&quotseuclidean&quot, &quotse&quot, &quots&quot, &quotmahalanobis&quot]:
+                raise ValueError("metric %s incompatible with weights" % mstr)
+            &#47&#47 need to use python version for weighting
+            mstr = "test_%s" % mstr
+
+       </a> metric_name = _METRIC_ALIAS.get(mstr, None)
+        if metric_name is not None:
+            XA, XB, typ, kwargs = _validate_cdist_input(XA, XB, mA, mB, n,
+                                                        metric_name, **kwargs)</code></pre>

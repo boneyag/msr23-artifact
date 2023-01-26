@@ -1,0 +1,131 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    inputs,
+                    outputs,
+                )
+                <a id="change">for l in range(batchsize):
+                    &#47&#47 pose = predict.getposeNP(frames,dlc_cfg, sess, inputs, outputs)
+                    &#47&#47 PredicteData[batch_num*batchsize:(batch_num+1)*batchsize, :] = pose
+                    PredicteData[
+                        "frame" + str(batch_num * batchsize + l).zfill(strwidth)
+                    ] = D[l]
+
+               </a> batch_ind = 0
+                batch_num += 1
+            else:
+                batch_ind += 1
+        else:
+            nframes = counter
+            print("Detected frames: ", nframes)
+            if batch_ind &gt; 0:
+                &#47&#47 pose = predict.getposeNP(frames, dlc_cfg, sess, inputs, outputs) &#47&#47process the whole batch (some frames might be from previous batch!)
+                &#47&#47 PredicteData[batch_num*batchsize:batch_num*batchsize+batch_ind, :] = pose[:batch_ind,:]
+                D = predict.get_batchdetectionswithcosts(
+                    frames,
+                    dlc_cfg,
+                    dist_grid,
+                    batchsize,
+                    num_joints,
+                    num_idchannel,
+                    stride,
+                    halfstride,
+                    det_min_score,
+                    sess,
+                    inputs,
+                    outputs,
+                    c_engine=c_engine,
+                )
+                <a id="change">for l in range(batch_ind):
+                    &#47&#47 pose = predict.getposeNP(frames,dlc_cfg, sess, inputs, outputs)
+                    &#47&#47 PredicteData[batch_num*batchsize:(batch_num+1)*batchsize, :] = pose
+                    PredicteData[
+                        "frame" + str(batch_num * batchsize + l).zfill(strwidth)
+                    ] = D[l]
+           </a> break
+        counter += 1
+    cap.close()
+    pbar.close()</code></pre><h3>After Change</h3><pre><code class='java'>
+    cfg, dlc_cfg, sess, inputs, outputs, cap, nframes, batchsize, c_engine
+):
+     Batchwise prediction of pose 
+    <a id="change">strwidth</a> = int(np.ceil(np.log10(nframes)))  &#47&#47 width for strings
+    batch_ind = 0  &#47&#47 keeps track of which image within a batch should be written to
+    batch_num = 0  &#47&#47 keeps track of which batch you are at
+    if cfg["cropping"]:
+        cap.set_bbox(cfg["x1"], cfg["x2"], cfg["y1"], cfg["y2"])
+    nx, ny = cap.dimensions
+
+    frames = np.empty(
+        (batchsize, ny, nx, 3), dtype="ubyte"
+    )  &#47&#47 this keeps all frames in a batch
+    pbar = tqdm(total=nframes)
+    counter = 0
+    step = max(10, int(nframes / 100))
+    inds = []
+
+    <a id="change">PredicteData</a> = {}
+    &#47&#47 initializing constants
+    dist_grid = predict.make_nms_grid(dlc_cfg.nmsradius)
+    stride, halfstride = dlc_cfg.stride, dlc_cfg.stride * 0.5
+    num_joints = dlc_cfg.num_joints
+    det_min_score = dlc_cfg.minconfidence
+
+    num_idchannel = dlc_cfg.get("num_idchannel", 0)
+    while cap.video.isOpened():
+        if counter % step == 0:
+            pbar.update(step)
+        frame = cap.read_frame(crop=cfg["cropping"])
+        inds = []
+        if frame is not None:
+            frames[batch_ind] = img_as_ubyte(frame)
+            <a id="change">inds.append(counter)</a>
+            if batch_ind == batchsize - 1:
+                &#47&#47 PredicteData[&quotframe&quot+str(counter)]=predict.get_detectionswithcosts(frame, dlc_cfg, sess, inputs, outputs, outall=False,nms_radius=dlc_cfg.nmsradius,det_min_score=dlc_cfg.minconfidence)
+                D = predict.get_batchdetectionswithcosts(
+                    frames,
+                    dlc_cfg,
+                    dist_grid,
+                    batchsize,
+                    num_joints,
+                    num_idchannel,
+                    stride,
+                    halfstride,
+                    det_min_score,
+                    sess,
+                    inputs,
+                    outputs,
+                )
+                <a id="change">for ind, data in zip(inds, D):
+                    PredicteData["frame" + str(ind).zfill(strwidth)] = data
+               </a> batch_ind = 0
+                <a id="change">inds.clear()</a>
+                batch_num += 1
+            else:
+                batch_ind += 1
+        elif <a id="change">counter &gt;= nframe</a>s:
+            if batch_ind &gt; 0:
+                &#47&#47 pose = predict.getposeNP(frames, dlc_cfg, sess, inputs, outputs) &#47&#47process the whole batch (some frames might be from previous batch!)
+                &#47&#47 PredicteData[batch_num*batchsize:batch_num*batchsize+batch_ind, :] = pose[:batch_ind,:]
+                D = predict.get_batchdetectionswithcosts(
+                    frames,
+                    dlc_cfg,
+                    dist_grid,
+                    batchsize,
+                    num_joints,
+                    num_idchannel,
+                    stride,
+                    halfstride,
+                    det_min_score,
+                    sess,
+                    inputs,
+                    outputs,
+                    c_engine=c_engine,
+                )
+                <a id="change">for ind, data in zip(inds, D):
+                    PredicteData["frame" + str(ind).zfill(strwidth)] = data
+           </a> break
+        counter += 1
+
+    cap.close()</code></pre>

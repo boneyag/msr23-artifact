@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    k8s_manager = K8SManager(namespace=settings.K8S_NAMESPACE, in_cluster=True)
+    client = PolyaxonClient()
+    client.set_internal_health_check()
+    <a id="change">while is_running(k8s_manager, pod_id):
+        time.sleep(5)</a>
+    &#47&#47 is_running, labels = monitor.can_log(k8s_manager, pod_id, log_sleep_interval)
+    &#47&#47
+    &#47&#47 if not is_running:
+    &#47&#47     monitor.logger.info(&quotPod is not running anymore.&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+    arguments = args.__dict__
+
+    pod_id = arguments.pop(&quotpod_id&quot)
+    container_name = <a id="change">arguments.pop(&quotcontainer_name&quot)</a>
+    app_label = arguments.pop(&quotapp_label&quot)
+    log_sleep_interval = arguments.pop(&quotlog_sleep_interval&quot)
+
+    k8s_manager = K8SManager(namespace=settings.K8S_NAMESPACE, in_cluster=True)
+    client = PolyaxonClient()
+    client.set_internal_health_check()
+    retry = 0
+    is_running = True
+    while is_running and retry &lt; 3:
+        try:
+            <a id="change">is_running = is_pod_running(k8s_manager, pod_id, container_name)</a>
+        except ApiException:
+            retry += 1
+        time.sleep(log_sleep_interval)
+</code></pre>

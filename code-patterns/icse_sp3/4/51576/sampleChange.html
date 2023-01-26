@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                outputs = []
+                for mode in [mode_with_gpu, mode_without_gpu]:
+                    &#47&#47 test the optimization local_gpua_elemwise
+                    f = <a id="change">theano.function(
+                        symb_args, op_to_test(*symb_args))</a>
+                    outputs.append(f(*args))
+
+                    &#47&#47 assert that the test was done on the gpu.
+                    if mode is mode_with_gpu:</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 extremely large numbers of arguments on gpu.
+
+    rng = np.random.RandomState([1, 2, 3])
+    <a id="change">nb_of_inputs_overflows = []</a>
+    for num_args in [64]:
+        for op_to_test in [theano.tensor.add, theano.tensor.mul]:
+            for nb_dim in [2, 8]:
+                shapes = [rng.randint(1, int(32 / nb_dim)) for i in range(nb_dim)]
+                args = [np.cast[&quotfloat32&quot](rng.randn(*shapes))
+                        for arg in range(0, num_args)]
+
+                symb_args = [theano.tensor.TensorType(&quotfloat32&quot,
+                                                      (False,) * nb_dim)()
+                             for arg in range(0, num_args)]
+
+                outputs = []
+                for mode in [mode_with_gpu, mode_without_gpu]:
+                    &#47&#47 test the optimization local_gpua_elemwise
+                    output = op_to_test(*symb_args)
+                    f = theano.function(symb_args, output)
+                    outputs.append(f(*args))
+
+                    &#47&#47 assert that the test was done on the gpu.
+                    if mode is mode_with_gpu:
+                        <a id="change">nb_of_inputs_overflows.append(
+                            max_inputs_to_GpuElemwise(output.owner) - num_args)</a>
+                        nodelst = [node for node in f.maker.fgraph.apply_nodes]
+                        assert any(isinstance(node.op, GpuElemwise)
+                                   for node in nodelst)
+                        assert not any(isinstance(node.op, Elemwise)</code></pre>

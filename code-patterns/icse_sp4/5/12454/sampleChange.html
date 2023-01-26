@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                if not isinstance(test_test_covar, LazyVariable):
+                    test_test_covar = NonLazyVariable(test_test_covar)
+                covar_correction = test_train_covar.matmul(self.chol)
+                predictive_covar = test_test_covar + <a id="change">CholLazyVariable(covar_correction).mul(-1)</a>
+            else:
+                if isinstance(train_test_covar, LazyVariable):
+                    train_test_covar = train_test_covar.evaluate()
+                if isinstance(test_train_covar, LazyVariable):</code></pre><h3>After Change</h3><pre><code class='java'>
+                init_vector /= torch.norm(init_vector, 2, 0)
+                q_mat, t_mat = lq_object.lanczos_batch(train_train_matmul, init_vector)
+                self.low_rank_left = Variable(q_mat[0].matmul(t_mat[0].inverse()))
+                <a id="change">self.low_rank_right = Variable(q_mat[0].transpose(-1, -2))</a>
+                self.has_computed_low_rank = True
+
+            &#47&#47 Calculate mean
+            if isinstance(full_covar, InterpolatedLazyVariable):
+                left_interp_indices = test_train_covar.left_interp_indices
+                left_interp_values = test_train_covar.left_interp_values
+                predictive_mean = left_interp(left_interp_indices, left_interp_values, self.alpha) + test_mean
+            elif isinstance(test_train_covar, LazyVariable):
+                predictive_mean = test_train_covar.matmul(self.alpha) + test_mean
+            else:
+                predictive_mean = torch.addmv(test_mean, test_train_covar, self.alpha)
+
+            &#47&#47 Calculate covar
+            if gpytorch.functions.fast_pred_var:
+                if not isinstance(test_test_covar, LazyVariable):
+                    test_test_covar = NonLazyVariable(test_test_covar)
+                covar_correction_left = test_train_covar.matmul(self.low_rank_left)
+                covar_correction_right = test_train_covar.matmul(self.low_rank_right.transpose(-1, -2))
+                <a id="change">covar_correction_right = covar_correction_right.transpose(-1, -2)</a>
+                covar_correction = MatmulLazyVariable(covar_correction_left, covar_correction_right).mul(-1)
+                predictive_covar = <a id="change">test_test_covar + covar_correction</a>
+            else:
+                if isinstance(train_test_covar, LazyVariable):
+                    train_test_covar = train_test_covar.evaluate()
+                if isinstance(test_train_covar, LazyVariable):</code></pre>

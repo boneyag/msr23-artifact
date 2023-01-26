@@ -1,0 +1,53 @@
+<html><h3>4ce9a9d078d41af1a960f0e5bf16e373f69d5117,open_seq2seq/decoders/rnn_decoders.py,BeamSearchRNNDecoderWithAttention,_decode,#BeamSearchRNNDecoderWithAttention#Any#,345
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      self._tgt_vocab_size, use_bias=False,
+    )
+
+    <a id="change">cell_params = copy.deepcopy(self.params)</a>
+    <a id="change">cell_params["num_units"] = self.params[&quotdecoder_cell_units&quot]</a>
+
+    if self._mode == "train":
+      dp_input_keep_prob = self.params[&quotdecoder_dp_input_keep_prob&quot]
+      dp_output_keep_prob = self.params[&quotdecoder_dp_output_keep_prob&quot]
+    else:
+      dp_input_keep_prob = 1.0
+      dp_output_keep_prob = 1.0
+
+    if self.params[&quotattention_type&quot].startswith(&quotgnmt&quot):
+      residual_connections = False
+      wrap_to_multi_rnn = False
+    else:
+      residual_connections = self.params[&quotdecoder_use_skip_connections&quot]
+      wrap_to_multi_rnn = True
+
+    self._decoder_cells = <a id="change">create_rnn_cell(
+      cell_type=self.params[&quotdecoder_cell_type&quot],
+      cell_params=cell_params,
+      num_layers=self.params[&quotdecoder_layers&quot],
+      dp_input_keep_prob=dp_input_keep_prob,
+      dp_output_keep_prob=dp_output_keep_prob,
+      residual_connections=residual_connections,
+      wrap_to_multi_rnn=wrap_to_multi_rnn,
+    )</a>
+
+    tiled_enc_outputs = tf.contrib.seq2seq.tile_batch(
+      encoder_outputs,
+      multiplier=self._beam_width,</code></pre><h3>After Change</h3><pre><code class='java'>
+    residual_connections = self.params[&quotdecoder_use_skip_connections&quot]
+    &#47&#47 list of cells
+    self._decoder_cells = [
+      <a id="change">single_cell(cell_class=self.params[&quotcore_cell&quot],
+                  cell_params=self.params.get(&quotcore_cell_params&quot, {}),
+                  dp_input_keep_prob=dp_input_keep_prob,
+                  dp_output_keep_prob=dp_output_keep_prob,
+                  &#47&#47 residual connections are added a little differently for GNMT
+                  residual_connections=False if self.params[
+                    &quotattention_type&quot].startswith(
+                    &quotgnmt&quot) else residual_connections,
+                  )</a> for _ in range(self.params[&quotdecoder_layers&quot])]
+
+    tiled_enc_outputs = tf.contrib.seq2seq.tile_batch(
+      encoder_outputs,</code></pre><img src="150110113.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NVIDIA/OpenSeq2Seq/commit/4ce9a9d078d41af1a960f0e5bf16e373f69d5117#diff-b909f688fcde7b22bb97ac2678f3d71abf6efbfe6c2d13e464eed2174c676444L341' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/OpenSeq2Seq</div><div id='commit'> Commit Name: 4ce9a9d078d41af1a960f0e5bf16e373f69d5117</div><div id='time'> Time: 2018-06-13</div><div id='author'> Author: okuchaiev@nvidia.com</div><div id='file'> File Name: open_seq2seq/decoders/rnn_decoders.py</div><div id='class'> Class Name: BeamSearchRNNDecoderWithAttention</div><div id='method'> Method Name: _decode</div><BR><BR><div id='link'><a href='https://github.com/NVIDIA/OpenSeq2Seq/commit/4ce9a9d078d41af1a960f0e5bf16e373f69d5117#diff-b909f688fcde7b22bb97ac2678f3d71abf6efbfe6c2d13e464eed2174c676444L151' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/OpenSeq2Seq</div><div id='commit'> Commit Name: 4ce9a9d078d41af1a960f0e5bf16e373f69d5117</div><div id='time'> Time: 2018-06-13</div><div id='author'> Author: okuchaiev@nvidia.com</div><div id='file'> File Name: open_seq2seq/decoders/rnn_decoders.py</div><div id='class'> Class Name: RNNDecoderWithAttention</div><div id='method'> Method Name: _decode</div><BR><BR><div id='link'><a href='https://github.com/NVIDIA/OpenSeq2Seq/commit/4ce9a9d078d41af1a960f0e5bf16e373f69d5117#diff-f43a6fd98adddd64d7353a5996885e10af827df5be0f90e905399a91345bfd50L344' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/OpenSeq2Seq</div><div id='commit'> Commit Name: 4ce9a9d078d41af1a960f0e5bf16e373f69d5117</div><div id='time'> Time: 2018-06-13</div><div id='author'> Author: okuchaiev@nvidia.com</div><div id='file'> File Name: open_seq2seq/encoders/rnn_encoders.py</div><div id='class'> Class Name: GNMTLikeEncoderWithEmbedding</div><div id='method'> Method Name: _encode</div><BR>

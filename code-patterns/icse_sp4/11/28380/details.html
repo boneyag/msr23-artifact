@@ -1,0 +1,150 @@
+<html><h3>5e173b9c35b4114026c04f024e9deb8bfb8628eb,examples/simple_but_ugly/models.py,,,#,141
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+&#47&#47 Create a template pipeline
+template_pp = (<a id="change">Pipeline</a>(config=config)
+                .init_variable("session", init=tf.Session)
+                .init_variable("loss history", init=list, init_on_each_run=True)
+                .init_model("static_model")
+)
+
+&#47&#47 Create another template
+<a id="change">pp2</a> = (template_pp
+        .init_variable("session", sess)
+        .init_variable("print lock", init=threading.Lock)
+        .init_model("dynamic", MyModel, "my_model", config=F(MyBatch.make_data_for_dynamic))
+        .init_model("dynamic", MyModel, "my_model2")
+        &#47&#47.init_model("MyModel")
+        .load(data)
+        &#47&#47.train_global()
+        .train_static()
+        &#47&#47.train_dynamic()
+        .train_in_batch("dynamic_model")
+        &#47&#47.train_model("MyModel")
+        .train_model("my_model")
+        .train_model("my_model2", save_to=V(&quotoutput&quot))
+        .run(K//10, n_epochs=1, shuffle=False, drop_last=False, lazy=True)
+)
+
+&#47&#47 Create another template
+t = time()
+&#47&#47res = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+
+print("-------------------------------------------")
+print("============== start run ==================")
+t = time()
+res = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+&#47&#47ModelDirectory.print()
+
+
+print("-------------------------------------------------")
+print("============== start gen_batch ==================")
+<a id="change">res</a> = pp2 &lt;&lt; ds_data
+print("Start iterating...")
+t = time()
+t1 = t
+for batch in res.gen_batch(K, n_epochs=1, drop_last=True, prefetch=Q*0):
+    with res.get_variable("print lock"):
+        print("Batch", batch.indices, "is ready in", time() - t1)
+    t1 = time()
+
+print("Stop iterating:", time() - t)
+
+&#47&#47ModelDirectory.print()
+
+print("loss:", res.get_variable("loss history"))
+
+print("global:", res.get_model_by_name("global_model"))
+
+print("dynamic:", <a id="change">res</a>.get_model_by_name("dynamic_model"))
+
+pp3 = (Pipeline()
+           .init_variable("session", sess)
+           .import_model("my_model2", res)
+           .load(data)
+           .train_model("my_model2")
+           &#47&#47.test_dynamic()
+)
+
+print("--------------------------------------------")
+print("============== start test ==================")
+<a id="change">res2</a> = pp3 &lt;&lt; ds_data
+for batch in res2.gen_batch(3, n_epochs=1, drop_last=True, prefetch=Q*0):
+    with res.get_variable("print lock"):
+        print("Batch", batch.indices, "is ready in", time() - t1)
+    t1 = time()
+
+<a id="change">res3</a> = pp3 &lt;&lt; ds_data
+print("predict")
+res3.run(3, n_epochs=1)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+&#47&#47 Create a template pipeline
+template_pp = (<a id="change">Pipeline</a>(config=config)
+                .init_variable("loss history", init=list, init_on_each_run=True)
+                .init_model("static_model", MyModel)
+)
+
+&#47&#47 Create another template
+<a id="change">pp2</a> = (template_pp
+        .init_variable("print lock", init=threading.Lock)
+        .init_model("dynamic", MyModel, "my_model", config=F(MyBatch.make_data_for_dynamic))
+        .init_model("dynamic", MyModel, "my_model2")
+        .load(data)
+        .train_model("my_model")
+        .train_model("my_model2", save_to=V(&quotoutput&quot))
+        .run(K//10, n_epochs=1, shuffle=False, drop_last=False, lazy=True)
+)
+
+&#47&#47 Create another template
+t = time()
+&#47&#47res = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+
+print("-------------------------------------------")
+print("============== start run ==================")
+t = time()
+res = (pp2 &lt;&lt; ds_data).run()
+print(time() - t)
+
+
+print("-------------------------------------------------")
+print("============== start gen_batch ==================")
+<a id="change">res</a> = pp2 &lt;&lt; ds_data
+print("Start iterating...")
+t = time()
+t1 = t
+for batch in res.gen_batch(K, n_epochs=1, drop_last=True, prefetch=Q*0):
+    with res.get_variable("print lock"):
+        print("Batch", batch.indices, "is ready in", time() - t1)
+    t1 = time()
+
+print("Stop iterating:", time() - t)
+
+
+
+pp3 = (Pipeline()
+           .import_model("my_model2", res)
+           .load(data)
+           .train_model("my_model2")
+)
+
+print("--------------------------------------------")
+print("============== start test ==================")
+<a id="change">res2</a> = pp3 &lt;&lt; ds_data
+for batch in res2.gen_batch(3, n_epochs=1, drop_last=True, prefetch=Q*0):
+    with res.get_variable("print lock"):
+        print("Batch", batch.indices, "is ready in", time() - t1)
+    t1 = time()
+
+<a id="change">res3</a> = pp3 &lt;&lt; ds_data
+print("predict")
+res3.run(3, n_epochs=1)
+</code></pre><img src="143501453.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 11</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/5e173b9c35b4114026c04f024e9deb8bfb8628eb#diff-79df945c9a2849995c0a2fcf128a725b9db5c02b763d5033cba2eb8438bf7a1eL96' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: 5e173b9c35b4114026c04f024e9deb8bfb8628eb</div><div id='time'> Time: 2018-01-14</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: examples/simple_but_ugly/models.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/00f3cccf83006b54461f417419ac200560e7d70d#diff-5cd2b3bf8c95d3d7c8b77b12ddd512bc53b075bdcb31c865e55786354e267a23L40' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: 00f3cccf83006b54461f417419ac200560e7d70d</div><div id='time'> Time: 2017-12-10</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: examples/opensets/mnist_model2.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/analysiscenter/batchflow/commit/2fb926993d13f7702b31d82f3d29868514f45efc#diff-5cd2b3bf8c95d3d7c8b77b12ddd512bc53b075bdcb31c865e55786354e267a23L33' target='_blank'>Link</a></div><div id='project'> Project Name: analysiscenter/batchflow</div><div id='commit'> Commit Name: 2fb926993d13f7702b31d82f3d29868514f45efc</div><div id='time'> Time: 2017-11-04</div><div id='author'> Author: rhudor@gmail.com</div><div id='file'> File Name: examples/opensets/mnist_model2.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

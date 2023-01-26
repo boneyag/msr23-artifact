@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 call the normalisation function
+        if is_training or use_local_stats:
+            with tf.control_dependencies(
+                    <a id="change">[update_moving_mean, update_moving_variance]</a>):
+                outputs = tf.nn.batch_normalization(
+                    inputs, mean, variance,
+                    beta, gamma, self.eps, name=&quotbatch_norm&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+            regularizer=self.regularizers[&quotgamma&quot],
+            dtype=tf.float32, trainable=True)
+
+        <a id="change">collections = [tf.GraphKeys.MOVING_AVERAGE_VARIABLES,
+                       tf.GraphKeys.GLOBAL_VARIABLES]</a>
+        moving_mean = tf.get_variable(
+            &quotmoving_mean&quot,
+            shape=params_shape,
+            initializer=self.initializers[&quotmoving_mean&quot],
+            dtype=tf.float32, trainable=False, collections=collections)
+        moving_variance = tf.get_variable(
+            &quotmoving_variance&quot,
+            shape=params_shape,
+            initializer=self.initializers[&quotmoving_variance&quot],
+            dtype=tf.float32, trainable=False, collections=collections)
+
+        &#47&#47 mean and var
+        mean, variance = tf.nn.moments(inputs, axes)
+        update_moving_mean = moving_averages.assign_moving_average(
+            moving_mean, mean, self.moving_decay).op
+        update_moving_variance = moving_averages.assign_moving_average(
+            moving_variance, variance, self.moving_decay).op
+        tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, update_moving_mean)
+        tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, update_moving_variance)
+
+        &#47&#47 call the normalisation function
+        if is_training or use_local_stats:
+            &#47&#47 with tf.control_dependencies(
+            &#47&#47         [update_moving_mean, update_moving_variance]):
+            outputs = tf.nn.batch_normalization(
+                inputs, mean, variance,
+                beta, gamma, self.eps, name=&quotbatch_norm&quot)
+        else:
+            outputs = tf.nn.batch_normalization(
+                inputs, moving_mean, moving_variance,
+                beta, gamma, self.eps, name=&quotbatch_norm&quot)
+        <a id="change">outputs.set_shape(inputs.get_shape())</a>
+        return outputs
+
+
+        &#47&#47 &#47&#47 Regularizers are not currently supported for fused batch norm.</code></pre>

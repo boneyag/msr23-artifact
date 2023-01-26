@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 ID for the deletion just issued.
+    stdout, ret = util.RunCurlCommand(
+        &quotGET&quot, &quotdroplets/%s/actions&quot % self.droplet_id)
+    <a id="change">if ret != 0:
+      &#47&#47 There&quots a race condition here - if the lookup fails, assume it&quots
+      &#47&#47 due to deletion already being complete. Don&quott raise an error in
+      &#47&#47 that case,  the _Exists check should trigger retry if needed.
+      return
+   </a> response = <a id="change">json</a>.loads(stdout)[&quotactions&quot]
+
+    &#47&#47 Get the action ID for the &quotdestroy&quot action. This assumes there&quots only
+    &#47&#47 one of them, but AFAIK there can&quott be more since &quotdestroy&quot locks the VM.
+    <a id="change">destroy = [v for v in response if v[&quottype&quot] == &quotdestroy&quot][0]</a>
+
+    &#47&#47 Wait for completion. Actions are global objects, so the action
+    &#47&#47 status should still be retrievable after the VM got destroyed.
+    &#47&#47 We don&quott care about the result, let the _Exists check decide if we</code></pre><h3>After Change</h3><pre><code class='java'>
+  def _Delete(self):
+    Delete a DigitalOcean VM instance.
+
+    <a id="change">response</a>, retcode = util.DoctlAndParse(
+        [&quotcompute&quot, &quotdroplet&quot, &quotdelete&quot, self.droplet_id])
+    &#47&#47 The command doesn&quott return the HTTP status code, and the error
+    &#47&#47 format is very difficult to parse, so we string search.</code></pre>

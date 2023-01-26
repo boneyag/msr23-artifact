@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    x_new = copy(x)
+    if not isinstance(indices, list):
+        indices = [indices]
+    <a id="change">if not isinstance(values, list):
+        values = [values] * len(indices)
+   </a> for nb_index, index in enumerate(indices):
+        if not isinstance(index, tuple):
+            index = (index,)
+        if len(index) &lt; len(shape(x)):</code></pre><h3>After Change</h3><pre><code class='java'>
+    x_new = copy(x)
+
+    use_vectorization = hasattr(indices, &quot__len__&quot) and len(indices) &lt; ndim(x)
+    <a id="change">if _is_boolean(x):
+        x_new[indices] = values
+        return x_new
+   </a> zip_indices = _is_iterable(indices) and _is_iterable(indices[0])
+    if zip_indices:
+        <a id="change">indices = tuple(zip(*indices))</a>
+    if not use_vectorization:
+        x_new[indices] = values
+    else:
+        <a id="change">indices = tuple(
+            list(indices[:axis]) + [slice(None)] + list(indices[axis:]))</a>
+        x_new[indices] = values
+    return x_new
+
+</code></pre>

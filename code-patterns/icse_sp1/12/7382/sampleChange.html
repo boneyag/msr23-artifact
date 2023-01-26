@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.select_classes = &quot,&quot.join(select_classes)
+
+    def _extract(self, stim):
+        <a id="change">with stim.get_filename() as filename:
+            with open(filename, &quotrb&quot) as f:
+                tags = self.tagger.tag_images(f, select_classes=self.select_classes)
+
+       </a> tagged = tags[&quotresults&quot][0][&quotresult&quot][&quottag&quot]
+        return ExtractorResult([tagged[&quotprobs&quot]], stim, self,
+                               features=tagged[&quotclasses&quot])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.select_classes = &quot,&quot.join(select_classes)
+
+    def _extract(self, stim):
+        <a id="change">stims = listify(stim)</a>
+
+        with ExitStack() as stack:
+            <a id="change">files = [stack.enter_context(s.get_filename()) for s in stims]</a>
+            fps = <a id="change">[stack.enter_context(open(f, &quotrb&quot)) for f in files]</a>
+            tags = self.tagger.tag_images(fps, select_classes=self.select_classes)
+
+        extracted = []
+        <a id="change">for i, res in enumerate(tags[&quotresults&quot]):
+            tagged = res[&quotresult&quot][&quottag&quot]
+            extracted.append(ExtractorResult([tagged[&quotprobs&quot]], stims[i],
+                             self, features=tagged[&quotclasses&quot]))
+
+       </a> if isiterable(stim):
+            return extracted
+        else:
+            return extracted[0]</code></pre>

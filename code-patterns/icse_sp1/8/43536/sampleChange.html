@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            Predicted values.
+        
+        check_label_shapes(labels, preds)
+        <a id="change">for label, pred in zip(labels, preds):
+            pred = pred.max(dim=self.axis)[1]
+            label = label.max(dim=self.axis)[1]
+            self.sum_metric += pred.eq(label).sum()
+            self.num_inst += pred.numel()
+
+   </a> def reset(self):
+        
+        Resets the internal evaluation result to initial state.
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+            Predicted values.
+        
+        check_label_shapes(labels, preds)
+        <a id="change">if self.on_cpu:
+            if self.sparse_label:
+                label_imask = labels.cpu().numpy().astype(np.int32)
+            else:
+                label_imask = torch.argmax(labels, dim=self.axis).cpu().numpy().astype(np.int32)
+            pred_imask = torch.argmax(preds, dim=self.axis).cpu().numpy().astype(np.int32)
+            acc = seg_pixel_accuracy_np(
+                label_imask=label_imask,
+                pred_imask=pred_imask,
+                vague_idx=self.vague_idx,
+                use_vague=self.use_vague,
+                macro_average=self.macro_average)
+            if self.macro_average:
+                self.sum_metric += acc
+                self.num_inst += 1
+            else:
+                self.sum_metric += acc[0]
+                self.num_inst += acc[1]
+        else:
+            assert False
+
+   </a> def reset(self):
+        
+        Resets the internal evaluation result to initial state.
+        </code></pre>

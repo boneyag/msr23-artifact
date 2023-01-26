@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            with autograd.record():
+                for j, (X, y, m, s, h) in enumerate(zip(data, target, mask, sample, hiddens)):
+                    output, h, new_target = model(X, y, h, s)
+                    <a id="change">output = output.reshape((-3, -1))</a>
+                    new_target = new_target.reshape((-1,))
+                    <a id="change">l = loss(output, new_target) * m.reshape((-1,))</a>
+                    Ls.append(l/args.batch_size)
+                    hiddens[j] = h
+
+            autograd.backward(Ls)</code></pre><h3>After Change</h3><pre><code class='java'>
+            for _, batch in enumerate(zip(data, target, mask, sample, hiddens)):
+                parallel.put(batch)
+
+            <a id="change">for _ in range(len(data)):
+                hidden, ls = parallel.get()
+                &#47&#47 hidden states are ordered by context id
+                index = context.index(hidden[0].context)
+                hiddens[index] = hidden
+                Ls.append(ls)
+
+            &#47&#47 prefetch the next batch of data
+           </a> try:
+                data, target, mask, sample = next(train_data_iter)
+            except StopIteration:
+                has_next = False</code></pre>

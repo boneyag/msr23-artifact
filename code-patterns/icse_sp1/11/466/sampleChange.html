@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    endpoint = EndpointConfig("https://abc.defg/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    <a id="change">httpretty.register_uri(
+        httpretty.POST,
+        &quothttps://abc.defg/webhooks/actions&quot,
+        status=400,
+        body=&quot{"action_name": "my_action"}&quot)</a>
+
+    httpretty.enable()
+
+    with pytest.raises(Exception) as execinfo:</code></pre><h3>After Change</h3><pre><code class='java'>
+    endpoint = EndpointConfig("https://example.com/webhooks/actions")
+    remote_action = action.RemoteAction("my_action", endpoint)
+
+    <a id="change">with aioresponses() as mocked:
+        &#47&#47 noinspection PyTypeChecker
+        mocked.post(
+            &quothttps://example.com/webhooks/actions&quot,
+            exception=ClientResponseError(
+                aiohttp.ClientResponseError(None, None, code=400),
+                &quot{"action_name": "my_action"}&quot))
+
+        with pytest.raises(Exception) as execinfo:
+            loop.run_until_complete(
+                remote_action.run(default_dispatcher_collecting,
+                                  tracker,
+                                  default_domain))
+
+   </a> assert execinfo.type == ActionExecutionRejection
+    assert "Custom action &quotmy_action&quot rejected to run" in str(execinfo.value)
+
+</code></pre>

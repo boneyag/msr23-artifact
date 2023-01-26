@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                  metrics={&quotout_caps&quot: &quotaccuracy&quot})
+
+    &#47&#47 begin training
+    model.fit(<a id="change">[x_train, y_train]</a>, [y_train, x_train], batch_size=args.batch_size, epochs=args.epochs,
+              validation_data=[[x_test, y_test], [y_test, x_test]])
+    model.save(&quottrained_model.h5&quot)
+    print(&quotTrained model saved to \&quottrained_model.h5\&quot&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 callbacks
+    log = callbacks.CSVLogger(args.save_dir + &quot/log.csv&quot)
+    tb = callbacks.TensorBoard(log_dir=args.save_dir+&quot/tensorboard-logs&quot, batch_size=args.batch_size)
+    checkpoint = <a id="change">callbacks.ModelCheckpoint(args.save_dir + &quot/weights-{epoch:02d}.h5&quot, save_best_only=True, verbose=1)</a>
+
+    &#47&#47 define model
+    model = CapsNet(input_shape=[28, 28, 1],
+                    n_class=len(np.unique(np.argmax(y_train, 1))),
+                    batch_size=args.batch_size)
+    model.summary()
+    model.compile(optimizer=&quotadam&quot,
+                  loss=[margin_loss, &quotmse&quot],
+                  loss_weights=[1., args.lam_recon],
+                  metrics={&quotout_caps&quot: &quotaccuracy&quot})
+
+    &#47&#47 begin training
+    &#47&#47 Training without data augmentation:
+    &#47&#47 model.fit([x_train, y_train], [y_train, x_train], batch_size=args.batch_size, epochs=args.epochs,
+    &#47&#47           validation_data=[[x_test, y_test], [y_test, x_test]], callbacks=[log, tb])
+
+    &#47&#47 Training with data augmentation. If shift_fraction=0., also no augmentation.
+    model.fit_generator(generator=train_generator(x_train, y_train, args.batch_size, args.shift_fraction),
+                        steps_per_epoch=int(y_train.shape[0] / args.batch_size),
+                        epochs=args.epochs,
+                        validation_data=[[x_test, y_test], [y_test, x_test]],
+                        callbacks=<a id="change">[log, tb, checkpoint]</a>)
+    model.save(args.save_dir + &quot/trained_model.h5&quot)
+    print(&quotTrained model saved to \&quottrained_model.h5\&quot&quot)
+</code></pre>

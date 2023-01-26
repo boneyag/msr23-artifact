@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    trainer(
+        dataset,
+        max_step=train_config.get("train_steps"),
+        accum_steps=<a id="change">params.get("gradients_accum", 1)</a>,
+        report_steps=train_config.get("save_summary_steps", 100),
+        save_steps=train_config.get("save_checkpoints_steps", 5000),
+        evaluator=evaluator,</code></pre><h3>After Change</h3><pre><code class='java'>
+      devices = [device.name for device in devices[0:num_devices]]
+
+    &#47&#47 Set gradients accumulation based on the requested effective batch size.
+    <a id="change">if train_config.get("effective_batch_size") is not None:
+      accum_steps = _count_batch_accum(
+          train_config["batch_size"],
+          train_config["effective_batch_size"],
+          num_replicas=num_devices)
+      tf.get_logger().info(
+          "Accumulate gradients of %d iterations to reach effective batch size of %d",
+          accum_steps,
+          train_config["effective_batch_size"])
+    else:
+      accum_steps = 1
+
+   </a> trainer = training_util.Trainer(
+        checkpoint,
+        devices=devices,
+        mixed_precision=self._mixed_precision)</code></pre>

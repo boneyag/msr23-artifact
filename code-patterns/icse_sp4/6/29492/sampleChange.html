@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.send_all:
+            calculate_fitness = self.evaluate_all(population)
+        else:
+            calculate_fitness = <a id="change">[self.measure(ind) for ind in calculate]</a>
+
+        &#47&#47 save to cache
+        for key, fit in zip(map(self._hash, calculate), calculate_fitness):
+            self.cache[key] = fit</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.queue = MyQueue(self.send, self.recv, self.result_queue, len(calculate))
+            thread = Thread(target=self.queue.run)
+            thread.start()
+            <a id="change">with concurrent.futures.ThreadPoolExecutor(max_workers=len(calculate)) as executor:
+                futures = {executor.submit(self.measure, ind): ind for ind in calculate}
+                for future in futures:
+                    calculate_fitness.append(future.result())
+           </a> thread.join()
+            &#47&#47calculate_fitness = [self.measure(ind) for ind in calculate]
+
+        &#47&#47 save to cache</code></pre>

@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  vm.InstallPackages(&quotlibopenmpi-dev numactl&quot)
+  vm.Install(&quotcuda_toolkit&quot)
+
+  <a id="change">if FLAGS.cuda_toolkit_version == &quot8.0&quot:
+    hpcg_tar = HPCG_CUDA_8_TAR
+    hpcg_binary = HPCG_CUDA_8_BINARY
+  elif FLAGS.cuda_toolkit_version == &quot9.0&quot:
+    hpcg_tar = HPCG_CUDA_9_TAR
+    hpcg_binary = HPCG_CUDA_9_BINARY
+  else:
+    raise cuda_toolkit.UnsupportedCudaVersionException(
+        &quotHPCG only supports CUDA 8 and CUDA 9&quot)
+ </a> vm.InstallPreprovisionedPackageData(PACKAGE_NAME, [hpcg_tar],
+                                      linux_packages.INSTALL_DIR)
+  vm.RemoteCommand(&quotrm -rf %s&quot % HPCG_DIR)
+  vm.RemoteCommand(&quotmkdir %s&quot % HPCG_DIR)</code></pre><h3>After Change</h3><pre><code class='java'>
+  &#47&#47 HPCG CUDA 10 requires Open MPI 3.1 and HPCG CUDA 11 requires Open MPI 4.0
+  vm.Install(&quotopenmpi&quot)
+
+  <a id="change">if FLAGS.cuda_toolkit_version not in CUDA_FILES:
+    raise cuda_toolkit.UnsupportedCudaVersionException(
+        f&quotHPCG only supports CUDA {sorted(CUDA_FILES)}&quot)
+ </a> <a id="change">hpcg_tar, hpcg_binary = CUDA_FILES[FLAGS.cuda_toolkit_version]</a>
+  vm.InstallPreprovisionedPackageData(PACKAGE_NAME, [hpcg_tar],
+                                      linux_packages.INSTALL_DIR)
+  vm.RemoteCommand(&quotrm -rf %s&quot % HPCG_DIR)
+  vm.RemoteCommand(&quotmkdir %s&quot % HPCG_DIR)
+  vm.RemoteCommand(
+      &quotcd %s && tar xvf %s --directory=%s --strip-components=1&quot %
+      (linux_packages.INSTALL_DIR, hpcg_tar, HPCG_DIR))
+  &#47&#47 Create a symlink from the hpcg binary to &quothpcg&quot
+  if FLAGS.cuda_toolkit_version == &quot11.0&quot:
+    &#47&#47 HPCG only release the binary that supports CUDA 11. Use the data from
+    &#47&#47 HPCG CUDA 10 package.
+    vm.InstallPreprovisionedPackageData(PACKAGE_NAME, [hpcg_binary], HPCG_DIR)
+    <a id="change">vm.RemoteCommand(f&quotchmod +x {posixpath.join(HPCG_DIR, hpcg_binary)}&quot)</a>
+  vm.RemoteCommand(&quotcd %s && ln -s %s %s&quot % (HPCG_DIR, hpcg_binary, &quothpcg&quot))
+
+
+def YumInstall(_):</code></pre>

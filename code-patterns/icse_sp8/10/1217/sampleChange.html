@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                raise IncompatibleStateError(
+                    "Parameter &quotarch.layers&quot is missing from neural network state.")
+            &#47&#47 An ugly workaround to be able to save arbitrary data in a .npz file.
+            <a id="change">try:
+                dummy_dict = state[&quotarch.layers&quot][()]
+            except KeyError:
+                dummy_dict = state[&quotarch.layers&quot]
+           </a> state_layers = dummy_dict[&quotdata&quot]
+            for layer1, layer2 in zip(self.layers, state_layers):
+                if layer1[&quottype&quot] != layer2[&quottype&quot]:
+                    raise IncompatibleStateError(</code></pre><h3>After Change</h3><pre><code class='java'>
+            for layer_id, layer in enumerate(self.layers):
+                h5_layer = h5_layers[str(layer_id)]
+                for variable, values in layer.items():
+                    <a id="change">if isinstance(values, list):
+                        h5_values = h5_layer[variable]
+                        for value_id, value in enumerate(values):
+                            h5_value = h5_values.attrs[str(value_id)]
+                            if value != h5_value:
+                                raise IncompatibleStateError(
+                                    "Neural network state has {0}={1}, while "
+                                    "this architecture has {0}={2}.".format(
+                                        variable, value, h5_value))
+                    else:
+                        h5_value = h5_layer.attrs[variable]
+                        if values != h5_value:
+                            raise IncompatibleStateError(
+                                "Neural network state has {0}={1}, while "
+                                "this architecture has {0}={2}.".format(
+                                    variable, value, h5_value))
+
+   </a> def __init__(self, dictionary, architecture, batch_processing=True, profile=False):
+        Initializes the neural network parameters for all layers, and
+        creates Theano shared variables from them.
+</code></pre>

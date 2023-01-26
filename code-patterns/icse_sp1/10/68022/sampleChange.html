@@ -1,0 +1,160 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    for layer in layers:
+        layer_type = layer.WhichOneof(&quotlayer&quot)
+
+        <a id="change">if layer_type in ignored_layers:
+            continue
+
+        &#47&#47 Convolution
+       </a> if layer_type == &quotconvolution&quot:
+            _wp_to_fp16wp(layer.convolution.weights)
+            if layer.convolution.hasBias:
+                _wp_to_fp16wp(layer.convolution.bias)
+
+        &#47&#47 Batchnorm
+        elif layer_type == &quotbatchnorm&quot:
+            _wp_to_fp16wp(layer.batchnorm.gamma)
+            _wp_to_fp16wp(layer.batchnorm.beta)
+            _wp_to_fp16wp(layer.batchnorm.mean)
+            _wp_to_fp16wp(layer.batchnorm.variance)
+
+        &#47&#47 InnerProduct
+        elif layer_type == &quotinnerProduct&quot:
+            _wp_to_fp16wp(layer.innerProduct.weights)
+            if layer.innerProduct.hasBias:
+                _wp_to_fp16wp(layer.innerProduct.bias)
+
+        &#47&#47 batchedMatmul
+        elif layer_type == &quotbatchedMatmul&quot:
+            _wp_to_fp16wp(layer.batchedMatmul.weights)
+            if layer.batchedMatmul.hasBias:
+                _wp_to_fp16wp(layer.batchedMatmul.bias)
+
+        &#47&#47 Embedding layer
+        elif layer_type == &quotembedding&quot:
+            _wp_to_fp16wp(layer.embedding.weights)
+            if layer.embedding.hasBias:
+                _wp_to_fp16wp(layer.embedding.bias)
+
+        &#47&#47 EmbeddingND layer
+        elif layer_type == &quotembeddingND&quot:
+            _wp_to_fp16wp(layer.embeddingND.weights)
+            if layer.embeddingND.hasBias:
+                _wp_to_fp16wp(layer.embeddingND.bias)
+
+        &#47&#47 Scale layer
+        elif layer_type == &quotscale&quot:
+            _wp_to_fp16wp(layer.scale.scale)
+            if layer.scale.hasBias:
+                _wp_to_fp16wp(layer.scale.bias)
+
+        &#47&#47 Bias layer
+        elif layer_type == &quotbias&quot:
+            _wp_to_fp16wp(layer.bias.bias)
+
+        &#47&#47 LoadConstant layer
+        elif layer_type == &quotloadConstant&quot:
+            _wp_to_fp16wp(layer.loadConstant.data)
+
+        &#47&#47 Activation layer
+        elif layer_type == &quotactivation&quot:
+            activation_type = layer.activation.WhichOneof(&quotNonlinearityType&quot)
+            if activation_type == &quotPReLU&quot:
+                _wp_to_fp16wp(layer.activation.PReLU.alpha)
+            elif activation_type == &quotparametricSoftplus&quot:
+                _wp_to_fp16wp(layer.activation.parametricSoftplus.alpha)
+                _wp_to_fp16wp(layer.activation.parametricSoftplus.beta)
+
+        &#47&#47 Simple Recurrent
+        elif layer_type == &quotsimpleRecurrent&quot:
+            _wp_to_fp16wp(layer.simpleRecurrent.weightMatrix)
+            _wp_to_fp16wp(layer.simpleRecurrent.recursionMatrix)
+            if layer.simpleRecurrent.hasBiasVector:
+                _wp_to_fp16wp(layer.simpleRecurrent.biasVector)
+
+        &#47&#47 GRU
+        elif layer_type == &quotgru&quot:
+            &#47&#47 Weight Matrix
+            _wp_to_fp16wp(layer.gru.updateGateWeightMatrix)
+            _wp_to_fp16wp(layer.gru.resetGateWeightMatrix)
+            _wp_to_fp16wp(layer.gru.outputGateWeightMatrix)
+
+            &#47&#47 Recursion Weights
+            _wp_to_fp16wp(layer.gru.updateGateRecursionMatrix)
+            _wp_to_fp16wp(layer.gru.resetGateRecursionMatrix)
+            _wp_to_fp16wp(layer.gru.outputGateRecursionMatrix)
+
+            if layer.gru.hasBiasVectors:
+                _wp_to_fp16wp(layer.gru.updateGateBiasVector)
+                _wp_to_fp16wp(layer.gru.resetGateBiasVector)
+                _wp_to_fp16wp(layer.gru.outputGateBiasVector)
+
+        &#47&#47 LSTM Layers
+        elif layer_type in [&quotuniDirectionalLSTM&quot, &quotbiDirectionalLSTM&quot]:
+
+            def _lstmwp_to_fp16_lstmwp(lstm_wp, has_peephole=True):
+                assert lstm_wp
+                _wp_to_fp16wp(lstm_wp.inputGateWeightMatrix)
+                _wp_to_fp16wp(lstm_wp.forgetGateWeightMatrix)
+                _wp_to_fp16wp(lstm_wp.blockInputWeightMatrix)
+                _wp_to_fp16wp(lstm_wp.outputGateWeightMatrix)
+
+                _wp_to_fp16wp(lstm_wp.inputGateRecursionMatrix)
+                _wp_to_fp16wp(lstm_wp.forgetGateRecursionMatrix)
+                _wp_to_fp16wp(lstm_wp.blockInputRecursionMatrix)
+                _wp_to_fp16wp(lstm_wp.outputGateRecursionMatrix)
+
+                _wp_to_fp16wp(lstm_wp.inputGateBiasVector)
+                _wp_to_fp16wp(lstm_wp.forgetGateBiasVector)
+                _wp_to_fp16wp(lstm_wp.blockInputBiasVector)
+                _wp_to_fp16wp(lstm_wp.outputGateBiasVector)
+
+                if has_peephole:
+                    _wp_to_fp16wp(lstm_wp.inputGatePeepholeVector)
+                    _wp_to_fp16wp(lstm_wp.forgetGatePeepholeVector)
+                    _wp_to_fp16wp(lstm_wp.outputGatePeepholeVector)
+
+            if layer_type == &quotuniDirectionalLSTM&quot:
+                _lstmwp_to_fp16_lstmwp(
+                    lstm_wp=layer.uniDirectionalLSTM.weightParams,
+                    has_peephole=layer.uniDirectionalLSTM.params.hasPeepholeVectors
+                )
+            elif layer_type == &quotbiDirectionalLSTM&quot:
+                for lstm_wp in layer.biDirectionalLSTM.weightParams:
+                    _lstmwp_to_fp16_lstmwp(
+                        lstm_wp=lstm_wp,
+                        has_peephole=layer.biDirectionalLSTM.params.hasPeepholeVectors
+                    )
+
+        elif layer_type == &quotcustom&quot:
+            print (&quotSkipping custom layer {}. Weights for this layer need to&quot
+                   &quotbe converted manually&quot.format(layer.name))
+            continue
+
+        elif <a id="change">layer_type</a> in quantized_layers:
+            <a id="change">raise Exception(&quotHalf precision for &quot + layer_type +
+                            &quot not yet implemented\n&quot)</a>
+        else:
+            raise Exception(&quotUnknown layer &quot + layer_type)
+
+    return spec</code></pre><h3>After Change</h3><pre><code class='java'>
+                  &quotbe converted manually&quot.format(layer.name))
+            continue
+
+        <a id="change">if layer_type not in quantized_layers:
+            params = getattr(layer, layer_type, None)
+            params = params.ListFields() if params else []
+            param_types = [p[0].message_type.name if p[0].message_type else None for p in params]
+
+            if &quotWeightParams&quot in param_types:
+                raise NotImplementedError(&quotQuantization for layer "&quot + layer_type + &quot" not implemented.&quot)
+            continue  &#47&#47 print(&quotSkipping layer {}. No need to quantize.&quot.format(layer.name))
+
+        &#47&#47 Convolution
+       </a> if layer_type == &quotconvolution&quot:
+            _wp_to_fp16wp(layer.convolution.weights)
+            if layer.convolution.hasBias:
+                _wp_to_fp16wp(layer.convolution.bias)</code></pre>

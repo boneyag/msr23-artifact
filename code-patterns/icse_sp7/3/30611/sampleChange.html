@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Attempt file download
+    out = "NUL" if platform.system() == "Windows" else "/dev/null"
+    os.system(&quotcurl -c ./cookie -s -L "drive.google.com/uc?export=download&id=%s" &gt; %s &quot % (id, out))
+    <a id="change">if os.path.exists(&quotcookie&quot):  &#47&#47 large file
+        s = &quotcurl -Lb ./cookie "drive.google.com/uc?export=download&confirm=%s&id=%s" -o %s&quot % (get_token(), id, name)
+    else:  &#47&#47 small file
+        s = &quotcurl -s -L -o %s "drive.google.com/uc?export=download&id=%s"&quot % (name, id)
+   </a> r = os.system(s)  &#47&#47 execute, capture return
+    os.remove(&quotcookie&quot) if os.path.exists(&quotcookie&quot) else None
+
+    &#47&#47 Error check</code></pre><h3>After Change</h3><pre><code class='java'>
+def gdrive_download(id=&quot16TiPfZj7htmTyhntwcZyEEAejOUxuT6m&quot, file=&quottmp.zip&quot):
+    &#47&#47 Downloads a file from Google Drive. from yolov3.utils.google_utils import *; gdrive_download()
+    t = time.time()
+    <a id="change">file = Path(file)</a>
+    cookie = Path(&quotcookie&quot)  &#47&#47 gdrive cookie
+    print(f&quotDownloading https://drive.google.com/uc?export=download&id={id} as {file}... &quot, end=&quot&quot)
+    file.unlink(missing_ok=True)  &#47&#47 remove existing file
+    cookie.unlink(missing_ok=True)  &#47&#47 remove existing cookie
+
+    &#47&#47 Attempt file download
+    out = "NUL" if platform.system() == "Windows" else "/dev/null"
+    os.system(f&quotcurl -c ./cookie -s -L "drive.google.com/uc?export=download&id={id}" &gt; {out}&quot)
+    if os.path.exists(&quotcookie&quot):  &#47&#47 large file
+        s = f&quotcurl -Lb ./cookie "drive.google.com/uc?export=download&confirm={get_token()}&id={id}" -o {file}&quot
+    else:  &#47&#47 small file
+        s = f&quotcurl -s -L -o {file} "drive.google.com/uc?export=download&id={id}"&quot
+    r = os.system(s)  &#47&#47 execute, capture return
+    cookie.unlink(missing_ok=True)  &#47&#47 remove existing cookie
+
+    &#47&#47 Error check
+    if r != 0:
+        file.unlink(missing_ok=True)  &#47&#47 remove partial
+        print(&quotDownload error &quot)  &#47&#47 raise Exception(&quotDownload error&quot)
+        return r
+
+    &#47&#47 Unzip if archive
+    if file.suffix == &quot.zip&quot:
+        print(&quotunzipping... &quot, end=&quot&quot)
+        os.system(f&quotunzip -q {file}&quot)  &#47&#47 unzip
+        <a id="change">file.unlink()</a>  &#47&#47 remove zip to free space
+
+    print(f&quotDone ({time.time() - t:.1f}s)&quot)
+    return r</code></pre>

@@ -1,0 +1,64 @@
+<html><h3>f990d4612c19b6f87f7d3539d0e4de7845dda3f7,testing/test_coregion.py,TestEquivalence,setUp,#TestEquivalence#,17
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    with fixed lengthscale is equivalent with normal GP regression.
+    
+    def setUp(self):
+        <a id="change">tf.reset_default_graph()</a>
+        rng = np.random.RandomState(0)
+        X = [rng.rand(10, 2)*10, rng.rand(20, 2)*10]
+        Y = [np.sin(x) + 0.9 * np.cos(x*1.6) + rng.randn(*x.shape) * 0.8 for x in X]
+        label = [np.zeros((10, 1)), np.ones((20, 1))]</code></pre><h3>After Change</h3><pre><code class='java'>
+    with fixed lengthscale is equivalent with normal GP regression.
+    
+    def setUp(self):
+        <a id="change">with self.test_session():
+            rng = np.random.RandomState(0)
+            X = [rng.rand(10, 2)*10, rng.rand(20, 2)*10]
+            Y = [np.sin(x) + 0.9 * np.cos(x*1.6) + rng.randn(*x.shape) * 0.8 for x in X]
+            label = [np.zeros((10, 1)), np.ones((20, 1))]
+            perm = list(range(30))
+            rng.shuffle(perm)
+            self.Xtest = rng.rand(10, 2)*10
+
+            X_augumented = np.hstack([np.concatenate(X), np.concatenate(label)])
+            Y_augumented = np.hstack([np.concatenate(Y), np.concatenate(label)])
+
+            &#47&#47 two independent vgps for two sets of data
+            k0 = GPflow.kernels.RBF(2)
+            k0.lengthscales.fixed = True
+            self.vgp0 = GPflow.vgp.VGP(X[0], Y[0], kern=k0,
+                                       mean_function=GPflow.mean_functions.Constant(),
+                                       likelihood=GPflow.likelihoods.Gaussian())
+            k1 = GPflow.kernels.RBF(2)
+            k1.lengthscales.fixed = True
+            self.vgp1 = GPflow.vgp.VGP(X[1], Y[1], kern=k1,
+                                       mean_function=GPflow.mean_functions.Constant(),
+                                       likelihood=GPflow.likelihoods.Gaussian())
+            &#47&#47 coregionalized gpr
+            lik = GPflow.likelihoods.SwitchedLikelihood(
+                [GPflow.likelihoods.Gaussian(), GPflow.likelihoods.Gaussian()])
+
+            kc = GPflow.kernels.RBF(2)
+            kc.fixed = True  &#47&#47 lengthscale and variance is fixed.
+            coreg = GPflow.kernels.Coregion(1, output_dim=2, rank=1, active_dims=[2])
+            coreg.W.fixed = True
+
+            mean_c = GPflow.mean_functions.SwitchedMeanFunction(
+                [GPflow.mean_functions.Constant(), GPflow.mean_functions.Constant()])
+            self.cvgp = GPflow.vgp.VGP(X_augumented, Y_augumented,
+                                       kern=kc*coreg,
+                                       mean_function=mean_c,
+                                       likelihood=lik,
+                                       num_latent=2)
+
+            self.vgp0.optimize(disp=False, maxiter=300)
+            self.vgp1.optimize(disp=False, maxiter=300)
+            self.cvgp.optimize(disp=False, maxiter=300)
+
+   </a> def test_all(self):
+        with self.test_session():
+            &#47&#47 check variance
+            self.assertTrue(np.allclose(</code></pre><img src="101117734.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 14</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-cb37981353fd7d945acb6332c10f05318b04cadb8f76090078cffbab0ffb00eaL17' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_coregion.py</div><div id='class'> Class Name: TestEquivalence</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-4ab68f890837b3d0a3089cede463b14dbee404646e8d9af223c0643a54cd927eL62' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_autoflow.py</div><div id='class'> Class Name: TestShareArgs</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/9d7e5078cdd0a4a723c833929a2a3fe8531841d9#diff-4ab68f890837b3d0a3089cede463b14dbee404646e8d9af223c0643a54cd927eL144' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: 9d7e5078cdd0a4a723c833929a2a3fe8531841d9</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_autoflow.py</div><div id='class'> Class Name: TestAutoFlowSessionGraphArguments</div><div id='method'> Method Name: test_autoflow_results</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-8741401f6b7a96b87647d4e3e338cdc24a5217e2ae82b5caa947c1aaa47ce425L78' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_conditionals.py</div><div id='class'> Class Name: WhitenTest</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-4ab68f890837b3d0a3089cede463b14dbee404646e8d9af223c0643a54cd927eL25' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_autoflow.py</div><div id='class'> Class Name: TestNoArgs</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflowOpt/commit/6b2c2e294daecdcc2d46205c7b99d3dc3ef3553c#diff-219bbdd5c980641b0651d2360649ea0aa36b9ad75793ec59d14ca5fa7913936bL86' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflowOpt</div><div id='commit'> Commit Name: 6b2c2e294daecdcc2d46205c7b99d3dc3ef3553c</div><div id='time'> Time: 2017-08-30</div><div id='author'> Author: joachim.vanderherten@ugent.be</div><div id='file'> File Name: testing/test_transforms.py</div><div id='class'> Class Name: LinearTransformTests</div><div id='method'> Method Name: test_backward_variance</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-d9b3ff2fb2d6ec922da9862b73a5b2dd5bca6916bff40e07d9e757351de5bf31L223' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_ekerns.py</div><div id='class'> Class Name: TestKernExpQuadrature</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-8741401f6b7a96b87647d4e3e338cdc24a5217e2ae82b5caa947c1aaa47ce425L127' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_conditionals.py</div><div id='class'> Class Name: WhitenTestGaussian</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-4ab68f890837b3d0a3089cede463b14dbee404646e8d9af223c0643a54cd927eL173' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_autoflow.py</div><div id='class'> Class Name: TestDataHolder</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-d9b3ff2fb2d6ec922da9862b73a5b2dd5bca6916bff40e07d9e757351de5bf31L311' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_ekerns.py</div><div id='class'> Class Name: TestKernExpQuadrature</div><div id='method'> Method Name: test_exKxz</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflowOpt/commit/6b2c2e294daecdcc2d46205c7b99d3dc3ef3553c#diff-219bbdd5c980641b0651d2360649ea0aa36b9ad75793ec59d14ca5fa7913936bL61' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflowOpt</div><div id='commit'> Commit Name: 6b2c2e294daecdcc2d46205c7b99d3dc3ef3553c</div><div id='time'> Time: 2017-08-30</div><div id='author'> Author: joachim.vanderherten@ugent.be</div><div id='file'> File Name: testing/test_transforms.py</div><div id='class'> Class Name: LinearTransformTests</div><div id='method'> Method Name: test_backward_variance_full_cov</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-4ab68f890837b3d0a3089cede463b14dbee404646e8d9af223c0643a54cd927eL150' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_autoflow.py</div><div id='class'> Class Name: TestAdd</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-6f705d59dd4ceb8272758fc83f1f4af38592c3e02af0a7acc9561bd4fd646a1fL90' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_data_object.py</div><div id='class'> Class Name: TestDataHolderModels</div><div id='method'> Method Name: setUp</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/f990d4612c19b6f87f7d3539d0e4de7845dda3f7#diff-8741401f6b7a96b87647d4e3e338cdc24a5217e2ae82b5caa947c1aaa47ce425L18' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: f990d4612c19b6f87f7d3539d0e4de7845dda3f7</div><div id='time'> Time: 2017-08-17</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: testing/test_conditionals.py</div><div id='class'> Class Name: DiagsTest</div><div id='method'> Method Name: setUp</div><BR>

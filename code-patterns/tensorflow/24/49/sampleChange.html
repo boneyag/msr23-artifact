@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    n_inputs = int(np.prod(input_shape[1:]))
+
+    &#47&#47 Build variables and inference.
+    with <a id="change">tf.name_scope(name)</a> as scope:
+
+        W_init = weights_init
+        if isinstance(weights_init, str):
+            W_init = initializations.get(weights_init)()
+        W_regul = None
+        if regularizer:
+            W_regul = lambda x: losses.get(regularizer)(x, weight_decay)
+        W = va.variable(<a id="change">scope + &quotW&quot</a>, shape=[n_inputs, n_units],
+                        regularizer=W_regul, initializer=W_init,
+                        trainable=trainable, restore=restore)
+        tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot + scope, W)
+
+        b = None
+        if bias:
+            b_init = initializations.get(bias_init)()
+            <a id="change">b</a> = va.variable(<a id="change">scope + &quotb&quot</a>, shape=[n_units],
+                            initializer=b_init, trainable=trainable,
+                            restore=restore)
+            tf.add_to_collection(tf.GraphKeys.LAYER_VARIABLES + &quot/&quot + scope, b)
+
+        inference = incoming
+        &#47&#47 If input is not 2d, flatten it.
+        if len(input_shape) &gt; 2:
+            inference = tf.reshape(inference, [-1, n_inputs])
+
+        <a id="change">inference</a> = tf.matmul(inference, W)
+        if b: <a id="change">inference</a> = tf.nn.bias_add(inference, b)
+
+        if isinstance(activation, str):
+            <a id="change">inference</a> = activations.get(activation)(inference)
+        elif hasattr(activation, &quot__call__&quot):
+            <a id="change">inference</a> = activation(inference)
+        else:
+            raise ValueError("Invalid Activation.")
+
+        &#47&#47 Track activations.
+        tf.add_to_collection(tf.GraphKeys.ACTIVATIONS, inference)
+
+    &#47&#47 Add attributes to Tensor to easy access weights.
+    inference.scope = scope
+    <a id="change">inference.W</a> = W
+    <a id="change">inference.b</a> = b
+
+    return inference
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    n_inputs = int(np.prod(input_shape[1:]))
+
+    &#47&#47 Build variables and inference.
+    with <a id="change">tf.variable_op_scope([incoming], scope, name, reuse=reuse)</a> as scope:
+        <a id="change">name = scope.name</a>
+
+        W_init = weights_init
+        if isinstance(weights_init, str):
+            W_init = initializations.get(weights_init)()</code></pre>

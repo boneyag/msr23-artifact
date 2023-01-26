@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            threshold = tf.contrib.distributions.percentile(weight, target_sparsity * 100)
+            &#47&#47 stop gradient in case gradient change the mask
+            new_mask = tf.stop_gradient(tf.cast(tf.math.greater(weight, threshold), weight.dtype))
+            <a id="change">mask_update_handler = tf.assign(mask, new_mask)</a>
+            self.assign_handler.append(mask_update_handler)
+        return mask
+
+    def update_epoch(self, epoch, sess):</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 stop gradient in case gradient change the mask
+            mask = tf.stop_gradient(tf.cast(tf.math.greater(weight, threshold), weight.dtype))
+            self.assign_handler.append(tf.assign(weight, weight * mask))
+            self.mask_list.update(<a id="change">{op_name: tf.constant(mask)}</a>)
+            self.if_init_list.update({op_name: False})
+        else:
+            mask = self.mask_list[op_name]</code></pre>

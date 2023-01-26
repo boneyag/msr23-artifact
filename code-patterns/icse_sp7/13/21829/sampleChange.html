@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            raise Exception("Expected int, tuple/list with 2 entries or StochasticParameter. Got %s." % (type(k),))
+
+    def _augment_images(self, images, random_state, parents, hooks):
+        <a id="change">result = images</a>
+        nb_images = len(images)
+        if self.mode == "single":
+            samples = self.k.draw_samples((nb_images,), random_state=random_state)
+            samples = (samples, samples)
+        else:
+            samples = (
+                self.k[0].draw_samples((nb_images,), random_state=random_state),
+                self.k[1].draw_samples((nb_images,), random_state=random_state),
+            )
+        <a id="change">for i in sm.xrange(nb_images):
+            kh, kw = samples[0][i], samples[1][i]
+            kernel_impossible = (kh == 0 or kw == 0)
+            kernel_does_nothing = (kh == 1 and kw == 1)
+            if not kernel_impossible and not kernel_does_nothing:
+                image_aug = cv2.blur(result[i], (kh, kw))
+                &#47&#47 cv2.blur() removes channel axis for single-channel images
+                if image_aug.ndim == 2:
+                    image_aug = image_aug[..., np.newaxis]
+                result[i] = image_aug
+       </a> return result
+
+    def _augment_heatmaps(self, heatmaps, random_state, parents, hooks):
+        return heatmaps</code></pre><h3>After Change</h3><pre><code class='java'>
+                self.k[0].draw_samples((nb_images,), random_state=random_state),
+                self.k[1].draw_samples((nb_images,), random_state=random_state),
+            )
+        <a id="change">for i, (image, kh, kw) in enumerate(zip(images, samples[0], samples[1])):
+            kernel_impossible = (kh == 0 or kw == 0)
+            kernel_does_nothing = (kh == 1 and kw == 1)
+            if not kernel_impossible and not kernel_does_nothing:
+                image_aug = cv2.blur(image, (kh, kw))
+                &#47&#47 cv2.blur() removes channel axis for single-channel images
+                if image_aug.ndim == 2:
+                    image_aug = image_aug[..., np.newaxis]
+                images[i] = image_aug
+       </a> return images
+
+    def _augment_heatmaps(self, heatmaps, random_state, parents, hooks):
+        return heatmaps</code></pre>

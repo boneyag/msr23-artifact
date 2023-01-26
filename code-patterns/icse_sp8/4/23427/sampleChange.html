@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        
+        if self.max_len &gt; tensor.size(0):
+            pad = <a id="change">torch.ones((self.max_len - tensor.size(0),
+                              tensor.size(1)))</a> * self.fill_value
+            <a id="change">pad = pad.type_as(tensor)</a>
+            tensor = torch.cat((tensor, pad), dim=0)
+        elif self.max_len &lt; tensor.size(0):
+            tensor = tensor[:self.max_len, :]
+        return tensor</code></pre><h3>After Change</h3><pre><code class='java'>
+               "Too many channels ({}) detected, look at channels_first param.".format(tensor.size(self.ch_dim))
+        if self.max_len &gt; tensor.size(self.len_dim):
+
+            <a id="change">padding_size = [self.max_len - tensor.size(self.len_dim) if i == self.len_dim
+                            else tensor.size(self.ch_dim)
+                            for i in range(2)]</a>
+            pad = torch.empty(padding_size, dtype=tensor.dtype).fill_(self.fill_value)
+            tensor = torch.cat((tensor, pad), dim=self.len_dim)
+        elif self.max_len &lt; tensor.size(self.len_dim):
+            tensor = tensor.narrow(self.len_dim, 0, self.max_len)</code></pre>

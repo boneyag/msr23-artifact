@@ -1,0 +1,63 @@
+<html><h3>f364e492dfb287e4043d37fffa1bcef55e2ac5dd,torch/autograd/functional.py,,vhp,#Any#Any#Any#Any#Any#,696
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+
+    is_inputs_tuple, inputs = _as_tuple(inputs, "inputs", "vhp")
+    <a id="change">inputs = _grad_preprocess(inputs, create_graph=create_graph, need_graph=True)</a>
+
+    if v is not None:
+        _, v = _as_tuple(v, "v", "vhp")
+        v = _grad_preprocess(v, create_graph=create_graph, need_graph=False)
+        _validate_v(v, inputs, is_inputs_tuple)
+    else:
+        if len(inputs) != 1 or inputs[0].nelement() != 1:
+            raise RuntimeError("The vector v can only be None if the input to the user-provided function "
+                               "is a single Tensor with a single element.")
+
+    <a id="change">outputs = func(*inputs)</a>
+    <a id="change">is_outputs_tuple, outputs = _as_tuple(outputs, "outputs of the user-provided function", "vhp")</a>
+    <a id="change">_check_requires_grad(outputs, "outputs", strict=strict)</a>
+
+    if is_outputs_tuple or not isinstance(outputs[0], torch.Tensor):
+        raise RuntimeError("The function given to vhp should return a single Tensor")
+</code></pre><h3>After Change</h3><pre><code class='java'>
+          tensor([6., 6.])))
+    
+
+    <a id="change">with torch.enable_grad():
+        is_inputs_tuple, inputs = _as_tuple(inputs, "inputs", "vhp")
+        inputs = _grad_preprocess(inputs, create_graph=create_graph, need_graph=True)
+
+        if v is not None:
+            _, v = _as_tuple(v, "v", "vhp")
+            v = _grad_preprocess(v, create_graph=create_graph, need_graph=False)
+            _validate_v(v, inputs, is_inputs_tuple)
+        else:
+            if len(inputs) != 1 or inputs[0].nelement() != 1:
+                raise RuntimeError("The vector v can only be None if the input to the user-provided function "
+                                   "is a single Tensor with a single element.")
+        outputs = func(*inputs)
+        is_outputs_tuple, outputs = _as_tuple(outputs, "outputs of the user-provided function", "vhp")
+        _check_requires_grad(outputs, "outputs", strict=strict)
+
+        if is_outputs_tuple or not isinstance(outputs[0], torch.Tensor):
+            raise RuntimeError("The function given to vhp should return a single Tensor")
+
+        if outputs[0].nelement() != 1:
+            raise RuntimeError("The Tensor returned by the function given to vhp should contain a single element")
+
+        jac = _autograd_grad(outputs, inputs, create_graph=True)
+        _check_requires_grad(jac, "jacobian", strict=strict)
+
+   </a> enable_grad = <a id="change">True if create_graph else torch.is_grad_enabled()</a>
+    <a id="change">with torch.set_grad_enabled(enable_grad):
+        grad_res = _autograd_grad(jac, inputs, v, create_graph=create_graph)
+        vhp = _fill_in_zeros(grad_res, inputs, strict, create_graph, "double_back")
+
+   </a> outputs = _grad_postprocess(outputs, create_graph)
+    vhp = _grad_postprocess(vhp, create_graph)
+
+    return _tuple_postprocess(outputs, is_outputs_tuple), _tuple_postprocess(vhp, is_inputs_tuple)</code></pre><img src="96731059.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 14</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/f364e492dfb287e4043d37fffa1bcef55e2ac5dd#diff-72d88a419a72b8118800e618ecc27afe0635776ce7c9c4b374fedd996f49ad09L751' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: f364e492dfb287e4043d37fffa1bcef55e2ac5dd</div><div id='time'> Time: 2021-03-11</div><div id='author'> Author: ilqarramazanli@gmail.como</div><div id='file'> File Name: torch/autograd/functional.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: vhp</div><BR><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/f364e492dfb287e4043d37fffa1bcef55e2ac5dd#diff-72d88a419a72b8118800e618ecc27afe0635776ce7c9c4b374fedd996f49ad09L850' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: f364e492dfb287e4043d37fffa1bcef55e2ac5dd</div><div id='time'> Time: 2021-03-11</div><div id='author'> Author: ilqarramazanli@gmail.como</div><div id='file'> File Name: torch/autograd/functional.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: hvp</div><BR><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/f364e492dfb287e4043d37fffa1bcef55e2ac5dd#diff-72d88a419a72b8118800e618ecc27afe0635776ce7c9c4b374fedd996f49ad09L253' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: f364e492dfb287e4043d37fffa1bcef55e2ac5dd</div><div id='time'> Time: 2021-03-11</div><div id='author'> Author: ilqarramazanli@gmail.como</div><div id='file'> File Name: torch/autograd/functional.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: vjp</div><BR><BR><div id='link'><a href='https://github.com/pytorch/pytorch/commit/f364e492dfb287e4043d37fffa1bcef55e2ac5dd#diff-72d88a419a72b8118800e618ecc27afe0635776ce7c9c4b374fedd996f49ad09L751' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/pytorch</div><div id='commit'> Commit Name: f364e492dfb287e4043d37fffa1bcef55e2ac5dd</div><div id='time'> Time: 2021-03-11</div><div id='author'> Author: ilqarramazanli@gmail.como</div><div id='file'> File Name: torch/autograd/functional.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: vhp</div><BR>

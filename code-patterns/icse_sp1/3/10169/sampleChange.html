@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def __call__(self, inputs, state, scope):
+        Most basic RNN: output = new_state = tanh(W * input + U * state + B).
+        self.W, self.b, concat = <a id="change">_linear([inputs, state], self._num_units,
+                                         self.bias, self.W, self.b,
+                                         self.W_init, trainable=self.trainable,
+                                         restore=self.restore, scope=scope)</a>
+        output = self.activation(concat)
+        return output, output
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        Most basic RNN: output = new_state = activation(W * input + U * state + B).
+        with tf.variable_scope(scope or type(self).__name__):
+            &#47&#47 "BasicRNNCell"
+            <a id="change">output = self._activation(
+                _linear([inputs, state], self._num_units, True, 0.,
+                        self.weights_init, self.trainable, self.restore,
+                        self.reuse))</a>
+            &#47&#47 Retrieve RNN Variables
+            with tf.variable_scope(&quotLinear&quot, reuse=True):
+                self.W = tf.get_variable(&quotMatrix&quot)
+                self.b = tf.get_variable(&quotBias&quot)</code></pre>

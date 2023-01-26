@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 Parse the fetched records to input tensors for model function.
+    dataset = dataset.map(_dataset_parser, num_parallel_calls=64)
+    dataset = dataset.prefetch(batch_size)
+    dataset = <a id="change">dataset.batch(batch_size, drop_remainder=True)</a>
+
+    def _process_example(images, score_targets, box_targets, source_ids,
+                         image_info, boxes, is_crowds, areas, classes,
+                         cropped_gt_masks):
+      Processes one batch of data.
+      &#47&#47 Transposes images for TPU performance.
+      &#47&#47 Given the batch size, the batch dimesion (N) goes to either the minor
+      &#47&#47 ((H, W, C, N) when N &gt; C) or the second-minor ((H, W, N, C) when N &lt; C)
+      &#47&#47 dimension. Here, we assume N is 4 or 8 and C is 3, so we use
+      &#47&#47 (H, W, C, N).
+      if (params[&quottranspose_input&quot] and
+          self._mode == tf.estimator.ModeKeys.TRAIN):
+        images = tf.transpose(images, [1, 2, 3, 0])
+
+      labels = {}
+      for level in range(params[&quotmin_level&quot], params[&quotmax_level&quot] + 1):
+        labels[&quotscore_targets_%d&quot % level] = score_targets[level]
+        labels[&quotbox_targets_%d&quot % level] = box_targets[level]
+      &#47&#47 Concatenate groundtruth annotations to a tensor.
+      groundtruth_data = tf.concat([boxes, is_crowds, areas, classes], axis=2)
+      labels[&quotsource_ids&quot] = source_ids
+      labels[&quotgroundtruth_data&quot] = groundtruth_data
+      labels[&quotimage_info&quot] = image_info
+      labels[&quotcropped_gt_masks&quot] = cropped_gt_masks
+      if self._mode == tf.estimator.ModeKeys.PREDICT:
+        features = dict(
+            images=images,
+            image_info=image_info,
+            groundtruth_data=groundtruth_data,
+            source_ids=source_ids)
+        return features
+      else:
+        return images, labels
+
+    <a id="change">dataset = dataset.map(_process_example)</a>
+    dataset = dataset.prefetch(tf.contrib.data.AUTOTUNE)
+
+    if self._num_examples &gt; 0:
+      dataset = dataset.take(self._num_examples)</code></pre><h3>After Change</h3><pre><code class='java'>
+      dataset = dataset.shuffle(64)
+
+    &#47&#47 Parse the fetched records to input tensors for model function.
+    dataset = <a id="change">dataset.apply(
+        tf.contrib.data.map_and_batch(
+            _dataset_parser, batch_size=batch_size,
+            num_parallel_batches=64, drop_remainder=True))</a>
+
+    &#47&#47 Transposes images for TPU performance.
+    &#47&#47 Given the batch size, the batch dimesion (N) goes to either the minor
+    &#47&#47 ((H, W, C, N) when N &gt; C) or the second-minor ((H, W, N, C) when N &lt; C)</code></pre>

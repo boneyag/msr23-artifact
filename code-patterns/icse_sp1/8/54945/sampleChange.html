@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        shape=res.shape
+        prod = numpy.prod(shape[:-1])
+        <a id="change">features=res.reshape(prod, shape[-1])</a>
+
+        predictions = [0]*len(forests)
+        
+        def predict_forest(number):</code></pre><h3>After Change</h3><pre><code class='java'>
+        def predict_forest(number):
+            predictions[number] = forests[number].predictProbabilities(features.astype(numpy.float32))
+        
+        <a id="change">t2 = time.time()</a>
+
+        &#47&#47 predict the data with all the forests in parallel
+        pool = Pool()
+
+        for i,f in enumerate(forests):
+            req = pool.request(partial(predict_forest, i))
+
+        pool.wait()
+
+        prediction=numpy.dstack(predictions)
+        prediction = numpy.average(prediction, axis=2)
+        prediction.shape =  shape[:-1] + (forests[0].labelCount(),)
+        &#47&#47prediction = prediction.reshape(*(shape[:-1] + (forests[0].labelCount(),)))
+
+        &#47&#47 If our LabelsCount is higher than the number of labels in the training set,
+        &#47&#47 then our results aren&quott really valid.
+        &#47&#47 Duplicate the last label&quots predictions
+        chanslice = slice(min(key[-1].start, forests[0].labelCount()-1), min(key[-1].stop, forests[0].labelCount()))
+
+        <a id="change">t3 = time.time()</a>
+
+        logger.info(<a id="change">"Predict took %fseconds, actual RF time was %fs, feature time was %fs" % (t3-t1, t3-t2, t2-t1)</a>)
+        return prediction[...,chanslice] &#47&#47 FIXME: This assumes that channel is the last axis
+
+</code></pre>

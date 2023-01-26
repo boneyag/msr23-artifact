@@ -1,0 +1,114 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          "heads (%d)" % (hidden_size, self._num_heads))
+    self._attention_head_size = int(hidden_size // self._num_heads)
+
+    <a id="change">self._attention_layer</a> = <a id="change">attention.MultiHeadAttention(
+        num_heads=self._num_heads,
+        key_size=self._attention_head_size,
+        dropout=self._attention_dropout_rate,
+        kernel_initializer=self._kernel_initializer,
+        bias_initializer=self._bias_initializer,
+        kernel_regularizer=self._kernel_regularizer,
+        bias_regularizer=self._bias_regularizer,
+        activity_regularizer=self._activity_regularizer,
+        kernel_constraint=self._kernel_constraint,
+        bias_constraint=self._bias_constraint,
+        name="self_attention")</a>
+    self._attention_dropout = tf.keras.layers.Dropout(rate=self._dropout_rate)
+    if self._use_layer_norm:
+      &#47&#47 Use float32 in layernorm for numeric stability.
+      &#47&#47 It is probably safe in mixed_float16, but we haven&quott validated this yet.
+      self._attention_layer_norm = (
+          tf.keras.layers.LayerNormalization(
+              name="self_attention_layer_norm",
+              axis=-1,
+              epsilon=1e-12,
+              dtype=tf.float32))
+    <a id="change">self._intermediate_dense = dense_einsum.DenseEinsum(
+        output_shape=self._intermediate_size,
+        activation=None,
+        kernel_initializer=self._kernel_initializer,
+        bias_initializer=self._bias_initializer,
+        kernel_regularizer=self._kernel_regularizer,
+        bias_regularizer=self._bias_regularizer,
+        activity_regularizer=self._activity_regularizer,
+        kernel_constraint=self._kernel_constraint,
+        bias_constraint=self._bias_constraint,
+        name="intermediate")</a>
+    policy = tf.keras.mixed_precision.experimental.global_policy()
+    if policy.name == "mixed_bfloat16":
+      &#47&#47 bfloat16 causes BERT with the LAMB optimizer to not converge
+      &#47&#47 as well, so we use float32.
+      &#47&#47 TODO(b/154538392): Investigate this.
+      policy = tf.float32
+    self._intermediate_activation_layer = tf.keras.layers.Activation(
+        self._intermediate_activation, dtype=policy)
+    <a id="change">self._output_dense = dense_einsum.DenseEinsum(
+        output_shape=hidden_size,
+        kernel_initializer=self._kernel_initializer,
+        bias_initializer=self._bias_initializer,
+        kernel_regularizer=self._kernel_regularizer,
+        bias_regularizer=self._bias_regularizer,
+        activity_regularizer=self._activity_regularizer,
+        kernel_constraint=self._kernel_constraint,
+        bias_constraint=self._bias_constraint,
+        name="output")</a>
+    self._output_dropout = tf.keras.layers.Dropout(rate=self._dropout_rate)
+    if self._use_layer_norm:
+      &#47&#47 Use float32 in layernorm for numeric stability.
+      self._output_layer_norm = tf.keras.layers.LayerNormalization(</code></pre><h3>After Change</h3><pre><code class='java'>
+      raise ValueError(
+          "The input size (%d) is not a multiple of the number of attention "
+          "heads (%d)" % (hidden_size, self._num_heads))
+    <a id="change">self._attention_head_size</a> = int(hidden_size // self._num_heads)
+    <a id="change">common_kwargs = dict(
+        kernel_initializer=self._kernel_initializer,
+        bias_initializer=self._bias_initializer,
+        kernel_regularizer=self._kernel_regularizer,
+        bias_regularizer=self._bias_regularizer,
+        activity_regularizer=self._activity_regularizer,
+        kernel_constraint=self._kernel_constraint,
+        bias_constraint=self._bias_constraint)</a>
+    <a id="change">self._attention_layer</a> = <a id="change">attention.MultiHeadAttention(
+        num_heads=self._num_heads,
+        key_size=self._attention_head_size,
+        dropout=self._attention_dropout_rate,
+        name="self_attention",
+        **common_kwargs)</a>
+    self._attention_dropout = tf.keras.layers.Dropout(rate=self._dropout_rate)
+    if self._use_layer_norm:
+      &#47&#47 Use float32 in layernorm for numeric stability.
+      &#47&#47 It is probably safe in mixed_float16, but we haven&quott validated this yet.
+      self._attention_layer_norm = (
+          tf.keras.layers.LayerNormalization(
+              name="self_attention_layer_norm",
+              axis=-1,
+              epsilon=1e-12,
+              dtype=tf.float32))
+    <a id="change">self._intermediate_dense = tf.keras.layers.experimental.EinsumDense(
+        "abc,cd-&gt;abd",
+        output_shape=(None, self._intermediate_size),
+        bias_axes="d",
+        name="intermediate",
+        **common_kwargs)</a>
+    policy = tf.keras.mixed_precision.experimental.global_policy()
+    if policy.name == "mixed_bfloat16":
+      &#47&#47 bfloat16 causes BERT with the LAMB optimizer to not converge
+      &#47&#47 as well, so we use float32.
+      &#47&#47 TODO(b/154538392): Investigate this.
+      policy = tf.float32
+    self._intermediate_activation_layer = tf.keras.layers.Activation(
+        self._intermediate_activation, dtype=policy)
+    <a id="change">self._output_dense = tf.keras.layers.experimental.EinsumDense(
+        "abc,cd-&gt;abd",
+        output_shape=(None, hidden_size),
+        bias_axes="d",
+        name="output",
+        **common_kwargs)</a>
+    self._output_dropout = tf.keras.layers.Dropout(rate=self._dropout_rate)
+    if self._use_layer_norm:
+      &#47&#47 Use float32 in layernorm for numeric stability.
+      self._output_layer_norm = tf.keras.layers.LayerNormalization(</code></pre>

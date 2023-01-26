@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        raise ValueError(&quotencoded data exceeds max_size: {}&quot.format(enc_size + 2))
+    assert max_size &lt; 255*256
+
+    <a id="change">buffer_rank = buffer[rank * max_size : (rank + 1) * max_size]</a>
+    buffer_rank[0] = enc_size // 255  &#47&#47 this encoding works for max_size &lt; 65k
+    buffer_rank[1] = enc_size % 255
+    buffer_rank[2:enc_size+2] = torch.ByteTensor(list(enc))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    cpu_buffer[2 : enc_size + 2] = torch.ByteTensor(list(enc))
+    start = rank * max_size
+    size = enc_size + 2
+    <a id="change">buffer[start : start + size].copy_(cpu_buffer[:size])</a>
+
+    all_reduce(buffer, group=group)
+
+    try:</code></pre>

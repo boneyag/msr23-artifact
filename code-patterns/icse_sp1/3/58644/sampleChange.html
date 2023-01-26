@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 create an application and assign user-specified parameters
+        self.app = ApplicationDriver._create_app(param.application_type)
+        <a id="change">self.app.set_param(param)</a>
+        &#47&#47 initialise data input, and the tf graph
+        self.app.initialise_dataset_loader(csv_dict)
+        self.graph = self._create_graph()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def initialise_application(self, system_param, data_param):
+
+        <a id="change">app_param = system_param[&quotAPPLICATION&quot]</a>
+        net_param = system_param[&quotNETWORK&quot]
+        train_param = system_param[&quotTRAINING&quot]
+        infer_param = system_param[&quotINFERENCE&quot]
+        custom_param = system_param[&quotCUSTOM&quot]
+
+        self.is_training = (app_param.action == "train")
+        &#47&#47 hardware-related parameters
+        self.num_threads = max(app_param.num_threads, 1)
+        self.num_gpus = app_param.num_gpus \
+            if self.is_training else min(app_param.num_gpus, 1)
+        ApplicationDriver._set_cuda_device(app_param.cuda_devices)
+        &#47&#47 set output folders
+        self.model_dir = ApplicationDriver._touch_folder(app_param.model_dir)
+        self.session_dir = os.path.join(self.model_dir, FILE_PREFIX)
+        self.summary_dir = os.path.join(self.model_dir, &quotlogs&quot)
+        &#47&#47 set output logs to stdout and log file
+        log_file_name = os.path.join(
+            self.model_dir, &quot{}_{}&quot.format(app_param.action, &quotlog_console&quot))
+        ApplicationDriver.set_logger(file_name=log_file_name)
+
+        &#47&#47 model-related parameters
+        self.initial_iter = train_param.starting_iter \
+            if self.is_training else infer_param.inference_iter
+        self.final_iter = train_param.max_iter
+        self.save_every_n = train_param.save_every_n
+        self.max_checkpoints = train_param.max_checkpoints
+
+        self.outputs_collector = OutputsCollector(
+            n_devices=max(self.num_gpus, 1))
+        self.gradients_collector = GradientsCollector(
+            n_devices=max(self.num_gpus, 1)) if self.is_training else None
+
+        &#47&#47 create an application and assign user-specified parameters
+        self.app = ApplicationDriver._create_app(custom_param.name)
+        <a id="change">if self.is_training:
+            self.app.set_model_param(
+                net_param, train_param, self.is_training)
+        else:
+            self.app.set_model_param(
+                net_param, infer_param, self.is_training)
+        &#47&#47 initialise data input, and the tf graph
+       </a> self.app.initialise_dataset_loader(data_param, custom_param)
+        self.graph = self._create_graph()
+
+    def run_application(self):</code></pre>

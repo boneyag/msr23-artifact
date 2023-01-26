@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    actions = np.expand_dims(actions, -1)
+
+                &#47&#47 get old policy probabilities and distribution
+                result = self.main_network.target_network.predict(<a id="change">[current_states]</a>)
+                old_policy_distribution = result[1:]
+
+                &#47&#47 calculate gradients and apply on both the local policy network and on the global policy network
+                fetches = [self.main_network.online_network.output_heads[1].kl_divergence,
+                           self.main_network.online_network.output_heads[1].entropy]
+
+                total_return = np.expand_dims(total_return, -1)
+                value_targets = gae_based_value_targets if self.tp.agent.estimate_value_using_gae else total_return
+                total_loss, policy_losses, unclipped_grads, fetch_result =\
+                    self.main_network.online_network.accumulate_gradients(
+                        <a id="change">[current_states] + [actions] + old_policy_distribution</a>,
+                        [total_return, advantages], additional_fetches=fetches)
+
+                self.value_targets.add_sample(value_targets)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                total_return = np.expand_dims(total_return, -1)
+                value_targets = gae_based_value_targets if self.tp.agent.estimate_value_using_gae else total_return
+                <a id="change">inputs = copy.copy(current_states)</a>
+                &#47&#47 TODO: why is this output 0 and not output 1?
+                inputs[&quotoutput_0_0&quot] = actions
+                &#47&#47 TODO: does old_policy_distribution really need to be represented as a list?
+                &#47&#47 A: yes it does, in the event of discrete controls, it has just a mean
+                &#47&#47 otherwise, it has both a mean and standard deviation
+                <a id="change">for input_index, input in enumerate(old_policy_distribution):
+                    inputs[&quotoutput_0_{}&quot.format(input_index + 1)] = input
+                &#47&#47 print(&quotold_policy_distribution.shape&quot, len(old_policy_distribution))
+               </a> total_loss, policy_losses, unclipped_grads, fetch_result =\
+                    self.main_network.online_network.accumulate_gradients(
+                        inputs, [total_return, advantages], additional_fetches=fetches)
+</code></pre>

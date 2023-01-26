@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        k = chol_tau.shape[0]
+
+        mu = self.mu
+        <a id="change">delta = value.reshape((-1, k)) - mu</a>
+        delta_trans = tt.dot(chol_tau.T, delta.T)
+
+        result = k * tt.log(2 * np.pi)
+        result -= 2.0 * tt.sum(tt.log(tt.nlinalg.diag(chol_tau)))</code></pre><h3>After Change</h3><pre><code class='java'>
+        ok = tt.all(diag &gt; 0)
+
+        chol_tau = tt.switch(ok, chol_tau, 1)
+        <a id="change">diag = tt.nlinalg.diag(chol_tau)</a>
+        delta_trans = tt.dot(chol_tau.T, delta.T)
+
+        result = n * k * tt.log(2 * np.pi)
+        result -= <a id="change">2.0</a> * n * tt.sum(tt.log(diag))
+        result += (delta_trans ** 2).sum()
+        <a id="change">result = -0.5 * result</a>
+        return bound(result, ok)
+
+
+class MvStudentT(Continuous):</code></pre>

@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if params[&quotn_pcs&quot] &gt; 0 and adata.X.shape[1] &gt; params[&quotn_pcs&quot]:
+            sett.m(0, &quotpreprocess using PCA with&quot, params[&quotn_pcs&quot], &quotPCs&quot)
+            sett.m(0, &quot--&gt; avoid this by setting n_pcs = 0&quot)
+            dpca = <a id="change">pca(adata, n_comps=params[&quotn_pcs&quot])</a>
+            X = dpca[&quotY&quot]
+        else:
+            X = adata.X
+    &#47&#47 params for sklearn</code></pre><h3>After Change</h3><pre><code class='java'>
+        if n_pcs &gt; 0 and adata.X.shape[1] &gt; n_pcs:
+            sett.m(0, &quotpreprocess using PCA with&quot, n_pcs, &quotPCs&quot)
+            sett.m(0, &quot--&gt; avoid this by setting n_pcs = 0&quot)
+            X = <a id="change">pca(adata.X, n_comps=n_pcs)</a>
+            adata[&quotX_pca&quot] = X
+        else:
+            X = adata.X
+    &#47&#47 params for sklearn
+    params_sklearn = {&quotperplexity&quot : perplexity}
+    params_sklearn[&quotverbose&quot] = sett.verbosity
+    &#47&#47 deal with different tSNE implementations
+    try:
+        from MulticoreTSNE import MulticoreTSNE as TSNE
+        tsne = TSNE(n_jobs=4, **params_sklearn)
+        sett.m(0,&quot... compute tSNE using MulticoreTSNE&quot)
+        Y = tsne.fit_transform(X)
+    except ImportError:
+        try:
+            from sklearn.manifold import TSNE
+            tsne = TSNE(**params_sklearn)
+            sett.m(1,&quot--&gt; perform tSNE using sklearn!&quot)
+            sett.m(1,&quot--&gt; can be sped up by installing\n&quot 
+                     &quot    https://github.com/DmitryUlyanov/Multicore-TSNE&quot)
+            Y = tsne.fit_transform(X)            
+        except ImportError:
+            sett.m(0,&quot--&gt; perform tSNE using slow/unreliable original\n&quot 
+                     &quot    code by L. van der Maaten!?\n&quot
+                     &quot--&gt; consider installing sklearn\n&quot
+                     &quot    using "conda/pip install scikit-learn"&quot)
+            Y = _tsne_vandermaaten(X, 2, params[&quotperplexity&quot])
+    <a id="change">adata[&quotX_tsne&quot] = Y</a>
+    return adata
+
+def plot(adata,
+         smp=None,</code></pre>

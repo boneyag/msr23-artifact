@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    pois = {}
+    for result in responses[&quotelements&quot]:
+        if result[&quottype&quot] == &quotnode&quot and &quottags&quot in result:
+            <a id="change">try:
+                point = Point(result[&quotlon&quot], result[&quotlat&quot])
+
+                poi = {
+                    &quotosmid&quot: result[&quotid&quot],
+                    &quotgeometry&quot: point
+                }
+                if &quottags&quot in result:
+                    for tag in result[&quottags&quot]:
+                        poi[tag] = result[&quottags&quot][tag]
+                pois[result[&quotid&quot]] = poi
+
+            except Exception:
+                log(&quotPoint has invalid geometry: {}&quot.format(result[&quotid&quot]))
+
+       </a> elif result[&quottype&quot] == &quotrelation&quot:
+            &#47&#47 TODO: Add functionalities to parse &quotrelation&quot tags.
+            pass
+        elif result[&quottype&quot] == &quotway&quot:</code></pre><h3>After Change</h3><pre><code class='java'>
+    pois = {}
+
+    &#47&#47 POI ways
+    <a id="change">poi_ways = {}</a>
+
+    &#47&#47 A list of POI relations
+    <a id="change">relations = []</a>
+
+    for result in responses[&quotelements&quot]:
+        if result[&quottype&quot] == &quotnode&quot and &quottags&quot in result:
+            poi = parse_osm_node(response=result)
+            pois[result[&quotid&quot]] = poi
+        elif result[&quottype&quot] == &quotway&quot:
+            &#47&#47 Parse POI area Polygon
+            poi_area = parse_osm_way(vertices=vertices, response=result)
+            if poi_area:
+                poi_ways[result[&quotid&quot]] = poi_area
+        elif result[&quottype&quot] == &quotrelation&quot:
+            &#47&#47 Add relation to a relation list (needs to be parsed after all nodes and ways have been parsed)
+            relations.append(result)
+
+    &#47&#47 Create GeoDataFrames
+    gdf_nodes = gpd.GeoDataFrame(pois).T
+    gdf_nodes.crs = {&quotinit&quot: &quotepsg:4326&quot}
+
+    <a id="change">gdf_ways = gpd.GeoDataFrame(poi_ways).T</a>
+    gdf_ways.crs = {&quotinit&quot: &quotepsg:4326&quot}
+
+    &#47&#47 Parse relations (MultiPolygons) from &quotways&quot
+    <a id="change">gdf_ways = parse_osm_relations(relations=relations, osm_way_df=gdf_ways)</a>
+
+    return (gdf_nodes, gdf_ways)
+
+def pois_from_point(point, distance=None, amenities=None, retain_invalid=False):</code></pre>

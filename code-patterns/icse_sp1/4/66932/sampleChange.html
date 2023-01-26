@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            tangent_vec_at_id = gs.einsum(&quotij,ijk-&gt;ik&quot,
+                                          tangent_vec,
+                                          gs.transpose(inv_jacobian,
+                                                       axes=<a id="change">(0, 2, 1)</a>))
+            group_exp_from_identity = self.group_exp_from_identity(
+                                           tangent_vec=tangent_vec_at_id,
+                                           point_type=point_type)</code></pre><h3>After Change</h3><pre><code class='java'>
+            base_point = identity
+        base_point = self.regularize(base_point, point_type=point_type)
+
+        <a id="change">n_tangent_vecs = tangent_vec.shape[0]</a>
+        n_base_points = base_point.shape[0]
+
+        assert (tangent_vec.shape == base_point.shape
+                or n_tangent_vecs == 1
+                or n_base_points == 1)
+
+        if n_tangent_vecs == 1:
+            tangent_vec = gs.array([tangent_vec[0]] * n_base_points)
+
+        if n_base_points == 1:
+            base_point = gs.array([base_point[0]] * n_tangent_vecs)
+
+        <a id="change">result = gs.cond(
+            pred=gs.allclose(base_point, identity),
+            true_fn=lambda: self.group_exp_from_identity(
+                tangent_vec, point_type=point_type),
+            false_fn=lambda: self.group_exp_not_from_identity(
+                tangent_vec, base_point, point_type))</a>
+        return result
+
+    def group_log_from_identity(self, point, point_type=None):
+        </code></pre>

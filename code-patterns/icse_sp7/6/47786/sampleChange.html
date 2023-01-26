@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    Synchronous version of `download` method.
+    checksum = self._checksumer()
+    try:
+      <a id="change">with contextlib.closing(urllib.request.urlopen(url)) as response:
+        fname = util.get_file_name(response.geturl())
+        path = os.path.join(destination_path, fname)
+        _copy_response_to_file(response, path, checksum)
+   </a> except urllib.error.HTTPError as err:
+      raise HTTPError(url, err.code, err.reason)
+    return checksum.hexdigest()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  def _sync_download(self, url, destination_path):
+    Synchronous version of `download` method.
+    checksum = self._checksumer()
+    session = <a id="change">requests.Session()</a>
+    if _DRIVE_URL.match(url):
+      <a id="change">url = self._get_drive_url(url, session)</a>
+    response = session.get(url, stream=True)
+    fname = util.get_file_name(response.url)
+    <a id="change">path = os.path.join(destination_path, fname)</a>
+    with gfile.Open(path, &quotwb&quot) as file_:
+      for block in response.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE):
+        checksum.update(block)
+        &#47&#47 TODO(pierrot): Test this is faster than doing checksum in the end</code></pre>

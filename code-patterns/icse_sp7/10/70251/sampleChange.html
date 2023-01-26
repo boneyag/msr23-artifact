@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                elif req.status_code is 400 or 500:
+                    _LOGGER.error(message)
+
+            <a id="change">if req.status_code in (201, 429):
+                rate_limits = req.json()["rateLimits"]
+                resetsAt = dt_util.parse_datetime(rate_limits["resetsAt"])
+                resetsAtTime = resetsAt - datetime.now(timezone.utc)
+                rate_limit_msg = ("iOS push notification rate limits for %s: "
+                                  "%d sent, %d allowed, %d errors, "
+                                  "resets in %s")
+                _LOGGER.info(rate_limit_msg,
+                             ios.device_name_for_push_id(target),
+                             rate_limits["successful"],
+                             rate_limits["maximum"], rate_limits["errors"],
+                             str(resetsAtTime).split(".")[0])</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            req = requests.post(PUSH_URL, json=data, timeout=10)
+
+            if req.status_code != 201:
+                fallback_error = <a id="change">req.json().get("errorMessage",
+                                                "Unknown error")</a>
+                fallback_message = ("Internal server error, "
+                                    "please try again later: "
+                                    "{}").format(fallback_error)
+                <a id="change">message = req.json().get("message", fallback_message)</a>
+                if req.status_code == 429:
+                    _LOGGER.warning(message)
+                    log_rate_limits(target, req.json(), 30)
+                else:</code></pre>

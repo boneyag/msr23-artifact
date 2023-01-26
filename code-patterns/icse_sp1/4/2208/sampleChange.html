@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    @overrides
+    def infer(self, sample, *args, **kwargs):
+        if isinstance(sample, str):
+            sample = <a id="change">sample.strip()</a>
+        if not len(sample):
+            return &quot&quot
+        if isinstance(sample, list):
+            return self._net.predict_on_batch(sample)</code></pre><h3>After Change</h3><pre><code class='java'>
+    @overrides
+    def infer(self, sample, *args, **kwargs):
+        &#47&#47 Check is the sample a batch
+        <a id="change">if isinstance(sample[0], list):
+            return self._net.predict_on_batch(sample)
+        &#47&#47 Check is the sample is a token sequence
+        elif isinstance(sample[0], str) and isinstance(sample, list) and &quot &quot not in list(chain(*sample)):
+            return self._net.predict_on_batch([sample])
+        &#47&#47 Check is the sample is a utterance string
+        elif isinstance(sample, str):
+            return self._net.predict_on_batch([self.preprocess_tokenize(sample)])[0]
+        else:
+            raise RuntimeError(&quotThe input of infer function of NER model should be one of the following: &quot
+                               &quotlist of lists of tokens, or list of tokens, or string!&quot)
+
+   </a> def preprocess_tokenize(self, utterance):
+        sample = tokenize_reg(utterance)
+        return sample
+</code></pre>

@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if dtype is None:
+      dtype = dtypes.float32
+    wrapped_probability_fn = lambda score, _: probability_fn(score)
+    <a id="change">super(LocationSensitiveAttention, self).__init__(
+        query_layer=layers_core.Dense(
+            num_units, name="query_layer", use_bias=False, dtype=dtype
+        ),
+        memory_layer=layers_core.Dense(
+            num_units, name="memory_layer", use_bias=False, dtype=dtype
+        ),
+        memory=memory,
+        probability_fn=wrapped_probability_fn,
+        memory_sequence_length=memory_sequence_length,
+        score_mask_value=score_mask_value,
+        name=name
+    )</a>
+    self.location_layer = LocationLayer(32, 32, num_units)
+    self._num_units = num_units
+    self._name = name
+    self.use_bias = use_bias</code></pre><h3>After Change</h3><pre><code class='java'>
+    A (possibly masked), checked, new `memory`.
+
+  Raises:
+    ValueError: If `check_inner_dims_defined` is `True<a id="change">` and not
+      `memory.shape[2:].is_fully_defined()`.
+  
+  memory = nest.map_structure(
+      lambda m: ops.convert_to_ten</a>s<a id="change">or(m, name="memory"), memory
+  )
+  if memory_sequence_length is not None:
+    memory_sequence_length = ops.convert_to_tensor(
+        memory_sequence_length, name="memory_sequence_length"
+    )
+  if check_in</a>ner_dims_defined:
+
+    def _check_dims(m):
+      if not m.get_shape()[2:].is_fully_defined():
+        raise ValueError(
+            "Expected memory %s to have fully defined inner dims, "
+            "but saw shape: %s" % (m.name, m.get_shape())
+        )
+
+    nest.map_structure(_check_dims, memory)
+  if memory_sequence_length is None:
+  <a id="change">  seq_len_mask = None
+  else:</a>
+    seq_len_mask = array_ops.sequence_mask(
+        memory_sequence_length,
+        maxlen=array_ops.shape(nest.flatten(memory)[0])[1],
+        dtype=nest.flatten(memory)[0].dtype</code></pre>

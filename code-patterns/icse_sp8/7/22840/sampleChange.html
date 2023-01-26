@@ -1,0 +1,92 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        ticker = event_fx + "-" + event_name + ".release-date-time-full"
+
+        data_frame_agg = None
+        data_frame_cross_orig = <a id="change">data_frame_cross_orig.resample(&quotT&quot)</a>         &#47&#47 resample to minute freq - in case there are missing values
+
+        ef_time_start = ef_time_frame[ticker] - timedelta(minutes=1)        &#47&#47 start time
+        indices_start = data_frame_cross_orig.index.isin(ef_time_start)
+
+        for offset in offset_list:
+            data_frame_cross = data_frame_cross_orig
+
+            ef_time = ef_time_frame[ticker] + timedelta(minutes=offset - 1)     &#47&#47 end time
+
+            &#47&#47 calculate returns over the x min event
+            indices = data_frame_cross.index.isin(ef_time)
+            col_dates = data_frame_cross.index[indices]
+
+            col_rets = (data_frame_cross.iloc[indices].values) \
+                       / (data_frame_cross.iloc[indices_start].values) - 1
+
+            mkt_moves = pandas.DataFrame(index=col_dates)
+            mkt_moves[cross + " " + str(offset) + "m move"] = col_rets
+            mkt_moves.index.name = ticker
+            <a id="change">mkt_moves.index</a> = col_dates - timedelta(minutes=offset - 1)
+
+            data_frame = ef_time_frame.join(mkt_moves, on=ticker, how="inner")
+            temp_index = data_frame[ticker]
+
+            spot_moves_list = []
+
+            if data_frame_agg is None:
+                data_frame_agg = data_frame
+            else:
+                label = cross + " " + str(offset) + "m move"
+                spot_moves_list.append(label)
+                data_frame = data_frame[label]
+                data_frame.index = temp_index
+                data_frame_agg = data_frame_agg.join(data_frame, on=ticker, how="inner")
+
+        if add_surprise == True:
+            <a id="change">data_frame_agg[event_fx + "-" + event_name + ".surprise"]</a> = data_frame_agg[event_fx + "-" + event_name + ".actual-release"] \
+                               - data_frame_agg[event_fx + "-" + event_name + "." + surprise_field]
+
+        return data_frame_agg</code></pre><h3>After Change</h3><pre><code class='java'>
+        ticker = event_fx + "-" + event_name + ".release-date-time-full"
+
+        data_frame_agg = None
+        data_frame_cross_orig = <a id="change">data_frame_cross_orig.resample(&quotT&quot).mean()</a>  &#47&#47 resample to minute freq - in case there are missing values
+
+        ef_time_start = ef_time_frame[ticker] - timedelta(minutes=1)        &#47&#47 start time
+        indices_start = data_frame_cross_orig.index.isin(ef_time_start)
+
+        for offset in offset_list:
+            data_frame_cross = data_frame_cross_orig
+
+            ef_time = ef_time_frame[ticker] + timedelta(minutes=offset - 1)     &#47&#47 end time
+
+            &#47&#47 calculate returns over the x min event
+            indices = data_frame_cross.index.isin(ef_time)
+            col_dates = data_frame_cross.index[indices]
+
+            col_rets = (data_frame_cross.iloc[indices].values) \
+                       / (data_frame_cross.iloc[indices_start].values) - 1
+
+            mkt_moves = pandas.DataFrame(index=col_dates)
+            mkt_moves[cross + " " + str(offset) + "m move"] = col_rets
+            mkt_moves.index.name = ticker
+            <a id="change">mkt_moves.index</a> = col_dates - timedelta(minutes=offset - 1)
+
+            data_frame = ef_time_frame.join(mkt_moves, on=ticker, how="inner")
+            temp_index = data_frame[ticker]
+
+            spot_moves_list = []
+
+            if data_frame_agg is None:
+                data_frame_agg = data_frame
+            else:
+                label = cross + " " + str(offset) + "m move"
+                spot_moves_list.append(label)
+                data_frame = data_frame[label]
+                data_frame.index = temp_index
+                data_frame_agg = data_frame_agg.join(data_frame, on=ticker, how="inner")
+
+        if add_surprise == True:
+            <a id="change">data_frame_agg[event_fx + "-" + event_name + ".surprise"]</a> = data_frame_agg[event_fx + "-" + event_name + ".actual-release"] \
+                               - data_frame_agg[event_fx + "-" + event_name + "." + surprise_field]
+
+        return data_frame_agg</code></pre>

@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 https://github.com/apache/arrow/pull/2329
+&#47&#47 https://groups.google.com/a/tensorflow.org/forum/&#47&#47!topic/developers/TMqRaT-H2bI
+&#47&#47 So we use msgpack as default.
+<a id="change">if os.environ.get(&quotTENSORPACK_SERIALIZE&quot, &quotmsgpack&quot) == &quotpyarrow&quot:
+    try:
+        import pyarrow as pa
+    except ImportError:
+        loads_pyarrow = create_dummy_func(&quotloads_pyarrow&quot, [&quotpyarrow&quot])  &#47&#47 noqa
+        dumps_pyarrow = create_dummy_func(&quotdumps_pyarrow&quot, [&quotpyarrow&quot])  &#47&#47 noqa
+
+    if &quothorovod&quot in sys.modules:
+        logger.warn("Horovod and pyarrow may have symbol conflicts. "
+                    "Uninstall pyarrow and use msgpack instead.")
+    loads = loads_pyarrow
+    dumps = dumps_pyarrow
+else:
+    loads = loads_msgpack
+    dumps = dumps_msgpack
+
+
+</a>class NonPicklableWrapper(object):
+    
+    TODO
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+_DEFAULT_S = os.environ.get(&quotTENSORPACK_SERIALIZE&quot, &quotmsgpack&quot)
+
+<a id="change">if _DEFAULT_S == "pyarrow":
+    dumps = PyarrowSerializer.dumps_bytes
+    loads = PyarrowSerializer.loads
+elif _DEFAULT_S == "pickle":
+    dumps = PickleSerializer.dumps
+    loads = PickleSerializer.loads
+else:
+    dumps = MsgpackSerializer.dumps
+    loads = MsgpackSerializer.loads</a>
+</code></pre>

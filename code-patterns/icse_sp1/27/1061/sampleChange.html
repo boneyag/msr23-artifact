@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+
+    if x_gpu.dtype == np.float32:
+        <a id="change">use_double = 0</a>
+    elif x_gpu.dtype == np.float64:
+        <a id="change">use_double = 1</a>
+    else:
+        raise ValueError(&quotunsupported type&quot)
+    
+    &#47&#47 Get block/grid sizes:
+    dev = misc.get_current_device()
+    block_dim, grid_dim = misc.select_block_grid_sizes(dev, x_gpu.shape)
+
+    &#47&#47 Set this to False when debugging to make sure the compiled kernel is
+    &#47&#47 not cached:
+    <a id="change">cache_dir=None</a>
+    <a id="change">sici_mod = \
+             SourceModule(sici_template.substitute(use_double=use_double),
+                          cache_dir=cache_dir,
+                          options=["-I", install_headers])</a>
+    <a id="change">sici_func = sici_mod.get_function("sici_array")</a>
+
+    si_gpu = gpuarray.empty_like(x_gpu)
+    ci_gpu = gpuarray.empty_like(x_gpu)
+    sici_func(x_gpu, si_gpu, ci_gpu,</code></pre><h3>After Change</h3><pre><code class='java'>
+    else:
+        raise ValueError(&quotunsupported type&quot)
+    
+    <a id="change">try:
+        func = sici.cache[x_gpu.dtype]
+    except KeyError:
+        func = elementwise.ElementwiseKernel(args, op,
+                                 options=["-I", install_headers],
+                                 preamble=&quot&#47&#47include "cuSpecialFuncs.h"&quot)
+        sici.cache[x_gpu.dtype] = func
+
+   </a> si_gpu = gpuarray.empty_like(x_gpu)
+    ci_gpu = gpuarray.empty_like(x_gpu)
+    func(x_gpu, si_gpu, ci_gpu)
+        </code></pre>

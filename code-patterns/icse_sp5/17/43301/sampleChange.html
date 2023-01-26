@@ -1,0 +1,200 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      py_metrics.AverageEpisodeLengthMetric(buffer_size=num_eval_episodes),
+  ]
+
+  with <a id="change">tf.contrib.summary.record_summaries_every_n_global_steps(
+      summary_interval)</a>:
+
+    &#47&#47 Create the environment.
+    tf_env = tf_py_environment.TFPyEnvironment(suite_mujoco.load(env_name))
+    eval_py_env = suite_mujoco.load(env_name)
+
+    &#47&#47 Get the data specs from the environment
+    time_step_spec = tf_env.time_step_spec()
+    observation_spec = time_step_spec.observation
+    action_spec = tf_env.action_spec()
+
+    actor_net = actor_distribution_network.ActorDistributionNetwork(
+        observation_spec,
+        action_spec,
+        fc_layer_params=actor_fc_layers,
+        continuous_projection_net=normal_projection_net)
+    critic_net = critic_network.CriticNetwork(
+        (observation_spec, action_spec),
+        observation_fc_layer_params=critic_obs_fc_layers,
+        action_fc_layer_params=critic_action_fc_layers,
+        joint_fc_layer_params=critic_joint_fc_layers)
+
+    global_step = tf.compat.v1.train.get_or_create_global_step()
+    tf_agent = sac_agent.SacAgent(
+        time_step_spec,
+        action_spec,
+        actor_network=actor_net,
+        critic_network=critic_net,
+        actor_optimizer=tf.compat.v1.train.AdamOptimizer(
+            learning_rate=actor_learning_rate),
+        critic_optimizer=tf.compat.v1.train.AdamOptimizer(
+            learning_rate=critic_learning_rate),
+        alpha_optimizer=tf.compat.v1.train.AdamOptimizer(
+            learning_rate=alpha_learning_rate),
+        target_update_tau=target_update_tau,
+        target_update_period=target_update_period,
+        td_errors_loss_fn=td_errors_loss_fn,
+        gamma=gamma,
+        reward_scale_factor=reward_scale_factor,
+        gradient_clipping=gradient_clipping,
+        debug_summaries=debug_summaries,
+        summarize_grads_and_vars=summarize_grads_and_vars,
+        train_step_counter=global_step)
+
+    &#47&#47 Make the replay buffer.
+    replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
+        data_spec=tf_agent.collect_data_spec,
+        batch_size=1,
+        max_length=replay_buffer_capacity)
+    replay_observer = [replay_buffer.add_batch]
+
+    eval_py_policy = py_tf_policy.PyTFPolicy(tf_agent.policy)
+
+    train_metrics = [
+        tf_metrics.NumberOfEpisodes(),
+        tf_metrics.EnvironmentSteps(),
+        tf_py_metric.TFPyMetric(py_metrics.AverageReturnMetric()),
+        tf_py_metric.TFPyMetric(py_metrics.AverageEpisodeLengthMetric()),
+    ]
+
+    collect_policy = tf_agent.collect_policy
+
+    initial_collect_op = dynamic_step_driver.DynamicStepDriver(
+        tf_env,
+        collect_policy,
+        observers=replay_observer + train_metrics,
+        num_steps=initial_collect_steps).run()
+
+    collect_op = dynamic_step_driver.DynamicStepDriver(
+        tf_env,
+        collect_policy,
+        observers=replay_observer + train_metrics,
+        num_steps=collect_steps_per_iteration).run()
+
+    &#47&#47 Prepare replay buffer as dataset with invalid transitions filtered.
+    def _filter_invalid_transition(trajectories, unused_arg1):
+      return ~trajectories.is_boundary()[0]
+    dataset = replay_buffer.as_dataset(
+        sample_batch_size=5 * batch_size,
+        num_steps=2).apply(tf.data.experimental.unbatch()).filter(
+            _filter_invalid_transition).batch(batch_size).prefetch(
+                batch_size * 5)
+    dataset_iterator = tf.compat.v1.data.make_initializable_iterator(dataset)
+    trajectories, unused_info = dataset_iterator.get_next()
+    train_op = tf_agent.train(trajectories)
+
+    for train_metric in train_metrics:
+      train_metric.tf_summaries(step_metrics=train_metrics[:2])
+    summary_op = tf.contrib.summary.all_summary_ops()
+
+    with eval_summary_writer.as_default(), \
+         <a id="change">tf.contrib.summary.always_record_summaries()</a>:
+      for eval_metric in eval_metrics:
+        eval_metric.tf_summaries()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  ]
+
+  global_step = tf.compat.v1.train.get_or_create_global_step()
+  with <a id="change">tf.compat.v2.summary.record_if(
+      lambda: tf.math.equal(global_step % summary_interval, 0))</a>:
+    &#47&#47 Create the environment.
+    tf_env = tf_py_environment.TFPyEnvironment(suite_mujoco.load(env_name))
+    eval_py_env = suite_mujoco.load(env_name)
+
+    &#47&#47 Get the data specs from the environment
+    time_step_spec = tf_env.time_step_spec()
+    observation_spec = time_step_spec.observation
+    action_spec = tf_env.action_spec()
+
+    actor_net = actor_distribution_network.ActorDistributionNetwork(
+        observation_spec,
+        action_spec,
+        fc_layer_params=actor_fc_layers,
+        continuous_projection_net=normal_projection_net)
+    critic_net = critic_network.CriticNetwork(
+        (observation_spec, action_spec),
+        observation_fc_layer_params=critic_obs_fc_layers,
+        action_fc_layer_params=critic_action_fc_layers,
+        joint_fc_layer_params=critic_joint_fc_layers)
+
+    tf_agent = sac_agent.SacAgent(
+        time_step_spec,
+        action_spec,
+        actor_network=actor_net,
+        critic_network=critic_net,
+        actor_optimizer=tf.compat.v1.train.AdamOptimizer(
+            learning_rate=actor_learning_rate),
+        critic_optimizer=tf.compat.v1.train.AdamOptimizer(
+            learning_rate=critic_learning_rate),
+        alpha_optimizer=tf.compat.v1.train.AdamOptimizer(
+            learning_rate=alpha_learning_rate),
+        target_update_tau=target_update_tau,
+        target_update_period=target_update_period,
+        td_errors_loss_fn=td_errors_loss_fn,
+        gamma=gamma,
+        reward_scale_factor=reward_scale_factor,
+        gradient_clipping=gradient_clipping,
+        debug_summaries=debug_summaries,
+        summarize_grads_and_vars=summarize_grads_and_vars,
+        train_step_counter=global_step)
+
+    &#47&#47 Make the replay buffer.
+    replay_buffer = tf_uniform_replay_buffer.TFUniformReplayBuffer(
+        data_spec=tf_agent.collect_data_spec,
+        batch_size=1,
+        max_length=replay_buffer_capacity)
+    replay_observer = [replay_buffer.add_batch]
+
+    eval_py_policy = py_tf_policy.PyTFPolicy(tf_agent.policy)
+
+    train_metrics = [
+        tf_metrics.NumberOfEpisodes(),
+        tf_metrics.EnvironmentSteps(),
+        tf_py_metric.TFPyMetric(py_metrics.AverageReturnMetric()),
+        tf_py_metric.TFPyMetric(py_metrics.AverageEpisodeLengthMetric()),
+    ]
+
+    collect_policy = tf_agent.collect_policy
+
+    initial_collect_op = dynamic_step_driver.DynamicStepDriver(
+        tf_env,
+        collect_policy,
+        observers=replay_observer + train_metrics,
+        num_steps=initial_collect_steps).run()
+
+    collect_op = dynamic_step_driver.DynamicStepDriver(
+        tf_env,
+        collect_policy,
+        observers=replay_observer + train_metrics,
+        num_steps=collect_steps_per_iteration).run()
+
+    &#47&#47 Prepare replay buffer as dataset with invalid transitions filtered.
+    def _filter_invalid_transition(trajectories, unused_arg1):
+      return ~trajectories.is_boundary()[0]
+    dataset = replay_buffer.as_dataset(
+        sample_batch_size=5 * batch_size,
+        num_steps=2).apply(tf.data.experimental.unbatch()).filter(
+            _filter_invalid_transition).batch(batch_size).prefetch(
+                batch_size * 5)
+    dataset_iterator = tf.compat.v1.data.make_initializable_iterator(dataset)
+    trajectories, unused_info = dataset_iterator.get_next()
+    train_op = tf_agent.train(trajectories)
+
+    for train_metric in train_metrics:
+      train_metric.tf_summaries(step_metrics=train_metrics[:2])
+    summary_op = tf.contrib.summary.all_summary_ops()
+
+    with eval_summary_writer.as_default(), \
+         <a id="change">tf.compat.v2.summary.record_if(True)</a>:
+      for eval_metric in eval_metrics:
+        eval_metric.tf_summaries()
+</code></pre>

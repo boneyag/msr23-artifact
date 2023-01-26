@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        cam = weight_softmax[class_idx].dot(feature_conv.reshape((nc, h*w)))
+        cam = cam.reshape(h, w)
+        cam = cam - np.min(cam)
+        cam_img = cam / <a id="change">np.max(cam)</a>
+        <a id="change">cam_img = np.uint8(255 * cam_img)</a>
+        output_cam.append(imresize(cam_img, size_upsample))
+    return output_cam
+
+def returnTF():</code></pre><h3>After Change</h3><pre><code class='java'>
+    for idx in class_idx:
+        cam = (weight_softmax[class_idx]@feature_conv.view(nc, h*w))
+        cam.add_(-cam.min()).div_(cam.max()).mul_(255)
+        <a id="change">cam = F.interpolate(cam.view(1,1,h,w), size=size_upsample, mode=&quotbilinear&quot,
+                            align_corners=False).squeeze()</a>
+        cam = np.uint8(cam.numpy())
+        output_cam.append(cam)
+    return output_cam
+</code></pre>

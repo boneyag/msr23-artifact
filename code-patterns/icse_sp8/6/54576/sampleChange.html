@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        w_b = tf.transpose(tf.concat([w_b_i, w_b_c, w_b_f, w_b_o], 0))
+        r_b = tf.transpose(tf.concat([r_b_i, r_b_c, r_b_f, r_b_o], 0))
+        return tf.Variable(tf.add(w_b, r_b))
+      <a id="change">return getter(name, *args, **kwargs)</a>
+    &#47&#47 Only use_peepholes is True,
+    &#47&#47 will try to get w_f_diag, w_i_diag, w_o_diag
+    &#47&#47 onnx P[iof]
+    if names[-1] in ["w_f_diag", "w_i_diag", "w_o_diag"]:</code></pre><h3>After Change</h3><pre><code class='java'>
+      return weight_variable
+
+    if names[-1] == "bias":
+      <a id="change">bias_variable = tensor_dict[get_variable_name(node, cls.bias_var_name)]</a>
+      if len(node.inputs) &gt;= 4:
+        &#47&#47 onnx Wb[iofc], Rb[iofc]
+        if is_bidirectional:
+          b = tf.split(tensor_dict[node.inputs[3]], 2)[index]
+        else:
+          b = tensor_dict[node.inputs[3]]
+        w_b, r_b = tf.split(tf.squeeze(b), 2)
+        w_b_i, w_b_o, w_b_f, w_b_c = tf.split(w_b, 4)
+        r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
+        w_b = tf.transpose(tf.concat([w_b_i, w_b_c, w_b_f, w_b_o], 0))
+        r_b = tf.transpose(tf.concat([r_b_i, r_b_c, r_b_f, r_b_o], 0))
+        bias_variable.assign(tf.add(w_b, r_b))
+
+      return bias_variable
+
+    &#47&#47 Only use_peepholes is True,
+    &#47&#47 will try to get w_f_diag, w_i_diag, w_o_diag
+    &#47&#47 onnx P[iof]
+    if names[-1] in ["w_f_diag", "w_i_diag", "w_o_diag"]:
+      if is_bidirectional:
+        p = tf.split(tensor_dict[node.inputs[7]], 2)[index]
+      else:
+        p = tensor_dict[node.inputs[7]]
+      if names[-1] == "w_f_diag":
+        w_f_variable = tensor_dict[get_variable_name(
+            node, cls.peephole_weight_forget_var_name)]
+        w_f_variable.assign(tf.split(p, 3, axis=1)[2])
+        <a id="change">return w_f_variable</a>
+      if names[-1] == "w_i_diag":
+        w_i_variable = tensor_dict[get_variable_name(
+            node, cls.peephole_weight_input_var_name)]
+        w_i_variable.assign(tf.split(p, 3, axis=1)[0])</code></pre>

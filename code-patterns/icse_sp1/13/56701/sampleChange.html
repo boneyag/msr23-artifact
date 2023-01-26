@@ -1,0 +1,67 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        body=&quot&quot)
+
+    httpretty.enable()
+    <a id="change">loop.run_until_complete(endpoint.request("post", subpath="test",
+                                             content_type="application/text",
+                                             json={"c": "d"},
+                                             params={"P": "1"}))</a>
+    httpretty.disable()
+
+    r = httpretty.latest_requests[-1]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_endpoint_config(loop):
+    <a id="change">with aioresponses() as mocked:
+        endpoint = EndpointConfig(
+            "https://example.com/",
+            params={"A": "B"},
+            headers={"X-Powered-By": "Rasa"},
+            basic_auth={"username": "user",
+                        "password": "pass"},
+            token="mytoken",
+            token_name="letoken",
+            store_type="redis",
+            port=6379,
+            db=0,
+            password="password",
+            timeout=30000
+        )
+
+        mocked.post(&quothttps://example.com/test?A=B&P=1&letoken=mytoken&quot,
+                    payload={"ok": True},
+                    repeat=True,
+                    status=200)
+
+        loop.run_until_complete(
+            endpoint.request("post", subpath="test",
+                             content_type="application/text",
+                             json={"c": "d"},
+                             params={"P": "1"}))
+
+        r = latest_request(mocked, &quotpost&quot,
+                           "https://example.com/test?A=B&P=1&letoken=mytoken")
+
+        assert r
+
+        assert json_of_latest_request(r) == {"c": "d"}
+        assert r[-1].kwargs.get("params", {}).get("A") == "B"
+        assert r[-1].kwargs.get("params", {}).get("P") == "1"
+        assert r[-1].kwargs.get("params", {}).get("letoken") == "mytoken"
+
+        &#47&#47 unfortunately, the mock library won&quott report any headers stored on
+        &#47&#47 the session object, so we need to verify them separately
+        s = loop.run_until_complete(endpoint.session())
+        assert s._default_headers.get("X-Powered-By") == "Rasa"
+        assert s._default_auth.login == "user"
+        assert s._default_auth.password == "pass"
+
+
+</a>os.environ[&quotUSER_NAME&quot] = &quotuser&quot
+os.environ[&quotPASS&quot] = &quotpass&quot
+
+</code></pre>

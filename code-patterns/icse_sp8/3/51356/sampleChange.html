@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if FLAGS.openstack_scheduler_policy != NONE:
+      group_name = &quotperfkit_%s&quot % FLAGS.run_uri
+      try:
+        <a id="change">group = self.client.server_groups.findall(name=group_name)[0]</a>
+      except IndexError:
+        group = self.client.server_groups.create(
+            policies=[FLAGS.openstack_scheduler_policy],
+            name=group_name)</code></pre><h3>After Change</h3><pre><code class='java'>
+    if FLAGS.openstack_scheduler_policy == NONE:
+      return None
+
+    <a id="change">with self._lock:
+      group_name = &quotperfkit_server_group_%s&quot % FLAGS.run_uri
+      hint_temp = &quotgroup=%s&quot
+      if self.zone in self.created_server_group_dict:
+        hint = hint_temp % self.created_server_group_dict[self.zone][&quotid&quot]
+        return hint
+      server_group = self._CreateServerGroup(group_name)
+      self.server_group_id = server_group[&quotid&quot]
+      self.created_server_group_dict[self.zone] = server_group
+      if self.zone in self.deleted_server_group_set:
+        self.deleted_server_group_set.remove(self.zone)
+
+      return hint_temp % server_group[&quotid&quot]
+
+ </a> def _CreateServerGroup(self, group_name):
+    nova_cmd = [FLAGS.openstack_nova_path, &quotserver-group-create&quot,
+                group_name, FLAGS.openstack_scheduler_policy]
+    stdout, _, _ = vm_util.IssueCommand(nova_cmd, suppress_warning=True)</code></pre>

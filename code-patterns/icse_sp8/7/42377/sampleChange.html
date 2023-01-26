@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                        estimated_labels, 
+                                        sample_size=frame_size)[-1]
+
+    <a id="change">y_est</a>, est_id_to_label = <a id="change">util.index_labels(y_est)</a>
+
+    &#47&#47 Make the contingency table: shape = (n_ref, n_est)
+    contingency = metrics.contingency_matrix(y_ref, y_est).astype(float)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                                        estimated_labels, 
+                                        sample_size=frame_size)[-1]
+
+    y_est = <a id="change">util</a>.index_labels(y_est)[0]
+
+    &#47&#47 Make the contingency table: shape = (n_ref, n_est)
+    contingency = metrics.contingency_matrix(y_ref, y_est).astype(float)
+
+    &#47&#47 Normalize by the number of frames
+    contingency = contingency / len(y_ref)
+
+    &#47&#47 Compute the marginals
+    p_est = contingency.sum(axis=0)
+    p_ref = contingency.sum(axis=1)
+
+    &#47&#47 H(true | prediction) = sum_j P[estimated = j] * sum_i P[true = i | estimated = j] log P[true = i | estimated = j]
+    &#47&#47 entropy sums over axis=0, which is true labels
+    true_given_est = p_est.dot(scipy.stats.entropy(contingency,   base=2))
+    pred_given_ref = p_ref.dot(scipy.stats.entropy(contingency.T, base=2))
+
+    score_under = np.nan
+    if contingency.shape[0] &gt; 1:
+        score_under = 1. - true_given_est / np.log2(contingency.shape[0])
+
+    score_over = np.nan
+    if <a id="change">contingency.shape[1]</a> &gt; 1:
+        score_over  = 1. - pred_given_ref / np.log2(contingency.shape[1])
+
+    f_measure = util.f_measure(score_over, score_under, beta=beta)</code></pre>

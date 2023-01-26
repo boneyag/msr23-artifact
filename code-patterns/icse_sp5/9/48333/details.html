@@ -1,0 +1,80 @@
+<html><h3>447444fd06594e531ae1141afac78051481e4468,catalyst/rl/offpolicy/algorithms/td3.py,TD3,_categorical_loss,#TD3#Any#Any#Any#Any#Any#,143
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        policy_loss = -torch.mean(q_values_tp0_min)
+
+        &#47&#47 critic loss (kl-divergence between categorical distributions)
+        actions_tp1 = <a id="change">self.target_actor(states_tp1).detach()</a>
+        actions_tp1 = <a id="change">self._add_noise_to_actions(actions_tp1)</a>
+        logits_t = [
+            x(states_t, actions_t).squeeze_(dim=2) for x in self.critics
+        ]
+        logits_tp1 = [
+            x(states_tp1, actions_tp1).squeeze_(dim=2)
+            for x in self.target_critics
+        ]
+        probs_tp1 = [torch.softmax(x, dim=-1) for x in logits_tp1]
+        q_values_tp1 = [
+            torch.sum(x * self.z, dim=-1, keepdim=True) for x in probs_tp1
+        ]
+        probs_ids_tp1_min = torch.cat(q_values_tp1, dim=-1).argmin(dim=-1)
+        &#47&#47 B x num_heads
+
+        logits_tp1 = torch.cat([x.unsqueeze(-1) for x in logits_tp1], dim=-1)
+        &#47&#47 B x num_heads x num_atoms x num_critics
+        &#47&#47 @TODO: smarter way to do this (other than reshaping)?
+        probs_ids_tp1_min = probs_ids_tp1_min.view(-1)
+        logits_tp1 = <a id="change">logits_tp1.view(-1, self.num_atoms, self._num_critics)</a>
+
+        <a id="change">logits_tp1 = \
+            logits_tp1[range(len(logits_tp1)), :, probs_ids_tp1_min].\
+            view(-1, self._num_heads, self.num_atoms).detach()</a>
+
+        atoms_target_t = rewards_t + (1 - done_t) * gammas * self.z
+        value_loss = [
+            utils.categorical_loss(</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 critic loss (kl-divergence between categorical distributions)
+        &#47&#47 [bs; action_size]
+        actions_tp1 = <a id="change">self.target_actor(states_tp1)</a>
+        actions_tp1 = <a id="change">self._add_noise_to_actions(actions_tp1).detach()</a>
+
+        &#47&#47 {num_critics} * [bs; num_heads; num_atoms]
+        &#47&#47 -&gt; many-heads view transform
+        &#47&#47 {num_critics} * [{bs * num_heads}; num_atoms]
+        logits_t = [
+            x(states_t, actions_t).squeeze_(dim=2).view(-1, self.num_atoms)
+            for x in self.critics
+        ]
+
+        &#47&#47 {num_critics} * [bs; num_heads; num_atoms]
+        logits_tp1 = [
+            x(states_tp1, actions_tp1).squeeze_(dim=2)
+            for x in self.target_critics
+        ]
+        &#47&#47 {num_critics} * [{bs * num_heads}; num_atoms]
+        probs_tp1 = [torch.softmax(x, dim=-1) for x in logits_tp1]
+        &#47&#47 {num_critics} * [bs; num_heads; 1]
+        q_values_tp1 = [
+            torch.sum(x * self.z, dim=-1, keepdim=True) for x in probs_tp1
+        ]
+        &#47&#47  [{bs * num_heads}; num_critics] -&gt;  argmin over all critics
+        &#47&#47  [{bs * num_heads}]
+        probs_ids_tp1_min = torch.cat(q_values_tp1, dim=-1).argmin(dim=-1)
+
+        &#47&#47 [bs; num_heads; num_atoms; num_critics]
+        logits_tp1 = torch.cat([x.unsqueeze(-1) for x in logits_tp1], dim=-1)
+        &#47&#47 @TODO: smarter way to do this (other than reshaping)?
+        probs_ids_tp1_min = probs_ids_tp1_min.view(-1)
+        &#47&#47 [bs; num_heads; num_atoms; num_critics] -&gt; many-heads view transform
+        &#47&#47 [{bs * num_heads}; num_atoms; num_critics] -&gt; min over all critics
+        &#47&#47 [{bs * num_heads}; num_atoms; 1] -&gt; target view transform
+        &#47&#47 [{bs; num_heads}; num_atoms]
+        logits_tp1 = (
+            <a id="change">logits_tp1</a>
+            .view(-1, self.num_atoms, self._num_critics)[
+                range(len(probs_ids_tp1_min)), :, probs_ids_tp1_min]
+            .view(-1, self.num_atoms)
+        ).detach()</code></pre><img src="223685520.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/447444fd06594e531ae1141afac78051481e4468#diff-179e792f460d1d124f77f74e93a6957a13b47c2b9a68bdd216a3f70d65ca814dL144' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: 447444fd06594e531ae1141afac78051481e4468</div><div id='time'> Time: 2019-10-31</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/offpolicy/algorithms/td3.py</div><div id='class'> Class Name: TD3</div><div id='method'> Method Name: _categorical_loss</div><BR><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/447444fd06594e531ae1141afac78051481e4468#diff-179e792f460d1d124f77f74e93a6957a13b47c2b9a68bdd216a3f70d65ca814dL210' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: 447444fd06594e531ae1141afac78051481e4468</div><div id='time'> Time: 2019-10-31</div><div id='author'> Author: scitator@gmail.com</div><div id='file'> File Name: catalyst/rl/offpolicy/algorithms/td3.py</div><div id='class'> Class Name: TD3</div><div id='method'> Method Name: _quantile_loss</div><BR>

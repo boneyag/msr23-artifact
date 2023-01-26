@@ -1,0 +1,86 @@
+<html><h3>91f563c2a2baa5a120a81e91da19f29e9d37b42f,models.py,,create_modules,#Any#Any#,8
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 if i == 0:
+        &#47&#47     modules.add_module(&quotBatchNorm2d_0&quot, nn.BatchNorm2d(output_filters[-1], momentum=0.1))
+
+        if <a id="change">mdef[&quottype&quot]</a> == &quotconvolutional&quot:
+            bn = mdef[&quotbatch_normalize&quot]
+            filters = mdef[&quotfilters&quot]
+            size = mdef[&quotsize&quot]
+            stride = mdef[&quotstride&quot] if &quotstride&quot in mdef else (mdef[&quotstride_y&quot], mdef[&quotstride_x&quot])
+            modules.add_module(&quotConv2d&quot, nn.Conv2d(in_channels=output_filters[-1],
+                                                   out_channels=filters,
+                                                   kernel_size=size,
+                                                   stride=stride,
+                                                   padding=(size - 1) // 2 if mdef[&quotpad&quot] else 0,
+                                                   groups=mdef[&quotgroups&quot] if &quotgroups&quot in mdef else 1,
+                                                   bias=not bn))
+            if bn:
+                modules.add_module(&quotBatchNorm2d&quot, nn.BatchNorm2d(filters, momentum=0.03, eps=1E-4))
+            else:
+                routs.append(i)  &#47&#47 detection output (goes into yolo layer)
+
+            if mdef[&quotactivation&quot] == &quotleaky&quot:  &#47&#47 activation study https://github.com/ultralytics/yolov3/issues/441
+                modules.add_module(&quotactivation&quot, nn.LeakyReLU(0.1, inplace=True))
+                &#47&#47 modules.add_module(&quotactivation&quot, nn.PReLU(num_parameters=1, init=0.10))
+            elif mdef[&quotactivation&quot] == &quotswish&quot:
+                modules.add_module(&quotactivation&quot, Swish())
+
+        elif mdef[&quottype&quot] == &quotmaxpool&quot:
+            size = mdef[&quotsize&quot]
+            stride = mdef[&quotstride&quot]
+            maxpool = nn.MaxPool2d(kernel_size=size, stride=stride, padding=(size - 1) // 2)
+            if size == 2 and stride == 1:  &#47&#47 yolov3-tiny
+                modules.add_module(&quotZeroPad2d&quot, nn.ZeroPad2d((0, 1, 0, 1)))
+                modules.add_module(&quotMaxPool2d&quot, maxpool)
+            else:
+                modules = maxpool
+
+        elif mdef[&quottype&quot] == &quotupsample&quot:
+            if ONNX_EXPORT:  &#47&#47 explicitly state size, avoid scale_factor
+                g = (yolo_index + 1) * 2 / 32  &#47&#47 gain
+                modules = nn.Upsample(size=tuple(int(x * g) for x in img_size))  &#47&#47 img_size = (320, 192)
+            else:
+                modules = nn.Upsample(scale_factor=mdef[&quotstride&quot])
+
+        elif mdef[&quottype&quot] == &quotroute&quot:  &#47&#47 nn.Sequential() placeholder for &quotroute&quot layer
+            layers = mdef[&quotlayers&quot]
+            filters = sum([output_filters[l + 1 if l &gt; 0 else l] for l in layers])
+            routs.extend([i + l if l &lt; 0 else l for l in layers])
+
+        elif mdef[&quottype&quot] == &quotshortcut&quot:  &#47&#47 nn.Sequential() placeholder for &quotshortcut&quot layer
+            layers = mdef[&quotfrom&quot]
+            filters = output_filters[-1]
+            routs.extend([i + l if l &lt; 0 else l for l in layers])
+            modules = WeightedFeatureFusion(layers=layers, weight=&quotweights_type&quot in mdef)
+
+        elif mdef[&quottype&quot] == &quotreorg3d&quot:  &#47&#47 yolov3-spp-pan-scale
+            pass
+
+        elif mdef[&quottype&quot] == &quotyolo&quot:
+            yolo_index += 1
+            l = mdef[&quotfrom&quot] if &quotfrom&quot in mdef else []
+            <a id="change">modules = YOLOLayer(anchors=mdef[&quotanchors&quot][mdef[&quotmask&quot]],  &#47&#47 anchor list
+                                nc=mdef[&quotclasses&quot],  &#47&#47 number of classes
+                                img_size=img_size,  &#47&#47 (416, 416)
+                                yolo_index=yolo_index,  &#47&#47 0, 1, 2...
+                                layers=l)</a>  &#47&#47 output layers
+
+            &#47&#47 Initialize preceding Conv2d() bias (https://arxiv.org/pdf/1708.02002.pdf section 3.3)
+            try:</code></pre><h3>After Change</h3><pre><code class='java'>
+        elif mdef[&quottype&quot] == &quotyolo&quot:
+            yolo_index += 1
+            stride = [32, 16, 8, 4, 2][yolo_index]  &#47&#47 P3-P7 stride
+            modules = <a id="change">YOLOLayer(anchors=mdef[&quotanchors&quot][mdef[&quotmask&quot]],  &#47&#47 anchor list
+                                nc=mdef[&quotclasses&quot],  &#47&#47 number of classes
+                                img_size=img_size,  &#47&#47 (416, 416)
+                                yolo_index=yolo_index,  &#47&#47 0, 1, 2...
+                                layers=mdef[&quotfrom&quot] if &quotfrom&quot in mdef else [],  &#47&#47 output layers
+                                stride=stride)</a>
+
+            &#47&#47 Initialize preceding Conv2d() bias (https://arxiv.org/pdf/1708.02002.pdf section 3.3)
+            try:
+                bo = -4.5  &#47&#47  obj bias</code></pre><img src="283146384.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ultralytics/yolov3/commit/91f563c2a2baa5a120a81e91da19f29e9d37b42f#diff-dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100bL11' target='_blank'>Link</a></div><div id='project'> Project Name: ultralytics/yolov3</div><div id='commit'> Commit Name: 91f563c2a2baa5a120a81e91da19f29e9d37b42f</div><div id='time'> Time: 2020-04-02</div><div id='author'> Author: glenn.jocher@ultralytics.com</div><div id='file'> File Name: models.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: create_modules</div><BR><BR><div id='link'><a href='https://github.com/eriklindernoren/PyTorch-YOLOv3/commit/569f8c42734ceb44eedf2c9e7753cfc2d593ac81#diff-dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100bL59' target='_blank'>Link</a></div><div id='project'> Project Name: eriklindernoren/PyTorch-YOLOv3</div><div id='commit'> Commit Name: 569f8c42734ceb44eedf2c9e7753cfc2d593ac81</div><div id='time'> Time: 2018-05-27</div><div id='author'> Author: eriklindernoren@gmail.com</div><div id='file'> File Name: models.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: create_modules</div><BR><BR><div id='link'><a href='https://github.com/ultralytics/yolov3/commit/682c2b27e7018c1ff3aae4607c48a2f742a985fe#diff-dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100bL11' target='_blank'>Link</a></div><div id='project'> Project Name: ultralytics/yolov3</div><div id='commit'> Commit Name: 682c2b27e7018c1ff3aae4607c48a2f742a985fe</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: glenn.jocher@ultralytics.com</div><div id='file'> File Name: models.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: create_modules</div><BR>

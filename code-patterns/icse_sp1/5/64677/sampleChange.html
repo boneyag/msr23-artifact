@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def logdet(self):
+        noise = self._diag_tensor[0, 0]
+        sub_eigs = <a id="change">[]</a>
+        for lazy_tensor in self._lazy_tensor.lazy_tensors:
+            sub_eigs.append(lazy_tensor.evaluate().symeig(eigenvectors=True)[0][:, 0].unsqueeze(-1))
+
+        <a id="change">eigs = sub_eigs[0].matmul(sub_eigs[1].t())</a>
+        return torch.log(eigs + noise).sum()
+
+    def _kron_svd(self):
+        return [lt.evaluate().svd() for lt in self._lazy_tensor.lazy_tensors]</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def logdet(self):
+        noise = self._diag_tensor[0, 0]
+        sub_eigs = [DiagLazyTensor(svd_decomp.S) <a id="change">for</a> svd_decomp in self._kron_svd]
+        <a id="change">sub_eigs_kronecker = KroneckerProductLazyTensor(*sub_eigs).diag()</a>
+        return torch.log(sub_eigs_kronecker + noise).sum()
+
+    @property
+    def _kron_svd(self):</code></pre>

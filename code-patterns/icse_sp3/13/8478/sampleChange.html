@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 return FailedOperation(input_data=input_data.dict(), **ret_data)
+
+        if not jmol.connectivity:  &#47&#47 Check for empty list
+            <a id="change">ret_data["error"] = ComputeError(
+                error_type="input_error", error_message="run_rdkit molecule must have a connectivity graph")</a>
+            return FailedOperation(input_data=input_data.dict(), **ret_data)
+
+        &#47&#47 Build out the base molecule
+        base_mol = Chem.Mol()
+        rw_mol = Chem.RWMol(base_mol)
+        for sym in jmol.symbols:
+            rw_mol.AddAtom(Chem.Atom(sym.title()))
+
+        &#47&#47 Add in connectivity
+        bond_types = {1: Chem.BondType.SINGLE, 2: Chem.BondType.DOUBLE, 3: Chem.BondType.TRIPLE}
+        for atom1, atom2, bo in jmol.connectivity:
+            rw_mol.AddBond(atom1, atom2, bond_types[bo])
+
+        mol = rw_mol.GetMol()
+
+        &#47&#47 Write out the conformer
+        natom = len(jmol.symbols)
+        conf = Chem.Conformer(natom)
+        bohr2ang = ureg.conversion_factor("bohr", "angstrom")
+        for line in range(natom):
+            conf.SetAtomPosition(line, (bohr2ang * jmol.geometry[line, 0],
+                                        bohr2ang * jmol.geometry[line, 1],
+                                        bohr2ang * jmol.geometry[line, 2]))  &#47&#47 yapf: disable
+
+        mol.AddConformer(conf)
+        Chem.rdmolops.SanitizeMol(mol)
+
+        if input_data.model.method.lower() == "uff":
+            ff = AllChem.UFFGetMoleculeForceField(mol)
+            all_params = AllChem.UFFHasAllMoleculeParams(mol)
+        else:
+            ret_data["error"] = ComputeError(
+                error_type="input_error", error_message="run_rdkit can only accepts UFF methods")
+            <a id="change">return FailedOperation(input_data=input_data.dict(), **ret_data)</a>
+
+        if all_params is False:
+            ret_data["error"] = ComputeError(
+                error_type="input_error", error_message="run_rdkit did not match all parameters to molecule")</code></pre><h3>After Change</h3><pre><code class='java'>
+            raise InputError("RDKit only supports the UFF method currently.")
+
+        if all_params is False:
+            <a id="change">raise InputError("RDKit parameters not found for all atom types in molecule.")</a>
+
+        ff.Initialize()
+
+        ret_data["properties"] = {"return_energy": ff.CalcEnergy() * ureg.conversion_factor("kJ / mol", "hartree")}</code></pre>

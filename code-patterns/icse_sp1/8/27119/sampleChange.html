@@ -1,0 +1,93 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    elements = []
+    for response_json in response_jsons:
+        elements.extend(response_json["elements"])
+    <a id="change">if len(elements) &lt; 1:
+        raise EmptyOverpassResponse("There are no data elements in the response JSON")
+
+    &#47&#47 Dictionaries to hold nodes and complete geometries
+   </a> coords = {}
+    geometries = {}
+
+    &#47&#47 Set to hold the unique IDs of elements that do not have tags
+    untagged_element_ids = set()
+
+    &#47&#47 extract geometries from the downloaded osm data
+    for response_json in response_jsons:
+        &#47&#47 Parses the JSON of OSM nodes, ways and (multipolygon) relations to dictionaries of
+        &#47&#47 coordinates, Shapely Points, LineStrings, Polygons and MultiPolygons
+        for element in response_json["elements"]:
+
+            &#47&#47 id numbers are only unique within element types
+            &#47&#47 create unique id from combination of type and id
+            unique_id = f"{element[&quottype&quot]}/{element[&quotid&quot]}"
+
+            &#47&#47 add elements that are not nodes and that are without tags or with empty tags
+            &#47&#47 to the untagged_element_ids set (untagged nodes are not added to the geometries
+            &#47&#47 dictionary at all)
+            if (element["type"] != "node") & (("tags" not in element) or (not element["tags"])):
+                untagged_element_ids.add(unique_id)
+
+            if element["type"] == "node":
+                &#47&#47 Parse all nodes to coords
+                coord = _parse_node_to_coord(element=element)
+                coords[element["id"]] = coord
+                &#47&#47 If the node has tags and the tags are not empty parse it to a Point
+                &#47&#47 Empty check is necessary for JSONs created from XML where nodes without tags
+                &#47&#47 are assigned tags = {}
+                if "tags" in element and element["tags"]:
+                    point = _parse_node_to_point(element=element)
+                    geometries[unique_id] = point
+
+            elif element["type"] == "way":
+                &#47&#47 Parse all ways to linestrings or polygons
+                linestring_or_polygon = _parse_way_to_linestring_or_polygon(
+                    element=element, coords=coords, polygon_features=polygon_features,
+                )
+                if linestring_or_polygon:
+                    geometries[unique_id] = linestring_or_polygon
+
+            elif (
+                element["type"] == "relation" and element.get("tags").get("type") == "multipolygon"
+            ):
+                &#47&#47 Parse all multipolygon relations to multipolygons
+                multipolygon = _parse_relation_to_multipolygon(
+                    element=element, geometries=geometries
+                )
+                if multipolygon:
+                    geometries[unique_id] = multipolygon
+
+    utils.log(f"{len(geometries)} geometries in the dictionary")
+    utils.log(f"{len(untagged_element_ids)} untagged geometries will be removed")
+
+    &#47&#47 remove untagged elements from the final dictionary of geometries
+    <a id="change">for untagged_element_id in untagged_element_ids:
+        geometries.pop(untagged_element_id, None)
+
+    &#47&#47 Create GeoDataFrame
+   </a> gdf = gpd.GeoDataFrame.from_dict(geometries, orient="index")
+
+    &#47&#47 ensure gdf has a geometry col before assigning crs
+    if "geometry" not in gdf.columns:</code></pre><h3>After Change</h3><pre><code class='java'>
+    if number_of_elements &lt; 1:
+
+        &#47&#47 create an empty GeoDataFrame
+        <a id="change">gdf = gpd.GeoDataFrame()</a>
+        gdf["geometry"] = np.nan
+        gdf.set_geometry("geometry")
+        <a id="change">gdf.crs = settings.default_crs</a>
+
+        &#47&#47 log a warning
+        utils.log(
+            "Empty GeoDataFrame returned. Check query tags and location.",
+            level=lg.WARNING,
+        )
+
+        <a id="change">return gdf</a>
+
+    &#47&#47 else if there were elements in the response
+    else:
+        &#47&#47 log creation</code></pre>

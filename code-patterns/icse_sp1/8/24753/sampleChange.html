@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  if mode == tf.estimator.ModeKeys.TRAIN:
+    if &quotfeatures&quot not in features:
+      raise ValueError(&quot"features" is missing in TRAIN input.&quot)
+    <a id="change">if &quotlabels&quot not in features:
+      raise ValueError(&quot"labels" is missing in TRAIN input.&quot)
+   </a> labels = features[&quotlabels&quot]
+    <a id="change">features = features[&quotfeatures&quot]</a>
+  else:
+    if params[&quotinclude_groundtruth_in_features&quot] and (&quotlabels&quot in features):
+      &#47&#47 In include groundtruth for eval.
+      labels = features[&quotlabels&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+    with tf.contrib.tpu.bfloat16_scope():
+      model_outputs = build_model_graph(
+          features, labels, mode == tf.estimator.ModeKeys.TRAIN, params)
+      <a id="change">model_outputs.update({
+          &quotsource_id&quot: features[&quotsource_ids&quot],
+          &quotimage_info&quot: features[&quotimage_info&quot],
+      })</a>
+      def cast_outputs_to_float(d):
+        for k, v in sorted(six.iteritems(d)):
+          if isinstance(v, dict):
+            cast_outputs_to_float(v)</code></pre>

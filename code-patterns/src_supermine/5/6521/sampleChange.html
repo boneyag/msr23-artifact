@@ -1,0 +1,78 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    z = memory[layer.name]
+                else:
+                    &#47&#47 FIXME: not sure if there is a better way
+                    <a id="change">if is_train is not None:
+                        layer.is_train = is_train
+                    else:
+                        layer.is_train = self.is_train
+                    &#47&#47 FIXME: assume each layer has only one prev layer
+                    &#47&#47 z = layer.forward(z)
+                   </a> z = layer(z)
+                    memory[layer.name] = z
+            results.append(z.outputs)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            inputs = tf.convert_to_tensor(inputs)
+
+        &#47&#47 FIXME: currently using self._outputs to judge static network or dynamic network
+        <a id="change">if self._outputs is not None:
+            &#47&#47 self._inputs and self._outputs are defined when the model is created
+
+            &#47&#47 convert inputs to list for convenience
+            &#47&#47 inputs_list = inputs if isinstance(inputs, list) else [inputs]
+            outputs_list = self._outputs if isinstance(self._outputs, list) else [self._outputs]
+            results = list()
+            memory = dict()
+
+            for out in outputs_list:
+                stacked_layers = list()
+                current = out
+                while current is not None:
+                    stacked_layers.append(current)
+                    &#47&#47 FIXME: assume each layer has only one prev layer
+                    current = current._input_layer
+
+                if isinstance(self.inputs, list):
+                    idx_of_input = self._find_idx_of_inputs(stacked_layers[-1])
+                    z = inputs[idx_of_input]
+                else:
+                    z = inputs
+
+                for layer in stacked_layers[::-1]:
+                    if layer.name in memory:
+                        z = memory[layer.name]
+                    else:
+                        &#47&#47 FIXME: not sure if there is a better way
+                        layer.is_train = is_train if is_train is not None else self.is_train
+                        &#47&#47 FIXME: assume each layer has only one prev layer
+                        &#47&#47 z = layer.forward(z)
+                        z = layer(z)
+                        memory[layer.name] = z
+                results.append(z)
+
+            if not isinstance(self._outputs, list):
+                return results[0]
+            else:
+                return results
+        else:
+            &#47&#47 self._inputs and self._outputs are NOT defined when self is created (eager mode)
+
+            attr_list = [attr for attr in dir(self) if attr[:2] != "__"]
+            attr_list.remove("weights")
+            for idx, attr in enumerate(attr_list):
+                try:
+                    if isinstance(getattr(self, attr), Layer):
+                        getattr(self, attr).is_train = is_train if is_train is not None else self.is_train
+                except Exception:
+                    pass
+
+            return self.forward(inputs, **kwargs)
+
+
+   </a> @property
+    def weights(self):
+        if self._weights is not None and len(self._weights) &gt; 0:
+            &#47&#47 self._weights already extracted, so do nothing</code></pre>

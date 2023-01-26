@@ -1,0 +1,84 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    per_file_caching: bool,
+    include_sources: bool = True,
+) -&gt; Tuple[int, str]:
+    <a id="change">console = MockConsole(use_colors=False)</a>
+    workspace = Workspace(rule_runner.scheduler)
+    union_membership = UnionMembership({LintRequest: lint_request_types})
+    result: <a id="change">Lint = run_rule_with_mocks(
+        lint,
+        rule_args=[
+            console,
+            workspace,
+            Targets(targets),
+            create_goal_subsystem(
+                LintSubsystem, per_file_caching=per_file_caching, per_target_caching=False
+            ),
+            union_membership,
+        ],
+        mock_gets=[
+            MockGet(
+                output_type=EnrichedLintResults,
+                input_type=LintRequest,
+                mock=lambda field_set_collection: field_set_collection.lint_results,
+            ),
+            MockGet(
+                output_type=FieldSetsWithSources,
+                input_type=FieldSetsWithSourcesRequest,
+                mock=lambda field_sets: FieldSetsWithSources(field_sets if include_sources else ()),
+            ),
+            MockGet(output_type=Digest, input_type=MergeDigests, mock=lambda _: EMPTY_DIGEST),
+        ],
+        union_membership=union_membership,
+    )</a>
+    assert not console.stdout.getvalue()
+    <a id="change">return result.exit_code, console.stderr.getvalue()</a>
+
+
+def test_empty_target_noops(rule_runner: RuleRunner) -&gt; None:
+    def assert_noops(per_file_caching: bool) -&gt; None:</code></pre><h3>After Change</h3><pre><code class='java'>
+    per_file_caching: bool,
+    include_sources: bool = True,
+) -&gt; Tuple[int, str]:
+    <a id="change">with mock_console(rule_runner.options_bootstrapper) as (console, stdio_reader):
+        workspace = Workspace(rule_runner.scheduler)
+        union_membership = UnionMembership({LintRequest: lint_request_types})
+        result: Lint = run_rule_with_mocks(
+            lint,
+            rule_args=[
+                console,
+                workspace,
+                Targets(targets),
+                create_goal_subsystem(
+                    LintSubsystem, per_file_caching=per_file_caching, per_target_caching=False
+                ),
+                union_membership,
+            ],
+            mock_gets=[
+                MockGet(
+                    output_type=EnrichedLintResults,
+                    input_type=LintRequest,
+                    mock=lambda field_set_collection: field_set_collection.lint_results,
+                ),
+                MockGet(
+                    output_type=FieldSetsWithSources,
+                    input_type=FieldSetsWithSourcesRequest,
+                    mock=lambda field_sets: FieldSetsWithSources(
+                        field_sets if include_sources else ()
+                    ),
+                ),
+                MockGet(output_type=Digest, input_type=MergeDigests, mock=lambda _: EMPTY_DIGEST),
+            ],
+            union_membership=union_membership,
+        )
+        assert not stdio_reader.get_stdout()
+        return result.exit_code, stdio_reader.get_stderr()
+
+
+</a>def test_empty_target_noops(rule_runner: RuleRunner) -&gt; None:
+    def assert_noops(per_file_caching: bool) -&gt; None:
+        exit_code, stderr = run_lint_rule(
+            rule_runner,</code></pre>

@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    async def invoke_single(self, request_item):
+        args, kwargs, is_web_context = parse_request_item(request_item)
+        serve_context.web = is_web_context
+        start_timestamp = <a id="change">time.time()</a>
+
+        method_to_call = self.get_runner_method(request_item)
+        args = args if self.has_positional_args(method_to_call) else []
+        method_to_call = ensure_async(method_to_call)
+        try:
+            result = await method_to_call(*args, **kwargs)
+        except Exception as e:
+            result = wrap_to_ray_error(e)
+            self.error_counter += 1
+
+        self.latency_list.append(<a id="change">time.time() - start_timestamp</a>)
+        return result
+
+    async def invoke_batch(self, request_item_list):</code></pre><h3>After Change</h3><pre><code class='java'>
+        method_to_call = ensure_async(method_to_call)
+        try:
+            result = await method_to_call(*args, **kwargs)
+            <a id="change">self.request_counter.add()</a>
+        except Exception as e:
+            result = wrap_to_ray_error(e)
+            self.error_counter.add()
+</code></pre>

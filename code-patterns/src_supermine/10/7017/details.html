@@ -1,0 +1,52 @@
+<html><h3>cb556a585da0b65d28d2fc7d52c3851ac1a7d369,open_seq2seq/utils/utils.py,,get_results_for_epoch,#Any#Any#Any#Any#Any#,202
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    if compute_loss:
+      total_samples_all = MPI.COMM_WORLD.gather(total_samples)
+      <a id="change">total_loss_all = MPI.COMM_WORLD.gather(total_loss)</a>
+    results_per_batch_all = MPI.COMM_WORLD.gather(results_per_batch)
+
+    MPI.COMM_WORLD.Barrier()
+    if MPI.COMM_WORLD.Get_rank() != 0:
+      &#47&#47 returning dummy tuple of correct shape
+      if compute_loss:
+        return None, None
+      else:
+        return None
+
+    if compute_loss:
+      total_loss = np.sum(total_loss_all)
+      total_samples = np.sum(total_samples_all)
+    &#47&#47 moving GPU dimension into the batch dimension
+    <a id="change">results_per_batch = [item for sl in results_per_batch_all for item in sl]</a>
+
+  if compute_loss:
+    <a id="change">total_loss /= total_samples</a>
+    <a id="change">return results_per_batch, total_loss</a>
+
+  return results_per_batch
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    )
+
+  if compute_loss:
+    <a id="change">total_samples = collect_if_horovod(total_samples, model.hvd, &quotsum&quot)</a>
+    <a id="change">total_loss = collect_if_horovod(total_loss, model.hvd, &quotsum&quot)</a>
+  results_per_batch = collect_if_horovod(results_per_batch, model.hvd, &quotgather&quot)
+
+  if results_per_batch is None:
+    &#47&#47 returning dummy tuple of correct shape if not in master worker
+    if compute_loss:
+      return None, None
+    else:
+      return None
+
+  if compute_loss:
+    <a id="change">return results_per_batch, total_loss / total_samples</a>
+  else:
+    return results_per_batch
+
+</code></pre><img src="28876216.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NVIDIA/OpenSeq2Seq/commit/cb556a585da0b65d28d2fc7d52c3851ac1a7d369#diff-ba487d493f314cbf59f2b42358ce36518ba42fb36ec0d3531eec95addfbbb63cL208' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/OpenSeq2Seq</div><div id='commit'> Commit Name: cb556a585da0b65d28d2fc7d52c3851ac1a7d369</div><div id='time'> Time: 2018-05-30</div><div id='author'> Author: igor.a.gitman@gmail.com</div><div id='file'> File Name: open_seq2seq/utils/utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_results_for_epoch</div><BR><BR><div id='link'><a href='https://github.com/shenweichen/DeepCTR/commit/8182ea386e6529a1a2294d8e2d33fc040d0cbfb2#diff-d1d4cce994b0eb5d0c37a7602b14d2590fcfa3a4d2de7376dd541557ad5d3a34L155' target='_blank'>Link</a></div><div id='project'> Project Name: shenweichen/DeepCTR</div><div id='commit'> Commit Name: 8182ea386e6529a1a2294d8e2d33fc040d0cbfb2</div><div id='time'> Time: 2019-07-21</div><div id='author'> Author: wcshen1994@163.com</div><div id='file'> File Name: deepctr/inputs.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_linear_logit</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/685126644ae540be72eb662527269a0395e2c9eb#diff-66250920430e997129bc22675aac60b21312f9d938458356b32f18af3a3e54d8L61' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: 685126644ae540be72eb662527269a0395e2c9eb</div><div id='time'> Time: 2017-09-05</div><div id='author'> Author: bpeters@coli.uni-saarland.de</div><div id='file'> File Name: onmt/IO.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: make_features</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/135a56e0935fbb04811f8ce7b9f514f498212f71#diff-a8b1842a605e08d9388a75cb12761ae3ba9f87e3cd4ce9816200df088f6ce8fcL163' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 135a56e0935fbb04811f8ce7b9f514f498212f71</div><div id='time'> Time: 2018-07-25</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/crf.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: ftheta</div><BR>

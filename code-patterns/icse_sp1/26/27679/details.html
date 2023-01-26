@@ -1,0 +1,43 @@
+<html><h3>0cfdecdae99582998dae5c2c3fdfd7a2700f10c0,topi/python/topi/x86/conv2d_avx_1x1.py,,_schedule_conv_NCHWc,#Any#Any#Any#Any#Any#Any#,63
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        s[data_vec].parallel(parallel_axis)
+        data_vec = data_vec.op.input_tensors[0]
+
+    <a id="change">if autotvm.GLOBAL_SCOPE.in_tuning:
+        &#47&#47 only in autotuning, input data of conv2d_NCHWc will be 4-D.
+        &#47&#47 skip this part during tuning to make records accurate.
+        &#47&#47 this part will be folded during Relay fold_constant pass.
+        s[data_vec].pragma(s[data_vec].op.axis[0], "debug_skip_region")
+        s[kernel_vec].pragma(s[kernel_vec].op.axis[0], "debug_skip_region")
+    elif isinstance(kernel_vec.op, tvm.te.ComputeOp) and \
+            kernel_vec.name == &quotkernel_vec&quot:
+        &#47&#47 data and kernel are not pre-computed, schedule layout transform here.
+        &#47&#47 this should only be used by x86 conv2d_nchw, which is for
+        &#47&#47 testing purpose.
+        batch, ic_chunk, ih, ic_block, iw = s[data_vec].op.axis
+        parallel_axis = s[data_vec].fuse(batch, ic_chunk, ih)
+        s[data_vec].parallel(parallel_axis)
+
+        oc_chunk, ic_chunk, oh, ow, ic_block, oc_block = s[kernel_vec].op.axis
+        s[kernel_vec].reorder(oc_chunk, oh, ic_chunk, ow, ic_block, oc_block)
+        oc_bn = cfg["tile_oc"].size[-1]
+        if oc_bn &gt; 1:
+            s[kernel_vec].vectorize(oc_block)
+        parallel_axis = s[kernel_vec].fuse(oc_chunk, oh)
+        s[kernel_vec].parallel(parallel_axis)
+
+   </a> C, O = conv_out, last
+    CC = s.cache_write(C, &quotglobal&quot)
+
+    batch, oc_chunk, oh, ow, oc_block = s[C].op.axis</code></pre><h3>After Change</h3><pre><code class='java'>
+    if isinstance(s[data_vec].op, tvm.te.ComputeOp) \
+            and "pad" in data_vec.op.tag:
+        batch, ic_chunk, ih, iw, ic_block = s[data_vec].op.axis
+        <a id="change">s[data_vec].vectorize(ic_block)</a>
+        parallel_axis = s[data_vec].fuse(batch, ic_chunk, ih)
+        s[data_vec].parallel(parallel_axis)
+        data_vec = data_vec.op.input_tensors[0]
+</code></pre><img src="141554859.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 18</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/apache/incubator-tvm/commit/0cfdecdae99582998dae5c2c3fdfd7a2700f10c0#diff-19ebeb258316ed47ac448da7a81335858c6ec696f81175a5e4d8df6993ef3757L71' target='_blank'>Link</a></div><div id='project'> Project Name: apache/incubator-tvm</div><div id='commit'> Commit Name: 0cfdecdae99582998dae5c2c3fdfd7a2700f10c0</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: kevinthesunwy@gmail.com</div><div id='file'> File Name: topi/python/topi/x86/conv2d_avx_1x1.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _schedule_conv_NCHWc</div><BR><BR><div id='link'><a href='https://github.com/apache/incubator-tvm/commit/0cfdecdae99582998dae5c2c3fdfd7a2700f10c0#diff-19ebeb258316ed47ac448da7a81335858c6ec696f81175a5e4d8df6993ef3757L71' target='_blank'>Link</a></div><div id='project'> Project Name: apache/incubator-tvm</div><div id='commit'> Commit Name: 0cfdecdae99582998dae5c2c3fdfd7a2700f10c0</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: kevinthesunwy@gmail.com</div><div id='file'> File Name: topi/python/topi/x86/conv2d_avx_1x1.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _schedule_conv_NCHWc</div><BR><BR><div id='link'><a href='https://github.com/apache/incubator-tvm/commit/0cfdecdae99582998dae5c2c3fdfd7a2700f10c0#diff-f416b3bbd2dc577cb963842ddb426efa51055d87cd1d37a6bd4a9a13389cbb7bL93' target='_blank'>Link</a></div><div id='project'> Project Name: apache/incubator-tvm</div><div id='commit'> Commit Name: 0cfdecdae99582998dae5c2c3fdfd7a2700f10c0</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: kevinthesunwy@gmail.com</div><div id='file'> File Name: topi/python/topi/x86/conv2d_avx_common.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _schedule_conv_NCHWc</div><BR><BR><div id='link'><a href='https://github.com/apache/incubator-tvm/commit/0cfdecdae99582998dae5c2c3fdfd7a2700f10c0#diff-b9277a6dfca9a03bca03b84234968bcf1a1c9f8f510120bb5b0c4478dc9154c7L212' target='_blank'>Link</a></div><div id='project'> Project Name: apache/incubator-tvm</div><div id='commit'> Commit Name: 0cfdecdae99582998dae5c2c3fdfd7a2700f10c0</div><div id='time'> Time: 2020-04-03</div><div id='author'> Author: kevinthesunwy@gmail.com</div><div id='file'> File Name: topi/python/topi/x86/depthwise_conv2d.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _schedule_depthwise_conv2d_NCHWc_impl</div><BR>

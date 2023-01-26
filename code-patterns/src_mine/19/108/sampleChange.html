@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        "num_workers": num_workers,
+        "initialization_hook": initialization_hook,
+        "use_gpu": use_gpu,
+        "config": <a id="change">{
+            "lr": tune.choice([1e-4, 1e-3]),
+            BATCH_SIZE: 128,
+            "test_mode": test_mode
+        }</a>,
+        "backend": "nccl" if use_gpu else "gloo"
+    }
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        scheduler_creator=scheduler_creator,
+        initialization_hook=initialization_hook,
+        num_workers=num_workers,
+        config=<a id="change">{
+            "test_mode": test_mode,  &#47&#47 user-defined param to subset the data
+            BATCH_SIZE: 128 * num_workers,
+        }</a>,
+        use_gpu=use_gpu,
+        scheduler_step_freq="epoch",
+        use_fp16=use_fp16)
+
+    pbt_scheduler = PopulationBasedTraining(
+        time_attr="training_iteration",
+        metric="val_loss",
+        mode="min",
+        perturbation_interval=1,
+        hyperparam_mutations=<a id="change">{
+            &#47&#47 distribution for resampling
+            "lr": lambda: np.random.uniform(0.001, 1),
+            &#47&#47 allow perturbations within this set of categorical values
+            "momentum": [0.8, 0.9, 0.99],
+        }</a>)
+
+    reporter = CLIReporter()
+    reporter.add_metric_column("val_loss", "loss")
+    reporter.add_metric_column("val_accuracy", "acc")
+
+    analysis = tune.run(
+        TorchTrainable,
+        num_samples=4,
+        config=<a id="change">{
+            "lr": tune.choice([0.001, 0.01, 0.1]),
+            "momentum": 0.8
+        }</a>,
+        stop={"training_iteration": 2 if test_mode else 100},
+        max_failures=3,  &#47&#47 used for fault tolerance
+        checkpoint_freq=3,  &#47&#47 used for fault tolerance</code></pre>

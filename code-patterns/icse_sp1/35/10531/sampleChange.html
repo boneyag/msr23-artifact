@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        super(Cropping3D, self).__init__(**kwargs)
+        if data_format == &quotdefault&quot:
+            data_format = K.image_data_format()
+        <a id="change">self.cropping = tuple(cropping)</a>
+        if len(self.cropping) != 3:
+            raise ValueError(&quot`cropping` must be a tuple length of 3.&quot)
+        if len(self.cropping[0]) != 2:
+            raise ValueError(&quot`cropping[0]` must be a tuple length of 2.&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def __init__(self, cropping=((1, 1), (1, 1), (1, 1)),
+                 data_format=None, **kwargs):
+        super(Cropping3D, self).__init__(**kwargs)
+        self.data_format = <a id="change">conv_utils.normalize_data_format(data_format)</a>
+        <a id="change">if isinstance(cropping, int):
+            self.cropping = ((cropping, cropping),
+                             (cropping, cropping),
+                             (cropping, cropping))
+       </a> <a id="change">if hasattr(cropping, &quot__len__&quot):
+            if len(cropping) != 3:
+                raise ValueError(&quotTODO&quot)
+            dim1_cropping = conv_utils.normalize_tuple(cropping[0], 2,
+                                                       &quot1st entry of cropping&quot)
+            dim2_cropping = conv_utils.normalize_tuple(cropping[1], 2,
+                                                       &quot2nd entry of cropping&quot)
+            dim3_cropping = conv_utils.normalize_tuple(cropping[2], 2,
+                                                       &quot3rd entry of cropping&quot)
+            self.cropping = (dim1_cropping, dim2_cropping, dim3_cropping)
+        else:
+            raise ValueError(&quot`cropping` should be either an int, &quot
+                             &quota tuple of 3 ints &quot
+                             &quot(symmetric_dim1_crop, symmetric_dim2_crop, symmetric_dim3_crop), &quot
+                             &quotor a tuple of 3 tuples of 2 ints &quot
+                             &quot((left_dim1_crop, right_dim1_crop),&quot
+                             &quot (left_dim2_crop, right_dim2_crop),&quot
+                             &quot (left_dim3_crop, right_dim2_crop)). &quot
+                             &quotFound: &quot + str(cropping))
+       </a> self.input_spec = [InputSpec(ndim=5)]
+
+    def get_output_shape_for(self, input_shape):
+        if self.data_format == &quotchannels_first&quot:</code></pre>

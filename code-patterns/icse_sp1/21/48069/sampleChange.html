@@ -1,0 +1,66 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                self._hyperbolic_constant,
+                self._num_heads
+            )
+        <a id="change">self._gammas</a> = <a id="change">torch</a>.Tensor(<a id="change">self._gammas</a>).to(self._device)
+        assert critic_distribution in [None, "categorical", "quantile"]
+
+        if critic_distribution == "categorical":
+            self.num_atoms = self.critic.num_atoms
+            values_range = self.critic.values_range
+            self.v_min, self.v_max = values_range
+            self.delta_z = (self.v_max - self.v_min) / (self.num_atoms - 1)
+            z = torch.linspace(
+                start=self.v_min, end=self.v_max, steps=self.num_atoms
+            )
+            <a id="change">self.z</a> = <a id="change">self._to_tensor(z)</a>
+            self._loss_fn = self._categorical_loss
+        elif critic_distribution == "quantile":
+            self.num_atoms = self.critic.num_atoms
+            tau_min = 1 / (2 * self.num_atoms)
+            tau_max = 1 - tau_min
+            tau = torch.linspace(
+                start=tau_min, end=tau_max, steps=self.num_atoms
+            )
+            <a id="change">self.tau</a> = <a id="change">self._to_tensor(tau)</a>
+            self._loss_fn = self._quantile_loss
+
+    def _base_loss(self, states_t, actions_t, rewards_t, states_tp1, done_t):
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self._num_heads = self.critic.num_heads
+        self._num_critics = len(self.critics)
+        self._hyperbolic_constant = self.critic.hyperbolic_constant
+        <a id="change">self._gammas</a> = \
+            utils.hyperbolic_gammas(
+                self._gamma,
+                self._hyperbolic_constant,
+                self._num_heads
+            )
+        <a id="change">self._gammas</a> = utils.any2device(<a id="change">self._gammas</a>, device=self._device)
+        assert critic_distribution in [None, "categorical", "quantile"]
+
+        if critic_distribution == "categorical":
+            self.num_atoms = self.critic.num_atoms
+            values_range = self.critic.values_range
+            self.v_min, self.v_max = values_range
+            self.delta_z = (self.v_max - self.v_min) / (self.num_atoms - 1)
+            z = torch.linspace(
+                start=self.v_min, end=self.v_max, steps=self.num_atoms
+            )
+            <a id="change">self.z</a> = <a id="change">utils.any2device(z, device=self._device)</a>
+            self._loss_fn = self._categorical_loss
+        elif critic_distribution == "quantile":
+            self.num_atoms = self.critic.num_atoms
+            tau_min = 1 / (2 * self.num_atoms)
+            tau_max = 1 - tau_min
+            tau = torch.linspace(
+                start=tau_min, end=tau_max, steps=self.num_atoms
+            )
+            <a id="change">self.tau</a> = <a id="change">utils.any2device(tau, device=self._device)</a>
+            self._loss_fn = self._quantile_loss
+        else:
+            assert self.critic_criterion is not None
+</code></pre>

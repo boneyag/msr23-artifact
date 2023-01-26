@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for data, target in test_loader:
+            out = model(data, -1)
+            pred = out.argmax(dim=1, keepdim=True)
+            target = <a id="change">target.to(pred.device)</a>
+            correct = pred.eq(target.view_as(pred)).sum().item()
+            correct_sum += correct
+    print("Accuracy {}".format(correct_sum / len(test_loader.dataset)))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    model.eval()
+    correct_sum = 0
+    &#47&#47 Use GPU to evaluate if possible
+    device = <a id="change">torch.device("cuda:0" if model.num_gpus &gt; 0 else "cpu")</a>
+    with torch.no_grad():
+        for i, (data, target) in enumerate(test_loader):
+            out = model(data, -1)
+            pred = out.argmax(dim=1, keepdim=True)
+            pred, target = pred.to(device), <a id="change">target.to(device)</a>
+            correct = pred.eq(target.view_as(pred)).sum().item()
+            correct_sum += correct
+            &#47&#47 stop at 100
+            if i == 100:</code></pre>

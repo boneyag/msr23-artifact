@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                        padded_indices.append(idx)
+                    else:
+                        tokens_with_context.append(sample[idx])
+                <a id="change">characteristics = pd.DataFrame(tokens_with_context).to_dict(&quotlist&quot)</a>
+
+                &#47&#47 make sure all features cover the same number of tokens, and calculate total num tokens
+                num_tokens = None
+                for label in self.context_labels:</code></pre><h3>After Change</h3><pre><code class='java'>
+                    else:
+                        tokens_with_context.append(sample[idx])
+                &#47&#47characteristics = pd.DataFrame(tokens_with_context).to_dict(&quotlist&quot)
+                characteristics = {k:[dictionary[k] <a id="change">for</a> dictionary in tokens_with_context] <a id="change">for</a> k in tokens_with_context[0].keys()}
+
+                &#47&#47 make sure all features cover the same number of tokens, and calculate total num tokens
+                num_tokens = None
+                for label in self.context_labels:
+                    new_length = len(characteristics[label]) if type(characteristics[label] == list) else 1
+                    if num_tokens is not None and num_tokens != new_length:
+                        raise FinetuneError(&quotIncorrect label shapes.&quot)
+                    num_tokens = new_length
+
+                vector = np.zeros((num_tokens + len(padded_indices), self.config.context_dim), dtype=np.float32) &#47&#47 Feature vector for one document. Add 2 for the special tokens at beginning/end
+                current_index = 0
+
+                &#47&#47 Loop through each feature and add each to new index of the feature vector
+                for label in self.context_labels:
+                    if label == self.config.pad_token:
+                        continue
+                    data = characteristics[label]
+
+                    &#47&#47 Binary encoded features have different dimensionality as simple floats/ints, so must be handled differently.
+                    if label in self.label_encoders.keys():
+                        without_nans = [x for x in data if not pd.isna(x)]
+                        data = self.label_encoders[label].transform(without_nans) &#47&#47this removes nans from padded tokens, but now the list is too short. The &quotnum_backward&quot variable will track this offset to ensure indices are correctly tracked.
+                        data_dim = len(self.label_encoders[label].classes_)
+                        if data_dim == 2: &#47&#47 since binary classes default to column vector
+                            data_dim=1
+                    else:
+                        data = [x for x in data if not pd.isna(x)]
+                        data_dim = 1
+                    &#47&#47print(label)
+                    &#47&#47print(self.label_encoders.keys())
+                    &#47&#47loop through indices and fill with correct data
+                    num_backward = 0
+                    for sample_idx in range(num_tokens):
+                        if sample_idx in padded_indices: &#47&#47 there is no data, simply a pad from the encoder, so fill out with zero vector
+                            vector[sample_idx][:] = 0
+                            num_backward += 1 &#47&#47since we&quotre skipping this sample, the next sample needs to be filled from this sample&quots index in data. This variable tracks how far back we need to go for following indices
+                            continue
+                        for label_dimension in range(data_dim):
+                            &#47&#47print("Label dim:" + str(label_dimension + current_index) + "Sample Index:" + str(sample_idx) + "Current label" + label)
+                            <a id="change">vector[sample_idx][current_index + label_dimension]</a> = data[sample_idx - num_backward] if data_dim  == 1 else data[sample_idx - num_backward][label_dimension]
+
+                    current_index += 1
+                vector_list.append(vector)</code></pre>

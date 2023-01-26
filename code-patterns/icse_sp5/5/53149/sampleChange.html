@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        p_minus = a_minus * self.target.x
+
+        &#47&#47 Calculate point eligibility value.
+        eligibility = torch.ger(p_plus, self.target.s.float()) + torch.ger(<a id="change">self.source.s.float()</a>, p_minus)
+
+        &#47&#47 Compute weight update.
+        self.connection.w += self.nu[0] * reward * eligibility</code></pre><h3>After Change</h3><pre><code class='java'>
+        source_s = self.source.s.view(-1).float()
+        source_x = self.source.x.view(-1)
+        target_s = self.target.s.view(-1).float()
+        target_x = <a id="change">self.target.x.view(-1)</a>
+
+        shape = self.connection.w.shape
+        self.connection.w = self.connection.w.view(self.source.n, self.target.n)
+
+        &#47&#47 Parse keyword arguments.
+        reward = kwargs[&quotreward&quot]
+        a_plus = kwargs.get(&quota_plus&quot, 1)
+        a_minus = kwargs.get(&quota_plus&quot, -1)
+
+        &#47&#47 Get P^+ and P^- values (function of firing traces).
+        p_plus = a_plus * source_x
+        p_minus = a_minus * target_x
+
+        &#47&#47 Calculate point eligibility value.
+        eligibility = torch.ger(p_plus, target_s) + torch.ger(source_s, p_minus)
+
+        &#47&#47 Compute weight update.
+        self.connection.w += self.nu[0] * reward * eligibility
+        <a id="change">self.connection.w = self.connection.w.view(*shape)</a>
+
+    def _conv2d_connection_update(self, **kwargs) -&gt; None:
+        &#47&#47 language=rst
+        </code></pre>

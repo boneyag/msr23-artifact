@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        results, _ = scan(lambda l, obs, p: obs[p - l:-l],
+                          outputs_info=None, sequences=[tt.arange(1, self.p + 1)],
+                          non_sequences=[value, self.p])
+        <a id="change">x = tt.stack(results)</a>
+
+        if self.constant:
+            y = y - self.rho[0]
+            <a id="change">eps = y - self.rho[1:].dot(x)</a>
+        else:
+            eps = y - self.rho.dot(x)
+
+        innov_like = Normal.dist(mu=0.0, tau=self.tau).logp(eps)</code></pre><h3>After Change</h3><pre><code class='java'>
+            x = tt.add(*[self.rho[i + 1] * value[self.p - (i + 1):-(i + 1)] for i in range(self.p)])
+            eps = value[self.p:] - self.rho[0] - x
+        else:
+            <a id="change">x = tt.add(*[self.rho[i] * value[self.p - (i + 1):-(i + 1)] for i in range(self.p)])</a>
+            eps = value[self.p:] - x
+
+        innov_like = Normal.dist(mu=0.0, tau=self.tau).logp(eps)
+        init_like = self.init.logp(value[:self.p])</code></pre>

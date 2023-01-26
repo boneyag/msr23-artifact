@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.label_smoothing &gt; 0:
+            mask = target_feed.unsqueeze(1).eq(self.padding_idx) \
+                              .repeat(1, scores.size(1))
+            target_ = <a id="change">Variable(self.one_hot.repeat(target_feed.size(0), 1),
+                               requires_grad=False)</a>
+            target_.scatter_(1, target_feed.unsqueeze(1),
+                             1 - self.label_smoothing)
+            target_.masked_fill_(mask, 0)
+            target_feed = target_</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        gtruth = target.view(-1)
+        if self.confidence &lt; 1:
+            <a id="change">tdata = gtruth.data</a>
+            mask = torch.nonzero(tdata.eq(self.padding_idx)).squeeze()
+            <a id="change">likelihood = torch.gather(scores.data, 1, tdata.unsqueeze(1))</a>
+            tmp_ = self.one_hot.repeat(gtruth.size(0), 1)
+            tmp_.scatter_(1, tdata.unsqueeze(1), self.confidence)
+            if mask.dim() &gt; 0:
+                likelihood.index_fill_(0, mask, 0)
+                tmp_.index_fill_(0, mask, 0)
+            gtruth = Variable(tmp_, requires_grad=False)
+
+        loss = self.criterion(scores, gtruth)
+        if self.confidence &lt; 1:
+            <a id="change">loss_data = - likelihood.sum(0)</a>
+        else:
+            loss_data = loss.data.clone()
+
+        stats = self.stats(loss_data, scores.data, target.view(-1).data)</code></pre>

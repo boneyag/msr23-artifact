@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with contextlib.redirect_stdout(StringIO()):
+            trainer, epoch_itr = get_trainer_and_epoch_itr(2, 150, 300, 150)
+
+            <a id="change">with patch(&quotfairseq.checkpoint_utils.reload_train&quot, return_value=epoch_itr):
+                checkpoint_utils.load_checkpoint(
+                    self.args_mock, trainer, epoch_itr, 512, None)
+           </a> itr = epoch_itr.next_epoch_itr(shuffle=False)
+
+            self.assertEqual(epoch_itr.epoch, 3)
+            self.assertEqual(epoch_itr.iterations_in_epoch, 0)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def test_load_full_checkpoint(self):
+        with contextlib.redirect_stdout(StringIO()):
+            trainer, epoch_itr = get_trainer_and_epoch_itr(2, 150, 300, 150)
+            <a id="change">trainer.get_train_iterator = MagicMock(return_value=epoch_itr)</a>
+
+            <a id="change">_, epoch_itr = checkpoint_utils.load_checkpoint(self.args_mock, trainer)</a>
+            itr = epoch_itr.next_epoch_itr(shuffle=False)
+
+            self.assertEqual(epoch_itr.epoch, 3)
+            self.assertEqual(epoch_itr.iterations_in_epoch, 0)</code></pre>

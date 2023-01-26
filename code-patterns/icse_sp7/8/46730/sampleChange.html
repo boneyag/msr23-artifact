@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    @Backend._assert_backend_available
+    def compute_gradient(self, function, arguments):
+        flattened_arguments = <a id="change">flatten_arguments(arguments)</a>
+        <a id="change">if len(flattened_arguments) == 1:
+            return autograd.grad(function)
+        &#47&#47 XXX: This path handles cases where the signature hint looks like
+        &#47&#47      &quot@Autograd(("x", "y"))&quot. This is potentially unnecessary as
+        &#47&#47      tests also pass if we instead use &quot@Autograd&quot. Revisit this
+        &#47&#47      once we ported more complicated examples to autograd.
+       </a> if len(arguments) == 1:
+            @functools.wraps(function)
+            def unary_function(arguments):
+                return function(*arguments)
+            return autograd.grad(unary_function)
+
+        &#47&#47 Turn `function` into a function accepting a single argument which
+        &#47&#47 gets unpacked when the function is called. This is necessary for
+        &#47&#47 autograd to compute and return the gradient for each input in the
+        &#47&#47 input tuple/list and return it in the same grouping.
+        &#47&#47 In order to unpack arguments correctly, we also need a signature hint
+        &#47&#47 in the form of `arguments`. This is because autograd wraps tuples and
+        &#47&#47 lists in `SequenceBox` types which are not derived from tuple or list
+        &#47&#47 so we cannot detect nested arguments automatically.
+        unary_function = unpack_arguments(function, signature=arguments)
+        <a id="change">return autograd.grad(unary_function)</a>
+
+    @staticmethod
+    def _compute_nary_hessian_vector_product(function):
+        gradient = autograd.grad(function)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def compute_gradient(self, function, arguments):
+        num_arguments = len(arguments)
+        gradient = autograd.grad(function, argnum=list(range(num_arguments)))
+        <a id="change">if num_arguments &gt; 1:
+            return gradient
+       </a> <a id="change">return self._unpack_return_value(gradient)</a>
+
+    @Backend._assert_backend_available
+    def compute_hessian_vector_product(self, function, arguments):
+        num_arguments = len(arguments)</code></pre>

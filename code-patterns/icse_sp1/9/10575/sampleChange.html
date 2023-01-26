@@ -1,0 +1,79 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                      allow_commits=allow_commits),
+        command = ["/bin/sh", "-c"]
+        deployment = self.pod_manager.get_deployment(
+            job_name=<a id="change">self.pod_manager.get_job_name()</a>,
+            volume_mounts=volume_mounts,
+            volumes=volumes,
+            labels=self.pod_manager.labels,
+            env_vars=None,
+            command=command,
+            args=args,
+            persistence_outputs=persistence_outputs,
+            persistence_data=persistence_data,
+            outputs_refs_jobs=outputs_refs_jobs,
+            outputs_refs_experiments=outputs_refs_experiments,
+            secret_refs=secret_refs,
+            configmap_refs=configmap_refs,
+            resources=resources,
+            ephemeral_token=None,
+            node_selector=node_selector,
+            affinity=affinity,
+            tolerations=tolerations,
+            ports=target_ports,
+            restart_policy=&quotNever&quot)
+        dep_resp, _ = self.create_or_update_deployment(name=self.pod_manager.get_job_name(),
+                                                       data=deployment)
+        service = services.get_service(
+            namespace=self.namespace,
+            name=<a id="change">self.pod_manager.get_job_name()</a>,
+            labels=self.pod_manager.get_labels(),
+            ports=ports,
+            target_ports=target_ports,</code></pre><h3>After Change</h3><pre><code class='java'>
+                base_url=notebook_url,
+                notebook_dir=notebook_dir)]
+
+    def start_notebook(<a id="change">self</a>,
+                       persistence_outputs=None,
+                       persistence_data=None,
+                       outputs_refs_jobs=None,
+                       outputs_refs_experiments=None,
+                       resources=None,
+                       secret_refs=None,
+                       configmap_refs=None,
+                       node_selector=None,
+                       affinity=None,
+                       tolerations=None,
+                       allow_commits=False):
+        ports = [self.request_notebook_port()]
+        target_ports = [self.PORT]
+        volumes, volume_mounts = get_pod_volumes(persistence_outputs=persistence_outputs,
+                                                 persistence_data=persistence_data)
+        refs_volumes, refs_volume_mounts = get_pod_refs_outputs_volumes(
+            outputs_refs=outputs_refs_jobs,
+            persistence_outputs=persistence_outputs)
+        volumes += refs_volumes
+        volume_mounts += refs_volume_mounts
+        refs_volumes, refs_volume_mounts = get_pod_refs_outputs_volumes(
+            outputs_refs=outputs_refs_experiments,
+            persistence_outputs=persistence_outputs)
+        volumes += refs_volumes
+        volume_mounts += refs_volume_mounts
+        shm_volumes, shm_volume_mounts = get_shm_volumes()
+        volumes += shm_volumes
+        volume_mounts += shm_volume_mounts
+        code_volume, code_volume_mount = self.get_notebook_code_volume()
+        volumes.append(code_volume)
+        volume_mounts.append(code_volume_mount)
+
+        secret_refs = validate_secret_refs(secret_refs)
+        configmap_refs = validate_configmap_refs(configmap_refs)
+
+        <a id="change">resource_name = self.resource_manager.get_resource_name()</a>
+        args = self.get_notebook_args(deployment_name=resource_name,
+                                      ports=ports,
+                                      allow_commits=allow_commits),
+        command = ["/bin/sh", "-c"]</code></pre>

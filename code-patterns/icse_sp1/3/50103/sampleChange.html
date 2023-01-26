@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        result_view_out = result.view( vigra.VigraArray )
+        result_view_out.axistags = self.Output.meta.axistags
+        <a id="change">result_view_in = result_view_out.withAxes( *self.Input.meta.getAxisKeys() )</a>
+        self.Input( *in_roi ).writeInto( result_view_in.view(numpy.ndarray) ).wait()
+        return result
+
+    def propagateDirty(self, inputSlot, subindex, in_roi):</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 This should be faster than using VigraArray.withAxes()
+        result_squeezed = result[self._out_squeeze_slicing] &#47&#47 (1)
+        result_reordered = numpy.transpose(result_squeezed, self._common_axis_transpose_order) &#47&#47 (2)
+        result_input_view = <a id="change">result_reordered[self._in_unsqueeze_slicing]</a> &#47&#47 (3)
+        
+        &#47&#47 Now write into the special result view
+        self.Input( *in_roi ).writeInto( result_input_view ).wait()</code></pre>

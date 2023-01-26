@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  time1 = time.time()
+  for ind, pdb_code in enumerate(ids):
+    print("Processing complex %d, %s" % (ind, str(pdb_code)))
+    <a id="change">pdb_subdir = os.path.join(pdbbind_dir, pdb_code)</a>
+    if not os.path.exists(pdb_subdir):
+      print("%s is missing!" % pdb_subdir)
+      missing_pdbs.append(pdb_subdir)
+      continue
+    computed_feature = compute_pdbbind_features(featurizer, pdb_subdir,
+                                                pdb_code)
+    if feature_len is None:
+      feature_len = len(computed_feature)
+    if len(computed_feature) != feature_len:
+      print("Featurization failed for %s!" % pdb_code)
+      continue
+    <a id="change">y_inds.append(ind)</a>
+    features.append(computed_feature)
+  time2 = time.time()
+  print("TIMING: PDBBind Featurization took %0.3f s" % (time2 - time1))
+  print("missing_pdbs")</code></pre><h3>After Change</h3><pre><code class='java'>
+  features = []
+  y_inds = []
+  time1 = time.time()
+  <a id="change">p = Pool(multiprocessing.cpu_count())</a>
+  args = []
+  for ind, pdb_code in enumerate(ids):
+    args.append((ind, pdb_code, pdbbind_dir, featurizer))
+  results = p.map(compute_single_pdbbind_feature, args)
+  feature_len = None
+  <a id="change">for result in results:
+    if result is None:
+      continue
+    if feature_len is None:
+      feature_len = len(result[1])
+    if len(result[1]) != feature_len:
+      continue
+    y_inds.append(result[0])
+    features.append(result[1])
+ </a> time2 = time.time()
+  print("TIMING: PDBBind Featurization took %0.3f s" % (time2 - time1))
+  y = y[y_inds]
+  X = np.vstack(features)</code></pre>

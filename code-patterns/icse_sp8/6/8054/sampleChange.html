@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if not items:
+            return {}
+
+        <a id="change">py_repr = &quotcat(..py.repr(list({})))&quot.format(&quot,&quot.join(&quot{0}={0}&quot.format(x) for x in items))</a>
+        response = self.sos_kernel.get_response(py_repr, (&quotstream&quot,), name=(&quotstdout&quot,))[0][1]
+        expr = response[&quottext&quot]
+
+        if to_kernel in (&quotPython2&quot, &quotPython3&quot):
+            &#47&#47 directly to python3
+            return &quot{}\nglobals().update({})&quot.format(&quotfrom feather import read_dataframe\n&quot if &quotread_dataframe&quot in expr else &quot&quot, expr)
+        &#47&#47 to sos or any other kernel
+        else:
+            &#47&#47 irkernel (since the new version) does not produce execute_result, only
+            &#47&#47 display_data
+            try:
+                if &quotread_dataframe&quot in expr:
+                    &#47&#47 imported to be used by eval
+                    from feather import read_dataframe
+                    &#47&#47 suppress flakes warning
+                    read_dataframe
+                &#47&#47 evaluate as raw string to correctly handle \\ etc
+                return <a id="change">eval(expr)</a>
+            except Exception as e:
+                self.sos_kernel.warn(&quotFailed to evaluate {!r}: {}&quot.format(expr, e))
+                return None
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def put_vars(self, items, to_kernel=None):
+        &#47&#47 first let us get all variables with names starting with sos
+        response = self.sos_kernel.get_response(&quotwhos(r"sos")&quot, (&quotstream&quot,), name=(&quotstdout&quot,), debug=True)[0][1]
+        all_vars = [x.strip().split()[0] <a id="change">for</a> x in response[&quottext&quot].split(&quot\n&quot) if x.strip()]
+        items += [x for x in all_vars if x.startswith(&quotsos&quot)]
+
+        if not items:
+            return {}
+
+        res = {}
+        for item in items:
+            py_repr = &quot__sos__julia_py_repr({})&quot.format(item)
+            self.sos_kernel.warn("RXPR for {} is {}".format(item, py_repr))
+            response = self.sos_kernel.get_response(py_repr, (&quotstream&quot,), name=(&quotstdout&quot,), debug=True)[0][1]
+            expr = response[&quottext&quot]
+
+            try:
+                if &quotread_dataframe&quot in expr:
+                    &#47&#47 imported to be used by eval
+                    from feather import read_dataframe
+                    &#47&#47 suppress flakes warning
+                    read_dataframe
+                &#47&#47 evaluate as raw string to correctly handle \\ etc
+                <a id="change">res[item] = eval(expr)</a>
+            except Exception as e:
+                self.sos_kernel.warn(&quotFailed to evaluate {!r}: {}&quot.format(expr, e))
+                return None
+        return res</code></pre>

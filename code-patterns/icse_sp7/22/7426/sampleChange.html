@@ -1,0 +1,103 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                   placements, graph_mapper, application_vertex,
+                   base_key_function, machine_time_step):
+        results = list()
+        <a id="change">missing_str = ""</a>
+        ms_per_tick = machine_time_step / 1000.0
+        vertices = graph_mapper.get_machine_vertices(application_vertex)
+        progress = ProgressBar(vertices,
+                               "Getting spikes for {}".format(label))
+        for vertex in progress.over(vertices):
+            placement = placements.get_placement_of_vertex(vertex)
+            vertex_slice = graph_mapper.get_slice(vertex)
+
+            <a id="change">x = placement.x</a>
+            <a id="change">y = placement.y</a>
+            <a id="change">p = placement.p</a>
+
+            &#47&#47 Read the spikes
+            raw_spike_data, data_missing = \
+                buffer_manager.get_data_for_vertex(placement, region)
+            if data_missing:
+                <a id="change">missing_str += "({}, {}, {}); ".format(x, y, p)</a>
+            spike_data = str(raw_spike_data.read_all())
+            number_of_bytes_written = len(spike_data)
+
+            offset = 0
+            while offset &lt; number_of_bytes_written:
+                length = _ONE_WORD.unpack_from(spike_data, offset)[0]
+                time = _ONE_WORD.unpack_from(spike_data, offset + 4)[0]
+                time *= ms_per_tick
+                data_offset = offset + 8
+                eieio_header = EIEIODataHeader.from_bytestring(
+                    spike_data, data_offset)
+                if eieio_header.eieio_type.payload_bytes &gt; 0:
+                    raise Exception("Can only read spikes as keys")
+                data_offset += eieio_header.size
+                timestamps = numpy.repeat([time], eieio_header.count)
+                key_bytes = eieio_header.eieio_type.key_bytes
+                keys = numpy.frombuffer(
+                    spike_data, dtype="&lt;u{}".format(key_bytes),
+                    count=eieio_header.count, offset=data_offset)
+
+                neuron_ids = ((keys - base_key_function(vertex)) +
+                              vertex_slice.lo_atom)
+                offset += length + 8
+                results.append(numpy.dstack((neuron_ids, timestamps))[0])
+
+        if <a id="change">missing_str != "":
+  </a>          logger.warn(
+                "Population %s is missing spike data in region %s from the"
+                " following cores: %s", label, region, missing_str)
+        if not results:</code></pre><h3>After Change</h3><pre><code class='java'>
+                   base_key_function, machine_time_step):
+        &#47&#47 pylint: disable=too-many-arguments
+        results = list()
+        <a id="change">missing = []</a>
+        ms_per_tick = machine_time_step / 1000.0
+        vertices = graph_mapper.get_machine_vertices(application_vertex)
+        progress = ProgressBar(vertices,
+                               "Getting spikes for {}".format(label))
+        for vertex in progress.over(vertices):
+            placement = placements.get_placement_of_vertex(vertex)
+            vertex_slice = graph_mapper.get_slice(vertex)
+
+            &#47&#47 Read the spikes
+            raw_spike_data, data_missing = \
+                buffer_manager.get_data_for_vertex(placement, region)
+            if data_missing:
+                <a id="change">missing.append(placement)</a>
+            spike_data = str(raw_spike_data.read_all())
+            number_of_bytes_written = len(spike_data)
+
+            offset = 0
+            while offset &lt; number_of_bytes_written:
+                length = _ONE_WORD.unpack_from(spike_data, offset)[0]
+                time = _ONE_WORD.unpack_from(spike_data, offset + 4)[0]
+                time *= ms_per_tick
+                data_offset = offset + 8
+                eieio_header = EIEIODataHeader.from_bytestring(
+                    spike_data, data_offset)
+                if eieio_header.eieio_type.payload_bytes &gt; 0:
+                    raise Exception("Can only read spikes as keys")
+                data_offset += eieio_header.size
+                timestamps = numpy.repeat([time], eieio_header.count)
+                key_bytes = eieio_header.eieio_type.key_bytes
+                keys = numpy.frombuffer(
+                    spike_data, dtype="&lt;u{}".format(key_bytes),
+                    count=eieio_header.count, offset=data_offset)
+
+                neuron_ids = ((keys - base_key_function(vertex)) +
+                              vertex_slice.lo_atom)
+                offset += length + 8
+                results.append(numpy.dstack((neuron_ids, timestamps))[0])
+
+        if <a id="change">missing</a>:
+            <a id="change">missing_str = recording_utils.make_missing_string(missing)</a>
+            logger.warn(
+                "Population %s is missing spike data in region %s from the"
+                " following cores: %s", label, region, missing_str)
+        if not results:</code></pre>

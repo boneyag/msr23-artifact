@@ -1,0 +1,44 @@
+<html><h3>245e356064ab70304b688519e7b5103f2b1b71c1,gpytorch/models/exact_prediction_strategies.py,DefaultPredictionStrategy,get_fantasy_strategy,#DefaultPredictionStrategy#Any#Any#Any#Any#Any#,90
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        lower_left = fant_train_covar.matmul(L_inverse)
+        schur_root = torch.cholesky(fant_fant_covar - lower_left.matmul(lower_left.transpose(-2, -1)))
+        upper_right = <a id="change">torch.zeros(m, schur_root.size(-1), device=L.device, dtype=L.dtype)</a>
+
+        &#47&#47 Form new root Z = [L 0; lower_left schur_root]
+        num_fant = schur_root.size(-2)
+        m, n = L.shape[-2:]
+        new_root = torch.zeros(*batch_shape, m + num_fant, n + num_fant, device=L.device, dtype=L.dtype)
+        new_root[..., :m, :n] = L
+        <a id="change">new_root[..., :m, n:] = upper_right</a>
+        new_root[..., m:, :n] = lower_left
+        new_root[..., m:, n:] = schur_root
+
+        &#47&#47 Use pseudo-inverse of Z as new inv root</code></pre><h3>After Change</h3><pre><code class='java'>
+        new_root[..., m:, n:] = schur_root
+
+        &#47&#47 Use pseudo-inverse of Z as new inv root
+        <a id="change">try:
+            Q, R = torch.qr(new_root)
+            Rdiag = torch.diagonal(R, dim1=-2, dim2=-1)
+            &#47&#47 if R is almost singular, add jitter (Rdiag is a view, so this works)
+            zeroish = Rdiag.abs() &lt; 1e-6
+            if torch.any(zeroish):
+                Rdiag[zeroish] = 1e-6
+            new_covar_cache = torch.triangular_solve(Q.transpose(-2, -1), R)[0]
+        except RuntimeError as e:
+            &#47&#47 TODO: Deprecate once batch QR supported in latest torch stable
+            if "invalid argument 1: A should be 2 dimensional" not in e.args[0]:
+                raise e
+            cap_mat = new_root.transpose(-2, -1).matmul(new_root)
+            if cap_mat.requires_grad or new_root.requires_grad:
+                new_covar_cache = torch.solve(new_root.transpose(-2, -1), cap_mat)[0]
+            else:
+                new_covar_cache = torch.cholesky_solve(new_root.transpose(-2, -1), torch.cholesky(cap_mat))
+       </a> new_covar_cache = new_covar_cache.transpose(-2, -1)
+
+        &#47&#47 Expand inputs accordingly if necessary (for fantasies at the same points)
+        if full_inputs[0].dim() &lt;= full_targets.dim():</code></pre><img src="268244988.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/245e356064ab70304b688519e7b5103f2b1b71c1#diff-2c80c12a0a4206c9d43cd7be2a12f5c8709a4229fcf28eea27836078b0bc24f9L194' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 245e356064ab70304b688519e7b5103f2b1b71c1</div><div id='time'> Time: 2019-07-15</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: gpytorch/models/exact_prediction_strategies.py</div><div id='class'> Class Name: DefaultPredictionStrategy</div><div id='method'> Method Name: get_fantasy_strategy</div><BR><BR><div id='link'><a href='https://github.com/pymc-devs/pymc3/commit/5b2766aae94c0615aef2c8d6ac178428e6d28745#diff-4fb374f0c566538a4e86e21e9e8b6f361a465375f1353fdf114dc29eb7c8e455L46' target='_blank'>Link</a></div><div id='project'> Project Name: pymc-devs/pymc3</div><div id='commit'> Commit Name: 5b2766aae94c0615aef2c8d6ac178428e6d28745</div><div id='time'> Time: 2008-07-20</div><div id='author'> Author: fonnesbeck@15d7aa0b-6f1a-0410-991a-d59f85d14984</div><div id='file'> File Name: pymc/database/mysql.py</div><div id='class'> Class Name: Trace</div><div id='method'> Method Name: tally</div><BR><BR><div id='link'><a href='https://github.com/rtavenar/tslearn/commit/bc93cb5618026383b21ef4feb4a345af51a9ace8#diff-d008f597c299efbf37a62a1db2185b65e30830618e0f8ff608a1aa2e9ad5d460L41' target='_blank'>Link</a></div><div id='project'> Project Name: rtavenar/tslearn</div><div id='commit'> Commit Name: bc93cb5618026383b21ef4feb4a345af51a9ace8</div><div id='time'> Time: 2017-05-24</div><div id='author'> Author: romain.tavenard@univ-rennes2.fr</div><div id='file'> File Name: tslearn/clustering.py</div><div id='class'> Class Name: GlobalAlignmentKernelKMeans</div><div id='method'> Method Name: fit</div><BR>

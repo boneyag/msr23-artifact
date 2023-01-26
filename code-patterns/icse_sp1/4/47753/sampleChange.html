@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with gpflow.settings.temp_settings(s):
+            self.m.kern.compute_K_symm(self.m.X.value)
+
+        expected_file = <a id="change">&quot&quot.join([
+            s.profiling.output_directory,
+            s.profiling.output_file_name,
+            "_compute_K_symm.json"])</a>
+        self.assertTrue(os.path.exists(expected_file))
+
+        if os.path.exists(expected_file):
+            os.remove(expected_file)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+    def test_autoflow(self):
+        <a id="change">m = self.setup()</a>
+
+        s = gpflow.settings.get_settings()
+        s.profiling.dump_timeline = True
+        s.profiling.output_directory = os.path.dirname(__file__)
+        s.profiling.output_file_name = &quottest_trace_autoflow&quot
+
+        with gpflow.settings.temp_settings(s):
+            m.compile()
+            m.kern.compute_K_symm(m.X.read_value())
+
+        expected_file = os.path.join(s.profiling.output_directory,
+                                     s.profiling.output_file_name + &quot.json&quot)
+        self.assertTrue(os.path.exists(expected_file))
+        os.remove(expected_file)
+
+        m.clear()
+        s.profiling.output_directory = __file__
+        <a id="change">m.compile()</a>
+        &#47&#47 TODO(@awav): CHECK IT
+        &#47&#47 with self.assertRaises(IOError):
+        &#47&#47     with gpflow.settings.temp_settings(s):
+        &#47&#47        m.kern.compute_K_symm(m.X.read_value())</code></pre>

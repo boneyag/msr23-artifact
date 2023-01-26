@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def _alloc_mem_if_able(model, *args, **kwargs):
+    weights = [desc for (name, desc) in <a id="change">model.descriptions.items()</a>
+               if isinstance(desc, describe.Weights)]
+    shapes = {}
+    for param in weights:
+        shape = tuple([getattr(model, dim, None) for dim in param.shape])</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def _alloc_mem_if_able(model, *args, **kwargs):
+    <a id="change">if model.nO is None or model.nI is None:
+        return None
+    else:
+        model.mem = Memory(model.nO * model.nI + model.nO)
+        model.W = model.mem.add(name, (model.nO, model.nI))
+        model.b = model.mem.add(name, (model.nO,))
+
+
+</a>def _init_weights_if_able(model, *args, **kwargs):
+    if model.mem:
+        for name, desc in model.description.items():
+            if isinstance(desc, Weights):</code></pre>

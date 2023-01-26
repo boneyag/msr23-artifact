@@ -1,0 +1,174 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _build(self, convnet_pars):
+        with tf.variable_scope(None, default_name=self._name):
+            self._scope_name = <a id="change">tf.get_default_graph().get_name_scope()</a>
+            self._x = tf.placeholder(tf.float32,
+                                     shape=[None,
+                                            convnet_pars[&quotheight&quot],
+                                            convnet_pars[&quotwidth&quot],
+                                            convnet_pars[&quothistory_length&quot]],
+                                     name=&quotinput&quot)
+            hidden_1 = tf.layers.conv2d(
+                self._x, 32, 8, 4, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_1&quot
+            )
+            hidden_2 = tf.layers.conv2d(
+                hidden_1, 64, 4, 2, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_2&quot
+            )
+            hidden_3 = tf.layers.conv2d(
+                hidden_2, 64, 3, 1, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_3&quot
+            )
+            flatten = tf.reshape(hidden_3, [-1, 7 * 7 * 64], name=&quotflatten&quot)
+            self._features = tf.layers.dense(
+                flatten, 512, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quotfeatures&quot
+            )
+            self.q = tf.layers.dense(
+                self._features, convnet_pars[&quotn_actions&quot],
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quotq&quot
+            )
+
+            self._target_q = tf.placeholder(&quotfloat32&quot, [None], name=&quottarget_q&quot)
+            self._action = tf.placeholder(&quotuint8&quot, [None], name=&quotaction&quot)
+
+            action_one_hot = tf.one_hot(self._action,
+                                        convnet_pars[&quotn_actions&quot],
+                                        name=&quotaction_one_hot&quot)
+            self._q_acted = tf.reduce_sum(self.q * action_one_hot,
+                                          axis=1,
+                                          name=&quotq_acted&quot)
+
+            loss = tf.losses.huber_loss(self._target_q, self._q_acted)
+            tf.summary.scalar(&quothuber_loss&quot, loss)
+            tf.summary.scalar(&quotaverage_q&quot, tf.reduce_mean(self.q))
+            self._merged = tf.summary.merge_all()
+
+            optimizer = convnet_pars[&quotoptimizer&quot]
+            if optimizer[&quotname&quot] == &quotrmspropcentered&quot:
+                opt = tf.train.RMSPropOptimizer(learning_rate=optimizer[&quotlr&quot],
+                                                decay=optimizer[&quotdecay&quot],
+                                                centered=True)
+            elif optimizer[&quotname&quot] == &quotrmsprop&quot:
+                opt = tf.train.RMSPropOptimizer(learning_rate=optimizer[&quotlr&quot],
+                                                decay=optimizer[&quotdecay&quot])
+            elif optimizer[&quotname&quot] == &quotadam&quot:
+                opt = tf.train.AdamOptimizer()
+            elif optimizer[&quotname&quot] == &quotadadelta&quot:
+                opt = tf.train.AdadeltaOptimizer()
+            else:
+                raise ValueError(&quotUnavailable optimizer selected.&quot)
+
+            self._train_step = opt.minimize(loss=loss)
+
+            initializer = tf.variables_initializer(
+                tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+                                  scope=self._scope_name))
+
+        self._session.run(initializer)
+
+        if self._folder_name is not None:
+            <a id="change">self._train_writer</a> = tf.summary.FileWriter(
+                self._folder_name + &quot/&quot + self._scope_name,
+                graph=tf.get_default_graph()
+            )</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def _build(self, convnet_pars):
+        with tf.variable_scope(None, default_name=self._name):
+            self._scope_name = <a id="change">tf.get_default_graph().get_name_scope() + &quot/&quot</a>
+            self._x = tf.placeholder(tf.float32,
+                                     shape=[None,
+                                            convnet_pars[&quotheight&quot],
+                                            convnet_pars[&quotwidth&quot],
+                                            convnet_pars[&quothistory_length&quot]],
+                                     name=&quotinput&quot)
+            hidden_1 = tf.layers.conv2d(
+                self._x, 32, 8, 4, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_1&quot
+            )
+            hidden_2 = tf.layers.conv2d(
+                hidden_1, 64, 4, 2, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_2&quot
+            )
+            hidden_3 = tf.layers.conv2d(
+                hidden_2, 64, 3, 1, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quothidden_3&quot
+            )
+            flatten = tf.reshape(hidden_3, [-1, 7 * 7 * 64], name=&quotflatten&quot)
+            self._features = tf.layers.dense(
+                flatten, 512, activation=tf.nn.relu,
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quotfeatures&quot
+            )
+            self.q = tf.layers.dense(
+                self._features, convnet_pars[&quotn_actions&quot],
+                kernel_initializer=tf.glorot_uniform_initializer(),
+                bias_initializer=tf.glorot_uniform_initializer(),
+                name=&quotq&quot
+            )
+
+            self._target_q = tf.placeholder(&quotfloat32&quot, [None], name=&quottarget_q&quot)
+            self._action = tf.placeholder(&quotuint8&quot, [None], name=&quotaction&quot)
+
+            action_one_hot = tf.one_hot(self._action,
+                                        convnet_pars[&quotn_actions&quot],
+                                        name=&quotaction_one_hot&quot)
+            self._q_acted = tf.reduce_sum(self.q * action_one_hot,
+                                          axis=1,
+                                          name=&quotq_acted&quot)
+
+            loss = tf.losses.huber_loss(self._target_q, self._q_acted)
+            tf.summary.scalar(&quothuber_loss&quot, loss)
+            tf.summary.scalar(&quotaverage_q&quot, tf.reduce_mean(self.q))
+            self._merged = tf.summary.merge_all()
+
+            optimizer = convnet_pars[&quotoptimizer&quot]
+            if optimizer[&quotname&quot] == &quotrmspropcentered&quot:
+                opt = tf.train.RMSPropOptimizer(learning_rate=optimizer[&quotlr&quot],
+                                                decay=optimizer[&quotdecay&quot],
+                                                centered=True)
+            elif optimizer[&quotname&quot] == &quotrmsprop&quot:
+                opt = tf.train.RMSPropOptimizer(learning_rate=optimizer[&quotlr&quot],
+                                                decay=optimizer[&quotdecay&quot])
+            elif optimizer[&quotname&quot] == &quotadam&quot:
+                opt = tf.train.AdamOptimizer()
+            elif optimizer[&quotname&quot] == &quotadadelta&quot:
+                opt = tf.train.AdadeltaOptimizer()
+            else:
+                raise ValueError(&quotUnavailable optimizer selected.&quot)
+
+            self._train_step = opt.minimize(loss=loss)
+
+            initializer = tf.variables_initializer(
+                tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+                                  scope=self._scope_name))
+
+        self._session.run(initializer)
+
+        if self._folder_name is not None:
+            <a id="change">self._train_writer</a> = tf.summary.FileWriter(
+                self._folder_name + &quot/&quot + self._scope_name,
+                graph=tf.get_default_graph()
+            )</code></pre>

@@ -1,0 +1,40 @@
+<html><h3>174dd18905f12bfe0b418a4bad3575e6331478a4,python/dgl/nn/pytorch/glob.py,MultiHeadAttention,forward,#MultiHeadAttention#Any#Any#Any#Any#,663
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        e = e / np.sqrt(self.d_head)
+
+        &#47&#47 generate mask
+        <a id="change">mask = th.zeros(batch_size, max_len_x, max_len_mem).to(e.device)</a>
+        for i in range(batch_size):
+            mask[i, :lengths_x[i], :lengths_mem[i]].fill_(1)
+        mask = mask.unsqueeze(1)
+        e.masked_fill_(mask == 0, -float(&quotinf&quot))</code></pre><h3>After Change</h3><pre><code class='java'>
+        max_len_x = max(lengths_x)
+        max_len_mem = max(lengths_mem)
+        device = x.device
+        <a id="change">lengths_x = th.tensor(lengths_x, dtype=th.int64, device=device)</a>
+        lengths_mem = th.tensor(lengths_mem, dtype=th.int64, device=device)
+
+        queries = self.proj_q(x).view(-1, self.num_heads, self.d_head)
+        keys = self.proj_k(mem).view(-1, self.num_heads, self.d_head)
+        values = self.proj_v(mem).view(-1, self.num_heads, self.d_head)
+
+        &#47&#47 padding to (B, max_len_x/mem, num_heads, d_head)
+        queries = F.pad_packed_tensor(queries, lengths_x, 0)
+        keys = F.pad_packed_tensor(keys, lengths_mem, 0)
+        values = F.pad_packed_tensor(values, lengths_mem, 0)
+
+        &#47&#47 attention score with shape (B, num_heads, max_len_x, max_len_mem)
+        e = th.einsum(&quotbxhd,byhd-&gt;bhxy&quot, queries, keys)
+        &#47&#47 normalize
+        e = e / np.sqrt(self.d_head)
+
+        &#47&#47 generate mask
+        mask = _gen_mask(lengths_x, lengths_mem, max_len_x, max_len_mem)
+        <a id="change">e = e.masked_fill(mask == 0, -float(&quotinf&quot))</a>
+
+        &#47&#47 apply softmax
+        alpha = th.softmax(e, dim=-1)
+        &#47&#47 the following line addresses the NaN issue, see</code></pre><img src="234553851.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/174dd18905f12bfe0b418a4bad3575e6331478a4#diff-fe817ca0cc1dee2841f4fece352be7cd7640af0d38d361246c64abb180d17e29L678' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: 174dd18905f12bfe0b418a4bad3575e6331478a4</div><div id='time'> Time: 2021-02-22</div><div id='author'> Author: expye@outlook.com</div><div id='file'> File Name: python/dgl/nn/pytorch/glob.py</div><div id='class'> Class Name: MultiHeadAttention</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/0a456a7582da2ab4271756d7775bba84a75c8c0d#diff-b85faa577aece208a96407af7070dfc45c38a39ec9c543b64742503981ec196eL36' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: 0a456a7582da2ab4271756d7775bba84a75c8c0d</div><div id='time'> Time: 2020-08-17</div><div id='author'> Author: eladsegal@users.noreply.github.com</div><div id='file'> File Name: allennlp/training/metrics/categorical_accuracy.py</div><div id='class'> Class Name: CategoricalAccuracy</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/allenai/allennlp/commit/87a61ad92a9e0129e5c81c242f0ea96d77e6b0af#diff-b81a5e7ea2db0effd174e8d874a80910bd94082a22fff0b20d9cd0ef981f3483L37' target='_blank'>Link</a></div><div id='project'> Project Name: allenai/allennlp</div><div id='commit'> Commit Name: 87a61ad92a9e0129e5c81c242f0ea96d77e6b0af</div><div id='time'> Time: 2020-08-19</div><div id='author'> Author: akshita23bhagia@gmail.com</div><div id='file'> File Name: allennlp/training/metrics/attachment_scores.py</div><div id='class'> Class Name: AttachmentScores</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/arraiy/torchgeometry/commit/5c9356d3dbcd44c3cd7f833651a3b542250c2699#diff-59261cd516ee841ff35adb06357da36a7b741b5dc1423904ce076cf1f664827fL52' target='_blank'>Link</a></div><div id='project'> Project Name: arraiy/torchgeometry</div><div id='commit'> Commit Name: 5c9356d3dbcd44c3cd7f833651a3b542250c2699</div><div id='time'> Time: 2020-11-30</div><div id='author'> Author: edgar.riba@gmail.com</div><div id='file'> File Name: test/enhance/test_core.py</div><div id='class'> Class Name: TestAddWeighted</div><div id='method'> Method Name: test_gradcheck</div><BR>

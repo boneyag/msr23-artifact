@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    max_socket_connect_attempts = 10
+    start = time.time()
+
+    <a id="change">endpoint = self._get_nailgun_endpoint()</a>
+    while endpoint is None:
+      if time.time() - start &gt; nailgun_timeout_seconds:
+        raise NailgunError(&quotFailed to read ng output after %s seconds&quot % nailgun_timeout_seconds)
+      <a id="change">time.sleep(0.1)</a>
+      endpoint = <a id="change">self._get_nailgun_endpoint()</a>
+
+    port = endpoint[1]
+    nailgun = self._create_ngclient(port, workunit)
+    log.debug(&quotDetected ng server up on port %d&quot % port)</code></pre><h3>After Change</h3><pre><code class='java'>
+  def _await_nailgun_server(self, workunit):
+    nailgun_timeout_seconds = 5
+    max_socket_connect_attempts = 10
+    <a id="change">nailgun = None</a>
+    port_parse_start = time.time()
+    <a id="change">with _safe_open(self._ng_out, &quotr&quot) as ng_out:
+      while not nailgun:
+        started = ng_out.readline()
+        if started:
+          port = self._parse_nailgun_port(started)
+          with open(self._pidfile, &quota&quot) as pidfile:
+            pidfile.write(&quot:%d\n&quot % port)
+          nailgun = self._create_ngclient(port, workunit)
+          log.debug(&quotDetected ng server up on port %d&quot % port)
+        elif time.time() - port_parse_start &gt; nailgun_timeout_seconds:
+          raise NailgunError(&quotFailed to read ng output after %s seconds&quot % nailgun_timeout_seconds)
+
+   </a> attempt = 0
+    while nailgun:
+      sock = nailgun.try_connect()
+      if sock:
+        sock.close()
+        log.info(&quotConnected to ng server pid: %d @ port: %d&quot % <a id="change">self._get_nailgun_endpoint()</a>)
+        return nailgun
+      elif <a id="change">attempt</a> &gt; max_socket_connect_attempts:
+        raise NailgunError(&quotFailed to connect to ng output after %d connect attempts&quot
+                            % max_socket_connect_attempts)
+      attempt += 1</code></pre>

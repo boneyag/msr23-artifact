@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        CreateDigest([FileContent(script_path, script_content.encode(), is_executable=True)]),
+    )
+
+    <a id="change">paths = []</a>
+    search_path = create_path_env_var(request.search_path)
+    result = await Get(
+        FallibleProcessResult,
+        &#47&#47 We use a volatile process to force re-run since any binary found on the host system today</code></pre><h3>After Change</h3><pre><code class='java'>
+    if not request.test_args:
+        return dataclasses.replace(binary_paths, paths=[BinaryPath(path) for path in found_paths])
+
+    results = await <a id="change">MultiGet</a>(
+        <a id="change">Get(
+            FallibleProcessResult,
+            UncacheableProcess(
+                Process(argv=[path, *request.test_args], description=f"Test binary {path}.")
+            ),
+        )</a>
+        for path in found_paths
+    )
+    return dataclasses.replace(
+        binary_paths,
+        paths=[
+            BinaryPath.fingerprinted(path, result.stdout)
+            <a id="change">for</a> path, result in zip(found_paths, results)
+            if result.exit_code == 0
+        ],
+    )</code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if tensor_dict is not None:
+            a_h = tf.nn.softmax(h_logits)  &#47&#47 [N, M, JX]
+            a_u = tf.nn.softmax(u_logits)  &#47&#47 [N, M, JX, JQ]
+            <a id="change">tensor_dict[&quota_h&quot]</a> = a_h
+            tensor_dict[&quota_u&quot] = a_u
+        return u_avg, h_a, u_a
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            and_mask = h_mask_aug & u_mask_aug
+            u_avg = tf.reduce_sum(u_aug * tf.cast(tf.expand_dims(u_mask_aug, -1), &quotfloat&quot), 3)
+
+        <a id="change">if config.sh:
+            cell = SHCell(h.get_shape()[3])
+            h_len = tf.reduce_sum(tf.cast(h_mask, &quotint32&quot), 2)  &#47&#47 [N, M, JX]
+            in_ = tf.concat(3, [h, u_avg])
+            (fw_h, bw_h), _ = bidirectional_dynamic_rnn(cell, cell, in_, h_len, dtype=&quotfloat&quot, scope=&quotu1&quot)  &#47&#47 [N, M, JX, 2d]
+            h_a = fw_h + bw_h
+
+        else:
+            h_logits = get_logits([h, u_avg], None, True, wd=config.wd, mask=h_mask,
+                                  is_train=is_train, func=&quotmul_linear&quot, scope=&quoth_logits&quot)  &#47&#47 [N, M, JX]
+            h_a = softsel(h, h_logits)  &#47&#47 [N, M, d]
+            h_a_tiled = tf.tile(tf.expand_dims(h_a, 2), [1, 1, JX, 1])
+
+       </a> u_logits = get_logits([h_aug, u_aug], None, True, wd=config.wd, mask=and_mask,
+                              is_train=is_train, func=&quotmul_linear&quot, scope=&quotu_logits&quot)  &#47&#47 [N, M, JX, JQ]
+        u_a = softsel(u_aug, u_logits)  &#47&#47 [N, M, JX, d]
+        if tensor_dict is not None:</code></pre>

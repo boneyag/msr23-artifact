@@ -1,0 +1,82 @@
+<html><h3>1db4255e8b19a322434fa2fce398b73b5757f764,examples/1d/compute_speed.py,,,#,19
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 -----------------------------
+&#47&#47 If we&quotre using the this backend, only compute the benchmark on the GPU.
+
+<a id="change">if backend.NAME == &quotskcuda&quot:
+    device = &quotgpu&quot
+
+    fmt_str = &quot==&gt; Testing Float32 with Skcuda backend, on {}, forward&quot
+    print(fmt_str.format(device.upper()))
+
+    scattering.cuda()
+    x_data = x_data.cuda()
+
+    torch.cuda.synchronize()
+
+    t_start = time.time()
+    for _ in range(times):
+        scattering(x_data)
+
+    torch.cuda.synchronize()
+
+    t_elapsed = time.time() - t_start
+
+    fmt_str = &quotElapsed time: {:2f} [s / {:d} evals], avg: {:.2f} (s/batch)&quot
+    print(fmt_str.format(t_elapsed, times, t_elapsed/times))</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+if backend.NAME == &quottorch&quot:
+    devices = [&quotcpu&quot, &quotgpu&quot]
+elif backend.NAME == &quotskcuda&quot:
+    devices = <a id="change">[&quotgpu&quot]</a>
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Create the `Scattering1D` object using the given parameters and generate
+&#47&#47 some compatible test data with the specified batch size.
+
+scattering = Scattering1D(T, J, Q)
+
+x = torch.randn(batch_size, 1, T, dtype=torch.float32)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Run the benchmark
+&#47&#47 -----------------
+&#47&#47 For each device, we need to convert the `scattering` object and the Tensor
+&#47&#47 `x` to the appropriate type, invoke `times` calls to the `scattering.forward`
+&#47&#47 and print the running times. If the benchmark is running on the GPU, we also
+&#47&#47 need to call `torch.cuda.synchronize()` before and after the benchmark to
+&#47&#47 make sure that all CUDA kernels have finished executing.
+
+<a id="change">for device in devices:
+    fmt_str = &quot==&gt; Testing Float32 with {} backend, on {}, forward&quot
+    print(fmt_str.format(backend.NAME, device.upper()))
+
+    if device == &quotgpu&quot:
+        scattering.cuda()
+        x = x.cuda()
+    else:
+        scattering.cpu()
+        x = x.cpu()
+
+    if device == &quotgpu&quot:
+        torch.cuda.synchronize()
+
+    t_start = time.time()
+    for _ in range(times):
+        scattering.forward(x)
+
+    if device == &quotgpu&quot:
+        torch.cuda.synchronize()
+
+    t_elapsed = time.time() - t_start
+
+    fmt_str = &quotElapsed time: {:2f} [s / {:d} evals], avg: {:.2f} (s/batch)&quot
+    print(fmt_str.format(t_elapsed, times, t_elapsed/times))
+</a>
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 The resulting output should be something like
+&#47&#47
+&#47&#47 .. code-block:: text</code></pre><img src="322243316.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/kymatio/kymatio/commit/1db4255e8b19a322434fa2fce398b73b5757f764#diff-c2b25f84f29f061960cebe5e03d74c0c33f3163e1a68cbcc1e72ee8ac6ca7209L1' target='_blank'>Link</a></div><div id='project'> Project Name: kymatio/kymatio</div><div id='commit'> Commit Name: 1db4255e8b19a322434fa2fce398b73b5757f764</div><div id='time'> Time: 2018-11-21</div><div id='author'> Author: janden@flatironinstitute.org</div><div id='file'> File Name: examples/1d/compute_speed.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/b44364811b14bde01d84554624a9bffa0e4976e3#diff-82556a6907b6c5ac8cfa2f65bd9fb14b506a7bd651d71d8bc93415de5f40928cL41' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: b44364811b14bde01d84554624a9bffa0e4976e3</div><div id='time'> Time: 2018-03-07</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: examples/cora_gcn.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/kentsommer/pytorch-value-iteration-networks/commit/2205fce8ac9f1d9f01f81996f7deef9a7b197a8d#diff-3665d65394f4f58a56a256ad6dd8621c68118d90fe56a19387e251c19cec2d2eL28' target='_blank'>Link</a></div><div id='project'> Project Name: kentsommer/pytorch-value-iteration-networks</div><div id='commit'> Commit Name: 2205fce8ac9f1d9f01f81996f7deef9a7b197a8d</div><div id='time'> Time: 2020-10-01</div><div id='author'> Author: 16188477+shuishida@users.noreply.github.com</div><div id='file'> File Name: test.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR>

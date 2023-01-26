@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        If ``cache`` is se to True, ``feat`` and ``graph`` should not change during
+        training, or you will get wrong results.
+        
+        <a id="change">graph = graph.local_var()</a>
+        if self._cached_h is not None:
+            feat = self._cached_h
+        else:
+            &#47&#47 compute normalization
+            degs = nd.clip(graph.in_degrees().astype(feat.dtype), 1, float(&quotinf&quot))
+            norm = nd.power(degs, -0.5).expand_dims(1)
+            norm = norm.as_in_context(feat.context)
+            &#47&#47 compute (D^-1 A D)^k X
+            for _ in range(self._k):
+                feat = feat * norm
+                <a id="change">graph.ndata[&quoth&quot]</a> = feat
+                graph.update_all(fn.copy_u(&quoth&quot, &quotm&quot),
+                                 fn.sum(&quotm&quot, &quoth&quot))
+                feat = graph.ndata.pop(&quoth&quot)
+                feat = feat * norm
+
+            if self.norm is not None:
+                feat = self.norm(feat)
+
+            &#47&#47 cache feature
+            if self._cached:
+                <a id="change">self._cached_h</a> = feat
+        <a id="change">return self.fc(feat)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        If ``cache`` is se to True, ``feat`` and ``graph`` should not change during
+        training, or you will get wrong results.
+        
+        <a id="change">with graph.local_scope():
+            if self._cached_h is not None:
+                feat = self._cached_h
+            else:
+                &#47&#47 compute normalization
+                degs = nd.clip(graph.in_degrees().astype(feat.dtype), 1, float(&quotinf&quot))
+                norm = nd.power(degs, -0.5).expand_dims(1)
+                norm = norm.as_in_context(feat.context)
+                &#47&#47 compute (D^-1 A D)^k X
+                for _ in range(self._k):
+                    feat = feat * norm
+                    graph.ndata[&quoth&quot] = feat
+                    graph.update_all(fn.copy_u(&quoth&quot, &quotm&quot),
+                                     fn.sum(&quotm&quot, &quoth&quot))
+                    feat = graph.ndata.pop(&quoth&quot)
+                    feat = feat * norm
+
+                if self.norm is not None:
+                    feat = self.norm(feat)
+
+                &#47&#47 cache feature
+                if self._cached:
+                    self._cached_h = feat
+            return self.fc(feat)</a>
+</code></pre>

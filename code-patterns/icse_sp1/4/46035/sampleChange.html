@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 if path.endswith(os.path.sep):
+        &#47&#47    path = path[:-1]
+
+        <a id="change">caslib, path_remaining, tmp_caslib = caslibify(self.conn, path, task = &quotsave&quot)</a>
+
+        _file_name_ = self.model_name.replace(&quot &quot, &quot_&quot)
+        _extension_ = &quot.sashdat&quot
+        model_tbl_file = path_remaining + _file_name_ + _extension_</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 if path.endswith(os.path.sep):
+        &#47&#47    path = path[:-1]
+
+        <a id="change">with caslibify_context(self.conn, path, task = &quotsave&quot) as (caslib, path_remaining):
+
+            _file_name_ = self.model_name.replace(&quot &quot, &quot_&quot)
+            _extension_ = &quot.sashdat&quot
+            model_tbl_file = path_remaining + _file_name_ + _extension_
+            weight_tbl_file = path_remaining + _file_name_ + &quot_weights&quot + _extension_
+            attr_tbl_file = path_remaining + _file_name_ + &quot_weights_attr&quot + _extension_
+
+            if self.model_table is not None:
+                ch = self.conn.table.tableexists(self.model_weights)
+                if ch.exists &gt; 0:
+                    rt = self._retrieve_(&quottable.save&quot, table = self.model_table, name = model_tbl_file, replace = True,
+                                         caslib = caslib)
+                    if rt.severity &gt; 1:
+                        for msg in rt.messages:
+                            print(msg)
+                        raise DLPyError(&quotsomething is wrong while saving the model to a table!&quot)
+            if self.model_weights is not None:
+                ch = self.conn.table.tableexists(self.model_weights)
+                if ch.exists &gt; 0:
+                    rt = self._retrieve_(&quottable.save&quot, table = self.model_weights, name = weight_tbl_file,
+                                         replace = True, caslib = caslib)
+                    if rt.severity &gt; 1:
+                        for msg in rt.messages:
+                            print(msg)
+                        raise DLPyError(&quotsomething is wrong while saving the model weights to a table!&quot)
+
+                    CAS_tbl_name = random_name(&quotAttr_Tbl&quot)
+                    rt = self._retrieve_(&quottable.attribute&quot, task = &quotconvert&quot, attrtable = CAS_tbl_name,
+                                         **self.model_weights.to_table_params())
+                    if rt.severity &gt; 1:
+                        for msg in rt.messages:
+                            print(msg)
+                        raise DLPyError(&quotsomething is wrong while extracting the model attributes!&quot)
+
+                    rt = self._retrieve_(&quottable.save&quot, table = CAS_tbl_name, name = attr_tbl_file, replace = True,
+                                         caslib = caslib)
+                    if rt.severity &gt; 1:
+                        for msg in rt.messages:
+                            print(msg)
+                        raise DLPyError(&quotsomething is wrong while saving the model attributes to a table!&quot)
+
+            print(&quotNOTE: Model table saved successfully.&quot)
+
+   </a> def save_weights_csv(self, path):
+        &quot&quot&quot
+        Save model weights table as csv
+</code></pre>

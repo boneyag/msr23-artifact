@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            BCList.sort()
+            BCList.reverse()
+            finalized[sent] = torch.jit.annotate(
+                List[Dict[str, Tensor]], <a id="change">[x.elem for x in BCList]</a>
+            )
+
+        return finalized
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 sort by score descending
+        for sent in range(len(finalized)):
+            scores = <a id="change">torch.tensor([float(elem["score"].item()) for elem in finalized[sent]])</a>
+            <a id="change">_, sorted_scores_indices = torch.sort(scores, descending=True)</a>
+            finalized[sent] = [finalized[sent][ssi] for ssi in sorted_scores_indices]
+            finalized[sent] = torch.jit.annotate(List[Dict[str, Tensor]], finalized[sent])
+        return finalized
+</code></pre>

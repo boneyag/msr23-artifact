@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        train_batch = self._lazy_tensor_dict(postprocessed_batch)
+        loss_out = self._loss(self, self.model, self.dist_class, train_batch)
+        self._optimizer.zero_grad()
+        <a id="change">loss_out.backward()</a>
+
+        info = {}
+        info.update(self.extra_grad_process())
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                    torch.distributed.all_reduce_coalesced(
+                        grads, op=torch.distributed.ReduceOp.SUM)
+
+                <a id="change">for param_group in opt.param_groups:
+                    for p in param_group["params"]:
+                        if p.grad is not None:
+                            p.grad /= self.distributed_world_size
+
+               </a> grad_info["allreduce_latency"] += time.time() - start
+
+            &#47&#47 Step the optimizer.
+            opt.step()</code></pre>

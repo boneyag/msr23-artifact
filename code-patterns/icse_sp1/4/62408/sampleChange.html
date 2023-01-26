@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        inference = ADVI()
+        inference.fit(n=10)
+        assert len(pm.variational.opvi.Approximation.logp.fget.cache) == 1
+        <a id="change">del inference</a>
+        assert len(pm.variational.opvi.Approximation.logp.fget.cache) == 0
+        for c in pymc3.memoize.CACHE_REGISTRY:
+            assert len(c) == 0
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        pymc3.memoize.clear_cache(inference.approx)
+        &#47&#47 should not be cleared at this call
+        assert all(len(c) == 0 for c in inference.approx._cache.values())
+        new_a = pickle.loads(<a id="change">pickle.dumps(inference.approx)</a>)
+        assert not hasattr(new_a, &quot_cache&quot)
+        <a id="change">inference_new = pm.KLqp(new_a)</a>
+        inference_new.fit(n=10)
+        assert any(len(c) != 0 for c in inference_new.approx._cache.values())
+        pymc3.memoize.clear_cache(inference_new.approx)
+        assert all(len(c) == 0 for c in inference_new.approx._cache.values())</code></pre>

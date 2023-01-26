@@ -1,0 +1,92 @@
+<html><h3>276f8fc3fe9a7424bae6585ed4453190e2a70815,acoular/fbeamform.py,BeamformerFunctional,calc,#BeamformerFunctional#Any#Any#,438
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        -------
+        This method only returns values through the *ac* and *fr* parameters
+           
+        <a id="change">kj = 2j*pi*self.freq_data.fftfreq()/self.c</a>
+        <a id="change">steerVecFormulation = steerVecTranslation(self.steer)</a>
+        normFactor = self.sig_loss_norm()
+        for i in self.freq_data.indices:        
+            if not fr[i]:
+                <a id="change">kji = kj[i, newaxis]</a>
+                if self.r_diag:
+                    &#47&#47 This case is not used at the moment (see Trait r_diag)
+&#47&#47==============================================================================
+&#47&#47                     One cannot use spectral decomposition when diagonal of csm is removed,
+&#47&#47                     as the resulting modified eigenvectors are not orthogonal to each other anymore.
+&#47&#47                     Therefor potentiating cannot be applied only to the eigenvalues.
+&#47&#47                     --&gt; To avoid this the root of the csm (removed diag) is calculated directly.
+&#47&#47                     WATCH OUT: This doesn&quott really produce good results.
+&#47&#47==============================================================================
+                    csm = self.freq_data.csm[i]
+                    fill_diagonal(csm, 0)
+                    csmRoot = fractional_matrix_power(csm, 1.0 / self.gamma)
+                    beamformerOutput, steerNorm = beamformerFreq(False, steerVecFormulation, False, 1.0, <a id="change">(self.r0, self.rm, kji, csmRoot[newaxis])</a>)
+                    beamformerOutput /= steerNorm  &#47&#47 take normalized steering vec
+                    
+                    &#47&#47 set (unphysical) negative output values to 0</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _get_digest( self ):
+        return digest( self )
+
+    def calc(<a id="change">self</a>, ac, fr):
+        
+        Calculates the Functional Beamformer result for the frequencies defined by :attr:`freq_data`
+        
+        This is an internal helper function that is automatically called when 
+        accessing the beamformer&quots :attr:`~BeamformerBase.result` or calling
+        its :meth:`~BeamformerBase.synthetic` method.        
+        
+        Parameters
+        ----------
+        ac : array of floats
+            This array of dimension ([number of frequencies]x[number of gridpoints])
+            is used as call-by-reference parameter and contains the calculated
+            value after calling this method. 
+        fr : array of booleans
+            The entries of this [number of frequencies]-sized array are either 
+            &quotTrue&quot (if the result for this frequency has already been calculated)
+            or &quotFalse&quot (for the frequencies where the result has yet to be calculated).
+            After the calculation at a certain frequency the value will be set
+            to &quotTrue&quot
+        
+        Returns
+        -------
+        This method only returns values through the *ac* and *fr* parameters
+        
+        <a id="change">i = self.freq_data.indices</a>
+        <a id="change">self.steer_obj.f = (self.freq_data.fftfreq()[i]).tolist()</a>
+        normFactor = self.sig_loss_norm()
+        for cntFreq in <a id="change">range(len(i))</a>:
+            if not fr[<a id="change">i[cntFreq]</a>]:
+                if self.r_diag:
+                    &#47&#47 This case is not used at the moment (see Trait r_diag)  
+                    &#47&#47 It would need some testing as structural changes were not tested...
+&#47&#47==============================================================================
+&#47&#47                     One cannot use spectral decomposition when diagonal of csm is removed,
+&#47&#47                     as the resulting modified eigenvectors are not orthogonal to each other anymore.
+&#47&#47                     Therefor potentiating cannot be applied only to the eigenvalues.
+&#47&#47                     --&gt; To avoid this the root of the csm (removed diag) is calculated directly.
+&#47&#47                     WATCH OUT: This doesn&quott really produce good results.
+&#47&#47==============================================================================
+                    csm = self.freq_data.csm[i[cntFreq]]
+                    fill_diagonal(csm, 0)
+                    csmRoot = fractional_matrix_power(csm, 1.0 / self.gamma)
+                    beamformerOutput, steerNorm = <a id="change">self</a>.steer_obj._beamformerCall(cntFreq, self.r_diag, 1.0, <a id="change">(csmRoot[newaxis],)</a>)
+                    beamformerOutput /= steerNorm  &#47&#47 take normalized steering vec
+                    
+                    &#47&#47 set (unphysical) negative output values to 0
+                    indNegSign = sign(beamformerOutput) &lt; 0
+                    beamformerOutput[indNegSign] = 0.0
+                else:
+                    eva = array(self.freq_data.eva[<a id="change">i[cntFreq]</a>][newaxis], dtype=&quotfloat64&quot) ** (1.0 / self.gamma)
+                    eve = array(self.freq_data.eve[<a id="change">i[cntFreq]</a>][newaxis], dtype=&quotcomplex128&quot)
+                    beamformerOutput, steerNorm = <a id="change">self</a>.steer_obj._beamformerCall(cntFreq, self.r_diag, 1.0, (eva, eve))  &#47&#47 takes all EigVal into account
+                    beamformerOutput /= steerNorm  &#47&#47 take normalized steering vec
+                ac[<a id="change">i[cntFreq]</a>] = (beamformerOutput ** self.gamma) * steerNorm * normFactor  &#47&#47 the normalization must be done outside the beamformer
+                fr[<a id="change">i[cntFreq]</a>] = True
+            
+class BeamformerCapon( BeamformerBase ):
+    </code></pre><img src="301261812.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 34</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/acoular/acoular/commit/276f8fc3fe9a7424bae6585ed4453190e2a70815#diff-a9ffada5930a6338ee3aec2fd90118aadaed1842ee662e4eccf76f90fbe750e2L438' target='_blank'>Link</a></div><div id='project'> Project Name: acoular/acoular</div><div id='commit'> Commit Name: 276f8fc3fe9a7424bae6585ed4453190e2a70815</div><div id='time'> Time: 2018-05-02</div><div id='author'> Author: tom.j.gensch@campus.tu-berlin.de</div><div id='file'> File Name: acoular/fbeamform.py</div><div id='class'> Class Name: BeamformerFunctional</div><div id='method'> Method Name: calc</div><BR><BR><div id='link'><a href='https://github.com/acoular/acoular/commit/4b8dec5e7199ad302c52bf9eb6914a170491334c#diff-a9ffada5930a6338ee3aec2fd90118aadaed1842ee662e4eccf76f90fbe750e2L676' target='_blank'>Link</a></div><div id='project'> Project Name: acoular/acoular</div><div id='commit'> Commit Name: 4b8dec5e7199ad302c52bf9eb6914a170491334c</div><div id='time'> Time: 2018-05-03</div><div id='author'> Author: tom.j.gensch@campus.tu-berlin.de</div><div id='file'> File Name: acoular/fbeamform.py</div><div id='class'> Class Name: BeamformerMusic</div><div id='method'> Method Name: calc</div><BR><BR><div id='link'><a href='https://github.com/acoular/acoular/commit/276f8fc3fe9a7424bae6585ed4453190e2a70815#diff-a9ffada5930a6338ee3aec2fd90118aadaed1842ee662e4eccf76f90fbe750e2L676' target='_blank'>Link</a></div><div id='project'> Project Name: acoular/acoular</div><div id='commit'> Commit Name: 276f8fc3fe9a7424bae6585ed4453190e2a70815</div><div id='time'> Time: 2018-05-02</div><div id='author'> Author: tom.j.gensch@campus.tu-berlin.de</div><div id='file'> File Name: acoular/fbeamform.py</div><div id='class'> Class Name: BeamformerMusic</div><div id='method'> Method Name: calc</div><BR><BR><div id='link'><a href='https://github.com/acoular/acoular/commit/276f8fc3fe9a7424bae6585ed4453190e2a70815#diff-a9ffada5930a6338ee3aec2fd90118aadaed1842ee662e4eccf76f90fbe750e2L438' target='_blank'>Link</a></div><div id='project'> Project Name: acoular/acoular</div><div id='commit'> Commit Name: 276f8fc3fe9a7424bae6585ed4453190e2a70815</div><div id='time'> Time: 2018-05-02</div><div id='author'> Author: tom.j.gensch@campus.tu-berlin.de</div><div id='file'> File Name: acoular/fbeamform.py</div><div id='class'> Class Name: BeamformerFunctional</div><div id='method'> Method Name: calc</div><BR><BR><div id='link'><a href='https://github.com/acoular/acoular/commit/4b8dec5e7199ad302c52bf9eb6914a170491334c#diff-a9ffada5930a6338ee3aec2fd90118aadaed1842ee662e4eccf76f90fbe750e2L438' target='_blank'>Link</a></div><div id='project'> Project Name: acoular/acoular</div><div id='commit'> Commit Name: 4b8dec5e7199ad302c52bf9eb6914a170491334c</div><div id='time'> Time: 2018-05-03</div><div id='author'> Author: tom.j.gensch@campus.tu-berlin.de</div><div id='file'> File Name: acoular/fbeamform.py</div><div id='class'> Class Name: BeamformerFunctional</div><div id='method'> Method Name: calc</div><BR>

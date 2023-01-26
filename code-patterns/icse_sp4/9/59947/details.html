@@ -1,0 +1,76 @@
+<html><h3>7a6e3b93fb4b97af7b06244b768b1fee4b547c17,ch12/train_crossent.py,,,#,41
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            loss_v.backward()
+            optimiser.step()
+
+            losses.append(<a id="change">loss_v.data.cpu().numpy()[0]</a>)
+        bleu = bleu_sum / bleu_count
+        bleu_test = run_test(test_data, net, end_token, args.cuda)
+        log.info("Epoch %d: mean loss %.3f, mean BLEU %.3f, test BLEU %.3f",</code></pre><h3>After Change</h3><pre><code class='java'>
+                        help="Enable cuda")
+    parser.add_argument("-n", "--name", required=True, help="Name of the run")
+    args = parser.parse_args()
+    <a id="change">device = torch.device("cuda" if args.cuda else "cpu")</a>
+
+    saves_path = os.path.join(SAVES_DIR, args.name)
+    os.makedirs(saves_path, exist_ok=True)
+
+    phrase_pairs, emb_dict = data.load_data(genre_filter=args.data)
+    log.info("Obtained %d phrase pairs with %d uniq words",
+             len(phrase_pairs), len(emb_dict))
+    data.save_emb_dict(saves_path, emb_dict)
+    end_token = emb_dict[data.END_TOKEN]
+    train_data = data.encode_phrase_pairs(phrase_pairs, emb_dict)
+    rand = np.random.RandomState(data.SHUFFLE_SEED)
+    rand.shuffle(train_data)
+    log.info("Training data converted, got %d samples", len(train_data))
+    train_data, test_data = data.split_train_test(train_data)
+    log.info("Train set has %d phrases, test %d", len(train_data), len(test_data))
+
+    net = model.PhraseModel(emb_size=model.EMBEDDING_DIM, dict_size=len(emb_dict),
+                            hid_size=model.HIDDEN_STATE_SIZE).to(<a id="change">device</a>)
+    log.info("Model: %s", net)
+
+    writer = SummaryWriter(comment="-" + args.name)
+
+    optimiser = optim.Adam(net.parameters(), lr=LEARNING_RATE)
+    best_bleu = None
+    for epoch in range(MAX_EPOCHES):
+        losses = []
+        bleu_sum = 0.0
+        bleu_count = 0
+        for batch in data.iterate_batches(train_data, BATCH_SIZE):
+            optimiser.zero_grad()
+            input_seq, out_seq_list, _, out_idx = model.pack_batch(batch, net.emb, <a id="change">device</a>)
+            enc = net.encode(input_seq)
+
+            net_results = []
+            net_targets = []
+            for idx, out_seq in enumerate(out_seq_list):
+                ref_indices = out_idx[idx][1:]
+                enc_item = net.get_encoded_item(enc, idx)
+                if random.random() &lt; TEACHER_PROB:
+                    r = net.decode_teacher(enc_item, out_seq)
+                    bleu_sum += model.seq_bleu(r, ref_indices)
+                else:
+                    r, seq = net.decode_chain_argmax(enc_item, out_seq.data[0:1],
+                                                     len(ref_indices))
+                    bleu_sum += utils.calc_bleu(seq, ref_indices)
+                net_results.append(r)
+                net_targets.extend(ref_indices)
+                bleu_count += 1
+            results_v = torch.cat(net_results)
+            targets_v = torch.LongTensor(net_targets).to(<a id="change">device</a>)
+            loss_v = F.cross_entropy(results_v, targets_v)
+            loss_v.backward()
+            optimiser.step()
+
+            losses.append(loss_v.item())
+        bleu = bleu_sum / bleu_count
+        bleu_test = run_test(test_data, net, end_token, <a id="change">device</a>)
+        log.info("Epoch %d: mean loss %.3f, mean BLEU %.3f, test BLEU %.3f",
+                 epoch, np.mean(losses), bleu, bleu_test)
+        writer.add_scalar("loss", np.mean(losses), epoch)</code></pre><img src="277115269.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/PacktPublishing/Deep-Reinforcement-Learning-Hands-On/commit/7a6e3b93fb4b97af7b06244b768b1fee4b547c17#diff-67c7be1e7c26487e70450e11ed1a97f95dee1feb27d72923a87ab3a3764cb99eL49' target='_blank'>Link</a></div><div id='project'> Project Name: PacktPublishing/Deep-Reinforcement-Learning-Hands-On</div><div id='commit'> Commit Name: 7a6e3b93fb4b97af7b06244b768b1fee4b547c17</div><div id='time'> Time: 2018-04-29</div><div id='author'> Author: max.lapan@gmail.com</div><div id='file'> File Name: ch12/train_crossent.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/PacktPublishing/Deep-Reinforcement-Learning-Hands-On/commit/d5b0cd8e7960c247bb7c5b7c832358f8831780fb#diff-76ef45280999506380a1cd22adfc9b9fd61476500ae25b7339a77ddf0a7423ffL91' target='_blank'>Link</a></div><div id='project'> Project Name: PacktPublishing/Deep-Reinforcement-Learning-Hands-On</div><div id='commit'> Commit Name: d5b0cd8e7960c247bb7c5b7c832358f8831780fb</div><div id='time'> Time: 2018-04-29</div><div id='author'> Author: max.lapan@gmail.com</div><div id='file'> File Name: ch15/03_train_trpo.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/pytorch/tutorials/commit/0ad33d606682537466f3430fc6d6ac7d47460f1a#diff-402873d5e15ccb7ebca5fc94a74d1a4ad252190483ce86ca9dd661a55e9da556L50' target='_blank'>Link</a></div><div id='project'> Project Name: pytorch/tutorials</div><div id='commit'> Commit Name: 0ad33d606682537466f3430fc6d6ac7d47460f1a</div><div id='time'> Time: 2018-04-24</div><div id='author'> Author: soumith@gmail.com</div><div id='file'> File Name: beginner_source/examples_autograd/two_layer_net_custom_function.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

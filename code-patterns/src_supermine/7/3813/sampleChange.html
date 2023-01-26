@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def __call__(self, inputs, state, scope):
+        &#47&#47 Parameters of gates are concatenated into one multiply for efficiency.
+        c, h = array_ops.split(1, 2, state)
+        <a id="change">self.W</a>, <a id="change">self.b</a>, concat = _linear([inputs, h], 4 * self._num_units,
+                                         self.bias, self.W, self.b,
+                                         self.W_init,
+                                         trainable=self.trainable,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def __call__(self, inputs, state, scope=None):
+        Long short-term memory cell (LSTM).
+        <a id="change">with tf.variable_scope(scope or type(self).__name__):  &#47&#47 "BasicLSTMCell"
+            &#47&#47 Parameters of gates are concatenated into one multiply for efficiency.
+            if self._state_is_tuple:
+                c, h = state
+            else:
+                c, h = array_ops.split(1, 2, state)
+            concat = _linear([inputs, h], 4 * self._num_units, True, 0.,
+                             self.weights_init, self.trainable, self.restore,
+                             self.reuse)
+
+            &#47&#47 i = input_gate, j = new_input, f = forget_gate, o = output_gate
+            i, j, f, o = array_ops.split(1, 4, concat)
+
+            new_c = (c * self._inner_activation(f + self._forget_bias) +
+                     self._inner_activation(i) *
+                     self._activation(j))
+            new_h = self._activation(new_c) * self._inner_activation(o)
+
+            if self._state_is_tuple:
+                new_state = _rnn_cell.LSTMStateTuple(new_c, new_h)
+            else:
+                new_state = array_ops.concat(1, [new_c, new_h])
+
+            &#47&#47 Retrieve RNN Variables
+            with tf.variable_scope(&quotLinear&quot, reuse=True):
+                self.W = tf.get_variable(&quotMatrix&quot)
+                self.b = tf.get_variable(&quotBias&quot)
+
+            return new_h, new_state
+
+
+</a>class GRUCell(_rnn_cell.RNNCell):
+     TF GRU Cell with extra customization params. 
+
+    def __init__(self, num_units, input_size=None, activation=tf.tanh,</code></pre>

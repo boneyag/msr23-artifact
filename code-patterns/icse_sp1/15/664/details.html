@@ -1,0 +1,57 @@
+<html><h3>5dc8ce0b357983add2bc0979de1b87b92579509a,tests/integ/test_local_mode.py,,test_mxnet_local_data_local_script,#,339
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def test_mxnet_local_data_local_script():
+    <a id="change">local_mode_lock_fd = open(LOCK_PATH, &quotw&quot)</a>
+    <a id="change">local_mode_lock = local_mode_lock_fd.fileno()</a>
+
+    data_path = os.path.join(DATA_DIR, &quotmxnet_mnist&quot)
+    script_path = os.path.join(data_path, &quotmnist_framework_mode.py&quot)
+
+    mx = MXNet(entry_point=script_path, role=&quotSageMakerRole&quot,
+               train_instance_count=1, train_instance_type=&quotlocal&quot,
+               sagemaker_session=LocalNoS3Session())
+
+    train_input = &quotfile://&quot + os.path.join(data_path, &quottrain&quot)
+    test_input = &quotfile://&quot + os.path.join(data_path, &quottest&quot)
+
+    mx.fit({&quottrain&quot: train_input, &quottest&quot: test_input})
+    endpoint_name = mx.latest_training_job.name
+    <a id="change">try:
+        &#47&#47 Since Local Mode uses the same port for serving, we need a lock in order
+        &#47&#47 to allow concurrent test execution. The serving test is really fast so it still
+        &#47&#47 makes sense to allow this behavior.
+        fcntl.lockf(local_mode_lock, fcntl.LOCK_EX)
+        predictor = mx.deploy(1, &quotlocal&quot, endpoint_name=endpoint_name)
+        data = numpy.zeros(shape=(1, 1, 28, 28))
+        predictor.predict(data)
+    finally:
+        mx.delete_endpoint()
+        time.sleep(5)
+        fcntl.lockf(local_mode_lock, fcntl.LOCK_UN)
+
+
+</a>def test_local_transform_mxnet(sagemaker_local_session, tmpdir, mxnet_full_version):
+    local_mode_lock_fd = open(LOCK_PATH, &quotw&quot)
+    local_mode_lock = local_mode_lock_fd.fileno()
+    data_path = os.path.join(DATA_DIR, &quotmxnet_mnist&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+    mx.fit({&quottrain&quot: train_input, &quottest&quot: test_input})
+    endpoint_name = mx.latest_training_job.name
+
+    <a id="change">with local_mode_utils.lock():
+        try:
+            predictor = mx.deploy(1, &quotlocal&quot, endpoint_name=endpoint_name)
+            data = numpy.zeros(shape=(1, 1, 28, 28))
+            predictor.predict(data)
+        finally:
+            mx.delete_endpoint()
+
+
+</a>def test_local_transform_mxnet(sagemaker_local_session, tmpdir, mxnet_full_version):
+    data_path = os.path.join(DATA_DIR, &quotmxnet_mnist&quot)
+    script_path = os.path.join(data_path, &quotmnist.py&quot)
+</code></pre><img src="5656214.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 8</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/5dc8ce0b357983add2bc0979de1b87b92579509a#diff-63b988a1e297187540c1f83298722153fd4a4358f5624f129010d90c62c33d23L303' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: 5dc8ce0b357983add2bc0979de1b87b92579509a</div><div id='time'> Time: 2018-12-07</div><div id='author'> Author: jonathan.esterhazy@gmail.com</div><div id='file'> File Name: tests/integ/test_local_mode.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_mxnet_local_data_local_script</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/5dc8ce0b357983add2bc0979de1b87b92579509a#diff-63b988a1e297187540c1f83298722153fd4a4358f5624f129010d90c62c33d23L260' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: 5dc8ce0b357983add2bc0979de1b87b92579509a</div><div id='time'> Time: 2018-12-07</div><div id='author'> Author: jonathan.esterhazy@gmail.com</div><div id='file'> File Name: tests/integ/test_local_mode.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_local_mode_serving_from_s3_model</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/5dc8ce0b357983add2bc0979de1b87b92579509a#diff-63b988a1e297187540c1f83298722153fd4a4358f5624f129010d90c62c33d23L82' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: 5dc8ce0b357983add2bc0979de1b87b92579509a</div><div id='time'> Time: 2018-12-07</div><div id='author'> Author: jonathan.esterhazy@gmail.com</div><div id='file'> File Name: tests/integ/test_local_mode.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_tf_local_mode</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/5dc8ce0b357983add2bc0979de1b87b92579509a#diff-63b988a1e297187540c1f83298722153fd4a4358f5624f129010d90c62c33d23L284' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: 5dc8ce0b357983add2bc0979de1b87b92579509a</div><div id='time'> Time: 2018-12-07</div><div id='author'> Author: jonathan.esterhazy@gmail.com</div><div id='file'> File Name: tests/integ/test_local_mode.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_local_mode_serving_from_local_model</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/5dc8ce0b357983add2bc0979de1b87b92579509a#diff-63b988a1e297187540c1f83298722153fd4a4358f5624f129010d90c62c33d23L173' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: 5dc8ce0b357983add2bc0979de1b87b92579509a</div><div id='time'> Time: 2018-12-07</div><div id='author'> Author: jonathan.esterhazy@gmail.com</div><div id='file'> File Name: tests/integ/test_local_mode.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_tf_local_data</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/5dc8ce0b357983add2bc0979de1b87b92579509a#diff-63b988a1e297187540c1f83298722153fd4a4358f5624f129010d90c62c33d23L128' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: 5dc8ce0b357983add2bc0979de1b87b92579509a</div><div id='time'> Time: 2018-12-07</div><div id='author'> Author: jonathan.esterhazy@gmail.com</div><div id='file'> File Name: tests/integ/test_local_mode.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_tf_distributed_local_mode</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/5dc8ce0b357983add2bc0979de1b87b92579509a#diff-63b988a1e297187540c1f83298722153fd4a4358f5624f129010d90c62c33d23L215' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: 5dc8ce0b357983add2bc0979de1b87b92579509a</div><div id='time'> Time: 2018-12-07</div><div id='author'> Author: jonathan.esterhazy@gmail.com</div><div id='file'> File Name: tests/integ/test_local_mode.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_tf_local_data_local_script</div><BR><BR><div id='link'><a href='https://github.com/aws/sagemaker-python-sdk/commit/5dc8ce0b357983add2bc0979de1b87b92579509a#diff-63b988a1e297187540c1f83298722153fd4a4358f5624f129010d90c62c33d23L307' target='_blank'>Link</a></div><div id='project'> Project Name: aws/sagemaker-python-sdk</div><div id='commit'> Commit Name: 5dc8ce0b357983add2bc0979de1b87b92579509a</div><div id='time'> Time: 2018-12-07</div><div id='author'> Author: jonathan.esterhazy@gmail.com</div><div id='file'> File Name: tests/integ/test_local_mode.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_mxnet_local_mode</div><BR>

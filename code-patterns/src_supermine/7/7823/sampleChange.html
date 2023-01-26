@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                def f(w):
+                    R = tf.triu(w)
+                    return -tf.reduce_sum(tf.log(tf.user_ops.get_diag(R))) + 0.5*tf.reduce_sum(tf.square(R))
+                <a id="change">KL += theano.scan(f, self.q_sqrt.swapaxes(0,2))[0].sum()</a>
+            fmean, fvar = conditionals.gaussian_gp_predict_whitened(self.X, self.Z, self.kern, self.q_mu, self.q_sqrt)
+        else:
+            L = tf.cholesky(self.kern.K(self.Z) + eye(self.num_inducing) * 1e-4)
+            alpha = tf.user_ops.triangular_solve(L, self.q_mu, &quotlower&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+            else:
+                &#47&#47here we loop through all the independent columns, extracting the triangular part. 
+                for d in range(self.num_latent):
+                    L = tf.user_ops.triangle(<a id="change">self.q_sqrt[d,:,:]</a>, &quotlower&quot)
+                    KL += -tf.reduce_sum(tf.log(tf.user_ops.get_diag(L))) + 0.5*tf.reduce_sum(tf.square(L))
+            fmean, fvar = conditionals.gaussian_gp_predict_whitened(self.X, self.Z, self.kern, self.q_mu, self.q_sqrt)
+        else:</code></pre>

@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    Z = nn_state.compute_normalization(space)
+    eps = 0.000001
+    if train_bases is None:
+        <a id="change">for i in range(len(samples)):
+            NLL -= (cplx.norm_sqr(nn_state.psi(samples[i])) + eps).log()
+            NLL += Z.log()
+   </a> else:
+        for i in range(len(samples)):
+            &#47&#47 Check whether the sample was measured the reference basis
+            is_reference_basis = True</code></pre><h3>After Change</h3><pre><code class='java'>
+        nn_probs = nn_state.probability(samples, Z)
+        NLL = torch.sum(probs_to_logits(nn_probs))
+    else:
+        <a id="change">unitary_dict = nn_state.unitary_dict</a>
+        &#47&#47 print(train_bases)
+        for i in range(len(samples)):
+            &#47&#47 Check whether the sample was measured the reference basis
+            is_reference_basis = True
+            for j in range(nn_state.num_visible):
+                if train_bases[i][j] != "Z":
+                    is_reference_basis = False
+                    break
+            if is_reference_basis is True:
+                nn_probs = nn_state.probability(samples[i], Z)
+                NLL += torch.sum(probs_to_logits(nn_probs))
+            else:
+                psi_r = rotate_psi(nn_state, train_bases[i], space, unitary_dict)
+                &#47&#47 Get the index value of the sample state
+                ind = 0
+                for j in range(nn_state.num_visible):
+                    if samples[i, nn_state.num_visible - j - 1] == 1:
+                        ind += pow(2, j)
+                probs_r = cplx.norm_sqr(psi_r[:, ind]) / Z
+                NLL -= <a id="change">probs_to_logits(probs_r).item()</a>
+    return (NLL / float(len(samples))).item()
+
+
+def KL(nn_state, target_psi, space, bases=None, **kwargs):</code></pre>

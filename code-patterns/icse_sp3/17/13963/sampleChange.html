@@ -1,0 +1,59 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        AZZA = self.ZA.T[:, None, :, None] * self.ZA[None, :, None, :]
+        AZZA = AZZA + AZZA.swapaxes(1, 2)
+        target_S += (dL_dpsi2[:, :, :, None] * self.ZA[None, :, None, :] * self.ZA[None, None, :, :]).sum(1).sum(1)
+        dpsi2_dmu = <a id="change">(dL_dpsi2[:, :, :, None] * np.tensordot(mu, AZZA, (-1, 0))).sum(1).sum(1)</a>
+        target_mu += dpsi2_dmu
+
+    def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
+        self._psi_computations(Z, mu, S)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47target_S_dummy += (dL_dpsi2[:, :, :, None] * self.ZA[None, :, None, :] * self.ZA[None, None, :, :]).sum(1).sum(1)
+
+        &#47&#47Using weave, we can exploiut the symmetry of this problem:
+        <a id="change">code = 
+        int n, m, mm,q,qq;
+        double factor,tmp;
+        &#47&#47pragma omp parallel for private(m,mm,q,qq,factor,tmp)
+        for(n=0;n&lt;N;n++){
+          for(m=0;m&lt;M;m++){
+            for(mm=0;mm&lt;=m;mm++){
+              //add in a factor of 2 for the off-diagonal terms (and then count them only once)
+              if(m==mm)
+                factor = dL_dpsi2(n,m,mm);
+              else
+                factor = 2.0*dL_dpsi2(n,m,mm);
+
+              for(q=0;q&lt;Q;q++){
+
+                //take the dot product of mu[n,:] and AZZA[:,m,mm,q] TODO: blas!
+                tmp = 0.0;
+                for(qq=0;qq&lt;Q;qq++){
+                  tmp += mu(n,qq)*AZZA(qq,m,mm,q);
+                }
+
+                target_mu(n,q) += factor*tmp;
+                target_S(n,q) += factor*AZZA_2(q,m,mm,q);
+              }
+            }  
+          }
+        }
+        </a>
+        <a id="change">support_code = 
+        &#47&#47include &lt;omp.h&gt;
+        &#47&#47include &lt;math.h&gt;
+        </a>
+        weave_options = {&quotheaders&quot           : [&quot&lt;omp.h&gt;&quot],
+                         &quotextra_compile_args&quot: [&quot-fopenmp -O3&quot],  &#47&#47-march=native&quot],
+                         &quotextra_link_args&quot   : [&quot-lgomp&quot]}
+
+        N,M,Q = mu.shape[0],Z.shape[0],mu.shape[1]
+        <a id="change">weave.inline(code, support_code=support_code, libraries=[&quotgomp&quot],
+                     arg_names=[&quotN&quot,&quotM&quot,&quotQ&quot,&quotmu&quot,&quotAZZA&quot,&quotAZZA_2&quot,&quottarget_mu&quot,&quottarget_S&quot,&quotdL_dpsi2&quot],
+                     type_converters=weave.converters.blitz,**weave_options)</a>
+
+
+    def dpsi2_dZ(self, dL_dpsi2, Z, mu, S, target):
+        self._psi_computations(Z, mu, S)</code></pre>

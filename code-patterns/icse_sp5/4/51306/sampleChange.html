@@ -1,0 +1,307 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            &#47&#47 ================ Train ================
+            progress_bar = None
+            if <a id="change">is_on_master()</a>:
+                progress_bar = tqdm(
+                    desc=&quotTraining&quot,
+                    total=batcher.steps_per_epoch,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 ====== Setup session =======
+        checkpoint = checkpoint_manager = None
+        if <a id="change">self.is_coordinator()</a>:
+            checkpoint = tf.train.Checkpoint(
+                optimizer=self.optimizer,
+                model=model
+            )
+            checkpoint_manager = tf.train.CheckpointManager(
+                checkpoint, training_checkpoints_path, max_to_keep=1
+            )
+
+        train_summary_writer = None
+        validation_summary_writer = None
+        test_summary_writer = None
+        if self.is_coordinator() and not self.skip_save_log and tensorboard_log_dir:
+            train_summary_writer = tf.summary.create_file_writer(
+                os.path.join(
+                    tensorboard_log_dir, TRAINING
+                )
+            )
+            if validation_set is not None and validation_set.size &gt; 0:
+                validation_summary_writer = tf.summary.create_file_writer(
+                    os.path.join(
+                        tensorboard_log_dir, VALIDATION
+                    )
+                )
+            if test_set is not None and test_set.size &gt; 0:
+                test_summary_writer = tf.summary.create_file_writer(
+                    os.path.join(
+                        tensorboard_log_dir, TEST
+                    )
+                )
+
+        if self.debug and self.is_coordinator():
+            &#47&#47 See https://www.tensorflow.org/tensorboard/debugger_v2 for usage.
+            debug_path = os.path.join(
+                save_path, &quotdebug&quot
+            )
+            tf.debugging.experimental.enable_dump_debug_info(
+                debug_path,
+                tensor_debug_mode=&quotFULL_HEALTH&quot,
+                circular_buffer_size=-1,
+            )
+            tf.config.experimental_run_functions_eagerly(True)
+
+        &#47&#47 ================ Resume logic ================
+        if self.resume:
+            progress_tracker = self.resume_training_progress_tracker(
+                training_progress_tracker_path
+            )
+            if self.is_coordinator():
+                self.resume_weights_and_optimzier(
+                    training_checkpoints_path, checkpoint
+                )
+        else:
+            (
+                train_metrics,
+                vali_metrics,
+                test_metrics
+            ) = self.initialize_training_metrics(output_features)
+
+            progress_tracker = ProgressTracker(
+                batch_size=self.batch_size,
+                epoch=0,
+                steps=0,
+                last_improvement_epoch=0,
+                last_learning_rate_reduction_epoch=0,
+                last_increase_batch_size_epoch=0,
+                learning_rate=self.learning_rate,
+                best_eval_metric=get_initial_validation_value(
+                    self.validation_metric
+                ),
+                best_reduce_learning_rate_eval_metric=get_initial_validation_value(
+                    self.reduce_learning_rate_eval_metric
+                ),
+                last_reduce_learning_rate_eval_metric_improvement=0,
+                best_increase_batch_size_eval_metric=get_initial_validation_value(
+                    self.increase_batch_size_eval_metric
+                ),
+                last_increase_batch_size_eval_metric_improvement=0,
+                num_reductions_learning_rate=0,
+                num_increases_batch_size=0,
+                train_metrics=train_metrics,
+                vali_metrics=vali_metrics,
+                test_metrics=test_metrics,
+                last_improvement=0,
+                last_learning_rate_reduction=0,
+                last_increase_batch_size=0,
+            )
+
+        set_random_seed(self.random_seed)
+        batcher = training_set.initialize_batcher(
+            batch_size=self.batch_size,
+            seed=self.random_seed,
+            horovod=self.horovod
+        )
+
+        &#47&#47 ================ Training Loop ================
+        first_batch = True
+        while progress_tracker.epoch &lt; self.epochs:
+            batcher.set_epoch(progress_tracker.epoch)
+
+            &#47&#47 epoch init
+            start_time = time.time()
+            if self.is_coordinator():
+                logger.info(
+                    &quot\nEpoch {epoch:{digits}d}&quot.format(
+                        epoch=progress_tracker.epoch + 1,
+                        digits=digits_per_epochs
+                    )
+                )
+
+            &#47&#47 needed because batch size may change
+            batcher.batch_size = progress_tracker.batch_size
+
+            &#47&#47 Reset the metrics at the start of the next epoch
+            model.reset_metrics()
+
+            &#47&#47 ================ Train ================
+            progress_bar = None
+            if self.is_coordinator():
+                progress_bar = tqdm(
+                    desc=&quotTraining&quot,
+                    total=batcher.steps_per_epoch,
+                    file=sys.stdout,
+                    disable=is_progressbar_disabled()
+                )
+
+            &#47&#47 training step loop
+            while not batcher.last_batch():
+
+                &#47&#47 Set learning rate for this batch
+                current_learning_rate = progress_tracker.learning_rate
+
+                if self.decay:
+                    current_learning_rate = exponential_decay(
+                        current_learning_rate,
+                        self.decay_rate,
+                        self.decay_steps,
+                        progress_tracker.steps,
+                        self.staircase
+                    )
+
+                if self.horovod:
+                    current_learning_rate = learning_rate_warmup_distributed(
+                        current_learning_rate,
+                        progress_tracker.epoch,
+                        self.learning_rate_warmup_epochs,
+                        self.horovod.size(),
+                        batcher.step,
+                        batcher.steps_per_epoch
+                    ) * self.horovod.size()
+                else:
+                    current_learning_rate = learning_rate_warmup(
+                        current_learning_rate,
+                        progress_tracker.epoch,
+                        self.learning_rate_warmup_epochs,
+                        batcher.step,
+                        batcher.steps_per_epoch
+                    )
+                self.optimizer.set_learning_rate(current_learning_rate)
+
+                &#47&#47 obtain batch
+                batch = batcher.next_batch()
+                inputs = {
+                    i_feat.feature_name: batch[i_feat.proc_column]
+                    for i_feat in model.input_features.values()
+                }
+                targets = {
+                    o_feat.feature_name: batch[o_feat.proc_column]
+                    for o_feat in model.output_features.values()
+                }
+
+                &#47&#47 Reintroduce for tensorboard graph
+                &#47&#47 if first_batch and self.is_coordinator() and not skip_save_log:
+                &#47&#47    tf.summary.trace_on(graph=True, profiler=True)
+
+                loss, all_losses = model.train_step(
+                    self.optimizer,
+                    inputs,
+                    targets,
+                    self.regularization_lambda
+                )
+
+                &#47&#47 Reintroduce for tensorboard graph
+                &#47&#47 if first_batch and self.is_coordinator() and not skip_save_log:
+                &#47&#47     with train_summary_writer.as_default():
+                &#47&#47         tf.summary.trace_export(
+                &#47&#47             name="Model",
+                &#47&#47             step=0,
+                &#47&#47             profiler_outdir=tensorboard_log_dir
+                &#47&#47         )
+
+                if self.is_coordinator() and not self.skip_save_log:
+                    self.write_step_summary(
+                        train_summary_writer=train_summary_writer,
+                        combined_loss=loss,
+                        all_losses=all_losses,
+                        step=progress_tracker.steps,
+                        learning_rate=current_learning_rate,
+                    )
+
+                if self.horovod and first_batch:
+                    &#47&#47 Horovod: broadcast initial variable states from rank 0 to all other processes.
+                    &#47&#47 This is necessary to ensure consistent initialization of all workers when
+                    &#47&#47 training is started with random weights or restored from a checkpoint.
+                    &#47&#47
+                    &#47&#47 Note: broadcast should be done after the first gradient step to ensure
+                    &#47&#47 optimizer initialization.
+                    self.horovod.broadcast_variables(model.variables,
+                                                     root_rank=0)
+                    self.horovod.broadcast_variables(
+                        self.optimizer.variables(), root_rank=0)
+
+                progress_tracker.steps += 1
+                if self.is_coordinator():
+                    progress_bar.update(1)
+                first_batch = False
+
+            &#47&#47 ================ Post Training Epoch ================
+            if self.is_coordinator():
+                progress_bar.close()
+
+            progress_tracker.epoch += 1
+
+            &#47&#47 ================ Eval ================
+            &#47&#47 init tables
+            tables = OrderedDict()
+            for output_feature_name, output_feature in output_features.items():
+                tables[output_feature_name] = [
+                    [output_feature_name] + metrics_names[output_feature_name]
+                ]
+            tables[COMBINED] = [[COMBINED, LOSS]]
+
+            &#47&#47 eval metrics on train
+            self.evaluation(
+                model,
+                training_set,
+                &quottrain&quot,
+                progress_tracker.train_metrics,
+                tables,
+                self.eval_batch_size,
+            )
+
+            self.write_epoch_summary(
+                summary_writer=train_summary_writer,
+                metrics=progress_tracker.train_metrics,
+                step=progress_tracker.epoch,
+            )
+
+            if validation_set is not None and len(validation_set) &gt; 0:
+                &#47&#47 eval metrics on validation set
+                self.evaluation(
+                    model,
+                    validation_set,
+                    &quotvali&quot,
+                    progress_tracker.vali_metrics,
+                    tables,
+                    self.eval_batch_size,
+                )
+
+                self.write_epoch_summary(
+                    summary_writer=validation_summary_writer,
+                    metrics=progress_tracker.vali_metrics,
+                    step=progress_tracker.epoch,
+                )
+
+            if test_set is not None and len(test_set) &gt; 0:
+                &#47&#47 eval metrics on test set
+                self.evaluation(
+                    model,
+                    test_set,
+                    TEST,
+                    progress_tracker.test_metrics,
+                    tables,
+                    self.eval_batch_size,
+                )
+
+                self.write_epoch_summary(
+                    summary_writer=test_summary_writer,
+                    metrics=progress_tracker.test_metrics,
+                    step=progress_tracker.epoch,
+                )
+
+            elapsed_time = (time.time() - start_time) * 1000.0
+
+            if self.is_coordinator():
+                logger.info(&quotTook {time}&quot.format(
+                    time=time_utils.strdelta(elapsed_time)))
+
+            &#47&#47 metric prints
+            if <a id="change">self.is_coordinator()</a>:
+                for output_feature, table in tables.items():
+                    logger.info(
+                        tabulate(</code></pre>

@@ -1,0 +1,49 @@
+<html><h3>73c3c787abbe1ca71b900f11bb880e1de09c6d2a,src/python/pants/engine/process.py,,find_binary,#Any#,376
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        CreateDigest([FileContent(script_path, script_content.encode(), is_executable=True)]),
+    )
+
+    <a id="change">paths = []</a>
+    search_path = create_path_env_var(request.search_path)
+    result = await Get(
+        FallibleProcessResult,
+        &#47&#47 We use a volatile process to force re-run since any binary found on the host system today
+        &#47&#47 could be gone tomorrow. Ideally we&quotd only do this for local processes since all known
+        &#47&#47 remoting configurations include a static container image as part of their cache key which
+        &#47&#47 automatically avoids this problem.
+        UncacheableProcess(
+            Process(
+                description=f"Searching for `{request.binary_name}` on PATH={search_path}",
+                level=LogLevel.DEBUG,
+                input_digest=script_digest,
+                argv=[script_path, request.binary_name],
+                env={"PATH": search_path},
+            )
+        ),
+    )
+    <a id="change">if result.exit_code == 0:
+        paths.extend(result.stdout.decode().splitlines())
+
+   </a> return BinaryPaths(binary_name=request.binary_name, paths=paths)
+
+
+def rules():</code></pre><h3>After Change</h3><pre><code class='java'>
+    if not request.test_args:
+        return dataclasses.replace(binary_paths, paths=[BinaryPath(path) for path in found_paths])
+
+    <a id="change">results = await MultiGet(
+        Get(
+            FallibleProcessResult,
+            UncacheableProcess(
+                Process(argv=[path, *request.test_args], description=f"Test binary {path}.")
+            ),
+        )
+        for path in found_paths
+    )</a>
+    return dataclasses.replace(
+        binary_paths,
+        paths=[
+            BinaryPath.fingerprinted(path, result.stdout)</code></pre><img src="174330246.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/pantsbuild/pants/commit/73c3c787abbe1ca71b900f11bb880e1de09c6d2a#diff-6e47200e83368b7eaa57199888d136fa9f4c37cad73b4c268c06c1c932b56f69L401' target='_blank'>Link</a></div><div id='project'> Project Name: pantsbuild/pants</div><div id='commit'> Commit Name: 73c3c787abbe1ca71b900f11bb880e1de09c6d2a</div><div id='time'> Time: 2020-09-13</div><div id='author'> Author: john.sirois@gmail.com</div><div id='file'> File Name: src/python/pants/engine/process.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: find_binary</div><BR><BR><div id='link'><a href='https://github.com/sloria/TextBlob/commit/1f0509fedfd578d939486d238f1d297f9e7e6279#diff-6518689a9efb5adca1265b5275a593610ac7de4c73aa099d331ce5f0ab6eb036L52' target='_blank'>Link</a></div><div id='project'> Project Name: sloria/TextBlob</div><div id='commit'> Commit Name: 1f0509fedfd578d939486d238f1d297f9e7e6279</div><div id='time'> Time: 2013-12-22</div><div id='author'> Author: sloria1@gmail.com</div><div id='file'> File Name: textblob/classifiers.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _get_words_from_dataset</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-py/commit/f122269dc50b76a4656d2542709ffe4837144a24#diff-e0527f126ce14737ed14390cba62763d9d0855fe381d47217ac7cfdb91ba0fc6L275' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-py</div><div id='commit'> Commit Name: f122269dc50b76a4656d2542709ffe4837144a24</div><div id='time'> Time: 2018-06-12</div><div id='author'> Author: vince62s@yahoo.com</div><div id='file'> File Name: onmt/utils/loss.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: shards</div><BR>

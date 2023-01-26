@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        outputs, final_state, sequence_lengths = dynamic_decode(
+            decoder=self, maximum_iterations=max_decoding_length)
+
+        <a id="change">self._add_internal_trainable_variables()</a>
+        &#47&#47 Add trainable variables of `self._cell` which may be constructed
+        &#47&#47 externally.
+        self._add_trainable_variable(
+            layers.get_rnn_cell_trainable_variables(self._cell))</code></pre><h3>After Change</h3><pre><code class='java'>
+        outputs, final_state, sequence_lengths = dynamic_decode(
+            decoder=self, maximum_iterations=max_decoding_length)
+
+        <a id="change">if not self._built:
+            self._add_internal_trainable_variables()
+            &#47&#47 Add trainable variables of `self._cell` which may be
+            &#47&#47 constructed externally.
+            self._add_trainable_variable(
+                layers.get_rnn_cell_trainable_variables(self._cell))
+            if isinstance(self._output_layer, tf.layers.Layer):
+                self._add_trainable_variable(
+                    self._output_layer.trainable_variables)
+            self._built = True
+
+       </a> return outputs, final_state, sequence_lengths
+
+    def _rnn_output_size(self):
+        size = self._cell.output_size</code></pre>

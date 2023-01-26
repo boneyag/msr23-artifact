@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        fc_feats, att_feats, labels, masks = tmp
+        
+        optimizer.zero_grad()
+        loss = crit(<a id="change">model(fc_feats, att_feats, labels)[:, 1:]</a>, labels[:,1:], masks[:,1:])
+        loss.backward()
+        utils.clip_gradient(optimizer, opt.grad_clip)
+        optimizer.step()</code></pre><h3>After Change</h3><pre><code class='java'>
+        data = loader.get_batch(&quottrain&quot)
+        print(&quotRead data:&quot, time.time() - start)
+
+        <a id="change">torch.cuda.synchronize()</a>
+        start = time.time()
+
+        tmp = [data[&quotfc_feats&quot], data[&quotatt_feats&quot], data[&quotlabels&quot], data[&quotmasks&quot]]
+        tmp = [Variable(torch.from_numpy(_), requires_grad=False).cuda() for _ in tmp]
+        fc_feats, att_feats, labels, masks = tmp
+        
+        optimizer.zero_grad()
+        loss = crit(model(fc_feats, att_feats, labels), labels[:,1:], masks[:,1:])
+        loss.backward()
+        utils.clip_gradient(optimizer, opt.grad_clip)
+        optimizer.step()
+        train_loss = loss.data[0]
+        <a id="change">torch.cuda.synchronize()</a>
+        end = time.time()
+        print("iter {} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}" \
+            .format(iteration, epoch, train_loss, end - start))
+</code></pre>

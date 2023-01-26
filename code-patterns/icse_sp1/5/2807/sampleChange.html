@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 create empty arrays on the remote device and copy them once.
+            &#47&#47 This can avoid some memory issues that make the measurement results unreliable.
+            args = [nd.empty(x[0], dtype=x[1], ctx=ctx) for x in build_result.arg_info]
+            args = <a id="change">[nd.array(x, ctx=ctx) for x in args]</a>
+            ctx.sync()
+
+        costs = time_f(*args).results
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            try:
+                random_fill = remote.get_function("tvm.contrib.random.random_fill")
+            except AttributeError:
+                <a id="change">raise AttributeError("Please make sure USE_RANDOM is ON in the config.cmake "
+                                     "on the remote devices")</a>
+            args = [nd.empty(x[0], dtype=x[1], ctx=ctx) for x in build_result.arg_info]
+            for arg in args:
+                random_fill(arg)
+            ctx.sync()</code></pre>

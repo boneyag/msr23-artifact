@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Evaluate the model.
+    test = make_dataset(test_x, test_y).batch(args.batch_size)
+    <a id="change">eval_result = classifier.evaluate(input_fn=from_dataset(test))</a>
+    print(&quot\nTest set accuracy: {accuracy:0.3f}\n&quot.format(**eval_result))
+
+    &#47&#47 Generate predictions from the model
+    predict_input = make_dataset({</code></pre><h3>After Change</h3><pre><code class='java'>
+    test_x = dict(test_x)
+
+    &#47&#47 Feature columns describe how to use the input.
+    <a id="change">my_feature_columns = []</a>
+    <a id="change">for key in train_x.keys():
+        my_feature_columns.append(tf.feature_column.numeric_column(key=key))
+
+    &#47&#47 Build 2 hidden layer DNN with 10, 10 units respectively.
+   </a> classifier = tf.estimator.DNNClassifier(
+        feature_columns=my_feature_columns,
+        &#47&#47 Two hidden layers of 10 nodes each.
+        hidden_units=[10, 10],
+        &#47&#47 The model must choose between 3 classes.
+        n_classes=3)
+
+    &#47&#47 Train the Model.
+    classifier.train(
+        input_fn=lambda:train_input_fn(train_x, train_y, args.batch_size),
+        steps=args.train_steps)
+
+    &#47&#47 Evaluate the model.
+    eval_result = classifier.evaluate(
+        input_fn=lambda:eval_input_fn(test_x, test_y, args.batch_size))
+
+    print(&quot\nTest set accuracy: {accuracy:0.3f}\n&quot.format(**eval_result))
+
+    &#47&#47 Generate predictions from the model
+    expected = [&quotSetosa&quot, &quotVersicolor&quot, &quotVirginica&quot]
+    predict_x = {
+        &quotSepalLength&quot: [5.1, 5.9, 6.9],
+        &quotSepalWidth&quot: [3.3, 3.0, 3.1],
+        &quotPetalLength&quot: [1.7, 4.2, 5.4],
+        &quotPetalWidth&quot: [0.5, 1.5, 2.1],
+    }
+
+    <a id="change">predictions = classifier.predict(
+        input_fn=lambda:eval_input_fn(predict_x, batch_size=args.batch_size))</a>
+
+    for pred_dict, expec in zip(predictions, expected):
+        template = (&quot\nPrediction is "{}" ({:.1f}%), expected "{}"&quot)
+</code></pre>

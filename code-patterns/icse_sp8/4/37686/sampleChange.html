@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def execute(self, scheduler, storage, product, *subjects):
+    Creates, runs, and returns an ExecutionRequest for the given product and subjects.
+    request = scheduler.execution_request([product], storage.puts(subjects))
+    res = <a id="change">LocalSerialEngine(scheduler, storage).execute(request)</a>
+    if res.error:
+      raise res.error
+    return request
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  def execute(self, scheduler, storage, product, *subjects):
+    Runs an ExecutionRequest for the given product and subjects, and returns the result value.
+    request = self.execute_request(scheduler, storage, product, *subjects)
+    states = <a id="change">[storage.get(key) for key in scheduler.root_entries(request).values()]</a>
+    if any(type(state) is not Return for state in states):
+      raise ValueError(&quotAt least one request failed: {}&quot.format(states))
+    return list(state.value for state in states)
+</code></pre>

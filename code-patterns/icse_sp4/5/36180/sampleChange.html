@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  if len(x.shape) &lt; num_dims:
+    return x
+  <a id="change">return tf.reshape(x, [-1] + x.shape.as_list()[num_dims:])</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    return x
+
+  static_shape = [maybe_prod(x.shape[:num_dims])] + x.shape[num_dims:]
+  <a id="change">if static_shape.is_fully_defined():  &#47&#47 pytype: disable=attribute-error
+    return tf.reshape(x, static_shape)
+
+  &#47&#47 Shape can&quott be inferred statically.
+ </a> tensor_shape = tf.shape(x)
+  leading_dim = tf.reduce_prod(tensor_shape[:num_dims], keepdims=True)
+  other_dims = tensor_shape[num_dims:]
+  dynamic_shape = tf.concat(<a id="change">[leading_dim, other_dims]</a>, axis=0)
+  result = tf.reshape(x, dynamic_shape)
+  &#47&#47 We lose some static shape information from the above reduce/slice/concat
+  &#47&#47 dance, so we explicitly pass it in from what we computed earlier.</code></pre>

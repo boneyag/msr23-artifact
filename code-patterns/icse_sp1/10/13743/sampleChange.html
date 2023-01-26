@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def _get_indices(self, left_indices, right_indices):
+        n_indices = left_indices.numel()
+        if n_indices &gt; self.size(-1) * self.size(-2):
+            return <a id="change">self.evaluate()[left_indices, right_indices]</a>
+
+        else:
+            outer_size = left_indices.size(0)
+            inner_size = self.root.size(-1)</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _get_indices(self, left_indices, right_indices, *batch_indices):
+        n_indices = left_indices.numel()
+        if n_indices &gt; self.size(-1) * self.size(-2):
+            return <a id="change">self.evaluate().__getitem__((*batch_indices, left_indices, right_indices))</a>
+
+        else:
+            outer_size = left_indices.size(0)
+            inner_size = self.root.size(-1)
+            inner_indices = torch.arange(0, inner_size, dtype=torch.long, device=self.device)
+
+            &#47&#47 Repeat the indices to get all the appropriate terms
+            <a id="change">batch_indices = [_outer_repeat(batch_index, inner_size) for batch_index in batch_indices]</a>
+            left_indices = _outer_repeat(left_indices, inner_size)
+            right_indices = _outer_repeat(right_indices, inner_size)
+            inner_indices = _inner_repeat(inner_indices, outer_size)
+</code></pre>

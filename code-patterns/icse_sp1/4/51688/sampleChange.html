@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.models = models
+        super(MultiGPUTrainer, self).__init__(config, models[0])
+        losses = [model.get_loss() for model in models]
+        grads_list = [self.opt.compute_gradients(loss, var_list=self.var_list) <a id="change">for</a> loss in losses]
+        with tf.name_scope("average"), tf.device("/cpu:0"):
+            self.loss = tf.add_n(losses)/len(losses)
+            self.grads = average_gradients(grads_list)</code></pre><h3>After Change</h3><pre><code class='java'>
+        losses = [model.get_loss() for model in models]
+        grads_list = []
+        for gpu_idx, loss in enumerate(losses):
+            <a id="change">with tf.name_scope("gpu_{}".format(gpu_idx)), tf.device("/gpu:{}".format(gpu_idx)):
+                grads = self.opt.compute_gradients(loss, var_list=self.var_list)
+           </a> grads_list.append(grads)
+
+        with tf.name_scope("average"), tf.device("/cpu:0"):
+            self.loss = tf.add_n(losses)/len(losses)</code></pre>

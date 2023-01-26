@@ -1,0 +1,103 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    sys.exit("Cannot open url %s. Bad URL or not connected to the internet?"%(msbulletinurl))
+
+&#47&#47 check modification date
+<a id="change">i = info.find_one({&quotdb&quot: &quotms&quot})</a>
+if i is not None:
+    if f.headers[&quotlast-modified&quot] == i[&quotlast-modified&quot]:
+        print("Not modified")
+        sys.exit(0)
+
+if not os.path.exists(tmppath):
+    os.mkdir(tmppath)
+with open(tmppath+&quot/BulletinSearch.xlsx&quot, &quotwb&quot) as fp:
+    shutil.copyfileobj(f, fp)
+fp.close()
+     
+&#47&#47 parse xlsx and store in database
+wb = xlrd.open_workbook(tmppath+&quot/BulletinSearch.xlsx&quot)
+sh = wb.sheet_by_name(&quotBulletin Search&quot)
+header = [s.replace(&quot\n&quot, &quot &quot) for s in sh.row_values(0)]
+bulletin = {}
+software = {}
+prev_id = ""
+
+for rownum in range(sh.nrows-1):    
+    row =  sh.row_values(rownum + 1)
+    if row[1] == prev_id:
+        software = {}
+        software[&quotproduct&quot] = row[6]
+        software[&quotKB&quot] = str(row[7]).strip(&quot.0&quot)
+        software[&quotcomponent&quot] = row[8]
+        software[&quotimpact&quot] = row[9]
+        software[&quotseverity&quot] = row[10]        
+        software[&quotreplace_id&quot] = row[11][:8]
+        software[&quotreplace_bk&quot] = row[11][9:-1]
+        software[&quotreeboot&quot] = row[12]
+        bulletin[&quotsoftware&quot].append(software)
+    else:
+        if bulletin :
+            msbulletin.update({&quotid&quot: bulletin[&quotid&quot]}, {&quot$set&quot: bulletin}, upsert=True)
+        bulletin = {}
+        software = {}
+        bulletin[&quotPublished&quot] = minimalist_xldate_as_datetime(row[0], 0).isoformat()
+        bulletin[&quotid&quot] = row[1]
+        bulletin[&quotKB&quot] = str(row[2]).strip(&quot.0&quot)
+        bulletin[&quotseverity&quot] = row[3]
+        bulletin[&quotimpact&quot] = row[4]
+        bulletin[&quottitle&quot] = row[5]
+        software[&quotproduct&quot] = row[6]
+        software[&quotKB&quot] = str(row[7]).strip(&quot.0&quot)
+        software[&quotcomponent&quot] = row[8]
+        software[&quotimpact&quot] = row[9]
+        software[&quotseverity&quot] = row[10]
+        software[&quotreplace_id&quot] = row[11][:8]
+        software[&quotreplace_bk&quot] = row[11][9:-1]
+        software[&quotreeboot&quot] = row[12]
+        bulletin[&quotCVE&quot] = row[13].split(&quot,&quot)
+        bulletin[&quotsoftware&quot] = [software]
+        bulletin[&quoturl&quot] = bulletinurl + row[1].lower()
+        
+        prev_id = row[1]
+
+&#47&#47update database info after successful program-run
+<a id="change">info.update({&quotdb&quot: &quotms&quot}, {"$set": {&quotlast-modified&quot: f.headers[&quotlast-modified&quot]}}, upsert=True)</a>
+&#47&#47 shutil.rmtree(&quot./tmp&quot)
+
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        bulletin[&quotsoftware&quot].append(software)
+    else:
+        if bulletin :
+            <a id="change">dbLayer.updateMSB</a>ulletin(bulletin)
+        bulletin = {}
+        software = {}
+        bulletin[&quotPublished&quot] = minimalist_xldate_as_datetime(row[0], 0).isoformat()
+        bulletin[&quotid&quot] = row[1]
+        bulletin[&quotKB&quot] = str(row[2]).strip(&quot.0&quot)
+        bulletin[&quotseverity&quot] = row[3]
+        bulletin[&quotimpact&quot] = row[4]
+        bulletin[&quottitle&quot] = row[5]
+        software[&quotproduct&quot] = row[6]
+        software[&quotKB&quot] = str(row[7]).strip(&quot.0&quot)
+        software[&quotcomponent&quot] = row[8]
+        software[&quotimpact&quot] = row[9]
+        software[&quotseverity&quot] = row[10]
+        software[&quotreplace_id&quot] = row[11][:8]
+        software[&quotreplace_bk&quot] = row[11][9:-1]
+        software[&quotreeboot&quot] = row[12]
+        bulletin[&quotCVE&quot] = row[13].split(&quot,&quot)
+        bulletin[&quotsoftware&quot] = [software]
+        bulletin[&quoturl&quot] = bulletinurl + row[1].lower()
+        
+        prev_id = row[1]
+
+&#47&#47update database info after successful program-run
+<a id="change">dbLayer.setColUpdate(&quotms&quot, f.headers[&quotlast-modified&quot])</a>
+&#47&#47 shutil.rmtree(&quot./tmp&quot)
+
+
+</code></pre>

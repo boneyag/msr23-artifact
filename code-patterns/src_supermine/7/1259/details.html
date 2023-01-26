@@ -1,0 +1,87 @@
+<html><h3>ae6ced7fdebc0e80cbd1d844402960f4e61ad0ba,src/syft/core/node/common/action/run_class_method_action.py,RunClassMethodAction,execute_action,#RunClassMethodAction#Any#Any#,81
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if tags is None:
+                tags = r_arg.tags.copy()
+            else:
+                <a id="change">tags.extend([tag for tag in r_arg.tags if tag not in tags])</a>
+
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+
+        if self.is_static:
+            result = method(*upcasted_args, **upcasted_kwargs)
+        else:
+            &#47&#47 in opacus the step method in torch gets monkey patched on .attach
+            &#47&#47 this means we can&quott use the original AST method reference and need to
+            &#47&#47 get it again from the actual object so for now lets allow the following
+            &#47&#47 two methods to be resolved at execution time
+            method_name = self.path.split(".")[-1]
+            if method_name in ["step", "zero_grad"]:
+                &#47&#47 TODO: Remove this Opacus workaround
+                try:
+                    method = getattr(resolved_self.data, method_name, None)
+                    result = method(*upcasted_args, **upcasted_kwargs)
+                except Exception as e:
+                    critical(
+                        f"Unable to resolve method {self.path} on {resolved_self}. {e}"
+                    )
+                    result = method(
+                        resolved_self.data, *upcasted_args, **upcasted_kwargs
+                    )
+            else:
+                result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+
+        &#47&#47 TODO: replace with proper tuple support
+        if type(result) is tuple:
+            &#47&#47 convert to list until we support tuples
+            result = list(result)
+            result = method(resolved_self.data, *upcasted_args, **upcasted_kwargs)
+
+        if lib.python.primitive_factory.isprimitive(value=result):
+            &#47&#47 Wrap in a SyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=self.id_at_location
+            )
+        else:
+            &#47&#47 TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                try:
+                    if hasattr(result, "_id"):
+                        &#47&#47 set the underlying id
+                        result._id = self.id_at_location
+                    else:
+                        result.id = self.id_at_location
+
+                    assert result.id == self.id_at_location
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    traceback_and_raise(Exception(err))
+
+        if mutating_internal:
+            resolved_self.read_permissions = result_read_permissions
+        if not isinstance(result, StorableObject):
+            result = StorableObject(
+                id=self.id_at_location,
+                data=result,
+                read_permissions=result_read_permissions,
+            )
+
+        if tags is not None:
+            <a id="change">result.tags = tags</a>
+            result.tags.append(self.path.split(".")[-1])
+
+        node.store[self.id_at_location] = result
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            tag_args.append(r_arg)
+
+        resolved_kwargs = {}
+        tag_kwargs = <a id="change">{}</a>
+        for arg_name, arg in self.kwargs.items():
+            r_arg = node.store[arg.id_at_location]
+            result_read_permissions = self.intersect_keys(
+                result_read_permissions, r_arg.read_permissions</code></pre><img src="7212142.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/OpenMined/PySyft/commit/ae6ced7fdebc0e80cbd1d844402960f4e61ad0ba#diff-9b6784e2976f48d1e098c4909235f3f345b0e2c12afe7176c1b8fe9c97261eabL83' target='_blank'>Link</a></div><div id='project'> Project Name: OpenMined/PySyft</div><div id='commit'> Commit Name: ae6ced7fdebc0e80cbd1d844402960f4e61ad0ba</div><div id='time'> Time: 2021-02-12</div><div id='author'> Author: xvtongye1986@163.com</div><div id='file'> File Name: src/syft/core/node/common/action/run_class_method_action.py</div><div id='class'> Class Name: RunClassMethodAction</div><div id='method'> Method Name: execute_action</div><BR><BR><div id='link'><a href='https://github.com/OpenMined/PySyft/commit/ae6ced7fdebc0e80cbd1d844402960f4e61ad0ba#diff-a0655bfcc3c6957901e4ef6511aaf37dcd413b3db7d93d968de850883ea98d36L65' target='_blank'>Link</a></div><div id='project'> Project Name: OpenMined/PySyft</div><div id='commit'> Commit Name: ae6ced7fdebc0e80cbd1d844402960f4e61ad0ba</div><div id='time'> Time: 2021-02-12</div><div id='author'> Author: xvtongye1986@163.com</div><div id='file'> File Name: src/syft/core/node/common/action/get_or_set_property_action.py</div><div id='class'> Class Name: GetOrSetPropertyAction</div><div id='method'> Method Name: execute_action</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/60ac44f9e688577d47ae506be06058a8916af100#diff-64108662a072630ee91edec3684974d0b06faea04dd308bea96f4e5c0bca1daeL155' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 60ac44f9e688577d47ae506be06058a8916af100</div><div id='time'> Time: 2018-05-08</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/engine/image_window.py</div><div id='class'> Class Name: ImageWindow</div><div id='method'> Method Name: _update_placeholders_dict</div><BR><BR><div id='link'><a href='https://github.com/OpenMined/PySyft/commit/ae6ced7fdebc0e80cbd1d844402960f4e61ad0ba#diff-9b6784e2976f48d1e098c4909235f3f345b0e2c12afe7176c1b8fe9c97261eabL83' target='_blank'>Link</a></div><div id='project'> Project Name: OpenMined/PySyft</div><div id='commit'> Commit Name: ae6ced7fdebc0e80cbd1d844402960f4e61ad0ba</div><div id='time'> Time: 2021-02-12</div><div id='author'> Author: xvtongye1986@163.com</div><div id='file'> File Name: src/syft/core/node/common/action/run_class_method_action.py</div><div id='class'> Class Name: RunClassMethodAction</div><div id='method'> Method Name: execute_action</div><BR>

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                    basis_kernels_ij = kij.contiguous().view(b_el, -1)  &#47&#47 [beta, i*j*x*y*z]
+
+                    ker = <a id="change">torch.mm(w, basis_kernels_ij)</a>  &#47&#47 [I*J, i*j*x*y*z]
+                    ker = <a id="change">ker.view(mi, mj, *b_size)</a>  &#47&#47 [I, J, i, j, x, y, z]
+                    <a id="change">ker = ker.transpose(1, 2).contiguous()</a>  &#47&#47 [I, i, J, j, x, y, z]
+                    ker = ker.view(mi * self.dims_out[i], mj * self.dims_in[j], *b_size[2:])  &#47&#47 [I*i, J*j, x, y, z]
+                    kernel[si, sj] = ker
+                else:</code></pre><h3>After Change</h3><pre><code class='java'>
+                    weight_index += mi * mj * b_el
+
+                    ker = torch.einsum("uvb,bijxyz-&gt;uivjxyz", (w, kij)).contiguous()  &#47&#47 [u, i, v, j, x, y, z]
+                    kernel[si, sj] = ker.view_as(<a id="change">kernel[si, sj]</a>)
+                else:
+                    kernel[si, sj] = 0
+</code></pre>

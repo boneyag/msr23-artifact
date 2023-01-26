@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    self.listener = self.mox.CreateMock(Fetcher.Listener)
+
+  def expect_get(self, url, chunk_size_bytes, timeout_secs, listener=True):
+    <a id="change">self.requests.get(url, allow_redirects=True, stream=True,
+                      timeout=timeout_secs).AndReturn(self.response)</a>
+    self.response.status_code = 200
+    self.response.headers = {&quotcontent-length&quot: &quot11&quot}
+    if listener:
+      <a id="change">self</a>.listener.status(200, content_length=11)
+
+    chunks = [&quot0123456789&quot, &quota&quot]
+    <a id="change">self</a>.response.iter_content(chunk_size=chunk_size_bytes).AndReturn(chunks)
+    return chunks
+
+  def assert_local_file_fetch(self, url_prefix=&quot&quot):</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.fetcher.fetch(no_perms, self.listener)
+
+  @contextmanager
+  def expect_get(<a id="change">self</a>, url, chunk_size_bytes, timeout_secs, listener=True):
+    chunks = [&quot0123456789&quot, &quota&quot]
+    <a id="change">self.requests.get.return_value = self.response</a>
+    self.response.status_code = 200
+    self.response.headers = {&quotcontent-length&quot: &quot11&quot}
+    <a id="change">self</a>.response.iter_content.return_value = chunks
+
+    yield chunks, [self.ok_call(chunks)] if listener else []
+
+    <a id="change">self.requests.get.expect_called_once_with(url, allow_redirects=True, stream=True,
+                                              timeout=timeout_secs)</a>
+    self.response.iter_content.expect_called_once_with(chunk_size=chunk_size_bytes)
+
+  def test_get(self):
+    with self.expect_get(&quothttp://bar&quot,</code></pre>

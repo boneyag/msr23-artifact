@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            total_loss += loss_val
+            if initial_state is not None:
+                initial_state = [x.npvalue() for x in initial_state]
+            <a id="change">iters += len(y)</a>
+
+        if phase == &quotValid&quot:
+            self.valid_epochs += 1
+            output = self.valid_epochs
+        else:
+            output = 0
+
+        <a id="change">self.log.debug({&quotphase&quot: phase, &quottime&quot: time.time() - start})</a>
+        <a id="change">metrics[&quotavg_loss&quot] = total_loss / iters</a>
+        <a id="change">metrics[&quotperplexity&quot] = np.exp(total_loss / iters)</a>
+        <a id="change">for reporting in reporting_fns:
+            reporting(metrics, output, phase)
+       </a> return metrics
+
+
+@register_training_func(&quotlm&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+            y = inputs.pop(&quoty&quot)
+            output, initial_state = self.model.forward(inputs, initial_state, train=False)
+            loss = self._loss(output, y)
+            <a id="change">toks = self._num_toks(batch_dict)</a>
+            loss_val = <a id="change">loss.npvalue().item() * toks</a>
+            total_loss += loss_val
+            total_toks += toks
+            if initial_state is not None:
+                initial_state = [x.npvalue() for x in initial_state]
+
+        epochs = 0
+        if phase == &quotValid&quot:
+            self.valid_epochs += 1
+            epochs = self.valid_epochs
+
+        <a id="change">metrics = self.calc_metrics(total_loss, total_toks)</a>
+        <a id="change">self.report(
+            epochs, metrics, start,
+            phase, &quotEPOCH&quot, reporting_fns
+        )</a>
+        return metrics
+
+
+@register_training_func(&quotlm&quot)</code></pre>

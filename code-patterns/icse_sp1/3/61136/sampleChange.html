@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            dataset = dataset.map(convert_to_sparse).prefetch(batch_size * 10)
+
+            if self.graph_type == "train":
+                dataset = <a id="change">dataset</a>.shuffle(10000, seed=self.network_proto.backend.random_seed).repeat().prefetch(batch_size * 10)
+            else:
+                pass
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            dataset = tf.data.Dataset.from_generator(gen, (tf.float32, tf.int32, tf.int32, tf.int32))
+            if self.graph_type == "train":
+                dataset = <a id="change">dataset</a>.repeat().shuffle(10000, seed=self.network_proto.backend.random_seed)
+            else:
+                pass
+
+            dataset = dataset.padded_batch(batch_size, ([None, line_height], [None], [1], [1]),
+                                           padding_values=(np.float32(0), np.int32(-1), np.int32(0), np.int32(0)))
+            dataset = dataset.map(convert_to_sparse)
+
+            data_initializer = <a id="change">dataset</a>.prefetch(5).make_initializable_iterator()
+            inputs = data_initializer.get_next()
+            dropout_rate = tf.placeholder(tf.float32, shape=(), name="dropout_rate")
+            return inputs[0], tf.reshape(inputs[2], [-1]), inputs[1], dropout_rate, data_initializer</code></pre>

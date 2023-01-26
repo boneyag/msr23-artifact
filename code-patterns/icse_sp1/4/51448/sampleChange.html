@@ -1,0 +1,154 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            &#47&#47 concatenate all dataframes in list
+            if len(dataframe_list) &gt; 0:
+                dataframe_concat = pd.concat(dataframe_list)
+                dataframe_concat.to_csv(output_directory + <a id="change">str(building_id)</a> + &quot.csv&quot)
+                
+        conn.close()
+        </code></pre><h3>After Change</h3><pre><code class='java'>
+        database_schema = &quotPecanStreet_SharedData&quot
+        
+        &#47&#47 set up a new HDF5 datastore
+        <a id="change">full_directory = output_directory + &quotwikienergy.h5&quot</a>
+        if os.path.isfile(full_directory):
+            os.remove(full_directory)
+        <a id="change">hdf5_store = HDFStore(full_directory)</a>
+        
+        &#47&#47 try to connect to database
+        try:
+            conn = db.connect(&quothost=&quot + database_host + 
+                                           &quot dbname=&quot + database_name + 
+                                           &quot user=&quot + database_username + 
+                                           &quot password=&quot + database_password)
+        except:
+            print(&quotCould not connect to remote database&quot)
+            return
+        
+        &#47&#47 get tables in database schema
+        sql_query = (&quotSELECT TABLE_NAME&quot + 
+                     &quot FROM INFORMATION_SCHEMA.TABLES&quot + 
+                     " WHERE TABLE_TYPE = &quotBASE TABLE&quot" + 
+                     " AND TABLE_SCHEMA=&quot" + database_schema + "&quot" + 
+                     " ORDER BY TABLE_NAME")
+        database_tables = pd.read_sql(sql_query, conn)[&quottable_name&quot].tolist()
+        
+        &#47&#47 if user has specified buildings
+        if periods_to_load:
+            buildings_to_load = periods_to_load.keys()
+        else:
+            &#47&#47 get buildings present in all tables
+            sql_query = &quot&quot
+            for table in database_tables:
+                sql_query = (sql_query + &quot(SELECT DISTINCT dataid&quot + 
+                             &quot FROM "&quot + database_schema + &quot".&quot + table + 
+                             &quot) UNION &quot)
+            sql_query = sql_query[:-7]
+            sql_query = (sql_query + &quot ORDER BY dataid&quot) 
+            buildings_to_load = pd.read_sql(sql_query, conn)[&quotdataid&quot].tolist()
+        
+        &#47&#47 for each user specified building or all buildings in database
+        for building_id in buildings_to_load:
+            print("Loading building {:d}".format(building_id) + &quot @ &quot + str(datetime.datetime.now()))
+            sys.stdout.flush()
+            
+            &#47&#47 create new list of chunks for csv writing
+            dataframe_list = []
+        
+            &#47&#47 for each table of 1 month data
+            for database_table in database_tables:
+                print("  Loading table {:s}".format(database_table))
+                sys.stdout.flush()
+            
+                &#47&#47 get buildings present in this table
+                sql_query = (&quotSELECT DISTINCT dataid&quot + 
+                             &quot FROM "&quot + database_schema + &quot".&quot + database_table + 
+                             &quot ORDER BY dataid&quot)
+                buildings_in_table = pd.read_sql(sql_query, conn)[&quotdataid&quot].tolist()
+            
+                if building_id in buildings_in_table:
+                    &#47&#47 get first and last timestamps for this house in this table
+                    sql_query = (&quotSELECT MIN(localminute) AS minlocalminute,&quot + 
+                                 &quot MAX(localminute) AS maxlocalminute&quot + 
+                                 &quot FROM "&quot + database_schema + &quot".&quot + database_table + 
+                                 &quot WHERE dataid=&quot + str(building_id))
+                    range = pd.read_sql(sql_query, conn)
+                    first_timestamp_in_table = range[&quotminlocalminute&quot][0]
+                    last_timestamp_in_table = range[&quotmaxlocalminute&quot][0]
+                    
+                    &#47&#47 get requested start and end and localize them
+                    requested_start = None
+                    requested_end = None
+                    database_timezone = &quotUS/Central&quot
+                    if periods_to_load:
+                        if periods_to_load[building_id][0]:
+                            requested_start = pd.Timestamp(periods_to_load[building_id][0])
+                            requested_start = requested_start.tz_localize(database_timezone)
+                        if periods_to_load[building_id][1]:
+                            requested_end = pd.Timestamp(periods_to_load[building_id][1])
+                            requested_end = requested_end.tz_localize(database_timezone)
+                    
+                    &#47&#47 check user start is not after end
+                    if requested_start &gt; requested_end:
+                        print(&quotrequested end is before requested start&quot)
+                        sys.stdout.flush()
+                    else:                        
+                        &#47&#47 clip data to smallest range
+                        if requested_start:
+                            start = max(requested_start, first_timestamp_in_table)
+                        else:
+                            start = first_timestamp_in_table
+                        if requested_end:
+                            end = min(requested_end, last_timestamp_in_table)
+                        else:
+                            end = last_timestamp_in_table
+                        
+                        &#47&#47 download data in chunks
+                        chunk_start = start
+                        chunk_size = datetime.timedelta(1)  &#47&#47 1 day
+                        while chunk_start &lt; end:
+                            chunk_end = chunk_start + chunk_size 
+                            if chunk_end &gt; end:
+                                chunk_end = end
+                            &#47&#47 subtract 1 second so end is exclusive
+                            chunk_end = chunk_end - datetime.timedelta(0, 1)
+                            
+                            &#47&#47 query power data for all channels
+                            format = &quot%Y-%m-%d %H:%M:%S&quot
+                            sql_query = (&quotSELECT *&quot + 
+                                         &quot FROM "&quot + database_schema + &quot".&quot + database_table + 
+                                         &quot WHERE dataid=&quot + str(building_id) + 
+                                         &quotand localminute between &quot + 
+                                         "&quot" + chunk_start.strftime(format) + "&quot" + 
+                                         " and " + 
+                                         "&quot" + chunk_end.strftime(format) + "&quot" + 
+                                         &quot LIMIT 2000&quot)
+                            chunk_dataframe = pd.read_sql(sql_query, conn)
+                            
+                            &#47&#47 convert to nilmtk-df and save to disk
+                            nilmtk_dataframe = _wikienergy_dataframe_to_hdf(chunk_dataframe, hdf5_store)
+                            
+                            &#47&#47 print progress
+                            print(&quot    &quot + str(chunk_start) + &quot -&gt; &quot + 
+                                  str(chunk_end) + &quot: &quot + 
+                                  str(len(chunk_dataframe.index)) + &quot rows&quot)
+                            sys.stdout.flush()
+                            
+                            &#47&#47 append all chunks into list for csv writing
+                            dataframe_list.append(chunk_dataframe)
+                            
+                            &#47&#47 move on to next chunk
+                            chunk_start = chunk_start + chunk_size
+                        
+            &#47&#47 saves all chunks in list to csv
+            if len(dataframe_list) &gt; 0:
+                dataframe_concat = pd.concat(dataframe_list)
+                &#47&#47dataframe_concat.to_csv(output_directory + str(building_id) + &quot.csv&quot)
+                
+        <a id="change">hdf5_store.close()</a>
+        conn.close()
+        
+        
+</code></pre>

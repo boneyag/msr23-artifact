@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      parent_tensor = tf.expand_dims(parent_tensor, 4)
+    for reuse in (self._reuse, False):
+      try:
+        <a id="change">out_tensor = tf.layers.conv3d(
+            parent_tensor,
+            filters=self.num_outputs,
+            kernel_size=self.kernel_size,
+            strides=self.stride,
+            padding=self.padding,
+            activation=self.activation_fn,
+            activity_regularizer=self.normalizer_fn,
+            bias_initializer=self.biases_initializer(),
+            kernel_initializer=self.weights_initializer(),
+            name=self._get_scope_name(),
+            reuse=reuse)</a>
+        break
+      except ValueError:
+        if reuse:
+          &#47&#47 This probably means the variable hasn&quott been created yet, so try again</code></pre><h3>After Change</h3><pre><code class='java'>
+      parent_tensor = tf.expand_dims(parent_tensor, 4)
+    for reuse in (self._reuse, False):
+      try:
+        <a id="change">if tfe.in_eager_mode():
+          if not self._built:
+            self._layer = self._build_layer(False)
+          layer = self._layer
+        else:
+          layer = self._build_layer(reuse)
+       </a> out_tensor = layer(parent_tensor)
+        if self.normalizer_fn is not None:
+          out_tensor = self.normalizer_fn(out_tensor)
+        break</code></pre>

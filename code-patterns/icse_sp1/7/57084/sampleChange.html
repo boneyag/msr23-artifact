@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        mask = self.network.mask[1:]
+        if self.ignore_unk:
+            mask = numpy.copy(mask)
+            <a id="change">mask[self.network.word_input[1:] == unk_id]</a> = 0
+        logprobs *= tensor.cast(mask, theano.config.floatX)
+        &#47&#47 Cost is the negative log probability normalized by the number of
+        &#47&#47 training examples in the mini-batch, so that the gradients will also</code></pre><h3>After Change</h3><pre><code class='java'>
+        logprobs = tensor.log(self.network.prediction_probs)
+        &#47&#47 If requested, predict &lt;unk&gt; with constant score.
+        if not unk_penalty is None:
+            <a id="change">unk_mask = tensor.eq(self.network.word_input[1:], unk_id)</a>
+            unk_indices = <a id="change">unk_mask.nonzero()</a>
+            <a id="change">logprobs = tensor.set_subtensor(logprobs[unk_indices], unk_penalty)</a>
+        &#47&#47 Ignore logprobs, when the next input word (the one predicted) is
+        &#47&#47 masked out, and possibly also when  it is the &lt;unk&gt; token. The mask
+        &#47&#47 has to be cast to floatX, otherwise the result will be float64 and
+        &#47&#47 pulled out from the GPU earlier than necessary.</code></pre>

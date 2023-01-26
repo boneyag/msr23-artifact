@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.loss = value_loss.detach()
+
+        value_loss.backward()
+        <a id="change">self._maybe_run_optimizer(self.q_network_optimizer, self.minibatches_per_step)</a>
+
+        &#47&#47 Use the soft update rule to update target network
+        self._maybe_soft_update(
+            self.q_network, self.q_network_target, self.tau, self.minibatches_per_step</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        target_q_values = reward + (discount_tensor * filtered_max_q_vals)
+
+        <a id="change">with torch.enable_grad():
+            &#47&#47 Get Q-value of action taken
+            current_state_action = rlt.StateAction(
+                state=learning_input.state, action=learning_input.action
+            )
+            q_values = self.q_network(current_state_action).q_value
+            self.all_action_scores = q_values.detach()
+
+            value_loss = self.q_network_loss(q_values, target_q_values)
+            self.loss = value_loss.detach()
+
+            value_loss.backward()
+            self._maybe_run_optimizer(
+                self.q_network_optimizer, self.minibatches_per_step
+            )
+
+        &#47&#47 Use the soft update rule to update target network
+       </a> self._maybe_soft_update(
+            self.q_network, self.q_network_target, self.tau, self.minibatches_per_step
+        )
+</code></pre>

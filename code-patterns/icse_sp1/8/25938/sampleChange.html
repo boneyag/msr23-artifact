@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 pixel stacks to solve must be transposed to (M,K) matrix of K columns
+        results = np.linalg.lstsq(self.coefficients, inBlockTFlat.T)
+
+        <a id="change">outBlockList = []</a>
+        &#47&#47 endmember solutions
+        if self.applyScaling:
+            <a id="change">for endmember in results[0]:
+                endmember = endmember.reshape(-1, inBlock.shape[-1])
+                endmember.clip(min=0, out=endmember)
+                endmember *= (1.0 / endmember.max())
+                outBlockList.append(endmember)
+       </a> else:
+            outBlockList = [endmember.reshape(-1, inBlock.shape[-1]) for endmember in results[0]]
+        &#47&#47 residuals
+        outBlockList.append(results[1].reshape(-1, inBlock.shape[-1]))</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            &#47&#47 calculate R2
+            RSS = resid                                 &#47&#47 without modification, resid is in fact RSS
+            TSS = np.sum((y - <a id="change">y.mean()</a>)**2, axis=0)     &#47&#47 total sum of squares
+            R2 = 1 - RSS / TSS
+            resid = R2.reshape(1, -1, inBlock.shape[-1])
+        else:
+            resid = resid.reshape(1, -1, inBlock.shape[-1])  &#47&#47 extra dimension to match shape of endmembers
+
+        <a id="change">outBlocks = np.row_stack((endmembers, resid))</a>   &#47&#47 resid can be either RSS or R2
+
+        &#47&#47 output pixel arrays of endmembers & residuals
+        pixelBlocks[&quotoutput_pixels&quot] = outBlocks.astype(props[&quotpixelType&quot])</code></pre>

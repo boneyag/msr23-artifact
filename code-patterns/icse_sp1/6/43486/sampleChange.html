@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  &#47&#47 NumPy has an np.argparition() method, however log(1000) is so small that
+  &#47&#47 sorting the whole array is simpler and fast enough.
+  top_indicies = np.argsort(predicted_scores_by_user, axis=1)[:, -_TOP_K:]
+  <a id="change">top_indicies = np.flip(top_indicies, axis=1)</a>
+
+  &#47&#47 Both HR and NDCG vectorized computation takes advantage of the fact that if
+  &#47&#47 the positive example for a user is not in the top k, that index does not
+  &#47&#47 appear. That is to say:   hit_ind.shape[0] &lt;= num_users
+  hit_ind = np.argwhere(np.equal(top_indicies, 0))
+  hr = hit_ind.shape[0] / ncf_dataset.num_users
+  ndcg = <a id="change">np.sum(np.log(2) / np.log(hit_ind[:, 1] + 2))</a> / ncf_dataset.num_users
+
+  global_step = estimator.get_variable_value(tf.GraphKeys.GLOBAL_STEP)
+  eval_results = {</code></pre><h3>After Change</h3><pre><code class='java'>
+      :ncf_dataset.num_users * (1 + rconst.NUM_EVAL_NEGATIVES)]\
+      .reshape(ncf_dataset.num_users, -1)
+  item_with_padding = np.concatenate(item_batches, axis=0)
+  <a id="change">items_by_user = item_with_padding[
+      :ncf_dataset.num_users * (1 + rconst.NUM_EVAL_NEGATIVES)]\
+      .reshape(ncf_dataset.num_users, -1)</a>
+
+  tf.logging.info("Computing metrics...")
+
+  hr, ndcg = get_hit_rate_and_ndcg(predicted_scores_by_user, items_by_user,</code></pre>

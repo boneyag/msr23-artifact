@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        aqua_globals.random_seed = self.seed
+        backend = BasicAer.get_backend(&quotqasm_simulator&quot)
+
+        <a id="change">num_qubits = 2</a>
+        optimizer = SPSA(max_trials=10, save_steps=1, c0=4.0, skip_calibration=True)
+        <a id="change">feature_map = SecondOrderExpansion(feature_dimension=num_qubits, depth=2)</a>
+        <a id="change">var_form = RYRZ(num_qubits=num_qubits, depth=3)</a>
+
+        &#47&#47 convert to circuit if circuits should be used
+        <a id="change">if use_circuits:
+            x = ParameterVector(&quotx&quot, feature_map.feature_dimension)
+            feature_map = feature_map.construct_circuit(x)
+            theta = ParameterVector(&quottheta&quot, var_form.num_parameters)
+            var_form = var_form.construct_circuit(theta)
+
+        &#47&#47 set up algorithm
+       </a> vqc = VQC(optimizer, feature_map, var_form, self.training_data, self.testing_data)
+
+        &#47&#47 sort parameters for reproducibility
+        if use_circuits:</code></pre><h3>After Change</h3><pre><code class='java'>
+        backend = BasicAer.get_backend(&quotqasm_simulator&quot)
+
+        optimizer = SPSA(max_trials=10, save_steps=1, c0=4.0, skip_calibration=True)
+        <a id="change">data_preparation = self.data_preparation[mode]</a>
+        <a id="change">wavefunction = self.ryrz_wavefunction[mode]</a>
+
+        <a id="change">if mode == &quotwrapped&quot:
+            warnings.filterwarnings(&quotignore&quot, category=DeprecationWarning)
+        &#47&#47 set up algorithm
+       </a> vqc = VQC(optimizer, data_preparation, wavefunction, self.training_data, self.testing_data)
+
+        if mode in [&quotcircuit&quot, &quotlibrary&quot]:
+            vqc._feature_map_params = <a id="change">self._sorted_data_params</a>
+            vqc._var_form_params = <a id="change">self._sorted_wavefunction_params</a>
+
+        quantum_instance = QuantumInstance(backend,
+                                           shots=1024,
+                                           seed_simulator=self.seed,
+                                           seed_transpiler=self.seed)
+        result = vqc.run(quantum_instance)
+
+        np.testing.assert_array_almost_equal(result[&quotopt_params&quot],
+                                             self.ref_opt_params, decimal=4)
+        np.testing.assert_array_almost_equal(result[&quottraining_loss&quot],
+                                             self.ref_train_loss, decimal=8)
+
+        self.assertEqual(1.0, result[&quottesting_accuracy&quot])
+
+        file_path = self.get_resource_path(&quotvqc_test.npz&quot)
+        vqc.save_model(file_path)
+
+        self.assertTrue(os.path.exists(file_path))
+
+        loaded_vqc = VQC(optimizer, data_preparation, wavefunction, self.training_data, None)
+
+        &#47&#47 sort parameters for reproducibility
+        <a id="change">if mode in [&quotcircuit&quot, &quotlibrary&quot]:
+            loaded_vqc._feature_map_params = self._sorted_data_params
+            loaded_vqc._var_form_params = self._sorted_wavefunction_params
+        else:
+            warnings.filterwarnings(&quotalways&quot, category=DeprecationWarning)
+
+       </a> loaded_vqc.load_model(file_path)
+
+        np.testing.assert_array_almost_equal(
+            loaded_vqc.ret[&quotopt_params&quot], self.ref_opt_params, decimal=4)</code></pre>

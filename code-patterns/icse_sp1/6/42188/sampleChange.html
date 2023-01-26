@@ -1,0 +1,115 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if use_tf_functions:
+      train_step = common.function(train_step)
+
+    <a id="change">for _ in range(num_iterations):
+      start_time = time.time()
+      time_step, policy_state = collect_driver.run(
+          time_step=time_step,
+          policy_state=policy_state,
+      )
+      for _ in range(train_steps_per_iteration):
+        train_loss = train_step()
+      time_acc += time.time() - start_time
+
+      global_step_val = global_step.numpy()
+
+      if global_step_val % log_interval == 0:
+        logging.info(&quotstep = %d, loss = %f&quot, global_step_val,
+                     train_loss.loss)
+        steps_per_sec = (global_step_val - timed_at_step) / time_acc
+        logging.info(&quot%.3f steps/sec&quot, steps_per_sec)
+        tf.compat.v2.summary.scalar(
+            name=&quotglobal_steps_per_sec&quot, data=steps_per_sec, step=global_step)
+        timed_at_step = global_step_val
+        time_acc = 0
+
+      for train_metric in train_metrics:
+        train_metric.tf_summaries(
+            train_step=global_step, step_metrics=train_metrics[:2])
+
+      if global_step_val % eval_interval == 0:
+        results = metric_utils.eager_compute(
+            eval_metrics,
+            eval_tf_env,
+            eval_policy,
+            num_episodes=num_eval_episodes,
+            train_step=global_step,
+            summary_writer=eval_summary_writer,
+            summary_prefix=&quotMetrics&quot,
+        )
+        if eval_metrics_callback is not None:
+          eval_metrics_callback(results, global_step_val)
+        metric_utils.log_metrics(eval_metrics)
+
+      if global_step_val % train_checkpoint_interval == 0:
+        train_checkpointer.save(global_step=global_step_val)
+
+      if global_step_val % policy_checkpoint_interval == 0:
+        policy_checkpointer.save(global_step=global_step_val)
+
+      if global_step_val % rb_checkpoint_interval == 0:
+        rb_checkpointer.save(global_step=global_step_val)
+   </a> return train_loss
+
+
+def main(_):</code></pre><h3>After Change</h3><pre><code class='java'>
+    if use_tf_functions:
+      train_step = common.function(train_step)
+
+    global_step_val = <a id="change">global_step.numpy()</a>
+    <a id="change">while global_step_val &lt; num_iterations:
+      start_time = time.time()
+      time_step, policy_state = collect_driver.run(
+          time_step=time_step,
+          policy_state=policy_state,
+      )
+      for _ in range(train_steps_per_iteration):
+        train_loss = train_step()
+      time_acc += time.time() - start_time
+
+      global_step_val = global_step.numpy()
+
+      if global_step_val % log_interval == 0:
+        logging.info(&quotstep = %d, loss = %f&quot, global_step_val,
+                     train_loss.loss)
+        steps_per_sec = (global_step_val - timed_at_step) / time_acc
+        logging.info(&quot%.3f steps/sec&quot, steps_per_sec)
+        tf.compat.v2.summary.scalar(
+            name=&quotglobal_steps_per_sec&quot, data=steps_per_sec, step=global_step)
+        timed_at_step = global_step_val
+        time_acc = 0
+
+      for train_metric in train_metrics:
+        train_metric.tf_summaries(
+            train_step=global_step, step_metrics=train_metrics[:2])
+
+      if global_step_val % eval_interval == 0:
+        results = metric_utils.eager_compute(
+            eval_metrics,
+            eval_tf_env,
+            eval_policy,
+            num_episodes=num_eval_episodes,
+            train_step=global_step,
+            summary_writer=eval_summary_writer,
+            summary_prefix=&quotMetrics&quot,
+        )
+        if eval_metrics_callback is not None:
+          eval_metrics_callback(results, global_step_val)
+        metric_utils.log_metrics(eval_metrics)
+
+      if global_step_val % train_checkpoint_interval == 0:
+        train_checkpointer.save(global_step=global_step_val)
+
+      if global_step_val % policy_checkpoint_interval == 0:
+        policy_checkpointer.save(global_step=global_step_val)
+
+      if global_step_val % rb_checkpoint_interval == 0:
+        rb_checkpointer.save(global_step=global_step_val)
+   </a> return train_loss
+
+
+def main(_):</code></pre>

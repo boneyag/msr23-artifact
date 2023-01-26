@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 Check for cyclic dependencies in the test name graph
+    visited = set()
+    <a id="change">unvisited = list(
+        itertools.zip_longest(test_graph.keys(), [], fillvalue=None)
+    )</a>
+    path = []
+    while unvisited:
+        node, parent = unvisited.pop()
+        while path and path[-1] != parent:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Check for cyclic dependencies in the test name graph
+    visited = set()
+    <a id="change">sources = set(test_graph.keys())</a>
+    path = []
+
+    &#47&#47 Since graph may comprise multiple not connected subgraphs, we search for
+    &#47&#47 cycles starting from all possible sources
+    <a id="change">while sources:
+        unvisited = [(sources.pop(), None)]
+        while unvisited:
+            node, parent = unvisited.pop()
+            while path and path[-1] != parent:
+                path.pop()
+
+            adjacent = reversed(test_graph[node])
+            path.append(node)
+            for n in adjacent:
+                if n in path:
+                    cycle_str = &quot-&gt;&quot.join(path + [n])
+                    raise DependencyError(
+                        &quotfound cyclic dependency between tests: &quot + cycle_str)
+
+                if n not in visited:
+                    unvisited.append((n, node))
+
+            visited.add(node)
+
+        sources -= visited</a>
+</code></pre>

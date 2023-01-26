@@ -1,0 +1,60 @@
+<html><h3>cea478600970228f6b8dd12b067facde3d5d261f,gpytorch/models/exact_gp.py,ExactGP,get_fantasy_model,#ExactGP#Any#Any#,85
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                batch_shape = input.shape[:-2]
+            elif input.dim() &lt; targets.dim():
+                batch_shape = targets.shape[:-2]
+                inputs[i] = <a id="change">input.expand(*batch_shape, *input.shape[-2:])</a>
+
+        train_inputs = [tin.expand(*batch_shape, *tin.shape[-2:]) for tin in list(self.train_inputs)]
+        train_targets = self.train_targets.expand(*batch_shape, *self.train_targets.shape[-2:])
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                batch_shape = targets.shape[:-1]
+            elif input.dim() &lt; targets.dim():
+                batch_shape = targets.shape[:-2]
+                <a id="change">same_inputs = True</a>
+            else:
+                raise Exception("Usupported dimensions")
+
+        if not same_inputs:
+            train_inputs = [tin.expand(*batch_shape, *tin.shape[-2:]) for tin in list(self.train_inputs)]
+        else:
+            train_inputs = self.train_inputs
+
+        train_targets = self.train_targets.expand(*batch_shape, *self.train_targets.shape[-2:])
+
+        full_inputs = [torch.cat([train_input, input], dim=-2) for train_input, input in zip(train_inputs, inputs)]
+        full_targets = torch.cat([train_targets, targets], dim=-1)
+
+        try:
+            fantasy_kwargs = {"noise": kwargs.pop("noise")}
+        except KeyError:
+            fantasy_kwargs = {}
+
+        full_output = super(ExactGP, self).__call__(*full_inputs, **kwargs)
+
+        &#47&#47 Copy model without copying training data or prediction strategy (since we&quotll overwrite those)
+        old_pred_strat = self.prediction_strategy
+        old_train_inputs = self.train_inputs
+        old_train_targets = self.train_targets
+        old_likelihood = self.likelihood
+        self.prediction_strategy = None
+        self.train_inputs = None
+        self.train_targets = None
+        self.likelihood = None
+        new_model = deepcopy(self)
+        self.prediction_strategy = old_pred_strat
+        self.train_inputs = old_train_inputs
+        self.train_targets = old_train_targets
+        self.likelihood = old_likelihood
+
+        <a id="change">if same_inputs:
+            new_model.train_inputs = [fi.expand(batch_shape + fi.shape) for fi in full_inputs]
+        else:
+            new_model.train_inputs = full_inputs
+       </a> new_model.train_targets = full_targets
+        new_model.likelihood = old_likelihood.get_fantasy_likelihood(**fantasy_kwargs)
+        new_model.prediction_strategy = old_pred_strat.get_fantasy_strategy(
+            inputs,</code></pre><img src="235388177.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/cea478600970228f6b8dd12b067facde3d5d261f#diff-e8cf0c678e229cca6860b6c6247b0233e3a97e45b818aa007fc8b435958988eeL85' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: cea478600970228f6b8dd12b067facde3d5d261f</div><div id='time'> Time: 2019-05-08</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: gpytorch/models/exact_gp.py</div><div id='class'> Class Name: ExactGP</div><div id='method'> Method Name: get_fantasy_model</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/cea478600970228f6b8dd12b067facde3d5d261f#diff-e8cf0c678e229cca6860b6c6247b0233e3a97e45b818aa007fc8b435958988eeL85' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: cea478600970228f6b8dd12b067facde3d5d261f</div><div id='time'> Time: 2019-05-08</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: gpytorch/models/exact_gp.py</div><div id='class'> Class Name: ExactGP</div><div id='method'> Method Name: get_fantasy_model</div><BR><BR><div id='link'><a href='https://github.com/sympy/sympy/commit/24602abe9b89c6b22f77804636de2f109f1c6052#diff-b51cb90040af5dcb29b5b49321580c5c88f4c319f9ce7900ebb7c1db4799b079L67' target='_blank'>Link</a></div><div id='project'> Project Name: sympy/sympy</div><div id='commit'> Commit Name: 24602abe9b89c6b22f77804636de2f109f1c6052</div><div id='time'> Time: 2020-07-04</div><div id='author'> Author: smitlunagariya.mat18@itbhu.ac.in</div><div id='file'> File Name: sympy/stats/symbolic_multivariate_probability.py</div><div id='class'> Class Name: ExpectationMatrix</div><div id='method'> Method Name: expand</div><BR><BR><div id='link'><a href='https://github.com/sympy/sympy/commit/24602abe9b89c6b22f77804636de2f109f1c6052#diff-ee04d3727d599492a335ff4b3fa2775c629ce7d4bcb70c5b9e7dcad451ac63bbL212' target='_blank'>Link</a></div><div id='project'> Project Name: sympy/sympy</div><div id='commit'> Commit Name: 24602abe9b89c6b22f77804636de2f109f1c6052</div><div id='time'> Time: 2020-07-04</div><div id='author'> Author: smitlunagariya.mat18@itbhu.ac.in</div><div id='file'> File Name: sympy/stats/symbolic_probability.py</div><div id='class'> Class Name: Expectation</div><div id='method'> Method Name: expand</div><BR>

@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    config["rollout_fragment_length"] = adjusted_batch_size
+
+    &#47&#47 Setup parameter noise.
+    <a id="change">if config.get("parameter_noise", False):
+        if config["batch_mode"] != "complete_episodes":
+            raise ValueError("Exploration with parameter space noise requires "
+                             "batch_mode to be complete_episodes.")
+        if config.get("noisy", False):
+            raise ValueError("Exploration with parameter space noise and "
+                             "noisy network cannot be used at the same time.")
+
+        start_callback = config["callbacks"].get("on_episode_start")
+
+        def on_episode_start(info):
+            &#47&#47 as a callback function to sample and pose parameter space
+            &#47&#47 noise on the parameters of network
+            policies = info["policy"]
+            for pi in policies.values():
+                pi.add_parameter_noise()
+            if start_callback is not None:
+                start_callback(info)
+
+        config["callbacks"]["on_episode_start"] = on_episode_start
+
+        end_callback = config["callbacks"].get("on_episode_end")
+
+        def on_episode_end(info):
+            &#47&#47 as a callback function to monitor the distance
+            &#47&#47 between noisy policy and original policy
+            policies = info["policy"]
+            episode = info["episode"]
+            model = policies[DEFAULT_POLICY_ID].model
+            if hasattr(model, "pi_distance"):
+                episode.custom_metrics["policy_distance"] = model.pi_distance
+            if end_callback is not None:
+                end_callback(info)
+
+        config["callbacks"]["on_episode_end"] = on_episode_end
+
+
+</a>def get_initial_state(config):
+    return {
+        "last_target_update_ts": 0,
+        "num_target_updates": 0,</code></pre><h3>After Change</h3><pre><code class='java'>
+            "type": "SoftQ",
+            "temperature": config.get("softmax_temp", 1.0)
+        }
+    <a id="change">if config.get("parameter_noise", DEPRECATED_VALUE) != DEPRECATED_VALUE:
+        deprecation_warning("parameter_noise", "exploration_config={"
+                            "type=ParameterNoise"
+                            "}")
+
+   </a> if config["exploration_config"]["type"] == "ParameterNoise":
+        if config["batch_mode"] != "complete_episodes":
+            logger.warning(
+                "ParameterNoise Exploration requires `batch_mode` to be "</code></pre>

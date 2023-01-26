@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            check_label_shapes(label, pred, False, True)
+            label = label.asnumpy()
+            pred = pred.asnumpy()
+            pearson_corr = numpy.corrcoef(pred.ravel(), <a id="change">label.ravel()</a>)[0, 1]
+            self.sum_metric += pearson_corr
+            self.global_sum_metric += pearson_corr
+            self.num_inst += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        for label, pred in zip(labels, preds):
+            check_label_shapes(label, pred, False, True)
+            label = label.asnumpy().ravel().astype(numpy.float64)
+            pred = <a id="change">pred.asnumpy().ravel().astype(numpy.float64)</a>
+            if self.average == &quotmacro&quot:
+                pearson_corr = numpy.corrcoef(pred, label)[0, 1]
+                self.sum_metric += pearson_corr
+                self.global_sum_metric += pearson_corr
+                self.num_inst += 1
+                self.global_num_inst += 1
+            else:
+                self.global_num_inst += 1
+                self.num_inst += 1
+                self._label_nums, self._mean_l, self._sse_l = \
+                    self.update_variance(label, self._label_nums, self._mean_l, self._sse_l)
+                self.update_cov(label, pred)
+                <a id="change">self._pred_nums, self._mean_p, self._sse_p = \
+                    self.update_variance(pred, self._pred_nums, self._mean_p, self._sse_p)</a>
+
+    def get(self):
+        if self.num_inst == 0:
+            return (self.name, float(&quotnan&quot))</code></pre>

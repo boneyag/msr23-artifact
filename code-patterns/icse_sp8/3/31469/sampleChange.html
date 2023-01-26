@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.grad_clip is None:
+            clip_gvs = gvs
+        else:
+            clip_gvs = [(tf.clip_by_value(g, -self.grad_clip, self.grad_clip), v) <a id="change">for</a> g, v in gvs]
+        self.step_op = self.opt.apply_gradients(clip_gvs)
+
+        &#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47</code></pre><h3>After Change</h3><pre><code class='java'>
+        if self.target_space == &quotinteger&quot:
+            &#47&#47 move negatives into exponential space and align positives
+            &#47&#47  clipping the negatives prevents overflow that TF dislikes
+            self.preds_op = tf.select(self.preds_op &gt; 0, self.preds_op + 1, tf.exp(<a id="change">tf.clip_by_value(self.preds_op,-50,50)</a>))
+
+            &#47&#47 Poisson loss
+            self.loss_op = tf.nn.log_poisson_loss(tf.log(self.preds_op), self.targets_op, compute_full_loss=True)
+            self.loss_op = tf.reduce_mean(self.loss_op)
+
+        else:
+            &#47&#47 clip targets
+            if self.target_space == &quotpositive&quot:
+                self.targets_op = tf.nn.relu(self.targets_op)
+
+            &#47&#47 take square difference
+            sq_diff = tf.squared_difference(self.preds_op, self.targets_op)
+
+            &#47&#47 set NaN&quots to zero
+            &#47&#47 sq_diff = tf.boolean_mask(sq_diff, tf.logical_not(self.targets_na[:,tstart:tend]))
+
+            &#47&#47 take the mean
+            self.loss_op = tf.reduce_mean(sq_diff, name=&quotr2_loss&quot) + norm_stabilizer
+
+        &#47&#47 track
+        tf.scalar_summary(&quotloss&quot, self.loss_op)
+
+        &#47&#47 define optimization
+        if self.optimization == &quotadam&quot:
+            self.opt = tf.train.AdamOptimizer(self.learning_rate, beta1=self.adam_beta1, beta2=self.adam_beta2, epsilon=self.adam_eps)
+        else:
+            print(&quotCannot recognize optimization algorithm %s&quot % self.optimization)
+            exit(1)
+
+        &#47&#47 clip gradients
+        self.gvs = self.opt.compute_gradients(self.loss_op)
+        if self.grad_clip is not None:
+            &#47&#47 self.gvs = [(tf.clip_by_value(g, -self.grad_clip, self.grad_clip), v) for g, v in self.gvs]
+
+            &#47&#47 batch norm introduces these None values that we have to dodge
+            clip_gvs = []
+            <a id="change">for i in range(len(self.gvs)):
+                g,v = self.gvs[i]
+                if g is None:
+                    clip_gvs.append(self.gvs[i])
+                else:
+                    clip_gvs.append((tf.clip_by_value(g, -self.grad_clip, self.grad_clip), v))
+
+        &#47&#47 apply gradients
+       </a> self.step_op = self.opt.apply_gradients(clip_gvs)
+
+
+        &#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47</code></pre>

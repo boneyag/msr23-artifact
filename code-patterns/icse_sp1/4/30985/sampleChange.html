@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                tensor, self._piv_chol_self, self._woodbury_cache, self._diag_var.diag()
+            )
+
+        <a id="change">return precondition_closure</a>
+
+    def inv_quad_log_det(self, inv_quad_rhs=None, log_det=False):
+        inv_quad_term, log_det_term = super(
+            AddedDiagLazyVariable, self</code></pre><h3>After Change</h3><pre><code class='java'>
+            )
+
+        &#47&#47 log_det correction
+        <a id="change">if not hasattr(self, "_precond_log_det_cache"):
+            lr_flipped = self._piv_chol_self.matmul(
+                self._piv_chol_self.transpose(-2, -1).
+                div(self._diag_var.diag().unsqueeze(1))
+            )
+            lr_flipped = lr_flipped + torch.eye(
+                n=lr_flipped.size(0), dtype=lr_flipped.dtype, device=lr_flipped.device
+            )
+            ld_one = lr_flipped.potrf().diag().log().sum() * 2
+            ld_two = self._diag_var.diag().data.log().sum()
+            self._precond_log_det_cache = ld_one + ld_two
+
+       </a> return precondition_closure, self._precond_log_det_cache
+</code></pre>

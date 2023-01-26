@@ -1,0 +1,39 @@
+<html><h3>41024c61c0737b1beaea8fff8e00a947d6b6ee9b,knowledge_transfer.py,KnowledgeTransferLearner,build_networks,#KnowledgeTransferLearner#,41
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            loss = -tf.reduce_sum(eligibility)
+            self.losses.append(loss)
+            optimizer = tf.train.RMSPropOptimizer(learning_rate=self.config[&quotlearning_rate&quot], decay=0.9, epsilon=1e-9)
+            self.trainers.append(<a id="change">optimizer.minimize(loss)</a>)
+
+        init = tf.global_variables_initializer()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.variation_probs = [tf.nn.softmax(tf.matmul(L1, tf.matmul(knowledge_base, s))) for s in sparse_representations]
+        self.optimizer = tf.train.RMSPropOptimizer(learning_rate=self.config[&quotlearning_rate&quot], decay=0.9, epsilon=1e-9)
+        net_vars = self.shared_vars + sparse_representations
+        <a id="change">self.accum_grads = create_accumulative_gradients_op(net_vars, 1)</a>
+
+        &#47&#47 self.writers = []
+        self.losses = []
+        for i, probabilities in enumerate(self.variation_probs):
+            good_probabilities = tf.reduce_sum(tf.mul(probabilities, tf.one_hot(tf.cast(self.action_taken, tf.int32), self.nA)), reduction_indices=[1])
+            eligibility = tf.log(good_probabilities) * self.advantage
+            &#47&#47 eligibility = tf.Print(eligibility, [eligibility], first_n=5)
+            loss = -tf.reduce_sum(eligibility)
+            self.losses.append(loss)
+            &#47&#47 writer = tf.summary.FileWriter(self.monitor_dir + &quot/task&quot + str(i), self.sess.graph)
+
+        &#47&#47 An add op for every task & its loss
+        &#47&#47 add_accumulative_gradients_op(net_vars, accum_grads, loss, identifier)
+        <a id="change">self.add_accum_grads = [add_accumulative_gradients_op(
+            self.shared_vars + [sparse_representations[i]],
+            self.accum_grads,
+            loss,
+            i)
+            for i, loss in enumerate(self.losses)]</a>
+
+        self.apply_gradients = self.optimizer.apply_gradients(
+            zip(self.accum_grads, net_vars))
+        self.reset_accum_grads = reset_accumulative_gradients_op(net_vars, self.accum_grads, 1)</code></pre><img src="172941054.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/arnomoonens/yarll/commit/41024c61c0737b1beaea8fff8e00a947d6b6ee9b#diff-cfbdb80e4360386128ba1e29255270b4e5c4685949620fe2ce589ff44a564256L41' target='_blank'>Link</a></div><div id='project'> Project Name: arnomoonens/yarll</div><div id='commit'> Commit Name: 41024c61c0737b1beaea8fff8e00a947d6b6ee9b</div><div id='time'> Time: 2017-02-09</div><div id='author'> Author: x-006@hotmail.com</div><div id='file'> File Name: knowledge_transfer.py</div><div id='class'> Class Name: KnowledgeTransferLearner</div><div id='method'> Method Name: build_networks</div><BR><BR><div id='link'><a href='https://github.com/pfnet/optuna/commit/523f21edde24819a075e858c42c232f878ea04ee#diff-1b312a80d756714a2d4bfcfe487c86b402e1798f0fb308f35d0f4d0b98ca529aL101' target='_blank'>Link</a></div><div id='project'> Project Name: pfnet/optuna</div><div id='commit'> Commit Name: 523f21edde24819a075e858c42c232f878ea04ee</div><div id='time'> Time: 2018-08-03</div><div id='author'> Author: toshihiko.yanase@gmail.com</div><div id='file'> File Name: examples/chainer_pruner.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/HyperGAN/HyperGAN/commit/c8f075268f7e5645a77eef21591a62a07e7e8baa#diff-9eec5b70ffa3fa75aefd4251d75b37d1ec059ad24fa611145a11e6fe9d7e9d69L27' target='_blank'>Link</a></div><div id='project'> Project Name: HyperGAN/HyperGAN</div><div id='commit'> Commit Name: c8f075268f7e5645a77eef21591a62a07e7e8baa</div><div id='time'> Time: 2017-02-28</div><div id='author'> Author: mikkel@255bits.com</div><div id='file'> File Name: hypergan/trainers/sgd_trainer.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: create</div><BR>

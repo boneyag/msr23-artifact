@@ -1,0 +1,205 @@
+<html><h3>5496637ebbd60082df146d540e66ccb9751e177e,pmdarima/arima/tests/test_arima_diagnostics.py,,,#,14
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+travis = os.environ.get("TESTING_ON_TRAVIS", "false").lower() == "true"
+
+&#47&#47 Do not test on travis because they hate MPL
+<a id="change">if not travis:
+
+    &#47&#47 Only do this setup if we are not running on Travis CI.
+    from matplotlib.pyplot import savefig
+    from matplotlib.testing.exceptions import ImageComparisonFailure
+    import matplotlib._png as _png
+
+    test_images_input_path = \
+        os.path.join(&quotpmdarima&quot, &quotarima&quot, &quottests&quot, &quotinput_images&quot)
+    test_images_output_path = \
+        test_images_input_path.replace(&quotinput_images&quot, &quotoutput_images&quot)
+
+    def calculate_rms(expected_image, actual_image):
+        Compare two images
+
+        Calculate the per-pixel errors, then compute the RMSE.
+
+        Parameters
+        ----------
+        expected_image : np.ndarray
+            Singed integer representation of expected image
+
+        actual_image : np.ndarray
+            Signed integer representation of actual/generated image.
+
+        Returns
+        -------
+        rms: float
+            RMSE of the the two images.
+
+        References
+        ----------
+        .. [1] Matplotlib&quots : matplotlib.testing.compare.calculate_rms
+        
+        if expected_image.shape != actual_image.shape:
+            raise ImageComparisonFailure(
+                "Image sizes do not match expected size: {} "
+                "actual size {}".format(expected_image.shape,
+                                        actual_image.shape))
+
+        &#47&#47 Convert to float to avoid overflowing finite integer types.
+        return np.sqrt(((expected_image - actual_image).astype(float) ** 2)
+                       .mean())
+
+    def format_error_message(rms, expected, actual, tol):
+        results = dict(rms=rms, expected=str(expected),
+                       actual=str(actual), tol=tol)
+
+        &#47&#47 Then the results should be a string suitable for stdout.
+        template = [&quotError: Image files did not match.&quot,
+                    &quotRMS Value: {rms}&quot,
+                    &quotExpected:  \n    {expected}&quot,
+                    &quotActual:    \n    {actual}&quot,
+                    &quotTolerance: \n    {tol}&quot, ]
+        str_res = &quot\n  &quot.join([line.format(**results) for line in template])
+        return str_res
+
+    def compare_images(expected, actual, tol):
+        Compare two image files.
+
+        Compare two "image" files checking differences within a tolerance.
+        The two given filenames may point to files which are convertible to
+        PNG via the `.converter` dictionary. The underlying RMS is calculated
+        with the `.calculate_rms` function.
+
+        Parameters
+        ----------
+        expected : str
+            The filename of the expected image.
+
+        actual : str
+            The filename of the actual image.
+
+        tol : float
+            The tolerance (a color value difference, where 255 is the
+            maximal difference).  The test fails if the average pixel
+            difference is greater than this value.
+
+        Returns
+        -------
+        comparison_result : None or raises
+            Return ``None`` if the images are equal within the given tolerance.
+            Otherwise raises a dict with the following contents:
+
+            - ``rms``: The RMS of the image difference.
+            - ``expected``: The filename of the expected image.
+            - ``actual``: The filename of the actual image.
+            - ``diff_image``: The filename of the difference image.
+            - ``tol``: The comparison tolerance.
+
+        References
+        ----------
+        .. [1] Matplotlib&quots : matplotlib.testing.compare.compare_images
+        
+        &#47&#47 These are coverage issues:
+        &#47&#47 if not os.path.exists(actual):
+        &#47&#47     raise Exception("Output image %s does not exist." % actual)
+        &#47&#47
+        &#47&#47 if os.stat(actual).st_size == 0:
+        &#47&#47     raise Exception("Output image file %s is empty." % actual)
+        &#47&#47
+        &#47&#47 if not os.path.exists(expected):
+        &#47&#47     raise IOError(&quotBaseline image %r does not exist.&quot % expected)
+        &#47&#47
+        &#47&#47 assert os.path.exists(actual)
+        &#47&#47 assert os.stat(actual).st_size &gt; 0
+        &#47&#47 assert os.path.exists(expected)
+
+        &#47&#47 open the image files and remove the alpha channel (if it exists)
+        expected_image = _png.read_png_int(expected)
+        actual_image = _png.read_png_int(actual)
+        expected_image = expected_image[:, :, :3]
+        actual_image = actual_image[:, :, :3]
+
+        if tol &lt;= 0:
+            if np.array_equal(expected_image, actual_image):
+                return None
+
+        &#47&#47 convert to signed integers,
+        &#47&#47 so that the images can be subtracted without overflow
+        expected_image = expected_image.astype(np.int16)
+        actual_image = actual_image.astype(np.int16)
+
+        rms = calculate_rms(expected_image, actual_image)
+        if rms &lt;= tol:
+            return None
+        &#47&#47 implicit &quotelse&quot
+        raise AssertionError(format_error_message(rms, expected, actual, tol))
+
+    def test_calculate_rms():
+        &#47&#47 This is a meta test used to ensure we get the expected exception
+        &#47&#47 from our helper function
+        with pytest.raises(ImageComparisonFailure):
+            calculate_rms(np.random.rand(5, 4), np.random.rand(4, 5))
+
+    def test_format_error_message():
+        &#47&#47 Another meta test of our helper function. I don&quott love that we&quotre
+        &#47&#47 even having to do this, but we should at least make sure our new
+        &#47&#47 functions introduce new breakage points
+        rms = 0.5
+        expected = &quotfake_file.png&quot
+        actual = &quotactual_file.png&quot
+        tol = 10
+        format_error_message(rms, expected, actual, tol)
+
+        &#47&#47 We&quotre not going to test for string equality, because that&quots silly
+        &#47&#47 in this case. But at least we showed it didn&quott break anything...
+
+    @pytest.mark.parametrize(
+        &quotmodel_type,model&quot, [
+            pytest.param(&quotarma&quot, ARIMA(order=(1, 0, 0))),
+            pytest.param(&quotarima&quot, ARIMA(order=(1, 1, 0))),
+            pytest.param(&quotsarimax&quot, ARIMA(order=(1, 1, 0),
+                                          seasonal_order=(1, 0, 0, 12)))
+        ])
+    def test_plot_diagnostics(model_type, model):
+        try:
+            safe_mkdirs(test_images_output_path)  &#47&#47 Passes even if present
+
+            &#47&#47 TODO: @charlesdrotar, these will change if arima code changes
+            expected = \
+                os.path.join(test_images_input_path,
+                             &quotplot_diagnostics_{}.png&quot.format(model_type))
+
+            actual = \
+                os.path.join(test_images_output_path,
+                             &quotplot_diagnostics_{}.png&quot.format(model_type))
+            model.fit(lynx)
+            model.plot_diagnostics(figsize=(15, 12))
+            savefig(fname=actual)
+            compare_images(expected, actual, tol=10)
+        finally:
+            shutil.rmtree(test_images_output_path)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+travis = os.environ.get("TESTING_ON_TRAVIS", "false").lower() == "true"
+
+&#47&#47 Do not test on travis because they hate MPL
+<a id="change">if not travis:
+
+    &#47&#47 base images are created on Mac/Darwin. Windows needs a higher tolerance
+    if platform.system() == "Windows":
+        tolerance = 10
+    else:
+        tolerance = 5
+
+    @pytest.mark.parametrize(
+        &quotmodel_type,model&quot, [
+            pytest.param(&quotarma&quot, ARIMA(order=(1, 0, 0))),
+            pytest.param(&quotarima&quot, ARIMA(order=(1, 1, 0))),
+            pytest.param(&quotsarimax&quot, ARIMA(order=(1, 1, 0),
+                                          seasonal_order=(1, 0, 0, 12)))
+        ])
+    @pytest.mark.mpl_image_compare(tolerance=10)
+    def test_plot_diagnostics(model_type, model):
+        model.fit(lynx)
+        return model.plot_diagnostics(figsize=(15, 12))</a>
+</code></pre><img src="213054513.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 5</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tgsmith61591/pmdarima/commit/5496637ebbd60082df146d540e66ccb9751e177e#diff-9ea8b962348e179eece91aee46bbe647c6ac92e36e62ed13939c1892cdebec80L18' target='_blank'>Link</a></div><div id='project'> Project Name: tgsmith61591/pmdarima</div><div id='commit'> Commit Name: 5496637ebbd60082df146d540e66ccb9751e177e</div><div id='time'> Time: 2018-12-24</div><div id='author'> Author: drotarcharles@yahoo.com</div><div id='file'> File Name: pmdarima/arima/tests/test_arima_diagnostics.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/hellohaptik/chatbot_ner/commit/e870ef14c590502fb0dc5ff3199e2602a87ec008#diff-dd08edccd25920e185fe2f97bce4c531c7461186863eab2e0bdf5f3e97e98bd5L226' target='_blank'>Link</a></div><div id='project'> Project Name: hellohaptik/chatbot_ner</div><div id='commit'> Commit Name: e870ef14c590502fb0dc5ff3199e2602a87ec008</div><div id='time'> Time: 2019-03-18</div><div id='author'> Author: jain.chirag925@gmail.com</div><div id='file'> File Name: ner_v1/detectors/numeral/budget/budget_detection.py</div><div id='class'> Class Name: BudgetDetector</div><div id='method'> Method Name: _detect_max_budget</div><BR><BR><div id='link'><a href='https://github.com/Pinafore/qb/commit/d48365776d72cfc7786e52210604698a7e6ceee8#diff-755ba55ccb0b8f46c67a048bbf764d13add1515eb9407c59896148edc6e35c76L206' target='_blank'>Link</a></div><div id='project'> Project Name: Pinafore/qb</div><div id='commit'> Commit Name: d48365776d72cfc7786e52210604698a7e6ceee8</div><div id='time'> Time: 2017-05-21</div><div id='author'> Author: ski.rodriguez@gmail.com</div><div id='file'> File Name: qanta/wikipedia/cached_wikipedia.py</div><div id='class'> Class Name: CachedWikipedia</div><div id='method'> Method Name: __getitem__</div><BR><BR><div id='link'><a href='https://github.com/konlpy/konlpy/commit/cd28d70a9a960053d1d4f6d3e8fcf982ff12221b#diff-60f61ab7a8d1910d86d9fda2261620314edcae5894d5aaa236b821c7256badd7L10' target='_blank'>Link</a></div><div id='project'> Project Name: konlpy/konlpy</div><div id='commit'> Commit Name: cd28d70a9a960053d1d4f6d3e8fcf982ff12221b</div><div id='time'> Time: 2015-01-10</div><div id='author'> Author: me@lucypark.kr</div><div id='file'> File Name: setup.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: requirements</div><BR><BR><div id='link'><a href='https://github.com/biotite-dev/biotite/commit/f7e6a5c544859ce6b0d6626e2f815b2db0c7813a#diff-2aec3b8235a72c097a3a86d37fe4027d9ac95c5e69eeff5ff88d0c9fa69e5c30L73' target='_blank'>Link</a></div><div id='project'> Project Name: biotite-dev/biotite</div><div id='commit'> Commit Name: f7e6a5c544859ce6b0d6626e2f815b2db0c7813a</div><div id='time'> Time: 2019-11-13</div><div id='author'> Author: patrick.kunzm@gmail.com</div><div id='file'> File Name: src/biotite/sequence/io/genbank/annotation.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_annotation</div><BR>

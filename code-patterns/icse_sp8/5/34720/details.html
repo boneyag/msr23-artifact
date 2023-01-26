@@ -1,0 +1,31 @@
+<html><h3>5ffa38fca42bb3fbee030f4b80264e0f4910a49c,torch_geometric/datasets/utils/tu_format.py,,read_adj,#Any#Any#,15
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def read_adj(dir, prefix):
+    index = read_file(dir, prefix, &quotA&quot)
+    index = index.t().long() - 1
+    <a id="change">new_index = index.new(index.size()).copy_(index)</a>
+
+    indicator = read_file(dir, prefix, &quotgraph_indicator&quot).long() - 1
+    <a id="change">bincount = torch.from_numpy(np.bincount(indicator.numpy()))</a>
+
+    index_slice = index.new(bincount.size(0) + 1)
+    index_slice[0] = 0
+    curr_graph = indicator[0]
+    for i in range(index.size(1)):
+        row = index[0, i]
+        if indicator[row] &gt; curr_graph:
+            <a id="change">new_index[:, i:] -= bincount[curr_graph]</a>
+            curr_graph += 1
+            index_slice[curr_graph] = i
+    index_slice[-1] = index.size(1)
+    index = new_index</code></pre><h3>After Change</h3><pre><code class='java'>
+    for i in range(index.size(1)):
+        row = index[0, i]
+        if indicator[row] &gt; curr_graph:
+            <a id="change">index[:, index_slice[curr_graph]:i]</a> -= index[:, index_slice[curr_graph]:i].min()
+            curr_graph += 1
+            index_slice[curr_graph] = i
+    index[:, index_slice[curr_graph]:] -= index[:, index_slice[curr_graph]:].min()</code></pre><img src="170673677.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/rusty1s/pytorch_geometric/commit/5ffa38fca42bb3fbee030f4b80264e0f4910a49c#diff-0edb9b762f2d9290182d76e504c1dd30215436169c0696bc3e618455849c2668L17' target='_blank'>Link</a></div><div id='project'> Project Name: rusty1s/pytorch_geometric</div><div id='commit'> Commit Name: 5ffa38fca42bb3fbee030f4b80264e0f4910a49c</div><div id='time'> Time: 2018-01-16</div><div id='author'> Author: matthias.fey@tu-dortmund.de</div><div id='file'> File Name: torch_geometric/datasets/utils/tu_format.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: read_adj</div><BR><BR><div id='link'><a href='https://github.com/biolab/orange3/commit/088b10a9b6621472af54635e761bda0dd775836f#diff-0b15875f448e735fb9683438218c0f840f3f0a3ba8acc770d5113125773b902bL11' target='_blank'>Link</a></div><div id='project'> Project Name: biolab/orange3</div><div id='commit'> Commit Name: 088b10a9b6621472af54635e761bda0dd775836f</div><div id='time'> Time: 2012-09-26</div><div id='author'> Author: janez.demsar@fri.uni-lj.si</div><div id='file'> File Name: Orange/classification/majority.py</div><div id='class'> Class Name: MajorityLearner</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/scipy/scipy/commit/2a28ba889d85c28e490b8b99aef8909e4602aff5#diff-8fe8b5a806547c7e8c6f3fe46ddca5ae8c7737f5598ee8b83d655363de018ef6L482' target='_blank'>Link</a></div><div id='project'> Project Name: scipy/scipy</div><div id='commit'> Commit Name: 2a28ba889d85c28e490b8b99aef8909e4602aff5</div><div id='time'> Time: 2019-06-30</div><div id='author'> Author: rlucas7@vt.edu</div><div id='file'> File Name: scipy/stats/_binned_statistic.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: binned_statistic_dd</div><BR>

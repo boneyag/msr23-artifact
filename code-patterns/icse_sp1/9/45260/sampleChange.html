@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  graph = tf.get_default_graph()
+  summaries = graph.get_collection(tf.GraphKeys.SUMMARIES)
+  gs_t = tf.reshape(tf.to_int32(tf.train.get_global_step()), [1])
+  <a id="change">summary_kwargs = collections.OrderedDict()</a>
+  <a id="change">for t in summaries:
+    &#47&#47 TODO(aidangomez): enable ImageSummary support when we have a faster method
+    &#47&#47 see @shibow&quots comment in cl/202344570
+    if t.op.type not in [&quotScalarSummary&quot]:
+      tf.logging.warn(&quotIgnoring unsupported tf.Summary type %s&quot % t.op.type)
+      continue
+
+    name = t.op.name
+    tensor = t.op.inputs[1]
+    if t.op.type == &quotScalarSummary&quot:
+      assert tensor.shape.is_compatible_with([])
+      if tensor.dtype == tf.int64:
+        tensor = tf.to_int32(tensor)
+      summary_kwargs[&quotScalarSummary&quot + name] = tf.reshape(tensor, [1])
+  &#47&#47 When no supported summaries are found, don&quott create host_call. Otherwise,
+  &#47&#47 TPU outfeed queue would enqueue global_step while host_call doesn&quott dequeue
+  &#47&#47 it, eventually causing hang.
+ </a> if not summary_kwargs:
+    return None
+  summary_kwargs[&quotglobal_step&quot] = gs_t
+  tf.logging.info(&quotsummary_kwargs %s&quot % str(summary_kwargs))</code></pre><h3>After Change</h3><pre><code class='java'>
+      return tf.cast(tensor, tf.float32)
+    return tensor
+
+  <a id="change">reshaped_tensors = [tf.reshape(maybe_cast(t), [1]) for _, t in summaries]</a>
+
+  &#47&#47 When no supported summaries are found, don&quott create host_call. Otherwise,
+  &#47&#47 TPU outfeed queue would enqueue global_step while host_call doesn&quott dequeue
+  &#47&#47 it, eventually causing hang.</code></pre>

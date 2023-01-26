@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self._label = tf.placeholder(tf.int64, (), name=&quotlabel&quot)
+
+            loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
+                labels=<a id="change">self._label[tf.newaxis]</a>,
+                logits=self._logits[tf.newaxis])
+            self._loss = tf.squeeze(loss, axis=0)
+            gradients = tf.gradients(loss, images)</code></pre><h3>After Change</h3><pre><code class='java'>
+                bw_gradients[0] = tf.zeros_like(images)
+            self._bw_gradient = tf.squeeze(bw_gradients[0], axis=0)
+
+            <a id="change">self._bw_gradients_pre = tf.placeholder(tf.float32, self._batch_logits.shape)</a>  &#47&#47 noqa: E501
+            batch_bw_loss = tf.reduce_sum(self._batch_logits * <a id="change">self._bw_gradients_pre</a>)  &#47&#47 noqa: E501
+            batch_bw_gradients = tf.gradients(batch_bw_loss, images)
+            assert len(batch_bw_gradients) == 1
+            if batch_bw_gradients[0] is None:
+                batch_bw_gradients[0] = tf.zeros_like(images)
+            <a id="change">self._bw_gradients = batch_bw_gradients[0]</a>
+
+    @classmethod
+    def from_keras(cls, model, bounds, input_shape=None,
+                   channel_axis=3, preprocessing=(0, 1)):</code></pre>

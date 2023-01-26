@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 the router lives. The rest of the hosts will be considered as remote workers.
+        try:
+            self._worker_hosts = [x.rsplit(&quot:&quot, 1)[0] if &quot:&quot in x else get_localhost_ip() for x in self._worker_procs]
+            <a id="change">self._max_workers = [int(x.rsplit(&quot:&quot, 1)[-1]) for x in self._worker_procs]</a>
+            self._num_workers = [0 for x in self._worker_procs]
+        except:
+            raise RuntimeError(f&quotIncorrect format for option -j ({self._worker_procs}), which should be one or more [host:]nproc&quot)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            self._worker_hosts = []
+            self._max_workers = []
+            <a id="change">for worker_proc in self._worker_procs:
+                if &quot:&quot in worker_proc:
+                    worker_host, max_workers = worker_proc.rsplit(&quot:&quot, 1)
+                    if not max_workers.isdigit():
+                        raise ValueError(f&quotInvalid worker specification {worker_proc}: number of process expected after ":"&quot)
+                    self._worker_hosts.append(worker_host)
+                    self._max_workers.append(int(max_workers))
+                elif worker_proc.isdigit():
+                    self._worker_hosts.append(get_localhost_ip())
+                    self._max_workers.append(int(worker_proc))
+                else:
+                    self._worker_hosts.append(worker_proc)
+                    &#47&#47 here we assume that all nodes have the same number of cores so that we use
+                    &#47&#47 the default value for master node for all computing nodes
+                    self._max_workers.append(min(max(os.cpu_count() // 2, 2), 8))
+
+           </a> self._num_workers = [0 for x in self._worker_procs]
+        except:
+            raise RuntimeError(f&quotIncorrect format for option -j ({self._worker_procs}), which should be one or more [host:]nproc&quot)
+</code></pre>

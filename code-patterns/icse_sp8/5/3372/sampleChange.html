@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def retry_lost_processor_jobs() -&gt; None:
+    Retry processor jobs who never even got started for too long.
+    minimum_creation_time = timezone.now() - MAX_QUEUE_TIME
+    lost_jobs = <a id="change">ProcessorJob.objects.filter(
+        success=None,
+        retried=False,
+        start_time=None,
+        end_time=None,
+        created_at__lt=minimum_creation_time
+        &#47&#47 TEMPORARY for Jackie&quots grant
+    ).exclude(pipeline_applied=ProcessorPipeline.NONE.value)</a>
+
+    handle_processor_jobs(lost_jobs)
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    nomad_port = get_env_variable("NOMAD_PORT", "4646")
+    nomad_client = nomad.Nomad(nomad_host, port=int(nomad_port), timeout=5)
+    lost_jobs = []
+    <a id="change">for job in potentially_lost_jobs:
+        try:
+            job_status = nomad_client.job.get_job(job.nomad_job_id)["Status"]
+            &#47&#47 If the job is still pending, then it makes sense that it hasn&quott started.
+            if job_status is not "pending":
+                &#47&#47 However if it&quots not pending, then it may have
+                &#47&#47 started since our original query.
+                job.refresh_from_db()
+                if job.start_time is None:
+                    &#47&#47 Nope, this job is lost.
+                    lost_jobs.append(job)
+        except URLNotFoundNomadException:
+            lost_jobs.append(job)
+
+   </a> handle_processor_jobs(lost_jobs)
+
+
+def monitor_jobs():</code></pre>

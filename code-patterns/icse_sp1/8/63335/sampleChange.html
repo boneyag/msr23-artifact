@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        row, col = edge_index
+
+        out = self.nn(pseudo)
+        <a id="change">out = out.view(-1, self.in_channels, self.out_channels)</a>
+        out = torch.matmul(x[col].unsqueeze(1), out).squeeze(1)
+        out = scatter_(self.aggr, out, row, dim_size=x.size(0))
+
+        if self.root is not None:
+            <a id="change">out = out + torch.mm(x, self.root)</a>
+
+        if self.bias is not None:
+            <a id="change">out = out + self.bias</a>
+
+        <a id="change">return out</a>
+
+    def __repr__(self):
+        return &quot{}({}, {})&quot.format(self.__class__.__name__, self.in_channels,
+                                   self.out_channels)</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        x = x.unsqueeze(-1) if x.dim() == 1 else x
+        pseudo = edge_attr.unsqueeze(-1) if edge_attr.dim() == 1 else edge_attr
+        <a id="change">return self.propagate(edge_index, x=x, pseudo=pseudo)</a>
+
+    def message(self, x_j, pseudo):
+        weight = self.nn(pseudo).view(-1, self.in_channels, self.out_channels)
+        return torch.matmul(x_j.unsqueeze(1), weight).squeeze(1)</code></pre>

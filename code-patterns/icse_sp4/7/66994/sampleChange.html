@@ -1,0 +1,64 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47 the prediction is yield groups as strings, as in a classification model
+                self.model_type = StaticTypes.model_types.classifier
+                self.probability = False
+                <a id="change">self.n_classes = len(np.unique(outputs))</a>
+
+            elif self.output_var_type == StaticTypes.output_types.int:
+                &#47&#47 the prediction is yield groups as integers, as in a classification model
+                self.model_type = StaticTypes.model_types.classifier</code></pre><h3>After Change</h3><pre><code class='java'>
+            about the types of outputs the function generally makes.
+
+        
+        <a id="change">if not examples.any():
+            err_msg = "Examples have not been provided. Cannot check outputs"
+            raise exceptions.ModelError(err_msg)
+
+       </a> outputs = self(examples)
+        <a id="change">self.input_shape = examples.shape</a>
+        self.output_shape = outputs.shape
+        if len(self.output_shape) == 1:
+            &#47&#47 the predict function is either a continuous prediction,
+            &#47&#47 or a most-likely classification
+            example_output = outputs[0]
+            self.output_var_type = return_data_type(example_output)
+            if self.output_var_type in (StaticTypes.output_types.string,
+                                        StaticTypes.output_types.int):
+                &#47&#47 the prediction is yield groups as strings or ints,
+                &#47&#47 as in a classification model
+                self.model_type = StaticTypes.model_types.classifier
+                self.probability = False
+                self.n_classes = len(np.unique(outputs))
+
+            elif self.output_var_type == StaticTypes.output_types.float:
+                &#47&#47 the prediction returning 1D continuous values
+                &#47&#47 this is not a stable method
+                &#47&#47 technically, you could classify things as
+                &#47&#47 something like 0.0 and 1.0
+                &#47&#47 perhaps it would be better if counted unique values?
+                self.model_type = StaticTypes.model_types.regressor
+                self.n_classes = 1
+                self.probability = StaticTypes.not_applicable
+                self.logger.warn("Inferring model type to be a regressor"
+                                 "due to 1D array of floats")
+            else:
+                pass  &#47&#47 default unknowns will take care of this
+        elif len(self.output_shape) == 2:
+            self.model_type = StaticTypes.model_types.classifier
+            self.n_classes = self.output_shape[1]
+            example_output = outputs[0][0]
+            self.output_var_type = return_data_type(example_output)
+            self.probability = (self.output_var_type == StaticTypes.output_types.float)
+        else:
+            raise ValueError("Unsupported model type, output dim = 3")
+
+        self.formatter = self.return_transformer_func()
+
+        <a id="change">reports = self.model_report(examples)</a>
+        for report in reports:
+            self.logger.debug(report)
+
+    @staticmethod</code></pre>

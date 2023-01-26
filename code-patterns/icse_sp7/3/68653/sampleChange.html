@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if not hasattr(G, &quotdirected&quot):
+        G.directed = is_directed(G)
+    &#47&#47 Removing the diagonal
+    A = G.W - np.diag(<a id="change">G.W.diagonal()</a>)
+
+    if G.directed:
+        return _check_connectivity_directed(A, **kwargs)</code></pre><h3>After Change</h3><pre><code class='java'>
+    if not hasattr(G, &quotdirected&quot):
+        G.directed = is_directed(G)
+
+    <a id="change">for adj_matrix in [G.A, G.A.T] if G.directed else [G.A]:
+        visited = np.zeros(G.N, dtype=bool)
+        stack = [0]
+
+        while len(stack):
+            v = stack.pop()
+            if not visited[v]:
+                visited[v] = True
+                &#47&#47 Add indices of nodes not visited yet and accessible from v
+                stack.extend(filter(lambda idx: not visited[idx] and idx not in stack, adj_matrix[v, :].nonzero()[1]))
+
+        if not visited.all():
+            return False
+
+   </a> return True
+
+
+def check_weights(W):</code></pre>

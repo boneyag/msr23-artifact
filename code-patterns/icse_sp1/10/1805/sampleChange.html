@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def _mean_pdf(self, x_cond, n_samples=10 ** 6):
+    means = np.zeros((x_cond.shape[0], self.ndim_y))
+    for i in range(x_cond.shape[0]):
+      <a id="change">x = np.tile(x_cond[i].reshape((1, x_cond[i].shape[0])), (n_samples, 1))</a>
+      func = lambda y: y * np.tile(np.expand_dims(self.pdf(x, y), axis=1), (1, self.ndim_y))
+      integral = mc_integration_cauchy(func, ndim=self.ndim_y, n_samples=n_samples)
+      means[i] = integral
+    return means</code></pre><h3>After Change</h3><pre><code class='java'>
+    means = np.zeros((x_cond.shape[0], self.ndim_y))
+    for i in range(x_cond.shape[0]):
+      mean_fun = lambda y: y
+      <a id="change">if self.ndim_y == 1:
+        n_samples_int, lower, upper = self._determine_integration_bounds()
+        func_to_integrate = lambda y:  mean_fun(y) * np.squeeze(self._tiled_pdf(y, x_cond[i], n_samples_int))
+        integral = numeric_integation(func_to_integrate, n_samples_int, lower, upper)
+      else:
+        func_to_integrate = lambda y: mean_fun(y) * self._tiled_pdf(y, x_cond[i], n_samples)
+        integral = mc_integration_cauchy(func_to_integrate, ndim=self.ndim_y, n_samples=n_samples)
+     </a> means[i] = integral
+    return means
+
+   STANDARD DEVIATION </code></pre>

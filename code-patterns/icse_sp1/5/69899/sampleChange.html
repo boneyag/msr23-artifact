@@ -1,0 +1,67 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    is_test = workunit.has_label(WorkUnitLabel.TEST)
+
+    &#47&#47 Get useful properties from the workunit.
+    workunit_dict = <a id="change">workunit.to_dict()</a>
+    if workunit_dict[&quotcmd&quot]:
+      workunit_dict[&quotcmd&quot] = linkify(self._buildroot, workunit_dict[&quotcmd&quot].replace(&quot$&quot, &quot\\\\$&quot),
+                                     self._linkify_memo)
+
+    &#47&#47 Create the template arguments.
+    args = {&quotindent&quot: len(workunit.ancestors()) * 10,
+            &quothtml_path_base&quot: self._html_path_base,
+            &quotworkunit&quot: workunit_dict,
+            &quotheader_text&quot: workunit.name,
+            &quotinitially_open&quot: is_test or not (is_bootstrap or is_tool or is_multitool),
+            &quotis_tool&quot: is_tool,
+            &quotis_multitool&quot: is_multitool}
+    args.update({&quotcollapsible&quot: lambda x: self._renderer.render_callable(&quotcollapsible&quot, x, args)})
+
+    &#47&#47 Render the workunit&quots div.
+    s = self._renderer.render_name(&quotworkunit_start&quot, args)
+
+    if is_tool:
+      &#47&#47 This workunit is a tool invocation, so render the appropriate content.
+      &#47&#47 We use the same args, slightly modified.
+      del args[&quotinitially_open&quot]
+      if is_test:
+        &#47&#47 Have test framework stdout open by default, but not that of other tools.
+        &#47&#47 This is an arbitrary choice, but one that turns out to be useful to users in practice.
+        args[&quotstdout_initially_open&quot] = True
+      <a id="change">s += self._renderer.render_name(&quottool_invocation_start&quot, args)</a>
+
+    &#47&#47 ... and we&quotre done.
+    self._emit(s)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    )
+    self._emit(s)
+
+    <a id="change">if is_tool:
+      tool_invocation_details = &quot\n&quot.join([
+        self._render_tool_detail(workunit=workunit, title=&quotcmd&quot, class_prefix=&quotcmd&quot),
+        &#47&#47 Have test framework stdout open by default, but not that of other tools.
+        &#47&#47 This is an arbitrary choice, but one that turns out to be useful to users in practice.
+        self._render_tool_detail(workunit=workunit, title=&quotstdout&quot, initially_open=is_test),
+        self._render_tool_detail(workunit=workunit, title=&quotstderr&quot),
+      ])
+
+      cmd = workunit.cmd or &quot&quot
+      linkified_cmd = linkify(self._buildroot, cmd.replace(&quot$&quot, &quot\\\\$&quot), self._linkify_memo)
+
+      s = self._start_tool_invocation_fmt_string.format(
+        tool_invocation_details=tool_invocation_details,
+        html_path_base=self._html_path_base,
+        id=workunit.id,
+        cmd=linkified_cmd
+      )
+
+      self._emit(s)
+
+  &#47&#47 CSS classes from pants.css that we use to style the header text to reflect the outcome.
+ </a> _outcome_css_classes = [&quotaborted&quot, &quotfailure&quot, &quotwarning&quot, &quotsuccess&quot, &quotunknown&quot]
+
+  _end_tool_invocation_fmt_string = dedent(
+    &lt;script&gt;</code></pre>

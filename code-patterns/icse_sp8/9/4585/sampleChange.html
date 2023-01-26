@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                repeat=False, shuffle=False)
+
+    accfun_mode = args.accfun_mode
+    <a id="change">if accfun_mode == 0:
+        accfun = F.binary_accuracy
+    elif accfun_mode == 1:
+        from sklearn import metrics
+
+        def get_1d_numpy_array(v):
+            if isinstance(v, chainer.Variable):
+                v = v.data
+            return cuda.to_cpu(v).ravel()
+
+        def accfun(y, t):
+            &#47&#47 -- calc & report ROC-AUC ---
+            &#47&#47 note that this is dirty hack implementation.
+            &#47&#47 roc auc is calculated per minibatch, and mean is taken to show
+            &#47&#47 PrintReport. This calculation is not same as total batch roc auc
+            &#47&#47 calculation.
+            t_data = get_1d_numpy_array(t)
+            y_data = get_1d_numpy_array(y)
+
+            y_data = y_data[t_data != -1]
+            t_data = t_data[t_data != -1]
+            try:
+                roc_auc = metrics.roc_auc_score(t_data, y_data)
+                reporter.report({&quotroc_auc&quot: roc_auc}, classifier)
+            except ValueError as e:
+                &#47&#47 When `t_data` only contains one label (ex. only 0), roc auc
+                &#47&#47 cannot be calculated and ValueError is raised.
+                &#47&#47 This implementation just ignores this minibatch for roc auc
+                &#47&#47 calculation.
+                pass
+            &#47&#47 --- calc ROC-AUC end ---
+            return F.binary_accuracy(y, t)
+    else:
+        raise ValueError(&quotInvalid accfun_mode {}&quot.format(accfun_mode))
+
+   </a> classifier = L.Classifier(predictor_,
+                              lossfun=F.sigmoid_cross_entropy,
+                              accfun=accfun)
+    if args.gpu &gt;= 0:</code></pre><h3>After Change</h3><pre><code class='java'>
+        trainer.extend(ROCAUCEvaluator(
+            train_eval_iter, classifier, predictor=predictor_,
+            device=args.gpu, converter=concat_mols, name=&quottrain&quot))
+        <a id="change">trainer.extend(ROCAUCEvaluator(
+            val_iter, classifier, predictor=predictor_,
+            device=args.gpu, converter=concat_mols, name=&quotval&quot))</a>
+        trainer.extend(E.PrintReport([
+            &quotepoch&quot, &quotmain/loss&quot, &quotmain/accuracy&quot, &quottrain/roc_auc&quot,
+            &quotvalidation/main/loss&quot, &quotvalidation/main/accuracy&quot,
+            &quotval/roc_auc&quot, &quotelapsed_time&quot]))</code></pre>

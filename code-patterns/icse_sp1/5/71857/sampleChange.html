@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            res_list = [x.to(output_device) for x in res_list]
+            res = torch.sum(torch.stack(res_list), dim=0)
+        else:
+            while <a id="change">rhs.ndimension() &lt; self.nd</a><a id="change">imension()</a>:
+                <a id="change">rhs = rhs.unsqueeze(0)</a>
+            curr_idx = 0
+            res_list = []
+            index = [slice(None, None, None) for _ in range(self.ndimension())]
+            for t, size, rhs in zip(self.lazy_tensors, self.cat_dim_sizes, rhs_):</code></pre><h3>After Change</h3><pre><code class='java'>
+            res = torch.sum(torch.stack(res_list), dim=0)
+        else:
+            output_shape = _matmul_broadcast_shape(self.shape, rhs.shape)
+            rhs = <a id="change">rhs.expand(*output_shape[:-2], *rhs.shape[-2:])</a>
+            curr_idx = 0
+            res_list = []
+            for t, size in zip(self.lazy_tensors, self.cat_dim_sizes):
+                <a id="change">sub_rhs = rhs.narrow(self.cat_dim, curr_idx, size)</a>
+                res_list.append(t._matmul(sub_rhs))
+                curr_idx += size
+            &#47&#47 copy result back to output device
+            res_list = [x.to(output_device) for x in res_list]</code></pre>

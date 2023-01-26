@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        max_events = 0
+        synapse_sources = synapse_sources[:]
+        for source in xrange(self._source_end - self._source_start):
+            <a id="change">indices = np.flatnonzero(synapse_sources == (source +
+                                                         self._source_start))</a>
+            size = <a id="change">len(indices)</a>
+            self._neurons_to_synapses.append(indices)
+            <a id="change">max_events = max(max_events, size)</a>
+
+        n_steps = max_delays + 1
+        
+        &#47&#47 Adjust the maximum delay and number of events per timestep if necessary</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Prepare the data structure used in propagation
+        synapse_sources = synapse_sources[:]        
+        nsource = self._source_end - self._source_start
+        ss = <a id="change">np.ravel(synapse_sources)</a>
+        I = np.argsort(ss)
+        <a id="change">ss_sorted = ss[I]</a>
+        splitinds = np.searchsorted(ss_sorted, np.arange(self._source_start, self. _source_end+1))
+        self._neurons_to_synapses = [I[splitinds[j]:splitinds[j+1]] for j in xrange(len(splitinds)-1)]
+        max_events = max(map(len, self._neurons_to_synapses))
+</code></pre>

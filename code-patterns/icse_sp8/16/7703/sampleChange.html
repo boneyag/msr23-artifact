@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 Get predictions but not full rankings for the sake of speed
+        if cand_vecs.dim() == 2:
+            <a id="change">preds = [cands[ordering[0]] for ordering in ranks]</a>
+        elif cand_vecs.dim() == 3:
+            preds = [cands[i][ordering[0]] for i, ordering in enumerate(ranks)]
+        return Output(preds)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        ranks = ranks.cpu()
+        &#47&#47 Here we get the top prediction for each example, but do not
+        &#47&#47 return the full ranked list for the sake of training speed
+        <a id="change">preds = []</a>
+        <a id="change">for i, ordering in enumerate(ranks):
+            if cand_vecs.dim() == 2:  &#47&#47 num cands x max cand length
+                cand_list = cands
+            elif cand_vecs.dim() == 3:  &#47&#47 batchsize x num cands x max cand length
+                cand_list = cands[i]
+            if len(ordering) != len(cand_list):
+                &#47&#47 We may have added padded cands to fill out the batch;
+                &#47&#47 Here we break after finding the first non-pad cand in the
+                &#47&#47 ranked list
+                for x in ordering:
+                    if x &lt; len(cand_list):
+                        preds.append(cand_list[x])
+                        break
+            else:
+                preds.append(cand_list[ordering[0]])
+
+       </a> return Output(preds)
+
+    def is_valid(self, obs):
+        </code></pre>

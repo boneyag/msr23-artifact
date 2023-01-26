@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        _, M_in, M_out = weight.size()
+        k_max = self.amount.size(1)
+
+        <a id="change">output = input.new(input.size(0), M_out)</a>
+        num_threads = output.numel()
+
+        with torch.cuda.device_of(input):
+            f = load_kernel(
+                &quotspline_weights_kernel&quot,
+                _spline_weights_kernel,
+                Dtype=Dtype(input),
+                num_threads=num_threads,
+                M_in=M_in,
+                M_out=M_out,
+                k_max=k_max)
+            f(block=(CUDA_NUM_THREADS, 1, 1),
+              grid=(GET_BLOCKS(num_threads), 1, 1),
+              args=[
+                  input.data_ptr(),
+                  weight.data_ptr(),
+                  output.data_ptr(),
+                  self.amount.data_ptr(),
+                  self.index.data_ptr()
+              ],
+              stream=Stream(ptr=torch.cuda.current_stream().cuda_stream))
+
+        <a id="change">return output</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        k_max = self.amount.size(1)
+        num_edges, d = values.size()
+
+        <a id="change">amounts = values.new(num_edges, (self.degree+1)**d)</a>
+        indices = torch.cuda.IntTensor([num_edges, (self.degree+1)**d])
+        num_threads = amounts.numel()
+
+        with torch.cuda.device_of(input):
+            f = load_kernel(
+                &quotspline_weights_kernel&quot,
+                self._spline_weights_kernel,
+                Dtype=Dtype(input),
+                num_threads=num_threads,
+                num_edges=num_edges,
+                k_max=k_max,
+                degree=self.degree+1,
+                d=len(self.kernel_size.size()),
+                k_prod = self.k_prod
+            )
+            f(block=(CUDA_NUM_THREADS, 1, 1),
+              grid=(GET_BLOCKS(num_threads), 1, 1),
+              args=[
+                  values.data_ptr(),
+                  amounts.data_ptr(),
+                  indices.data_ptr()
+              ],
+              stream=Stream(ptr=torch.cuda.current_stream().cuda_stream))
+
+        <a id="change">return amounts, indices</a>
+</code></pre>

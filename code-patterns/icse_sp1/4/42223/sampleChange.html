@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                ret = self._flush_trial(trial_id)
+                if cached_trial.state != TrialState.RUNNING:
+                    study_id, number = self._trial_id_to_study_id_and_number[trial_id]
+                    del <a id="change">self._studies[study_id].trials[number]</a>
+                return ret
+
+        return self._backend.set_trial_state(trial_id, state)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                return self._flush_trial(trial_id)
+
+        ret = self._backend.set_trial_state(trial_id, state)
+        <a id="change">if (
+            ret
+            and state == TrialState.RUNNING
+            and trial_id in self._trial_id_to_study_id_and_number
+        ):
+            &#47&#47 Cache when the local thread pop WAITING trial and start evaluation.
+            with self._lock:
+                study_id, _ = self._trial_id_to_study_id_and_number[trial_id]
+                self._add_trials_to_cache(study_id, [self._backend.get_trial(trial_id)])
+       </a> return ret
+
+    def set_trial_param(
+        self,</code></pre>

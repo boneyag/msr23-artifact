@@ -1,0 +1,65 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    A pipeline.Pipeline instance.
+  
+  all_transpositions = config.transpose_to_key is None
+  <a id="change">quantizer = pipelines_common.Quantizer(steps_per_quarter=4)</a>
+  lead_sheet_extractor_train = lead_sheet_pipelines.LeadSheetExtractor(
+      min_bars=7, max_steps=512, min_unique_pitches=3, gap_bars=1.0,
+      ignore_polyphonic_notes=False, all_transpositions=all_transpositions,
+      name=&quotLeadSheetExtractorTrain&quot)
+  lead_sheet_extractor_eval = lead_sheet_pipelines.LeadSheetExtractor(
+      min_bars=7, max_steps=512, min_unique_pitches=3, gap_bars=1.0,
+      ignore_polyphonic_notes=False, all_transpositions=all_transpositions,
+      name=&quotLeadSheetExtractorEval&quot)
+  encoder_pipeline_train = EncoderPipeline(config, name=&quotEncoderPipelineTrain&quot)
+  encoder_pipeline_eval = EncoderPipeline(config, name=&quotEncoderPipelineEval&quot)
+  partitioner = pipelines_common.RandomPartition(
+      music_pb2.NoteSequence,
+      [&quoteval_lead_sheets&quot, &quottraining_lead_sheets&quot],
+      [eval_ratio])
+
+  <a id="change">dag</a> = <a id="change">{quantizer: dag_pipeline.DagInput(music_pb2.NoteSequence),
+         partitioner: quantizer,
+         lead_sheet_extractor_train: partitioner[&quottraining_lead_sheets&quot],
+         lead_sheet_extractor_eval: partitioner[&quoteval_lead_sheets&quot],
+         encoder_pipeline_train: lead_sheet_extractor_train,
+         encoder_pipeline_eval: lead_sheet_extractor_eval,
+         dag_pipeline.DagOutput(&quottraining_lead_sheets&quot): encoder_pipeline_train,
+         dag_pipeline.DagOutput(&quoteval_lead_sheets&quot): encoder_pipeline_eval}</a>
+  return dag_pipeline.DAGPipeline(dag)
+
+
+def main(unused_argv):</code></pre><h3>After Change</h3><pre><code class='java'>
+    A pipeline.Pipeline instance.
+  
+  all_transpositions = config.transpose_to_key is None
+  <a id="change">partitioner</a> = pipelines_common.RandomPartition(
+      music_pb2.NoteSequence,
+      [&quoteval_lead_sheets&quot, &quottraining_lead_sheets&quot],
+      [eval_ratio])
+  <a id="change">dag</a> = <a id="change">{partitioner: dag_pipeline.DagInput(music_pb2.NoteSequence)}</a>
+
+  <a id="change">for mode in [&quoteval&quot, &quottraining&quot]:
+    time_change_splitter = pipelines_common.TimeChangeSplitter(
+        name=&quotTimeChangeSplitter_&quot + mode)
+    quantizer = pipelines_common.Quantizer(
+        steps_per_quarter=4, name=&quotQuantizer_&quot + mode)
+    lead_sheet_extractor = lead_sheet_pipelines.LeadSheetExtractor(
+        min_bars=7, max_steps=512, min_unique_pitches=3, gap_bars=1.0,
+        ignore_polyphonic_notes=False, all_transpositions=all_transpositions,
+        name=&quotLeadSheetExtractor_&quot + mode)
+    encoder_pipeline = EncoderPipeline(config, name=&quotEncoderPipeline_&quot + mode)
+
+    dag[time_change_splitter] = partitioner[mode + &quot_lead_sheets&quot]
+    dag[quantizer] = time_change_splitter
+    dag[lead_sheet_extractor] = quantizer
+    dag[encoder_pipeline] = lead_sheet_extractor
+    dag[dag_pipeline.DagOutput(mode + &quot_lead_sheets&quot)] = encoder_pipeline
+
+ </a> return dag_pipeline.DAGPipeline(dag)
+
+
+def main(unused_argv):</code></pre>

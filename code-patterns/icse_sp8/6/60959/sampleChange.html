@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _create(self, d_real, d_fake):
+        &#47&#47 TODO get the d_last_layer
+        <a id="change">category_layer = linear(d_last_layer, sum(config[&quotcategories&quot]), &quotv_categories&quot,stddev=0.15)</a>
+        category_layer = batch_norm(config[&quotbatch_size&quot], name=&quotv_cat_loss&quot)(category_layer)
+        category_layer = config[&quotgenerator.activation&quot](category_layer)
+        categories_l = categories_loss(categories, category_layer, config[&quotbatch_size&quot])
+        g_losses.append(-1*config[&quotcategories_lambda&quot]*categories_l)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def _create(self, d_real, d_fake):
+        gan = self.gan
+        <a id="change">ops = self.ops</a>
+        config = self.config
+        categories = config.categories
+        <a id="change">activation = ops.lookup(config.activation)</a>
+        &#47&#47TODO broken.
+        &#47&#47 TODO get the d_last_layer
+        category_layer = gan.discriminator.ops.linear(d_real, sum(config.categories))
+        category_layer= ops.layer_regularizer(d_real, config.layer_regularizer, config.batch_norm_epsilon)
+        category_layer = activation(category_layer)
+
+        loss = self.categories_loss(categories, category_layer)
+
+        loss = -1*config.category_lambda*loss
+        d_loss = loss
+        g_loss = loss
+
+        return <a id="change">d_loss</a>, g_loss
+
+    def split_categories(layer, batch_size, categories):
+        start = 0</code></pre>

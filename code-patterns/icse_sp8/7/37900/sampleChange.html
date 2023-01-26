@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    a_host = numpy.array([[0, 1, 0], [2, 0, 3], [0, 4, 0]], dtype=dtype)
+    a = cupy.asarray(a_host)
+
+    anz = <a id="change">a.nonzero()</a>
+    <a id="change">acoo = cupy_sparse.coo_matrix((a[anz], anz))</a>
+    asp = sparse_type(acoo)
+
+    header, frames = serialize(asp, serializers=[serializer])
+    asp2 = deserialize(header, frames)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    a_host = numpy.array([[0, 1, 0], [2, 0, 3], [0, 4, 0]], dtype=dtype)
+    asp_host = scipy_sparse_type(a_host)
+    <a id="change">if sparse_name == "dia_matrix":
+        &#47&#47 CuPy `dia_matrix` cannot be created from SciPy one
+        &#47&#47 xref: https://github.com/cupy/cupy/issues/3158
+        asp_dev = cupy_sparse_type(
+            (asp_host.data, asp_host.offsets),
+            shape=asp_host.shape,
+            dtype=asp_host.dtype,
+        )
+    else:
+        asp_dev = cupy_sparse_type(asp_host)
+
+   </a> header, frames = serialize(asp_dev, serializers=[serializer])
+    a2sp_dev = deserialize(header, frames)
+
+    a2sp_host = a2sp_dev.get()</code></pre>

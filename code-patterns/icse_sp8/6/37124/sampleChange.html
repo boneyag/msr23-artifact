@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        files_per_worker = len(files) // all_workers
+        offset = self.rank * num_workers_per_node + node_worker_id
+        start_idx = offset * files_per_worker
+        end_idx = <a id="change">start_idx + files_per_worker if offset &lt; all_workers - 1 else len(files)</a>
+        print(f&quotworker {node_worker_id} [{start_idx}:{end_idx}]&quot)
+
+        self.vectorizer.mxlen = self.nctx
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        all_workers = (self.world_size * num_workers_per_node)
+        offset = self.rank * num_workers_per_node + node_worker_id
+        self.vectorizer.mxlen = self.nctx
+        read_file_order = list(<a id="change">range(offset, len(files), all_workers)</a>)
+        &#47&#47 If we have multiple files per worker, possibly shuffle the file read order
+        if self.shuffle:
+            <a id="change">read_file_order = np.random.permutation(read_file_order)</a>
+
+        for file_idx in read_file_order:
+            file = files[file_idx]
+            with open(file) as rf:
+                lines = rf.readlines()
+                if self.shuffle:
+                    <a id="change">random.shuffle(lines)</a>
+                for l in lines:
+                    response = self.process_line(l)
+                    yield response
+</code></pre>

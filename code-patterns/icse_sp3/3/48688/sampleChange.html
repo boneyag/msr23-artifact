@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        simple_rdd = df_to_simple_rdd(df, categorical=self.categorical,
+                                      nb_classes=self.nb_classes)
+        simple_rdd = simple_rdd.repartition(self.num_workers)
+        <a id="change">self.train(simple_rdd, nb_epoch=self.nb_epoch,
+                   batch_size=self.batch_size, verbose=self.verbose,
+                   validation_split=self.validation_split)</a>
+        return ElephasTransformer(self.spark_context, self.master_network)
+
+
+class ElephasTransformer(SparkModel, Transformer):</code></pre><h3>After Change</h3><pre><code class='java'>
+        simple_rdd = simple_rdd.repartition(self.get_num_workers())
+        optimizer = None
+        if self.get_optimizer_config() is not None:
+            optimizer = <a id="change">get(self.get_optimizer_config()[&quotname&quot], self.get_optimizer_config())</a>
+
+        spark_model = SparkModel(simple_rdd.ctx, model_from_yaml(self.get_keras_model_config()), optimizer=optimizer,
+                                 mode=self.get_mode(), frequency=self.get_frequency(),
+                                 num_workers=self.get_num_workers())
+        spark_model.train(simple_rdd)
+
+        <a id="change">model_weights = spark_model.master_network.get_weights()</a>
+        weights = simple_rdd.ctx.broadcast(model_weights)
+        return ElephasTransformer(inputCol=self.getFeaturesCol(),
+                                  keras_model_config=spark_model.master_network.to_yaml(),
+                                  weights=weights)</code></pre>

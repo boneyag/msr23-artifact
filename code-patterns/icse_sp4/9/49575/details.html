@@ -1,0 +1,181 @@
+<html><h3>542967273fc7660d61726d07a1db756bdb890f43,train.py,,train,#Any#,34
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            best_flag = False
+
+            <a id="change">if True: &#47&#47 if true
+                if best_val_score is None or current_score &gt; best_val_score:
+                    best_val_score = current_score
+                    best_flag = True
+
+                &#47&#47 Dump miscalleous informations
+                infos[&quotbest_val_score&quot] = best_val_score
+                histories[&quotval_result_history&quot] = val_result_history
+                histories[&quotloss_history&quot] = loss_history
+                histories[&quotlr_history&quot] = lr_history
+                histories[&quotss_prob_history&quot] = ss_prob_history
+
+                save_checkpoint(model, infos, optimizer, histories)
+                if opt.save_history_ckpt:
+                    save_checkpoint(model, infos, optimizer, append=str(iteration))
+
+                if best_flag:
+                    save_checkpoint(model, infos, optimizer, append=&quotbest&quot)
+
+        &#47&#47 Stop if reaching max epochs
+       </a> if epoch &gt;= opt.max_epochs and opt.max_epochs != -1:
+            break
+
+opt = opts.parse_opt()</code></pre><h3>After Change</h3><pre><code class='java'>
+            with open(os.path.join(opt.checkpoint_path, &quothistories_&quot+opt.id+&quot%s.pkl&quot %(append)), &quotwb&quot) as f:
+                utils.pickle_dump(histories, f)
+
+    <a id="change">try:
+        while True:
+            if epoch_done:
+                if not opt.noamopt and not opt.reduce_on_plateau:
+                    &#47&#47 Assign the learning rate
+                    if epoch &gt; opt.learning_rate_decay_start and opt.learning_rate_decay_start &gt;= 0:
+                        frac = (epoch - opt.learning_rate_decay_start) // opt.learning_rate_decay_every
+                        decay_factor = opt.learning_rate_decay_rate  ** frac
+                        opt.current_lr = opt.learning_rate * decay_factor
+                    else:
+                        opt.current_lr = opt.learning_rate
+                    utils.set_lr(optimizer, opt.current_lr) &#47&#47 set the decayed rate
+                &#47&#47 Assign the scheduled sampling prob
+                if epoch &gt; opt.scheduled_sampling_start and opt.scheduled_sampling_start &gt;= 0:
+                    frac = (epoch - opt.scheduled_sampling_start) // opt.scheduled_sampling_increase_every
+                    opt.ss_prob = min(opt.scheduled_sampling_increase_prob  * frac, opt.scheduled_sampling_max_prob)
+                    model.ss_prob = opt.ss_prob
+
+                &#47&#47 If start self critical training
+                if opt.self_critical_after != -1 and epoch &gt;= opt.self_critical_after:
+                    sc_flag = True
+                    init_scorer(opt.cached_tokens)
+                else:
+                    sc_flag = False
+
+                epoch_done = False
+                    
+            start = time.time()
+            &#47&#47 Load data from train split (0)
+            data = loader.get_batch(&quottrain&quot)
+            print(&quotRead data:&quot, time.time() - start)
+
+            torch.cuda.synchronize()
+            start = time.time()
+
+            tmp = [data[&quotfc_feats&quot], data[&quotatt_feats&quot], data[&quotlabels&quot], data[&quotmasks&quot], data[&quotatt_masks&quot]]
+            tmp = [_ if _ is None else _.cuda() for _ in tmp]
+            fc_feats, att_feats, labels, masks, att_masks = tmp
+            
+            optimizer.zero_grad()
+            model_out = dp_lw_model(fc_feats, att_feats, labels, masks, att_masks, data[&quotgts&quot], torch.arange(0, len(data[&quotgts&quot])), sc_flag)
+
+            loss = model_out[&quotloss&quot].mean()
+
+            loss.backward()
+            utils.clip_gradient(optimizer, opt.grad_clip)
+            optimizer.step()
+            train_loss = loss.item()
+            torch.cuda.synchronize()
+            end = time.time()
+            if not sc_flag:
+                print("iter {} (epoch {}), train_loss = {:.3f}, time/batch = {:.3f}" \
+                    .format(iteration, epoch, train_loss, end - start))
+            else:
+                print("iter {} (epoch {}), avg_reward = {:.3f}, time/batch = {:.3f}" \
+                    .format(iteration, epoch, model_out[&quotreward&quot].mean(), end - start))
+
+            &#47&#47 Update the iteration and epoch
+            iteration += 1
+            if data[&quotbounds&quot][&quotwrapped&quot]:
+                epoch += 1
+                epoch_done = True
+
+            &#47&#47 Write the training loss summary
+            if (iteration % opt.losses_log_every == 0):
+                add_summary_value(tb_summary_writer, &quottrain_loss&quot, train_loss, iteration)
+                if opt.noamopt:
+                    opt.current_lr = optimizer.rate()
+                elif opt.reduce_on_plateau:
+                    opt.current_lr = optimizer.current_lr
+                add_summary_value(tb_summary_writer, &quotlearning_rate&quot, opt.current_lr, iteration)
+                add_summary_value(tb_summary_writer, &quotscheduled_sampling_prob&quot, model.ss_prob, iteration)
+                if sc_flag:
+                    add_summary_value(tb_summary_writer, &quotavg_reward&quot, model_out[&quotreward&quot].mean(), iteration)
+
+                loss_history[iteration] = train_loss if not sc_flag else model_out[&quotreward&quot].mean()
+                lr_history[iteration] = opt.current_lr
+                ss_prob_history[iteration] = model.ss_prob
+
+            &#47&#47 update infos
+            infos[&quotiter&quot] = iteration
+            infos[&quotepoch&quot] = epoch
+            infos[&quotiterators&quot] = loader.iterators
+            infos[&quotsplit_ix&quot] = loader.split_ix
+            
+            &#47&#47 make evaluation on validation set, and save model
+            if (iteration % opt.save_checkpoint_every == 0):
+                &#47&#47 eval model
+                eval_kwargs = {&quotsplit&quot: &quotval&quot,
+                                &quotdataset&quot: opt.input_json}
+                eval_kwargs.update(vars(opt))
+                val_loss, predictions, lang_stats = eval_utils.eval_split(
+                    dp_model, lw_model.crit, loader, eval_kwargs)
+
+                if opt.reduce_on_plateau:
+                    if &quotCIDEr&quot in lang_stats:
+                        optimizer.scheduler_step(-lang_stats[&quotCIDEr&quot])
+                    else:
+                        optimizer.scheduler_step(val_loss)
+                &#47&#47 Write validation result into summary
+                add_summary_value(tb_summary_writer, &quotvalidation loss&quot, val_loss, iteration)
+                if lang_stats is not None:
+                    for k,v in lang_stats.items():
+                        add_summary_value(tb_summary_writer, k, v, iteration)
+                val_result_history[iteration] = {&quotloss&quot: val_loss, &quotlang_stats&quot: lang_stats, &quotpredictions&quot: predictions}
+
+                &#47&#47 Save model if is improving on validation result
+                if opt.language_eval == 1:
+                    current_score = lang_stats[&quotCIDEr&quot]
+                else:
+                    current_score = - val_loss
+
+                best_flag = False
+
+                if best_val_score is None or current_score &gt; best_val_score:
+                    best_val_score = current_score
+                    best_flag = True
+
+                &#47&#47 Dump miscalleous informations
+                infos[&quotbest_val_score&quot] = best_val_score
+                histories[&quotval_result_history&quot] = val_result_history
+                histories[&quotloss_history&quot] = loss_history
+                histories[&quotlr_history&quot] = lr_history
+                histories[&quotss_prob_history&quot] = ss_prob_history
+
+                save_checkpoint(model, infos, optimizer, histories)
+                if opt.save_history_ckpt:
+                    save_checkpoint(model, infos, optimizer, append=str(iteration))
+
+                if best_flag:
+                    save_checkpoint(model, infos, optimizer, append=&quotbest&quot)
+
+            &#47&#47 Stop if reaching max epochs
+            if epoch &gt;= opt.max_epochs and opt.max_epochs != -1:
+                break
+    except (RuntimeError, KeyboardInterrupt):
+        print(&quotSave ckpt on exception ...&quot)
+        save_checkpoint(model, infos, optimizer)
+        print(&quotSave ckpt done.&quot)
+        stack_trace = traceback.format_exc()
+        print(stack_trace)
+
+
+</a>opt = opts.parse_opt()
+train(opt)
+</code></pre><img src="231463130.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ruotianluo/ImageCaptioning.pytorch/commit/542967273fc7660d61726d07a1db756bdb890f43#diff-ed183d67207df065a11e1289f19d34cc2abbc5448dea952683cfe9728c342b95L117' target='_blank'>Link</a></div><div id='project'> Project Name: ruotianluo/ImageCaptioning.pytorch</div><div id='commit'> Commit Name: 542967273fc7660d61726d07a1db756bdb890f43</div><div id='time'> Time: 2019-04-12</div><div id='author'> Author: rluo@ttic.edu</div><div id='file'> File Name: train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/sentinel-hub/eo-learn/commit/9056208ea104828630f15b4e9e49da8e02755f75#diff-4e4a78509290352e28fef223e9263d739fd201f4ca90380893186bf6a31edd2dL165' target='_blank'>Link</a></div><div id='project'> Project Name: sentinel-hub/eo-learn</div><div id='commit'> Commit Name: 9056208ea104828630f15b4e9e49da8e02755f75</div><div id='time'> Time: 2018-08-02</div><div id='author'> Author: tomi.slijepcevic@gmail.com</div><div id='file'> File Name: core/eolearn/core/eoexecution.py</div><div id='class'> Class Name: EOExecutor</div><div id='method'> Method Name: _render_tasks_source</div><BR><BR><div id='link'><a href='https://github.com/sentinel-hub/eo-learn/commit/798defcbca0cb6a0ecf5f3b371b9d1520bf4dd07#diff-4e4a78509290352e28fef223e9263d739fd201f4ca90380893186bf6a31edd2dL165' target='_blank'>Link</a></div><div id='project'> Project Name: sentinel-hub/eo-learn</div><div id='commit'> Commit Name: 798defcbca0cb6a0ecf5f3b371b9d1520bf4dd07</div><div id='time'> Time: 2018-07-26</div><div id='author'> Author: tomi.slijepcevic@gmail.com</div><div id='file'> File Name: core/eolearn/core/eoexecution.py</div><div id='class'> Class Name: EOExecutor</div><div id='method'> Method Name: _render_tasks_source</div><BR>

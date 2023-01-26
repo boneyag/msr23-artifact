@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        .order_by(&quot-created_at&quot)
+    qn_target_ids = []
+    for annotation in computational_result_annotations:
+        <a id="change">organism = Organism.objects.get(id=annotation.data.organism_id)</a>
+        if not organism_can_have_qn_target(organism, min_samples):
+            &#47&#47 remove the referenced QN Target because it shouldn&quott have a qn target
+            logger.debug(&quotRemoving QN Target because it does not have enough samples on its biggest microarray platform&quot,
+                         computational_result=annotation.result,</code></pre><h3>After Change</h3><pre><code class='java'>
+def remove_invalid_qn_targets(min_samples, dry_run):
+    qn_target_ids = []
+
+    for organism in <a id="change">Organism.object.filter(qn_target__isnull=False)</a>:
+        if not organism_can_have_qn_target(organism, min_samples):
+            &#47&#47 Remove all qn targets associated with this object
+            qn_target_ids += ComputationalResultAnnotation.objects\
+                                .filter(data__is_qn=True, organism_id=organism.id)\
+                                .values_list(&quotresult__id&quot, flat=True)
+            logger.debug(&quotRemove all QN targets for organism&quot, organism=organism)
+
+    if not dry_run:
+        &#47&#47 delete all invalid qn targets
+        <a id="change">qn_targets = ComputationalResult.objects.filter(id__in=qn_target_ids)</a>
+        for qn_target in qn_targets:
+            qn_target.remove_from_s3()
+
+        ComputationalResult.objects.filter(id__in=qn_target_ids).delete()</code></pre>

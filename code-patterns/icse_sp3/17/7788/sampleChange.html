@@ -1,0 +1,70 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def testGetUniquePath(self, create_graph_fn, feeds, replaced_tensors_ready,
+                        expected_calls_dict):
+
+    <a id="change">tensors = create_graph_fn()</a>
+    <a id="change">replaced_tensors_ready = {
+        tensors[name]: ready for name, ready in replaced_tensors_ready.items()
+    }</a>
+
+    for name in expected_calls_dict:
+
+      &#47&#47 This is used to construct the debugging string below.</code></pre><h3>After Change</h3><pre><code class='java'>
+  def testGetUniquePath(self, create_graph_fn, feeds, replaced_tensors_ready,
+                        expected_calls_dict):
+
+    <a id="change">with tf.compat.v1.Graph().as_default() as graph:
+      tensors = create_graph_fn()
+      replaced_tensors_ready = [(tensors[name], ready) for name, ready
+                                in replaced_tensors_ready.items()]
+      for name in expected_calls_dict:
+
+        &#47&#47 This is used to construct the debugging string below.
+        actual_needed_matchers_to_pass = []
+
+        def describe_path_fn(x, parents=None):
+          if parents is None:
+            parents_str = &quot&quot
+          else:
+            parents_str = &quot, parents={}&quot.format(
+                list(map(_value_to_matcher, parents)))
+          actual_needed_matchers_to_pass.append(&quot({}{}),&quot.format(  &#47&#47 pylint: disable=cell-var-from-loop
+              _value_to_matcher(x, True), parents_str))
+
+          if isinstance(x, tf.Operation):
+            return x.node_def.name
+          if isinstance(x, tf.Tensor):
+            self.assertLessEqual(len(parents), 1)
+            return x.name
+          if isinstance(x, (six.text_type, str, bytes)):
+            return x
+          raise ValueError(&quotUnexpected type: {}&quot.format(x))
+
+        path_cb_mock = mock.MagicMock(side_effect=describe_path_fn)
+
+        graph_analyzer = graph_tools.InitializableGraphAnalyzer(
+            graph, {x: tensors[x] for x in feeds}, replaced_tensors_ready,
+            path_cb_mock)
+
+        graph_analyzer.get_unique_path(tensors[name])
+
+        try:
+          path_cb_mock.assert_has_calls(expected_calls_dict[name])
+          self.assertEqual(
+              path_cb_mock.call_count, len(expected_calls_dict[name]),
+              &quotNumber of expected calls != number of actual calls for {}: {}&quot
+              .format(name, path_cb_mock.call_args_list))
+        except AssertionError:
+          tf.compat.v1.logging.error(
+              &quotThe following is a list of matchers for {}:\n{}&quot.format(
+                  name, &quot\n&quot.join(actual_needed_matchers_to_pass)))
+          raise
+
+
+</a>def _value_to_matcher(value, add_quotes=False):
+  Returns a matcher for the value - used for debugging failures.
+  if isinstance(value, tf.Operation):
+    return _OpMatcher(str(value.node_def.name))</code></pre>

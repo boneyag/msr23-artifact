@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        ray.get(h.remote())
+
+    [g.remote() for _ in range(num_cpus * 4)]
+    <a id="change">wait_for_errors(ray_constants.WORKER_POOL_LARGE_ERROR, 1)</a>
+
+
+def test_warning_for_many_duplicate_remote_functions_and_actors(shutdown_only):
+    ray.init(num_cpus=1)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 started that we will receive a warning.
+    num_cpus = 2
+    ray.init(num_cpus=num_cpus)
+    <a id="change">p = init_error_pubsub()</a>
+
+    @ray.remote
+    def f():
+        time.sleep(1000)
+        return 1
+
+    @ray.remote
+    def h():
+        time.sleep(1)
+        ray.get(f.remote())
+
+    @ray.remote
+    def g():
+        &#47&#47 Sleep so that the f tasks all get submitted to the scheduler after
+        &#47&#47 the g tasks.
+        time.sleep(1)
+        ray.get(h.remote())
+
+    [g.remote() for _ in range(num_cpus * 4)]
+    <a id="change">errors = get_error_message(p, 1, ray_constants.WORKER_POOL_LARGE_ERROR)</a>
+    assert len(errors) == 1
+    assert errors[0].type == ray_constants.WORKER_POOL_LARGE_ERROR
+    <a id="change">p.close()</a>
+
+
+def test_warning_for_many_duplicate_remote_functions_and_actors(shutdown_only):
+    ray.init(num_cpus=1)</code></pre>

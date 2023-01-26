@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        print(predictions.error)
+        print(predictions.accuracy)
+        print(predictions.predicted_targets)
+        <a id="change">print(predictions.real_targets)</a>
+
+        for k in predictions.predicted_targets:
+            for i in range(len(predictions.predicted_targets[k])):
+                self.transaction.probabilistic_validator.register_observation(features=[],</code></pre><h3>After Change</h3><pre><code class='java'>
+    def run(self):
+        self.transaction.probabilistic_validator = ProbabilisticValidator()
+
+        column_names = <a id="change">self.transaction.model_data.validation_set[&quotALL_ROWS_NO_GROUP_BY&quot].keys()</a>
+
+        <a id="change">for column_name in column_names:
+            ignore_columns = []
+            if column_name not in self.transaction.train_metadata.model_predict_columns:
+                ignore_columns.append(column_name)
+
+            validation_sampler = Sampler(self.transaction.model_data.validation_set, metadata_as_stored=self.transaction.persistent_model_metadata,
+                                        ignore_types=self.transaction.data_model_object.ignore_types, sampler_mode=SAMPLER_MODES.LEARN,blank_columns=ignore_columns)
+            validation_sampler.variable_wrapper = array_to_float_variable
+
+            predictions = self.transaction.data_model_object.testModel(validation_sampler)
+
+            for k in predictions.predicted_targets:
+                for i in range(len(predictions.predicted_targets[k])):
+                    features_existence = []
+                    for col in column_names:
+                        features_existence.append(validation_sampler.data[&quotALL_ROWS_NO_GROUP_BY&quot][col][i][-1])
+
+                    self.transaction.probabilistic_validator.register_observation(features_existence=features_existence,
+                    real_value=predictions.real_targets[k][i][0], predicted_value=predictions.predicted_targets[k][i][0])
+
+                    print(self.transaction.probabilistic_validator.evaluate_prediction_accuracy(
+                    features_existence=features_existence,predicted_value=predictions.predicted_targets[k][i][0]))
+
+</a>def test():
+    from mindsdb.libs.controllers.predictor import Predictor
+    from mindsdb import CONFIG
+</code></pre>

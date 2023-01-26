@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if t_mat.size(-1) &lt; 64:
+        orig_device = t_mat.device
+        retr = torch.symeig(t_mat.cpu(), eigenvectors=True)
+        return (r.to(orig_device) <a id="change">for</a> r in retr)
+    else:
+        return torch.symeig(t_mat, eigenvectors=True)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    evals, evecs = retr
+    mask = evals.ge(0)
+    evecs = evecs * mask.type_as(evecs).unsqueeze(-2)
+    <a id="change">evals = evals.masked_fill_(~mask, 1)</a>
+
+    return evals.to(orig_device), evecs.to(orig_device)
+</code></pre>

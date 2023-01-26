@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self._vf_params = self._vf.get_params_internal()
+
+        log_target_t = self._qf.get_output_for(
+            self._obs_pl, <a id="change">tf.tanh(policy_dist.x_t)</a>, reuse=True)  &#47&#47 N
+        corr = self._squash_correction(policy_dist.x_t)
+
+        if self._reparameterize:
+            kl_loss_t = tf.reduce_mean(log_pi_t - log_target_t - corr)
+        else:
+            kl_loss_t = tf.reduce_mean(log_pi_t * tf.stop_gradient(
+                log_pi_t - log_target_t - corr + self._vf_t))
+
+        self._vf_loss_t = 0.5 * tf.reduce_mean(
+            (self._vf_t - tf.stop_gradient(<a id="change">log_target_t</a> - log_pi_t + corr))**2)
+
+        policy_train_op = tf.train.AdamOptimizer(self._policy_lr).minimize(
+            loss=kl_loss_t + policy_dist.reg_loss_t,</code></pre><h3>After Change</h3><pre><code class='java'>
+        of the value function and policy function update rules.
+        
+
+        <a id="change">actions</a>, <a id="change">log_pi</a> = self._policy.actions_for(observations=self._observations_ph,
+                                                   with_log_pis=True)
+
+        self._vf_t = self._vf.get_output_for(self._observations_ph, reuse=True)  &#47&#47 N
+        self._vf_params = self._vf.get_params_internal()
+
+        if self._regularize_actions:
+            D_s = actions.shape.as_list()[-1]
+            policy_prior = tf.contrib.distributions.MultivariateNormalDiag(
+                loc=tf.zeros(D_s), scale_diag=tf.ones(D_s))
+            policy_prior_log_probs = policy_prior.log_prob(actions)
+        else:
+            policy_prior_log_probs = 0.0
+
+        log_target = self._qf.get_output_for(
+            self._observations_ph, actions, reuse=True)  &#47&#47 N
+
+        policy_kl_loss = tf.reduce_mean(log_pi * tf.stop_gradient(
+            <a id="change">log_pi</a> - log_target + self._vf_t - policy_prior_log_probs))
+
+        if self._reparameterize:
+            kl_loss_t = tf.reduce_mean(log_pi_t - log_target_t - corr)</code></pre>

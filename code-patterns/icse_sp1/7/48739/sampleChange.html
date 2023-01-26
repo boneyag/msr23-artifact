@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 all of the checking/promoting of arguments itself.
+    grafts = {}
+    for name, param in arguments.items():
+        <a id="change">if graft_syntax.is_literal(param) or graft_syntax.is_graft(param):
+            graftable = param
+        else:
+            try:
+                graftable = graft_client.value_graft(param)
+            except TypeError:
+                try:
+                    graftable = proxify(param).graft
+                except NotImplementedError:
+                    raise TypeError(
+                        "Invalid type for parameter {!r}: {}. "
+                        "Must be a JSON-serializable value, Proxytype, "
+                        "or object that `proxify` can handle. "
+                        "Got: {}".format(name, type(param), param)
+                    )
+
+            &#47&#47 Turn value grafts of literals back into their literals, for concision and URL stability.
+            &#47&#47 (Basically passing in `Int._promote(1)` is the same as passing in `1`.)
+            return_expr = graftable[graftable["returns"]]
+            if graft_syntax.is_literal(return_expr) or graft_syntax.is_quoted_json(
+                return_expr
+            ):
+                graftable = return_expr
+
+       </a> grafts[name] = graftable
+
+    return grafts
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    graftables = {}
+    for name, arg in arguments.items():
+        &#47&#47 Check arguments don&quott themselves depend on params
+        <a id="change">if arg.params:
+            param_names = tuple(p._name for p in arg.params)
+            raise ValueError(
+                f"Arguments to a computation cannot depend on parameters, but the argument for {name!r} depends on "
+                f"the parameters {param_names}.\n"
+                f"Consider turning the object you&quotre passing in for {name!r} into a Function, "
+                f"by passing it into `wf.Function.from_object`. Then call that Function with the values you want set "
+                f"for those parameters {param_names}. Then pass the result of *that* into here as `{name}=`.\n\n"
+                f"Example:\n"
+                f"&#47&#47 assume `{name}` is a variable holding whatever you just passed in as `{name}=`"
+                f"{name}_function = wf.Function.from_object({name})\n"
+                f"{name}_value = {name}_function({&quot, &quot.join(f&quot&lt;value for {n!r}&gt;&quot for n in param_names)})\n"
+                f"wf.compute(..., {name}={name}_value)  &#47&#47 same form for .visualize or .inspect"
+            )
+
+       </a> graft = arg.graft
+
+        &#47&#47 Turn value grafts of literals back into their literals, for concision and URL stability.
+        &#47&#47 (Basically passing in `Int(1)` is the same as passing in `1`.)</code></pre>

@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      if batch_squash is not None:
+        target_distribution = batch_squash.unflatten(target_distribution)
+        chosen_action_logits = batch_squash.unflatten(chosen_action_logits)
+        critic_loss = <a id="change">tf.reduce_mean(
+            tf.reduce_sum(
+                tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
+                    labels=target_distribution,
+                    logits=chosen_action_logits),
+                axis=1))</a>
+      else:
+        critic_loss = tf.reduce_mean(
+            tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(
+                labels=target_distribution,
+                logits=chosen_action_logits))
+
+      <a id="change">with tf.name_scope(&quotLosses/&quot):
+        tf.compat.v2.summary.scalar(
+            &quotcritic_loss&quot, critic_loss, step=self.train_step_counter)
+
+     </a> if self._debug_summaries:
+        distribution_errors = target_distribution - chosen_action_logits
+        with tf.name_scope(&quotdistribution_errors&quot):
+          common.generate_tensor_summaries(</code></pre><h3>After Change</h3><pre><code class='java'>
+            labels=target_distribution,
+            logits=chosen_action_logits)
+
+      <a id="change">agg_loss</a> = <a id="change">common.aggregate_losses(
+          per_example_loss=critic_loss,
+          regularization_loss=self._q_network.losses)</a>
+      <a id="change">total_loss = agg_loss.total_loss</a>
+
+      <a id="change">dict_losses = {&quotcritic_loss&quot: agg_loss.weighted,
+                     &quotreg_loss&quot: agg_loss.regularization,
+                     &quottotal_loss&quot: total_loss}</a>
+
+      <a id="change">common.summarize_scalar_dict(dict_losses,
+                                   step=self.train_step_counter,
+                                   name_scope=&quotLosses/&quot)</a>
+
+      if self._debug_summaries:
+        distribution_errors = target_distribution - chosen_action_logits
+        with tf.name_scope(&quotdistribution_errors&quot):</code></pre>

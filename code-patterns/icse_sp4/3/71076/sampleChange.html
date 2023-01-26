@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def __getitem__(self, index):
+        if self.sum_batch_size is None:
+            return <a id="change">super(SumBatchLazyVariable, self).__getitem__(index)</a>
+
+        &#47&#47 Cases for when there&quots an inner batch
+        else:
+            batch_index = index if isinstance(index, int) else index[0]</code></pre><h3>After Change</h3><pre><code class='java'>
+            if isinstance(index, int):
+                index = tuple(slice(None, None, None), int)
+            else:
+                index = tuple(<a id="change">[slice(None, None, None)]</a> + list(index))
+
+            &#47&#47 Do a __getitem__ on the base lazy variable
+            res = self.base_lazy_variable.__getitem__(index)
+            <a id="change">if isinstance(res, LazyVariable):
+                return SumBatchLazyVariable(res, sum_batch_size=None)
+            else:
+                return res.sum(0)
+
+        &#47&#47 Cases for when there&quots an inner batch
+       </a> else:
+            batch_index = index if isinstance(index, int) else index[0]
+
+            &#47&#47 Keeping all batch dimensions - recursion base case</code></pre>

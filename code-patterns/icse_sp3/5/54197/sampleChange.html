@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def end_batch(self):
+        total_loss_ss = dy.esum(self.losses)
+        total_loss_tok = dy.esum(self.losses_tok)
+        total_loss_val = <a id="change">total_loss_ss.value()</a> + total_loss_tok.value()
+        total_loss_ss.backward()
+        total_loss_tok.backward()
+        self.trainerSS.update()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def end_batch(self):
+        total_loss_val = 0
+        <a id="change">if len(self.losses) &gt; 0:
+            total_loss_ss = dy.esum(self.losses)
+            total_loss_val += total_loss_ss.value()
+            total_loss_ss.backward()
+            self.trainerSS.update()
+
+       </a> if len(self.losses_tok):
+            total_loss_tok = dy.esum(self.losses_tok)
+            <a id="change">total_loss_val += total_loss_tok.value()</a>
+            total_loss_tok.backward()
+            self.trainerTok.update()
+        return total_loss_val
+</code></pre>

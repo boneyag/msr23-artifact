@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        runner_args.append(&quot--capture={}:_ns&quot.format(ns_path))
+        runner_args.append(&quot--force-git&quot)
+        runner_args.append(&quot--experiment=&quot + experiment_key)
+        <a id="change">p = subprocess.Popen([&quotstudio&quot, &quotrun&quot] +
+                             runner_args +
+                             [&quot_script.py&quot],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
+                             cwd=workspace_new,
+                             close_fds=True)</a>
+
+        sched = BackgroundScheduler()
+        sched.start()
+        logging.getLogger(&quotapscheduler.scheduler&quot).setLevel(60)
+
+        def studiotail_func():
+            try:
+                data = p.stdout.read()
+                if data and data != &quot&quot:
+                    print(data)
+            except BaseException:
+                pass
+
+        sched.add_job(studiotail_func, &quotinterval&quot, seconds=1, max_instances=1)
+
+        with model.get_db_provider() as db:
+            while True:
+                experiment = db.get_experiment(experiment_key)
+                if experiment and experiment.status == &quotfinished&quot:
+                    break
+
+                time.sleep(10)
+
+            new_ns_path = db.get_artifact(experiment.artifacts[&quot_ns&quot])
+
+        with open(new_ns_path) as f:
+            new_ns = pickle.loads(f.read())
+
+        self.shell.user_ns.update(new_ns)
+
+        <a id="change">studiorun_out, _ = p.communicate()</a>
+        if p.returncode != 0:
+            print(&quotstudio-run returned code &quot + str(p.returncode))
+
+        sched.shutdown()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        script = script_stub.format(script=script_text)
+
+        experiment_key = <a id="change">str(time.time())</a> + "_jupyter_" + str(uuid.uuid4())
+
+        print(&quotRunning studio with experiment key &quot + experiment_key)
+        config = model.get_config()</code></pre>

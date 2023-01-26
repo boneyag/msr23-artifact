@@ -1,0 +1,42 @@
+<html><h3>db4c8744b0c7fa95502e1172dd4c597e62e55b0e,tensorrec/loss_graphs.py,WMRBLossGraph,loss_graph,#WMRBLossGraph#Any#Any#Any#,97
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def loss_graph(self, tf_prediction, tf_interactions, tf_sample_predictions, **kwargs):
+
+        positive_interaction_mask = <a id="change">tf.greater(tf_interactions.values, 0.0)</a>
+        positive_interaction_indices = tf.boolean_mask(tf_interactions.indices,
+                                                       positive_interaction_mask)
+        positive_predictions = tf.gather_nd(tf_prediction, indices=positive_interaction_indices)
+
+        <a id="change">n_sampled_items = tf.cast(tf.shape(tf_sample_predictions)[1], dtype=tf.float32)</a>
+
+        predictions_sum_per_user = tf.reduce_sum(tf_sample_predictions, axis=1)
+        mapped_predictions_sum_per_user = tf.gather(params=predictions_sum_per_user,
+                                                    indices=tf.transpose(positive_interaction_indices)[0])
+
+        &#47&#47 TODO smart irrelevant item indicator -- using n_items is an approximation for sparse interactions
+        irrelevant_item_indicator = n_sampled_items  &#47&#47 noqa
+
+        sampled_margin_rank = (n_sampled_items - (n_sampled_items * positive_predictions)
+                               + mapped_predictions_sum_per_user + irrelevant_item_indicator)
+
+        &#47&#47 JKirk - I am leaving out the log term due to experimental results
+        &#47&#47 loss = tf.log(sampled_margin_rank + 1.0)
+        <a id="change">return sampled_margin_rank</a>
+
+
+class WMRBAlignmentLossGraph(WMRBLossGraph):
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+        tanh_prediction = tf.nn.sigmoid(tf_prediction)
+        tanh_sample_prediction = tf.nn.sigmoid(tf_sample_predictions)
+
+        <a id="change">return self.weighted_margin_rank_batch(tf_prediction=tanh_prediction,
+                                               tf_interactions=tf_interactions,
+                                               tf_sample_predictions=tanh_sample_prediction)</a>
+
+    @classmethod
+    def weighted_margin_rank_batch(cls, tf_prediction, tf_interactions, tf_sample_predictions):
+        positive_interaction_mask = tf.greater(tf_interactions.values, 0.0)</code></pre><img src="328559317.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/jfkirk/tensorrec/commit/db4c8744b0c7fa95502e1172dd4c597e62e55b0e#diff-67fa28e1b0d5ced9270f26796d4376cf93cdccd6349e0a4d293c17095085b079L74' target='_blank'>Link</a></div><div id='project'> Project Name: jfkirk/tensorrec</div><div id='commit'> Commit Name: db4c8744b0c7fa95502e1172dd4c597e62e55b0e</div><div id='time'> Time: 2018-02-27</div><div id='author'> Author: james.f.kirk@gmail.com</div><div id='file'> File Name: tensorrec/loss_graphs.py</div><div id='class'> Class Name: WMRBLossGraph</div><div id='method'> Method Name: loss_graph</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/ranking/commit/d3f1a5ad4507e88b016e0a829f4ba142294c16e6#diff-52afaff1e0b2beae35a65c83a5bc728d2d8f339569e11e6ff1ad54258349af5cL877' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/ranking</div><div id='commit'> Commit Name: d3f1a5ad4507e88b016e0a829f4ba142294c16e6</div><div id='time'> Time: 2019-11-12</div><div id='author'> Author: xuanhui@google.com</div><div id='file'> File Name: tensorflow_ranking/python/losses.py</div><div id='class'> Class Name: _SoftmaxLoss</div><div id='method'> Method Name: _precompute</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/5cee7220217599ceccb191adf430eb914d148f87#diff-db705aefa4360fd5c758547b6b9a7309d1bf1cbd7c971f7772efc5639cddf038L149' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 5cee7220217599ceccb191adf430eb914d148f87</div><div id='time'> Time: 2020-09-17</div><div id='author'> Author: tanzheny@google.com</div><div id='file'> File Name: official/vision/keras_cv/ops/box_matcher.py</div><div id='class'> Class Name: BoxMatcher</div><div id='method'> Method Name: __call__</div><BR>

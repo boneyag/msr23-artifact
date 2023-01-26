@@ -1,0 +1,41 @@
+<html><h3>589442365d133fb993b4ea14b45a9123c6973e46,lazyflow/operators/obsolete/classifierOperators.py,OpTrainRandomForestBlocked,execute,#OpTrainRandomForestBlocked#Any#Any#Any#,117
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            featMatrix=numpy.concatenate(featMatrix,axis=0)
+            labelsMatrix=numpy.concatenate(labelsMatrix,axis=0)
+
+            <a id="change">RF=vigra.learning.RandomForest(100)</a>
+            try:
+                logger.debug("Learning with Vigra...")
+                RF.learnRF(featMatrix.astype(numpy.float32),labelsMatrix.astype(numpy.uint32))
+                logger.debug("Vigra finished")
+            except:
+                logger.error( "ERROR: could not learn classifier" )
+                logger.error( "featMatrix shape={}, max={}, dtype={}".format(featMatrix.shape, featMatrix.max(), featMatrix.dtype) )
+                logger.error( "labelsMatrix shape={}, max={}, dtype={}".format(labelsMatrix.shape, labelsMatrix.max(), labelsMatrix.dtype ) )
+                raise
+            finally:
+                self.progressSignal(100)
+            assert RF is not None, "RF = %r" % RF
+            <a id="change">result[0]=RF</a>
+        
+        return result
+
+    def setInSlot(self, slot, key, value):</code></pre><h3>After Change</h3><pre><code class='java'>
+                logger.debug("Learning with Vigra...")
+                &#47&#47 train and store self._forest_count forests in parallel
+                requests = []
+                <a id="change">for i in range(self._forest_count):
+                    def train_and_store(number):
+                        result[number] = vigra.learning.RandomForest(self._tree_count) 
+                        result[number].learnRF(featMatrix.astype(numpy.float32),labelsMatrix.astype(numpy.uint32))
+                    req = Request(partial(train_and_store, i))
+                    req.submit()
+                    requests.append(req)
+
+               </a> for r in requests:
+                    r.wait()
+                logger.debug("Vigra finished")
+            except:</code></pre><img src="191333743.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/589442365d133fb993b4ea14b45a9123c6973e46#diff-4fb4d106c653e8c615ba468d15377eb7d4e5c7b70097360c122e589a3edbf9bfL120' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: 589442365d133fb993b4ea14b45a9123c6973e46</div><div id='time'> Time: 2012-09-13</div><div id='author'> Author: christoph.straehle@iwr.uni-heidelberg.de</div><div id='file'> File Name: lazyflow/operators/obsolete/classifierOperators.py</div><div id='class'> Class Name: OpTrainRandomForestBlocked</div><div id='method'> Method Name: execute</div><BR><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/efd6b7c39fbefbb1e6f5fdc67ff1d2c64f65d46e#diff-4fb4d106c653e8c615ba468d15377eb7d4e5c7b70097360c122e589a3edbf9bfL38' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: efd6b7c39fbefbb1e6f5fdc67ff1d2c64f65d46e</div><div id='time'> Time: 2012-09-13</div><div id='author'> Author: christoph.straehle@iwr.uni-heidelberg.de</div><div id='file'> File Name: lazyflow/operators/obsolete/classifierOperators.py</div><div id='class'> Class Name: OpTrainRandomForest</div><div id='method'> Method Name: getOutSlot</div><BR><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/ea08da61f3896f02be9b0fdaa1c59612efe273e8#diff-7ca222d92f7e41f288228692fc96a2326516ad8e278fd5863c30e382f90d0311L196' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: ea08da61f3896f02be9b0fdaa1c59612efe273e8</div><div id='time'> Time: 2013-08-13</div><div id='author'> Author: Buote.Xu@gmail.com</div><div id='file'> File Name: ilastik/applets/counting/countingOperators.py</div><div id='class'> Class Name: OpPredictCounter</div><div id='method'> Method Name: execute</div><BR>

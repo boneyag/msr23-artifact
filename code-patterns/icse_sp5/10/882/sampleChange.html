@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        data = {inp : kwargs[inp].astype(dtype) for inp in inputs}
+        for grad_req in [&quotwrite&quot, &quotadd&quot]:
+            type_dict = {inp : dtype for inp in inputs}
+            <a id="change">os.environ["MXNET_USE_FUSION"] = "0"</a>
+            orig_exec = test_sym._simple_bind(ctx=ctx, grad_req=grad_req, type_dict=type_dict, **shapes)
+            os.environ["MXNET_USE_FUSION"] = "1"
+            fused_exec = test_sym._simple_bind(ctx=ctx, grad_req=grad_req, type_dict=type_dict, **shapes)
+            fwd_orig = orig_exec.forward(is_train=True, **data)</code></pre><h3>After Change</h3><pre><code class='java'>
+            type_dict = {inp : dtype for inp in inputs}
+            with environment(&quotMXNET_USE_FUSION&quot, &quot0&quot):
+                orig_exec = test_sym._simple_bind(ctx=ctx, grad_req=grad_req, type_dict=type_dict, **shapes)
+            <a id="change">with environment(&quotMXNET_USE_FUSION&quot, &quot1&quot):
+                fused_exec = test_sym._simple_bind(ctx=ctx, grad_req=grad_req, type_dict=type_dict, **shapes)
+           </a> fwd_orig = orig_exec.forward(is_train=True, **data)
+            out_grads = [mx.nd.ones_like(arr) for arr in fwd_orig]
+            orig_exec.backward(out_grads=out_grads)
+            fwd_fused = fused_exec.forward(is_train=True, **data)</code></pre>

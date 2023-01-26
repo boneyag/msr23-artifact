@@ -1,0 +1,90 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            systems.
+        
+        &#47&#47 If single system given, skip the parallelization
+        <a id="change">if isinstance(system, (Atoms, System)):
+            return self.create_single(system, accuracy, w, rcut, gcut, a)
+        else:
+            self._check_system_list(system)
+
+        &#47&#47 Combine input arguments
+       </a> n_samples = len(system)
+        if np.ndim(accuracy) == 0:
+            accuracy = n_samples * [accuracy]
+        if np.ndim(w) == 0:</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+
+    def create(
+        <a id="change">self</a>,
+        system,
+        accuracy=1e-5,
+        w=1,
+        rcut=None,
+        gcut=None,
+        a=None,
+        n_jobs=1,
+        verbose=False,
+    ):
+        Return the Ewald sum matrix for the given systems.
+
+        Args:
+            system (:class:`ase.Atoms` or list of :class:`ase.Atoms`): One or
+                many atomic structures.
+            accuracy (float): The accuracy to which the sum is converged to.
+                Corresponds to the variable :math:`A` in
+                https://doi.org/10.1080/08927022.2013.840898. Used only if
+                gcut, rcut and a have not been specified. Provide either one
+                value or a list of values for each system.
+            w (float): Weight parameter that represents the relative
+                computational expense of calculating a term in real and
+                reciprocal space. This has little effect on the total energy,
+                but may influence speed of computation in large systems. Note
+                that this parameter is used only when the cutoffs and a are set
+                to None. Provide either one value or a list of values for each
+                system.
+            rcut (float): Real space cutoff radius dictating how many terms are
+                used in the real space sum. Provide either one value or a list
+                of values for each system.
+            gcut (float): Reciprocal space cutoff radius. Provide either one
+                value or a list of values for each system.
+            a (float): The screening parameter that controls the width of the
+                Gaussians. If not provided, a default value of :math:`\\alpha =
+                \sqrt{\pi}\left(\\frac{N}{V^2}\\right)^{1/6}` is used.
+                Corresponds to the standard deviation of the Gaussians. Provide
+                either one value or a list of values for each system.
+            n_jobs (int): Number of parallel jobs to instantiate. Parallellizes
+                the calculation across samples. Defaults to serial calculation
+                with n_jobs=1.
+            verbose(bool): Controls whether to print the progress of each job
+                into to the console.
+
+        Returns:
+            np.ndarray | sparse.COO: Ewald sum matrix for the given systems.
+            The return type depends on the &quotsparse&quot and &quotflatten&quot-attributes.
+            For flattened output a single numpy array or sparse.COO is
+            returned. The first dimension is determined by the amount of
+            systems.
+        
+        <a id="change">if isinstance(system, (Atoms, System)):
+            system = [system]
+
+        &#47&#47 Check input validity
+       </a> <a id="change">for s in system:
+            if len(s) &gt; self.n_atoms_max:
+                raise ValueError(
+                    "One of the given systems has more atoms ({}) than allowed "
+                    "by n_atoms_max ({}).".format(len(s), self.n_atoms_max)
+                )
+
+        &#47&#47 If single system given, skip the parallelization
+       </a> <a id="change">if len(system) == 1:
+            return self.create_single(system[0], accuracy, w, rcut, gcut, a)
+
+        &#47&#47 Combine input arguments
+       </a> n_samples = len(system)
+        if np.ndim(accuracy) == 0:
+            accuracy = n_samples * [accuracy]
+        if np.ndim(w) == 0:</code></pre>

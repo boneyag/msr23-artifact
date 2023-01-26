@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        ctr_node = mol_tree.nodes_dict[ctr_node_id]
+        ctr_bid = ctr_node[&quotidx&quot]
+        <a id="change">g = DGLGraph()</a>
+
+        for i, atom in enumerate(mol.GetAtoms()):
+            assert i == atom.GetIdx()
+            atom_x.append(atom_features(atom))
+        <a id="change">g.add_nodes(n_atoms)</a>
+
+        bond_src = []
+        bond_dst = []
+        for i, bond in enumerate(mol.GetBonds()):
+            a1 = bond.GetBeginAtom()
+            a2 = bond.GetEndAtom()
+            begin_idx = a1.GetIdx()
+            end_idx = a2.GetIdx()
+            features = bond_features(bond)
+
+            bond_src.append(begin_idx)
+            bond_dst.append(end_idx)
+            bond_x.append(features)
+            bond_src.append(end_idx)
+            bond_dst.append(begin_idx)
+            bond_x.append(features)
+
+            x_nid, y_nid = a1.GetAtomMapNum(), a2.GetAtomMapNum()
+            &#47&#47 Tree node ID in the batch
+            x_bid = mol_tree.nodes_dict[x_nid - 1][&quotidx&quot] if x_nid &gt; 0 else -1
+            y_bid = mol_tree.nodes_dict[y_nid - 1][&quotidx&quot] if y_nid &gt; 0 else -1
+            if x_bid &gt;= 0 and y_bid &gt;= 0 and x_bid != y_bid:
+                if mol_tree.has_edge_between(x_bid, y_bid):
+                    tree_mess_target_edges.append((begin_idx + n_nodes, end_idx + n_nodes))
+                    tree_mess_source_edges.append((x_bid, y_bid))
+                    tree_mess_target_nodes.append(end_idx + n_nodes)
+                if mol_tree.has_edge_between(y_bid, x_bid):
+                    tree_mess_target_edges.append((end_idx + n_nodes, begin_idx + n_nodes))
+                    tree_mess_source_edges.append((y_bid, x_bid))
+                    tree_mess_target_nodes.append(begin_idx + n_nodes)
+
+        n_nodes += n_atoms
+        <a id="change">g.add_edges(bond_src, bond_dst)</a>
+        cand_graphs.append(g)
+
+    return cand_graphs, torch.stack(atom_x), \
+            torch.stack(bond_x) if len(bond_x) &gt; 0 else torch.zeros(0), \</code></pre><h3>After Change</h3><pre><code class='java'>
+                    tree_mess_target_nodes.append(begin_idx + n_nodes)
+
+        n_nodes += n_atoms
+        <a id="change">g = dgl.graph((bond_src, bond_dst), num_nodes=n_atoms)</a>
+        cand_graphs.append(g)
+
+    return cand_graphs, torch.stack(atom_x), \
+            torch.stack(bond_x) if len(bond_x) &gt; 0 else torch.zeros(0), \</code></pre>

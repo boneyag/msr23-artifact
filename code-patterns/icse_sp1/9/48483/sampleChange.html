@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  
+  with graph.as_default():
+    num_samples = 0
+    <a id="change">for ind, (X_b, y_b, w_b, ids_b) in enumerate(
+        dataset.iterbatches(tg.batch_size, pad_batches=True)):
+      feed_dict = tg._construct_feed_dict(X_b, y_b, w_b, ids_b)
+      enq = {}
+      for layer in tg.features + tg.labels + tg.task_weights:
+        enq[tg.get_pre_q_input(layer).out_tensor] = feed_dict[layer.out_tensor]
+      sess.run(tg.input_queue.out_tensor, feed_dict=enq)
+      num_samples += 1
+      if tg.tensorboard and num_samples % tg.tensorboard_log_frequency == 0:
+        tg._log_tensorboard(sess, feed_dict)
+   </a> coord.num_samples = num_samples
+    coord.request_stop()
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      sess.run(tg.input_queue.out_tensor, feed_dict=enq)
+      num_samples += 1
+      if tg.tensorboard and num_samples % tg.tensorboard_log_frequency == 0:
+        <a id="change">enq = {k.out_tensor: v for k, v in six.iteritems(feed_dict)}</a>
+        summary = sess.run(tg._get_tf("summary_op"), feed_dict=enq)
+        tg._log_tensorboard(summary)
+    sess.run(tg.input_queue.close_op)
+    coord.num_samples = num_samples</code></pre>

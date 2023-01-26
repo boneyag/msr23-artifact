@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    print(&quot| distributed init (rank {}): {}&quot.format(
+        args.distributed_rank, args.distributed_init_method), flush=True)
+
+    <a id="change">dist.init_process_group(
+        backend=args.distributed_backend,
+        init_method=args.distributed_init_method,
+        world_size=args.distributed_world_size,
+        rank=args.distributed_rank,
+    )</a>
+
+    suppress_output(is_master(args))
+
+    return args.distributed_rank</code></pre><h3>After Change</h3><pre><code class='java'>
+    if args.distributed_world_size == 1:
+        raise ValueError(&quotCannot initialize distributed with distributed_world_size=1&quot)
+
+    <a id="change">if torch.distributed.is_initialized():
+        warnings.warn(&quotDistributed is already initialized, cannot initialize twice!&quot)
+    else:
+        print(&quot| distributed init (rank {}): {}&quot.format(
+            args.distributed_rank, args.distributed_init_method), flush=True)
+
+        dist.init_process_group(
+            backend=args.distributed_backend,
+            init_method=args.distributed_init_method,
+            world_size=args.distributed_world_size,
+            rank=args.distributed_rank,
+        )
+
+        suppress_output(is_master(args))
+
+   </a> args.distributed_rank = torch.distributed.get_rank()
+    return args.distributed_rank
+
+</code></pre>

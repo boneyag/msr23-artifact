@@ -1,0 +1,43 @@
+<html><h3>bc823da8c38eae03a311d0ba0627b23b84939b56,src/sos/actions.py,SoS_ExecuteScript,run,#SoS_ExecuteScript#,205
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47
+                if env.config[&quotrun_mode&quot] == &quotinteractive&quot:
+                    &#47&#47 need to catch output and send to python output, which will in trun be hijacked by SoS notebook
+                    <a id="change">p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)</a>
+                    out, err = p.communicate()
+                    if out and env.verbosity &gt; 1:
+                        sys.stdout.write(out.decode())
+                    if err and env.verbosity &gt; 0:
+                        sys.stderr.write(err.decode())
+                    <a id="change">ret = p.returncode</a>
+                    sys.stdout.flush()
+                    sys.stderr.flush()
+                elif &quot__std_out__&quot in env.sos_dict and &quot__std_err__&quot in env.sos_dict:
+                    if env.verbosity &gt; 1:</code></pre><h3>After Change</h3><pre><code class='java'>
+                if env.config[&quotrun_mode&quot] == &quotinteractive&quot:
+                    &#47&#47 need to catch output and send to python output, which will in trun be hijacked by SoS notebook
+                    import pexpect
+                    <a id="change">try:
+                        if isinstance(cmd, str):
+                            child = pexpect.spawn(cmd, timeout=None)
+                        else:
+                            child = pexpect.spawn(subprocess.list2cmdline(cmd), timeout=None)
+                        while True:
+                            try:
+                                child.expect(&quot\n&quot)
+                                if env.verbosity &gt; 0:
+                                    sys.stdout.write(child.before.decode() + &quot\n&quot)
+                            except pexpect.EOF:
+                                break
+                    except Exception as e:
+                        sys.stderr.write(str(e))
+                    &#47&#47 NOTE:
+                    &#47&#47 because of the use of pexpect, we do not know the
+                    &#47&#47 return code of the process at all.
+                   </a> ret = 0
+                elif &quot__std_out__&quot in env.sos_dict and &quot__std_err__&quot in env.sos_dict:
+                    if env.verbosity &gt; 1:
+                        with open(env.sos_dict[&quot__std_out__&quot], &quotab&quot) as so, open(env.sos_dict[&quot__std_err__&quot], &quotab&quot) as se:</code></pre><img src="141007527.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/vatlab/SoS/commit/bc823da8c38eae03a311d0ba0627b23b84939b56#diff-7c9f3af5d6754b98f49d68c5c59daf6af2fd125a06751c9864ccc91157c38dd7L269' target='_blank'>Link</a></div><div id='project'> Project Name: vatlab/SoS</div><div id='commit'> Commit Name: bc823da8c38eae03a311d0ba0627b23b84939b56</div><div id='time'> Time: 2017-07-30</div><div id='author'> Author: ben.bog@gmail.com</div><div id='file'> File Name: src/sos/actions.py</div><div id='class'> Class Name: SoS_ExecuteScript</div><div id='method'> Method Name: run</div><BR><BR><div id='link'><a href='https://github.com/pysb/pysb/commit/d39d3272220da5bcb0c43985e6c1e3903dac2bf5#diff-60f61ab7a8d1910d86d9fda2261620314edcae5894d5aaa236b821c7256badd7L8' target='_blank'>Link</a></div><div id='project'> Project Name: pysb/pysb</div><div id='commit'> Commit Name: d39d3272220da5bcb0c43985e6c1e3903dac2bf5</div><div id='time'> Time: 2011-08-07</div><div id='author'> Author: jmuhlich@bitflood.org</div><div id='file'> File Name: setup.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/studioml/studio/commit/580a99bfb656a6f6b99133c9986252e619713fe1#diff-2d02bd6a095de6d726f43195b358180612fe3872b56d0bcaea984607f047727cL424' target='_blank'>Link</a></div><div id='project'> Project Name: studioml/studio</div><div id='commit'> Commit Name: 580a99bfb656a6f6b99133c9986252e619713fe1</div><div id='time'> Time: 2017-08-15</div><div id='author'> Author: peter.zhokhov@Peters-MBP.geneticfinance.com</div><div id='file'> File Name: studio/model.py</div><div id='class'> Class Name: FirebaseProvider</div><div id='method'> Method Name: _get_experiment_logtail</div><BR>

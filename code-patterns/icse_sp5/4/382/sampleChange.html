@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    placeholder_shape = kwargs.get("placeholder_shape", {})
+    for k, v in placeholder_shape.items():
+        <a id="change">assert (k in ssa.functions[&quotmain&quot].graph)</a>
+        ssa.functions[&quotmain&quot].graph[k].tfattr[&quot_output_shapes&quot] = [v]
+
+    passes = [
+        delete_asserts, functionalize_loops, constant_propagation, cond_to_where,</code></pre><h3>After Change</h3><pre><code class='java'>
+    ssa = graphdef_to_ssa(gd)
+
+    placeholder_shape = kwargs.get("inputs", {})
+    <a id="change">if len(placeholder_shape) &gt; 0:
+        graph = ssa.functions[&quotmain&quot].graph
+        required_plhd_nodes = [node for node in graph if 
+            graph[node].op == &quotPlaceholder&quot]
+        for name in required_plhd_nodes:
+            if name not in placeholder_shape:
+                raise ValueError(&quotShape of required input {} is not provided.&quot.format(name))
+            graph[name].attr[&quot_output_shapes&quot] = [placeholder_shape[name]]
+
+   </a> passes = [
+        delete_asserts, functionalize_loops, constant_propagation,
+        cond_to_where, remove_variable_nodes, fusedbatchnorm_rewrite,
+        lstmblockcell_rewrite</code></pre>

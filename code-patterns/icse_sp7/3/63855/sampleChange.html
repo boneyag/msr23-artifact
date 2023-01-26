@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        for l in range(num_layers):
+            self.lstm.append(PackedLSTM(in_size, hidden_size, num_layers=1, bias=bias,
+                batch_first=batch_first, dropout=0, bidirectional=bidirectional, pad=True, rec_dropout=rec_dropout))
+            <a id="change">for d in range(self.num_directions):
+                self.highway.append(nn.Linear(hw_in_size, hidden_size, bias=bias))
+                self.gate.append(nn.Linear(hw_in_size, hidden_size))
+           </a> in_size = hidden_size * self.num_directions
+            hw_in_size = hidden_size
+
+    def forward(self, input, mask, hx=None):</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.highway.append(nn.Linear(in_size, hidden_size * self.num_directions))
+            self.gate.append(nn.Linear(in_size, hidden_size * self.num_directions))
+            self.highway[-1].bias.data.zero_()
+            <a id="change">self.gate[-1].bias.data.zero_()</a>
+            in_size = hidden_size * self.num_directions
+
+    def forward(self, input, mask, hx=None):
+        highway_func = (lambda x: x) if self.highway_func is None else self.highway_func</code></pre>

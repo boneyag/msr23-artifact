@@ -1,0 +1,61 @@
+<html><h3>ba08776c069c1e1554afd73368c1b42b0c0c621d,theanolm/src/theanolm-train.py,,train,#Any#Any#Any#Any#Any#Any#,37
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+	&#47&#47 Fast forward the input to the position where it was left last time.
+	for i in range(trainer.update_number):
+		<a id="change">next(training_iter)</a>
+
+	while trainer.update_minibatch(
+			training_iter,
+			args.max_epochs,</code></pre><h3>After Change</h3><pre><code class='java'>
+	saved_params = None
+	saved_cost = None
+
+	<a id="change">while trainer.epoch_number &lt;= args.max_epochs:
+		print("Creating a random permutation of %d training sentences." % len(sentence_starts))
+		training_order = numpy.random.permutation(sentence_starts)
+		training_iter = theanolm.OrderedBatchIterator(
+				args.training_file, 
+				dictionary,
+				training_order,
+				batch_size=args.batch_size,
+				max_sequence_length=args.sequence_length)
+		
+		while trainer.update_minibatch(training_iter, args.learning_rate):
+			if (args.verbose_interval &gt;= 1) and \
+			   (trainer.total_updates % args.verbose_interval == 0):
+				trainer.print_update_stats()
+	
+			if (args.validation_interval &gt;= 1) and \
+			   (trainer.total_updates % args.validation_interval == 0):
+				validation_cost = scorer.negative_log_probability(validation_iter)
+				if numpy.isnan(validation_cost):
+					print("Stopping because an invalid floating point operation was performed while computing validation set cost. (Gradients exploded or vanished?)")
+					return best_params
+				if numpy.isinf(validation_cost):
+					print("Stopping because validation set cost exploded to infinity.")
+					return best_params
+	
+				trainer.append_validation_cost(validation_cost)
+				validations_since_best = trainer.validations_since_min_cost()
+				if validations_since_best == 0:
+					best_params = rnnlm.get_state()
+				elif (args.wait_improvement &gt;= 0) and \
+				     (validations_since_best &gt; args.wait_improvement):
+					print("Stopping because validation set cost did not decrease in previous %d validations." % (args.wait_improvement + 1))
+					return best_params
+	
+			if (args.save_interval &gt;= 1) and \
+			   (trainer.total_updates % args.save_interval == 0):
+				&#47&#47 Save the best parameters and the current state.
+				if not best_params is None:
+					save_model(args.model_path, best_params)
+				save_training_state(args.state_path)
+
+</a>	print("Stopping because %d epochs was reached." % args.max_epochs)
+	validation_cost = scorer.negative_log_probability(validation_iter)
+	trainer.append_validation_cost(validation_cost)
+	if trainer.validations_since_min_cost() == 0:</code></pre><img src="259731647.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/senarvi/theanolm/commit/ba08776c069c1e1554afd73368c1b42b0c0c621d#diff-f172508b00e01014c52dbddebb54e42740e45ec0add251b9e4b858c71fea1affL45' target='_blank'>Link</a></div><div id='project'> Project Name: senarvi/theanolm</div><div id='commit'> Commit Name: ba08776c069c1e1554afd73368c1b42b0c0c621d</div><div id='time'> Time: 2015-09-23</div><div id='author'> Author: seppo.git@marjaniemi.com</div><div id='file'> File Name: theanolm/src/theanolm-train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train</div><BR><BR><div id='link'><a href='https://github.com/EpistasisLab/tpot/commit/f0b9197cb921772eff9174de6c566e8b9cac72ff#diff-261c00ddde1dfc1e7e7ca87954a27106cd748fb22799bcac9e87b186409eb2ccL78' target='_blank'>Link</a></div><div id='project'> Project Name: EpistasisLab/tpot</div><div id='commit'> Commit Name: f0b9197cb921772eff9174de6c566e8b9cac72ff</div><div id='time'> Time: 2016-08-19</div><div id='author'> Author: supacoofoo@gmail.com</div><div id='file'> File Name: tpot/export_utils.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: expr_to_tree</div><BR><BR><div id='link'><a href='https://github.com/ntucllab/libact/commit/325fae8fbbc16b3c1ca40559bb2a9c783efaf440#diff-f9e5477f7d50c535defccb896f3ac5258c8a44c36a055db76696e0c5c585def5L161' target='_blank'>Link</a></div><div id='project'> Project Name: ntucllab/libact</div><div id='commit'> Commit Name: 325fae8fbbc16b3c1ca40559bb2a9c783efaf440</div><div id='time'> Time: 2015-11-25</div><div id='author'> Author: yangarbiter@gmail.com</div><div id='file'> File Name: libact/query_strategies/active_learning_by_learning.py</div><div id='class'> Class Name: ActiveLearningByLearning</div><div id='method'> Method Name: make_query</div><BR>

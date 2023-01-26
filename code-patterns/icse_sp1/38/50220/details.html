@@ -1,0 +1,101 @@
+<html><h3>843d68642bd15d5737e3eb39abd76c748d6b52e8,models/cycle_gan_model.py,CycleGANModel,initialize,#CycleGANModel#Any#,14
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 load/define networks
+        &#47&#47 The naming conversion is different from those used in the paper
+        &#47&#47 Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
+        <a id="change">self.netG_A</a> = networks.define_G(opt.input_nc, opt.output_nc,
+                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
+        <a id="change">self.netG_B</a> = networks.define_G(opt.output_nc, opt.input_nc,
+                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
+
+        if self.isTrain:
+            use_sigmoid = opt.no_lsgan
+            <a id="change">self.netD_A</a> = networks.define_D(opt.output_nc, opt.ndf,
+                                            opt.which_model_netD,
+                                            opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
+            <a id="change">self.netD_B</a> = networks.define_D(opt.input_nc, opt.ndf,
+                                            opt.which_model_netD,
+                                            opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
+        if not self.isTrain or opt.continue_train:
+            which_epoch = opt.which_epoch
+            self.load_network(self.netG_A, &quotG_A&quot, which_epoch)
+            <a id="change">self.load_network(self.netG_B, &quotG_B&quot, which_epoch)</a>
+            <a id="change">if self.isTrain:
+                self.load_network(self.netD_A, &quotD_A&quot, which_epoch)
+                self.load_network(self.netD_B, &quotD_B&quot, which_epoch)
+
+       </a> if self.isTrain:
+            self.fake_A_pool = ImagePool(opt.pool_size)
+            self.fake_B_pool = ImagePool(opt.pool_size)
+            &#47&#47 define loss functions
+            self.criterionGAN = networks.GANLoss(use_lsgan=not opt.no_lsgan, tensor=self.Tensor)
+            self.criterionCycle = torch.nn.L1Loss()
+            self.criterionIdt = torch.nn.L1Loss()
+            &#47&#47 initialize optimizers
+            self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
+                                                lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
+            self.optimizers = []
+            self.schedulers = []
+            self.optimizers.append(self.optimizer_G)
+            self.optimizers.append(self.optimizer_D)
+            for optimizer in self.optimizers:
+                self.schedulers.append(networks.get_scheduler(optimizer, opt))
+
+        print(&quot---------- Networks initialized -------------&quot)
+        networks.print_network(self.netG_A, opt.verbose)
+        <a id="change">networks.print_network(self.netG_B, opt.verbose)</a>
+        if self.isTrain:
+            networks.print_network(self.netD_A, opt.verbose)
+            <a id="change">networks.print_network(self.netD_B, opt.verbose)</a>
+        print(&quot-----------------------------------------------&quot)
+
+    def set_input(self, input):
+        AtoB = self.opt.which_direction == &quotAtoB&quot</code></pre><h3>After Change</h3><pre><code class='java'>
+    def name(self):
+        return &quotCycleGANModel&quot
+
+    def initialize(<a id="change">self</a>, opt):
+        BaseModel.initialize(self, opt)
+
+        &#47&#47 specify the training losses you want to print out. The program will call base_model.get_current_errors
+        <a id="change">self.loss_names</a> = <a id="change">[&quotD_A&quot, &quotG_A&quot, &quotcycle_A&quot, &quotidt_A&quot, &quotD_B&quot, &quotG_B&quot, &quotcycle_B&quot, &quotidt_B&quot]</a>
+        &#47&#47 specify the images you want to save/display. The program will call base_model.get_current_visuals
+        visual_names_A = [&quotreal_A&quot, &quotfake_B&quot, &quotrec_A&quot]
+        visual_names_B = <a id="change">[&quotreal_B&quot, &quotfake_A&quot, &quotrec_B&quot]</a>
+        if self.isTrain and <a id="change">self</a>.opt.lambda_identity &gt; 0.0:
+            visual_names_A.append(&quotidt_A&quot)
+            visual_names_B.append(&quotidt_B&quot)
+
+        <a id="change">self.visual_names</a> = visual_names_A + visual_names_B
+        &#47&#47 specify the models you want to save to the disk. The program will call base_model.save
+        <a id="change">if self.isTrain:
+            self.model_names = [&quotG_A&quot, &quotG_B&quot, &quotD_A&quot, &quotD_B&quot]
+        else:  &#47&#47 during test time, only load Gs
+            self.model_names = [&quotG_A&quot, &quotG_B&quot]
+
+        &#47&#47 load/define networks
+        &#47&#47 The naming conversion is different from those used in the paper
+        &#47&#47 Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
+       </a> self.netG_A = networks.define_G(opt.input_nc, opt.output_nc,
+                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
+        self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
+                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, self.gpu_ids)
+
+        if self.isTrain:
+            use_sigmoid = opt.no_lsgan
+            self.netD_A = networks.define_D(opt.output_nc, opt.ndf,
+                                            opt.which_model_netD,
+                                            opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
+            self.netD_B = networks.define_D(opt.input_nc, opt.ndf,
+                                            opt.which_model_netD,
+                                            opt.n_layers_D, opt.norm, use_sigmoid, opt.init_type, self.gpu_ids)
+        if not self.isTrain or opt.continue_train:
+            <a id="change">self.load_networks(opt.which_epoch)</a>
+
+        if self.isTrain:
+            self.fake_A_pool = ImagePool(opt.pool_size)
+            self.fake_B_pool = ImagePool(opt.pool_size)</code></pre><img src="233248327.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 27</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/richzhang/colorization-pytorch/commit/843d68642bd15d5737e3eb39abd76c748d6b52e8#diff-5ecefe652c523a5bf13256450070990aceea4f20d15592114a470753386e881cL13' target='_blank'>Link</a></div><div id='project'> Project Name: richzhang/colorization-pytorch</div><div id='commit'> Commit Name: 843d68642bd15d5737e3eb39abd76c748d6b52e8</div><div id='time'> Time: 2018-04-19</div><div id='author'> Author: junyanzhu89@gmail.com</div><div id='file'> File Name: models/cycle_gan_model.py</div><div id='class'> Class Name: CycleGANModel</div><div id='method'> Method Name: initialize</div><BR><BR><div id='link'><a href='https://github.com/richzhang/colorization-pytorch/commit/843d68642bd15d5737e3eb39abd76c748d6b52e8#diff-5ecefe652c523a5bf13256450070990aceea4f20d15592114a470753386e881cL14' target='_blank'>Link</a></div><div id='project'> Project Name: richzhang/colorization-pytorch</div><div id='commit'> Commit Name: 843d68642bd15d5737e3eb39abd76c748d6b52e8</div><div id='time'> Time: 2018-04-19</div><div id='author'> Author: junyanzhu89@gmail.com</div><div id='file'> File Name: models/cycle_gan_model.py</div><div id='class'> Class Name: CycleGANModel</div><div id='method'> Method Name: initialize</div><BR><BR><div id='link'><a href='https://github.com/Zhaoyi-Yan/Shift-Net_pytorch/commit/8f6a6f153781d0908fb0904349aae844494026ea#diff-82b0eadabd7ebb71a1eb81299064524257610ffab33a8d65b9e0e3b5a4ff2832L17' target='_blank'>Link</a></div><div id='project'> Project Name: Zhaoyi-Yan/Shift-Net_pytorch</div><div id='commit'> Commit Name: 8f6a6f153781d0908fb0904349aae844494026ea</div><div id='time'> Time: 2018-12-03</div><div id='author'> Author: yanzhaoyi@outlook.com</div><div id='file'> File Name: models/shiftnet_model.py</div><div id='class'> Class Name: ShiftNetModel</div><div id='method'> Method Name: initialize</div><BR>

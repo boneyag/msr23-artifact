@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def test_stub_files(rule_runner: RuleRunner) -&gt; None:
+    <a id="change">good_stub = dataclasses.replace(GOOD_SOURCE, path="good.pyi")</a>
+    <a id="change">bad_stub = dataclasses.replace(BAD_SOURCE, path="bad.pyi")</a>
+    fixed_bad_stub = dataclasses.replace(FIXED_BAD_SOURCE, path="bad.pyi")
+
+    <a id="change">good_files = [GOOD_SOURCE, good_stub]</a>
+    <a id="change">target = make_target(rule_runner, good_files)</a>
+    lint_results, fmt_result = run_isort(rule_runner, [target])
+    assert len(lint_results) == 1 and lint_results[0].exit_code == 0
+    assert lint_results[0].stderr == "" and fmt_result.stdout == ""
+    assert fmt_result.output == get_digest(rule_runner, good_files)
+    assert not fmt_result.did_change
+
+    <a id="change">target = make_target(rule_runner, [BAD_SOURCE, bad_stub])</a>
+    lint_results, fmt_result = run_isort(rule_runner, <a id="change">[target]</a>)
+    assert len(lint_results) == 1 and lint_results[0].exit_code == 1
+    assert "bad.pyi Imports are incorrectly sorted" in lint_results[0].stderr
+    assert fmt_result.stdout == "Fixing bad.py\nFixing bad.pyi\n"</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_stub_files(rule_runner: RuleRunner) -&gt; None:
+    <a id="change">rule_runner.write_files(
+        {
+            "good.pyi": GOOD_FILE,
+            "good.py": GOOD_FILE,
+            "bad.pyi": BAD_FILE,
+            "bad.py": BAD_FILE,
+            "BUILD": "python_library(name=&quott&quot)",
+        }
+    )</a>
+
+    good_tgts = <a id="change">[
+        rule_runner.get_target(Address("", target_name="t", relative_file_path="good.pyi")),
+        rule_runner.get_target(Address("", target_name="t", relative_file_path="good.py")),
+    ]</a>
+    lint_results, fmt_result = run_isort(rule_runner, good_tgts)
+    assert len(lint_results) == 1 and lint_results[0].exit_code == 0
+    assert lint_results[0].stderr == "" and fmt_result.stdout == ""
+    assert fmt_result.output == get_digest(
+        rule_runner, {"good.py": GOOD_FILE, "good.pyi": GOOD_FILE}
+    )
+    assert not fmt_result.did_change
+
+    <a id="change">bad_tgts = [
+        rule_runner.get_target(Address("", target_name="t", relative_file_path="bad.pyi")),
+        rule_runner.get_target(Address("", target_name="t", relative_file_path="bad.py")),
+    ]</a>
+    lint_results, fmt_result = run_isort(rule_runner, bad_tgts)
+    assert len(lint_results) == 1 and lint_results[0].exit_code == 1
+    assert "bad.pyi Imports are incorrectly sorted" in lint_results[0].stderr
+    assert fmt_result.stdout == "Fixing bad.py\nFixing bad.pyi\n"</code></pre>

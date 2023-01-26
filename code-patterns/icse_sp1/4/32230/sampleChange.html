@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                torch.matmul(featmat.t(), returns),
+                torch.matmul(featmat.t(), featmat) + reg_coeff * eye
+            )
+            <a id="change">if not isnan(self.linear.weight).any():
+                break
+           </a> reg_coeff *= 10
+        self.linear.weight.data = coeffs.data.t()
+
+    def forward(self, episodes):</code></pre><h3>After Change</h3><pre><code class='java'>
+        eye = torch.eye(self.feature_size, dtype=torch.float32,
+            device=self.linear.weight.device)
+        for _ in range(5):
+            <a id="change">try:
+                coeffs, _ = torch.gels(
+                    torch.matmul(featmat.t(), returns),
+                    torch.matmul(featmat.t(), featmat) + reg_coeff * eye
+                )
+                break
+            except RuntimeError:
+                reg_coeff += 10
+       </a> else:
+            raise RuntimeError(&quotUnable to solve the normal equations in &quot
+                &quot`LinearFeatureBaseline`. The matrix X^T*X (with X the design &quot
+                &quotmatrix) is not full-rank, regardless of the regularization &quot</code></pre>

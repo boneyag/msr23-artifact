@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        super(BottleneckV1, self).__init__(**kwargs)
+        self.body = nn.HybridSequential(prefix=&quot&quot)
+        self.body.add(nn.Conv2D(channels//4, kernel_size=1, strides=stride))
+        <a id="change">self.body.add(nn.BatchNorm())</a>
+        self.body.add(nn.Activation(&quotrelu&quot))
+        self.body.add(_conv3x3(channels//4, 1, channels//4))
+        self.body.add(nn.BatchNorm())
+        self.body.add(nn.Activation(&quotrelu&quot))
+        self.body.add(nn.Conv2D(channels, kernel_size=1, strides=1))
+
+        if use_se:
+            self.se = nn.HybridSequential(prefix=&quot&quot)
+            self.se.add(nn.Dense(channels // 4, use_bias=False))
+            self.se.add(nn.Activation(&quotrelu&quot))
+            self.se.add(nn.Dense(channels * 4, use_bias=False))
+            self.se.add(nn.Activation(&quotsigmoid&quot))
+        else:
+            self.se = None
+
+        <a id="change">if not last_gamma:
+            self.body.add(nn.BatchNorm())
+        else:
+            self.body.add(nn.BatchNorm(gamma_initializer=&quotzeros&quot))
+
+       </a> if downsample:
+            self.downsample = nn.HybridSequential(prefix=&quot&quot)
+            self.downsample.add(nn.Conv2D(channels, kernel_size=1, strides=stride,
+                                          use_bias=False, in_channels=in_channels))
+            self.downsample.add(<a id="change">nn.BatchNorm()</a>)
+        else:
+            self.downsample = None
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    downsample : bool, default False
+        Whether to downsample the input.
+    in_channels : int, default 0
+        Number of input channel<a id="change">s. Default is 0, to infer from the graph.
+    last_gamma :</a> bool, default False
+        Whether to initialize the gamma of the last BatchNorm layer in each bottleneck to zero.<a id="change">
+    use_se : bool, default False
+        Whether to use Squeeze-and-Exci</a>tation module
+    norm_layer : object
+        Normalization layer used (default: :class:`mxnet.gluon.nn.BatchNorm`)
+       <a id="change"> Can be :class:`mxnet.gluon.nn.BatchNorm` or :class:`mxnet.gluon.contrib.</a>nn.SyncBatchNorm`.
+    norm_kwargs : dict
+        Additional `norm_layer` arguments, for example `num_devices=4`
+        for :class:`mxnet.gluon.contrib.nn.SyncBatchNorm`.</code></pre>

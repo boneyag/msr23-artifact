@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.backend_table.register_backend(backend_tag, backend_worker)
+
+        &#47&#47 Save information about configurations needed to start the replicas.
+        <a id="change">self</a>.backend_table.register_info(backend_tag, backend_config_dict)
+
+        &#47&#47 Save the initial arguments needed by replicas.
+        self.backend_table.save_init_args(backend_tag, actor_init_args)
+
+        &#47&#47 Set the backend config inside the router
+        &#47&#47 (particularly for max-batch-size).
+        [router] = <a id="change">self.get_router()</a>
+        await router.set_backend_config.remote(backend_tag,
+                                               backend_config_dict)
+
+        await self.scale_replicas(backend_tag,</code></pre><h3>After Change</h3><pre><code class='java'>
+            self._checkpoint()
+            await self.http_proxy.set_route_table.remote(self.routes)
+
+    async def create_backend(<a id="change">self</a>, backend_tag, backend_config, func_or_class,
+                             actor_init_args):
+        Register a new backend under the specified tag.
+        <a id="change">async with self.write_lock:
+            backend_config_dict = dict(backend_config)
+            backend_worker = create_backend_worker(func_or_class)
+
+            &#47&#47 Save creator that starts replicas, the arguments to be passed in,
+            &#47&#47 and the configuration for the backends.
+            self.backends[backend_tag] = (backend_worker, actor_init_args,
+                                          backend_config_dict)
+
+            self._scale_replicas(backend_tag,
+                                 backend_config_dict["num_replicas"])
+
+            &#47&#47 NOTE(edoakes): we must write a checkpoint before starting new
+            &#47&#47 or pushing the updated config to avoid inconsistent state if we
+            &#47&#47 crash while making the change.
+            self._checkpoint()
+            await self._start_pending_replicas()
+            await self._stop_pending_replicas()
+
+            &#47&#47 Set the backend config inside the router
+            &#47&#47 (particularly for max-batch-size).
+            await self.router.set_backend_config.remote(
+                backend_tag, backend_config_dict)
+
+   </a> async def set_backend_config(self, backend_tag, backend_config):
+        Set the config for the specified backend.
+        async with self.write_lock:
+            assert (backend_tag in self.backends</code></pre>

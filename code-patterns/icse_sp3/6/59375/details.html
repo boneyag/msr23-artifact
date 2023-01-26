@@ -1,0 +1,37 @@
+<html><h3>d1ac7b831ad36cd0e4bdd7980819f83208345148,gpflow/expectations.py,,_expectation,#Any#Any#Any#Any#Any#,560
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+@dispatch(DiagonalGaussian, kernels.Product, InducingPoints, kernels.Product, InducingPoints)
+@quadrature_fallback
+def _expectation(p, kern1, feat1, kern2, feat2):
+    <a id="change">if feat1 != feat2:
+        raise NotImplementedError("Different features are not supported")
+
+   </a> if kern1 != kern2:
+        raise NotImplementedError("Calculating the expectation over two different Product kernels is not supported")
+
+    kern = kern1
+    feat = feat1
+
+    if not kern.on_separate_dimensions:
+        raise NotImplementedError("Product currently needs to be defined on separate dimensions.")  &#47&#47 pragma: no cover
+    with tf.control_dependencies([
+        tf.assert_equal(tf.rank(p.var), 2,
+                        message="Product currently only supports diagonal Xcov.", name="assert_Xcov_diag"),
+    ]):
+        <a id="change">_expectation_fn = lambda k: _expectation(p, k, feat, k, feat)</a>
+        return functools.reduce(tf.multiply, [_expectation_fn(k) for k in kern.kern_list])
+
+
+@dispatch(DiagonalGaussian, object, (InducingFeature, type(None)), object, (InducingFeature, type(None)))</code></pre><h3>After Change</h3><pre><code class='java'>
+    :return: NxDxQ
+    
+    with params_as_tensors_for(mean1), params_as_tensors_for(mean2):
+        <a id="change">N = tf.shape(p.mu)[0]</a>
+        e_xxt = p.cov + (p.mu[:, :, None] * p.mu[:, None, :])  &#47&#47 NxDxD
+        e_xxt_A = <a id="change">tf.matmul(e_xxt, tf.tile(mean2.A[None, ...], (N, 1, 1)))</a>  &#47&#47 NxDxQ
+        e_x_bt = p.mu[:, :, None] * mean2.b[None, None, :]  &#47&#47 NxDxQ
+
+        return e_xxt_A + e_x_bt</code></pre><img src="274566205.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/d1ac7b831ad36cd0e4bdd7980819f83208345148#diff-fec3d5d915217c71e27fb0ed9d7f6f3d63da4ee9cbfa4a0733591f2a28c3e228L561' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: d1ac7b831ad36cd0e4bdd7980819f83208345148</div><div id='time'> Time: 2018-02-07</div><div id='author'> Author: alex.ialongo@gmail.com</div><div id='file'> File Name: gpflow/expectations.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _expectation</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/91b0d220c8e816766fd4565e1d2f5115d3afbefe#diff-0a5f1b492443f1d45fea644563c842fd31a4a480824e8ed0c9f9ce825fe7f039L408' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 91b0d220c8e816766fd4565e1d2f5115d3afbefe</div><div id='time'> Time: 2018-10-12</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/lazy_tensor.py</div><div id='class'> Class Name: LazyTensor</div><div id='method'> Method Name: evaluate</div><BR><BR><div id='link'><a href='https://github.com/geomstats/geomstats/commit/68de941658340c3022b54c60a19a159374e36e36#diff-c7464dcbd5807141733f917248cb0a8fd1ec5b5c9ef3f9b2826f30a8ff522734L130' target='_blank'>Link</a></div><div id='project'> Project Name: geomstats/geomstats</div><div id='commit'> Commit Name: 68de941658340c3022b54c60a19a159374e36e36</div><div id='time'> Time: 2018-03-16</div><div id='author'> Author: ninamio78@gmail.com</div><div id='file'> File Name: geomstats/invariant_metric.py</div><div id='class'> Class Name: InvariantMetric</div><div id='method'> Method Name: exp_basis</div><BR>

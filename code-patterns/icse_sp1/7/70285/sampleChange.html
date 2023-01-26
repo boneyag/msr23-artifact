@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+&#47&#47 -----------------------------
+&#47&#47 If we&quotre using the this backend, only compute the benchmark on the GPU.
+
+<a id="change">if backend.NAME == &quotskcuda&quot:
+    device = &quotgpu&quot
+
+    fmt_str = &quot==&gt; Testing Float32 with Skcuda backend, on {}, forward&quot
+    print(fmt_str.format(device.upper()))
+
+    scattering.cuda()
+    x_data = x_data.cuda()
+
+    torch.cuda.synchronize()
+
+    t_start = time.time()
+    for _ in range(times):
+        scattering(x_data)
+
+    torch.cuda.synchronize()
+
+    t_elapsed = time.time() - t_start
+
+    fmt_str = &quotElapsed time: {:2f} [s / {:d} evals], avg: {:.2f} (s/batch)&quot
+    print(fmt_str.format(t_elapsed, times, t_elapsed/times))</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+if backend.NAME == &quottorch&quot:
+    devices = [&quotcpu&quot, &quotgpu&quot]
+elif backend.NAME == &quotskcuda&quot:
+    devices = <a id="change">[&quotgpu&quot]</a>
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Create the `Scattering1D` object using the given parameters and generate
+&#47&#47 some compatible test data with the specified batch size.
+
+scattering = Scattering1D(T, J, Q)
+
+x = torch.randn(batch_size, 1, T, dtype=torch.float32)
+
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 Run the benchmark
+&#47&#47 -----------------
+&#47&#47 For each device, we need to convert the `scattering` object and the Tensor
+&#47&#47 `x` to the appropriate type, invoke `times` calls to the `scattering.forward`
+&#47&#47 and print the running times. If the benchmark is running on the GPU, we also
+&#47&#47 need to call `torch.cuda.synchronize()` before and after the benchmark to
+&#47&#47 make sure that all CUDA kernels have finished executing.
+
+<a id="change">for device in devices:
+    fmt_str = &quot==&gt; Testing Float32 with {} backend, on {}, forward&quot
+    print(fmt_str.format(backend.NAME, device.upper()))
+
+    if device == &quotgpu&quot:
+        scattering.cuda()
+        x = x.cuda()
+    else:
+        scattering.cpu()
+        x = x.cpu()
+
+    if device == &quotgpu&quot:
+        torch.cuda.synchronize()
+
+    t_start = time.time()
+    for _ in range(times):
+        scattering.forward(x)
+
+    if device == &quotgpu&quot:
+        torch.cuda.synchronize()
+
+    t_elapsed = time.time() - t_start
+
+    fmt_str = &quotElapsed time: {:2f} [s / {:d} evals], avg: {:.2f} (s/batch)&quot
+    print(fmt_str.format(t_elapsed, times, t_elapsed/times))
+</a>
+&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47&#47
+&#47&#47 The resulting output should be something like
+&#47&#47
+&#47&#47 .. code-block:: text</code></pre>

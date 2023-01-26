@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def testSharing(self, use_bias):
+
+    np.random.seed(self.seed)
+    <a id="change">inp_1 = tf.placeholder(tf.float32, shape=[self.batch_size, self.in_size])</a>
+    <a id="change">inp_2 = tf.placeholder(tf.float32, shape=[self.batch_size, self.in_size])</a>
+
+    if use_bias:
+      initializers = {"w": _test_initializer(), "b": _test_initializer()}
+    else:
+      initializers = {"w": _test_initializer()}
+
+    lin = snt.Linear(output_size=self.out_size,
+                     use_bias=use_bias,
+                     initializers=initializers)
+    out_1 = lin(inp_1)
+    out_2 = lin(inp_2)
+    <a id="change">with self.test_session() as sess:
+      &#47&#47 Put the same data into each input, outputs should be identical.
+      input_data = np.random.randn(self.batch_size, self.in_size)
+      sess.run(tf.global_variables_initializer())
+      out_data_1, out_data_2 = sess.run([out_1, out_2],
+                                        {inp_1: input_data, inp_2: input_data})
+   </a> self.assertAllEqual(out_data_1, out_data_2)
+
+  def testUniquifying(self):
+    &#47&#47 Create three modules in same scope with same name - make_template will</code></pre><h3>After Change</h3><pre><code class='java'>
+  def testSharing(self, use_bias):
+
+    np.random.seed(self.seed)
+    <a id="change">input_data = np.random.randn(self.batch_size,
+                                 self.in_size).astype(np.float32)</a>
+    inp_1 = tf.constant(input_data)
+    <a id="change">inp_2 = tf.constant(input_data)</a>
+
+    if use_bias:
+      initializers = {"w": _test_initializer(), "b": _test_initializer()}
+    else:
+      initializers = {"w": _test_initializer()}
+
+    lin = snt.Linear(output_size=self.out_size,
+                     use_bias=use_bias,
+                     initializers=initializers)
+    out_1 = lin(inp_1)
+    out_2 = lin(inp_2)
+    &#47&#47 With the same data into each input, outputs should be identical.
+    self.evaluate(tf.global_variables_initializer())
+    <a id="change">out_data_1, out_data_2 = self.evaluate([out_1, out_2])</a>
+    self.assertAllEqual(out_data_1, out_data_2)
+
+  def testUniquifying(self):
+    &#47&#47 Create three modules in same scope with same name - make_template will</code></pre>

@@ -1,0 +1,79 @@
+<html><h3>bd333dd43d69b26015eb3f201afe1772ba701a41,niftynet/contrib/dataset_sampler/sampler_uniform_v2.py,UniformSampler,layer_op,#UniformSampler#Any#,83
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        while True:
+            image_id, data, _ = self.reader(idx=idx, shuffle=True)
+            <a id="change">if not data:
+                break
+           </a> image_shapes = dict((name, data[name].shape)
+                                for name in self.window.names)
+            static_window_shapes = self.window.match_image_shapes(image_shapes)
+
+            &#47&#47 find random coordinates based on window and image shapes
+            coordinates = self._spatial_coordinates_generator(
+                subject_id=image_id,
+                data=data,
+                img_sizes=image_shapes,
+                win_sizes=static_window_shapes,
+                n_samples=self.window.n_samples)
+
+            for window_id in range(self.window.n_samples):
+                output_dict = {}
+                <a id="change">for  name in list(data):
+                    image_data_key = name
+                    coordinates_key = LOCATION_FORMAT.format(name)
+
+                    coord = coordinates[name][window_id]
+                    x_start, y_start, z_start, x_end, y_end, z_end = coord[1:]
+                    try:
+                        image_window = data[name][
+                            x_start:x_end, y_start:y_end, z_start:z_end, ...]
+                        output_dict[image_data_key] = image_window
+                        output_dict[coordinates_key] = coord
+                    except ValueError:
+                        tf.logging.fatal(
+                            "dimensionality miss match in input volumes, "
+                            "please specify spatial_window_size with a "
+                            "3D tuple and make sure each element is "
+                            "smaller than the image length in each dim. "
+                            "Current coords %s", coord)
+                        raise
+               </a> <a id="change">yield output_dict</a>
+
+    def _spatial_coordinates_generator(self,
+                                       subject_id,
+                                       data,</code></pre><h3>After Change</h3><pre><code class='java'>
+            output_dict[coordinates_key] = location_array
+
+            &#47&#47 fill output window array
+            <a id="change">image_array = []</a>
+            for window_id in range(self.window.n_samples):
+                x_start, y_start, z_start, x_end, y_end, z_end = \
+                    location_array[window_id, 1:]
+                try:
+                    image_window = data[name][
+                        x_start:x_end, y_start:y_end, z_start:z_end, ...]
+                    image_array.append(image_window[np.newaxis, ...])
+                except ValueError:
+                    tf.logging.fatal(
+                        "dimensionality miss match in input volumes, "
+                        "please specify spatial_window_size with a "
+                        "3D tuple and make sure each element is "
+                        "smaller than the image length in each dim. "
+                        "Current coords %s", location_array[window_id])
+                    raise
+            <a id="change">if len(image_array) &gt; 1:
+                output_dict[image_data_key] = \
+                    np.concatenate(image_array, axis=0).astype(np.float32)
+            else:
+                output_dict[image_data_key] = image_array[0].astype(np.float32)
+        &#47&#47 the output image shape should be
+        &#47&#47 [enqueue_batch_size, x, y, z, time, modality]
+        &#47&#47 where enqueue_batch_size = windows_per_image
+       </a> return output_dict
+
+    def _init_dataset(self):
+        </code></pre><img src="28974955.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/bd333dd43d69b26015eb3f201afe1772ba701a41#diff-c3102fa1640eb0e74d5ee3a673169d81527d7b01428fd3a2d4d72769b694359fL95' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: bd333dd43d69b26015eb3f201afe1772ba701a41</div><div id='time'> Time: 2018-05-07</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/contrib/dataset_sampler/sampler_uniform_v2.py</div><div id='class'> Class Name: UniformSampler</div><div id='method'> Method Name: layer_op</div><BR><BR><div id='link'><a href='https://github.com/elbayadm/attn2d/commit/c52f6ea4fc8f58b389fd806c117f501fb8234976#diff-2961de7169e4f9a1fe06411fd536dc2e349cca478eb5ca62620427d5b4cead09L295' target='_blank'>Link</a></div><div id='project'> Project Name: elbayadm/attn2d</div><div id='commit'> Commit Name: c52f6ea4fc8f58b389fd806c117f501fb8234976</div><div id='time'> Time: 2018-06-15</div><div id='author'> Author: edunov@apache.org</div><div id='file'> File Name: fairseq/data.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _make_batches</div><BR>

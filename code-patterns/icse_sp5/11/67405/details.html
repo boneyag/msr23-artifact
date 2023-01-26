@@ -1,0 +1,42 @@
+<html><h3>42dc18f2a13441eefdfceed905843a3d19b27072,pyro/distributions/one_two_matching.py,OneTwoMatching,log_partition_function,#OneTwoMatching#,101
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        p = (self.logits - shift).exp().clamp(min=finfo.tiny ** 0.5)
+        d = 2 / p.sum(0)
+        for _ in range(self.bp_iters):
+            <a id="change">s = 1 / (p @ d)</a>
+            d = 2 / (s @ p)
+        <a id="change">b = s[:, None] * d * p</a>
+
+        &#47&#47 Evaluate the Bethe free energy, adapting [4] Eqn 4 to one-two
+        &#47&#47 matchings.
+        b = b.clamp(min=finfo.tiny ** 0.5)</code></pre><h3>After Change</h3><pre><code class='java'>
+        logits = self.logits - shift
+        d = logits.logsumexp(0) - math.log(2)
+        for _ in range(self.bp_iters):
+            <a id="change">s = (logits - d).logsumexp(-1, True)</a>
+            d = (logits - s).logsumexp(0) - <a id="change">math.log(2)</a>
+        b = (logits - <a id="change">(d + s)</a>).exp()
+
+        def log(x):
+            return x.clamp(min=finfo.tiny).log()
+
+        &#47&#47 Evaluate the Bethe free energy, adapting [4] Eqn 4 to one-two
+        &#47&#47 matchings.
+        b_ = (1 - b).clamp(min=0)
+        internal_energy = -(b * logits.clamp(min=-1 / finfo.eps)).sum()
+        &#47&#47 Let h be the entropy of matching each destin to one source.
+        z = b / 2
+        h = -(z * log(z)).sum(0)
+        &#47&#47 Then h2 is the entropy of the distribution mapping each destin to an
+        &#47&#47 unordered pair of sources, equal to the log of the binomial
+        &#47&#47 coefficient: perplexity * (perplexity - 1) / 2.
+        h2 = h + log(h.expm1()) - math.log(2)
+        free_energy = internal_energy - h2.sum() - (b_ * log(b_)).sum()
+        <a id="change">log_Z = shift.sum() - free_energy</a>
+        assert torch.isfinite(log_Z)
+        return log_Z
+
+    def log_prob(self, value):</code></pre><img src="312040569.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/uber/pyro/commit/42dc18f2a13441eefdfceed905843a3d19b27072#diff-c4ccfea6e4be46280bb110e2c2bf7eed06f3657afdf86be60ada09504652f354L111' target='_blank'>Link</a></div><div id='project'> Project Name: uber/pyro</div><div id='commit'> Commit Name: 42dc18f2a13441eefdfceed905843a3d19b27072</div><div id='time'> Time: 2020-12-07</div><div id='author'> Author: fritz.obermeyer@gmail.com</div><div id='file'> File Name: pyro/distributions/one_two_matching.py</div><div id='class'> Class Name: OneTwoMatching</div><div id='method'> Method Name: log_partition_function</div><BR><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/c54f3fde1c5210e090a0cd9ca95d36bdec5def8d#diff-c458816f9d86dc8c95e4a183bfbc99aad0caa231c366e0f51a6c15fe1c2dcb81L358' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: c54f3fde1c5210e090a0cd9ca95d36bdec5def8d</div><div id='time'> Time: 2016-08-29</div><div id='author'> Author: rafaelnh21@gmail.com</div><div id='file'> File Name: dipy/reconst/fwdti.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _wls_iter</div><BR><BR><div id='link'><a href='https://github.com/nipy/dipy/commit/e3c2740c3f3e2451dd1dfed82a1cdbba63139ba4#diff-c458816f9d86dc8c95e4a183bfbc99aad0caa231c366e0f51a6c15fe1c2dcb81L363' target='_blank'>Link</a></div><div id='project'> Project Name: nipy/dipy</div><div id='commit'> Commit Name: e3c2740c3f3e2451dd1dfed82a1cdbba63139ba4</div><div id='time'> Time: 2016-08-29</div><div id='author'> Author: rafaelnh21@gmail.com</div><div id='file'> File Name: dipy/reconst/fwdti.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _wls_iter</div><BR>

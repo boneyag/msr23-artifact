@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            self.callbacks.call(self.callbacks.BEGIN_OF_TRAINING_ITERATION,
+                                iteration_num=iteration_num)
+            &#47&#47 Zero out the grads
+            <a id="change">self.optimizer.zero_grad()</a>
+            &#47&#47 No interrupts while computing - a SIGINT could shoot down the driver if
+            &#47&#47 done at the wrong time. Not sure if this has something to do with pinned memory
+            with pyu.delayed_keyboard_interrupt():
+                &#47&#47 Get batch</code></pre><h3>After Change</h3><pre><code class='java'>
+            self.update_state(&quottraining_loss&quot, thu.unwrap(loss))
+            &#47&#47 Update state from model&quots state hooks
+            self.update_state_from_model_state_hooks()
+            <a id="change">if iteration_num % self.backprop_every == 0:
+               &#47&#47 Update parameters
+                self.optimizer.step()
+                &#47&#47 Zero out the grads
+                self.optimizer.zero_grad()
+            &#47&#47 Call callback
+           </a> self.callbacks.call(self.callbacks.END_OF_TRAINING_ITERATION,
+                                iteration_num=iteration_num)
+            &#47&#47 Prepare for next iteration
+            self.next_iteration()</code></pre>

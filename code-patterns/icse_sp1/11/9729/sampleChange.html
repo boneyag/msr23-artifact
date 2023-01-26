@@ -1,0 +1,60 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        block = numpy.zeros(
+            n_connections, dtype=AbstractConnector.NUMPY_SYNAPSES_DTYPE)
+
+        <a id="change">source_neuron_ids = []</a>
+        <a id="change">target_neuron_ids = []</a>
+
+        try:
+            source_neuron_ids = numpy.random.choice(
+                numpy.arange(
+                    pre_vertex_slice.lo_atom, pre_vertex_slice.hi_atom + 1),
+                size=n_connections, replace=self._with_replacement)
+        except Exception:
+            raise SpynnakerException(
+                "MultapseConnector: The number of connections is too large "
+                "for sampling without replacement in the pre-population: "
+                "reduce the value specified in the connector")
+
+        &#47&#47 Sort the source neuron ids
+        source_neuron_ids.sort()
+
+        if self._allow_self_connections:
+            try:
+                target_neuron_ids = numpy.random.choice(
+                    numpy.arange(post_vertex_slice.lo_atom,
+                                 post_vertex_slice.hi_atom + 1),
+                    size=n_connections, replace=self._with_replacement)
+            except Exception:
+                raise SpynnakerException(
+                    "MultapseConnector: The number of connections is too "
+                    "large for sampling without replacement in the post- ",
+                    "population: reduce the value specified in the connector")
+        else:
+            <a id="change">for source in source_neuron_ids:
+                target_neuron_ids.append(numpy.random.choice(numpy.concatenate(
+                    [numpy.arange(0, source),
+                     numpy.arange(source + 1, post_vertex_slice.hi_atom + 1)]),
+                    size=1, replace=self._with_replacement))
+
+       </a> block["source"] = source_neuron_ids
+        block["target"] = target_neuron_ids
+        block["weight"] = self._generate_weights(
+            self._weights, n_connections, [connection_slice])</code></pre><h3>After Change</h3><pre><code class='java'>
+            n_connections, dtype=AbstractConnector.NUMPY_SYNAPSES_DTYPE)
+
+        &#47&#47 Create pairs between the pre- and post-vertex slices
+        <a id="change">pairs = numpy.mgrid[pre_vertex_slice.as_slice,
+                            post_vertex_slice.as_slice].T.reshape((-1, 2))</a>
+
+        &#47&#47 Deal with case where self-connections aren&quott allowed
+        if not self._allow_self_connections and (
+            self._pre_population is self._post_population):
+            <a id="change">pairs = pairs[pairs[:,0] != pairs[:,1]]</a>
+
+        &#47&#47 Now do the actual random choice from the available connections
+        try:
+            chosen = numpy.random.choice(</code></pre>

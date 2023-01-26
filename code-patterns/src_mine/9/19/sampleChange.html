@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                                            batch_sampler=val_batch_sampler,
+                                            batchify_fn=test_batchify_fn,
+                                            num_workers=num_workers)
+    <a id="change">test_batch_sampler</a> = nlp.data.FixedBucketSampler(lengths=target_test_lengths,
+                                                     batch_size=args.test_batch_size,
+                                                     num_buckets=args.num_buckets,
+                                                     ratio=args.bucket_ratio,
+                                                     shuffle=False,
+                                                     use_average_length=use_average_length,
+                                                     bucket_scheme=bucket_scheme)
+    logging.info(<a id="change">&quotTest Batch Sampler:\n{}&quot.format(test_batch_sampler.stats())</a>)
+    test_data_loader = gluon.data.DataLoader(data_test,
+                                             batch_sampler=test_batch_sampler,
+                                             batchify_fn=test_batchify_fn,</code></pre><h3>After Change</h3><pre><code class='java'>
+    Create data loaders for training/validation/test.
+    data_train_lengths = get_data_lengths(data_train)
+    data_val_lengths = get_data_lengths(data_val)
+    data_test_lengths = <a id="change">get_data_lengths(data_test)</a>
+    train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
+                                  btf.Stack(dtype=&quotfloat32&quot), btf.Stack(dtype=&quotfloat32&quot))
+    test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
+                                 btf.Stack(dtype=&quotfloat32&quot), btf.Stack(dtype=&quotfloat32&quot),
+                                 btf.Stack())
+    target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
+    target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
+    if args.bucket_scheme == &quotconstant&quot:
+        bucket_scheme = nlp.data.ConstWidthBucket()
+    elif args.bucket_scheme == &quotlinear&quot:
+        bucket_scheme = nlp.data.LinearWidthBucket()
+    elif args.bucket_scheme == &quotexp&quot:
+        bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
+    else:
+        raise NotImplementedError
+    train_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_train_lengths,
+                                                      batch_size=args.batch_size,
+                                                      num_buckets=args.num_buckets,
+                                                      ratio=args.bucket_ratio,
+                                                      shuffle=True,
+                                                      use_average_length=use_average_length,
+                                                      num_shards=num_shards,
+                                                      bucket_scheme=bucket_scheme)
+    logging.info(&quotTrain Batch Sampler:\n%s&quot, train_batch_sampler.stats())
+    train_data_loader = nlp.data.ShardedDataLoader(data_train,
+                                                   batch_sampler=train_batch_sampler,
+                                                   batchify_fn=train_batchify_fn,
+                                                   num_workers=num_workers)
+
+    val_batch_sampler = nlp.data.FixedBucketSampler(lengths=target_val_lengths,
+                                                    batch_size=args.test_batch_size,
+                                                    num_buckets=args.num_buckets,
+                                                    ratio=args.bucket_ratio,
+                                                    shuffle=False,
+                                                    use_average_length=use_average_length,
+                                                    bucket_scheme=bucket_scheme)
+    logging.info(&quotValid Batch Sampler:\n%s&quot, val_batch_sampler.stats())
+    val_data_loader = gluon.data.DataLoader(data_val,
+                                            batch_sampler=val_batch_sampler,
+                                            batchify_fn=test_batchify_fn,
+                                            num_workers=num_workers)
+    <a id="change">test_batch_sampler</a> = nlp.data.FixedBucketSampler(lengths=target_test_lengths,
+                                                     batch_size=args.test_batch_size,
+                                                     num_buckets=args.num_buckets,
+                                                     ratio=args.bucket_ratio,
+                                                     shuffle=False,
+                                                     use_average_length=use_average_length,
+                                                     bucket_scheme=bucket_scheme)
+    logging.info(<a id="change">&quotTest Batch Sampler:\n%s&quot</a>, <a id="change">test_batch_sampler.stats()</a>)
+    test_data_loader = gluon.data.DataLoader(data_test,
+                                             batch_sampler=test_batch_sampler,
+                                             batchify_fn=test_batchify_fn,</code></pre>

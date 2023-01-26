@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if "_abc_impl" in clsdict:
+        (registry, _, _, _) = abc._get_dump(obj)
+        clsdict["_abc_impl"] = [subclass_weakref()
+                                <a id="change">for</a> subclass_weakref in registry]
+    if hasattr(obj, "__slots__"):
+        &#47&#47 pickle string length optimization: member descriptors of obj are
+        &#47&#47 created automatically from obj&quots __slots__ attribute, no need to</code></pre><h3>After Change</h3><pre><code class='java'>
+    clsdict = _extract_class_dict(obj)
+    clsdict.pop(&quot__weakref__&quot, None)
+
+    <a id="change">if issubclass(type(obj), abc.ABCMeta):
+        &#47&#47 If obj is an instance of an ABCMeta subclass, dont pickle the
+        &#47&#47 cache/negative caches populated during isinstance/issubclass
+        &#47&#47 checks, but pickle the list of registered subclasses of obj.
+        clsdict.pop(&quot_abc_cache&quot, None)
+        clsdict.pop(&quot_abc_negative_cache&quot, None)
+        clsdict.pop(&quot_abc_negative_cache_version&quot, None)
+        clsdict.pop(&quot_abc_impl&quot, None)
+        registry = clsdict.pop(&quot_abc_registry&quot, None)
+        if registry is None:
+            &#47&#47 in Python3.7+, the abc caches and registered subclasses of a
+            &#47&#47 class are bundled into the single _abc_impl attribute
+            if hasattr(abc, &quot_get_dump&quot):
+                (registry, _, _, _) = abc._get_dump(obj)
+                clsdict["_abc_impl"] = [subclass_weakref()
+                                        for subclass_weakref in registry]
+            else:
+                &#47&#47 FIXME(suquark): The upstream cloudpickle cannot work in Ray
+                &#47&#47 because sometimes both &quot_abc_registry&quot and &quot_get_dump&quot does
+                &#47&#47 not exist. Some strange typing objects may cause this issue.
+                &#47&#47 Here the workaround just set "_abc_impl" to None.
+                clsdict["_abc_impl"] = None
+        else:
+            &#47&#47 In the above if clause, registry is a set of weakrefs -- in
+            &#47&#47 this case, registry is a WeakSet
+            clsdict["_abc_impl"] = [type_ for type_ in registry]
+
+   </a> if "__slots__" in clsdict:
+        &#47&#47 pickle string length optimization: member descriptors of obj are
+        &#47&#47 created automatically from obj&quots __slots__ attribute, no need to
+        &#47&#47 save them in obj&quots state</code></pre>

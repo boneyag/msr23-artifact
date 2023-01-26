@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            sparse_nn = SparseNNModel().eval()
+
+            &#47&#47 quantize the embeddings and the dense part separately, using FX graph mode
+            <a id="change">sparse_nn.dense_top = prepare_fx(
+                sparse_nn.dense_top,
+                {&quot&quot: torch.quantization.default_qconfig},
+            )</a>
+
+            &#47&#47 calibrate
+            idx = torch.LongTensor([1, 2, 4, 5, 4, 3, 2, 9])
+            offsets = torch.LongTensor([0, 4])
+            x = torch.randn(2, 4)
+            sparse_nn(idx, offsets, x)
+
+            &#47&#47 convert
+            sparse_nn_q = copy.deepcopy(sparse_nn)
+            <a id="change">sparse_nn_q.dense_top = convert_fx(sparse_nn_q.dense_top)</a>
+
+            &#47&#47 test out compare activations API
+            <a id="change">sparse_nn.dense_top, sparse_nn_q.dense_top = add_loggers(
+                &quotfp32_prepared&quot, sparse_nn.dense_top, &quotint8&quot, sparse_nn_q.dense_top, OutputLogger,
+                should_log_inputs=should_log_inputs)</a>
+
+            &#47&#47 calibrate
+            sparse_nn(idx, offsets, x)
+            sparse_nn_q(idx, offsets, x)
+
+            &#47&#47 inspect results
+            <a id="change">act_compare_dict = extract_logger_info(
+                sparse_nn, sparse_nn_q, OutputLogger)</a>
+            self.assertTrue(len(act_compare_dict) == 4)
+            self.assert_ns_compare_dict_valid(act_compare_dict)
+
+    @override_qengines</code></pre><h3>After Change</h3><pre><code class='java'>
+            idx = torch.LongTensor([1, 2, 4, 5, 4, 3, 2, 9])
+            offsets = torch.LongTensor([0, 4])
+            x = torch.randn(2, 4)
+            <a id="change">self._test_match_activations(
+                sparse_nn, (idx, offsets, x),
+                results_len=4,
+                should_log_inputs=should_log_inputs)</a>
+
+    @skipIfNoFBGEMM
+    def test_sparsenn_shadow(self):
+        for should_log_inputs in (True, False):</code></pre>

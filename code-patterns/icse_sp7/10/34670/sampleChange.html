@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return policies
+
+    def predict(self, states):
+        <a id="change">with core.DeviceScope(self.c2_device):
+            if isinstance(self.trainer, DiscreteActionTrainer):
+                workspace.FeedBlob("states", states)
+            else:
+                raise NotImplementedError("Invalid trainer passed to GymPredictor")
+            workspace.RunNetOnce(self.trainer.internal_policy_model.net)
+            policy_output_blob = self.trainer.internal_policy_output
+            print(self.trainer.internal_policy_output)
+            q_scores = workspace.FetchBlob(policy_output_blob)
+            return q_scores
+
+
+</a>class GymDQNPredictorPytorch(GymPredictor):
+    def __init__(self, trainer):
+        GymPredictor.__init__(self, trainer)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def predict(self, states):
+        if isinstance(self.trainer, DQNTrainer):
+            <a id="change">input = states</a>
+        elif isinstance(self.trainer, ParametricDQNTrainer):
+            num_actions = len(self.trainer.action_normalization_parameters)
+            <a id="change">actions = np.eye(num_actions, dtype=np.float32)</a>
+            <a id="change">actions = np.tile(actions, reps=(len(states), 1))</a>
+            <a id="change">states = np.repeat(states, repeats=num_actions, axis=0)</a>
+            input = np.hstack((states, actions))
+        else:
+            raise NotImplementedError("Invalid trainer passed to GymPredictor")
+        <a id="change">q_scores = self.trainer.internal_prediction(input)</a>
+        return q_scores
+
+    def estimate_reward(self, states):
+        if isinstance(self.trainer, DQNTrainer):</code></pre>

@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                step_loss, step_batchsz, distributed_cm = _distributed_test_step(next(test_iter))
+                total_loss.assign_add(step_loss)
+                total_norm.assign_add(step_batchsz)
+                cm._cm += <a id="change">distributed_cm.numpy()</a>
+
+            metrics = cm.get_all_metrics()
+            total_loss = total_loss.numpy()
+            total_norm = total_norm.numpy()</code></pre><h3>After Change</h3><pre><code class='java'>
+        with strategy.scope():
+
+            total_loss = tf.Variable(0.0)
+            total_acc = <a id="change">tf.Variable(0.0)</a>
+            total_norm = tf.Variable(0.0)
+
+            SET_TRAIN_FLAG(False)
+            test_iter = iter(loader)
+
+            for i in range(steps):
+                &#47&#47step_loss, step_batchsz, distributed_cm = _distributed_test_step(next(test_iter))
+                step_loss, step_batchsz, distributed_acc = _distributed_test_step(next(test_iter))
+
+                total_loss.assign_add(step_loss)
+                total_norm.assign_add(step_batchsz)
+                total_acc.assign_add(distributed_acc)
+                &#47&#47cm._cm += distributed_cm.numpy()
+
+            &#47&#47metrics = cm.get_all_metrics()
+            total_loss = total_loss.numpy()
+            total_norm = total_norm.numpy()
+            <a id="change">total_acc = total_acc.numpy()</a>
+            metrics = {}
+            metrics[&quotavg_loss&quot] = total_loss / float(total_norm)
+            <a id="change">metrics[&quotacc&quot] = total_acc / float(total_norm)</a>
+            &#47&#47verbose_output(verbose, cm)
+
+            return metrics
+</code></pre>

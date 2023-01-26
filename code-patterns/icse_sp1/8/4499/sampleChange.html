@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 t_image = tf.placeholder(&quotfloat32&quot, [None, size[0], size[1], size[2]], name=&quotinput_image&quot) &#47&#47 the old version of TL need to specify the image size
+    t_image = tf.placeholder(&quotfloat32&quot, [1, None, None, 3], name=&quotinput_image&quot)
+
+    <a id="change">net_g = SRGAN_g(t_image, is_train=False, reuse=False)</a>
+
+    &#47&#47&#47&#47&#47&#47========================== RESTORE G =============================&#47&#47&#47&#47&#47&#47
+    <a id="change">sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False))</a>
+    tl.layers.initialize_global_variables(sess)
+    tl.files.load_and_assign_npz(sess=sess, name=checkpoint_dir + &quot/g_srgan.npz&quot, network=net_g)
+
+    &#47&#47&#47&#47&#47&#47======================= EVALUATION =============================&#47&#47&#47&#47&#47&#47
+    start_time = time.time()
+    <a id="change">out = sess.run(net_g.outputs, {t_image: [valid_lr_img]})</a>
+    print("took: %4.4fs" % (time.time() - start_time))
+
+    print("LR size: %s /  generated HR size: %s" % (size, out.shape))  &#47&#47 LR size: (339, 510, 3) /  gen HR size: (1, 1356, 2040, 3)
+    print("[*] save images")</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 print(valid_lr_img.min(), valid_lr_img.max())
+
+    G = get_G([1, None, None, 3])
+    G.load_weights(checkpoint_dir + &quot/g_{}.h5&quot.format(<a id="change">tl.global_flag[&quotmode&quot]</a>))
+    G.eval()
+
+    out = G(valid_lr_img).numpy()</code></pre>

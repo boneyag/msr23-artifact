@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 TODO(nina): Raise error when vector is not tangent
+        n_base_points, extrinsic_dim = base_point.shape
+        n_tangent_vecs, _ = tangent_vec.shape
+        <a id="change">n_exps = gs.cast(gs.maximum(n_base_points, n_tangent_vecs), gs.int32)</a>
+
+        hypersphere = Hypersphere(dimension=extrinsic_dim-1)
+        proj_tangent_vec = hypersphere.projection_to_tangent_space(
+            tangent_vec, base_point)
+        norm_tangent_vec = self.embedding_metric.norm(proj_tangent_vec)
+
+        n_tiles_vec = gs.cast(gs.divide(n_exps, n_tangent_vecs), gs.int32)
+        norm_tangent_vec = gs.tile(norm_tangent_vec, [n_tiles_vec, 1])
+        n_tiles_base_point = gs.cast(
+            gs.divide(n_exps, n_base_points), gs.int32)
+        <a id="change">base_point = gs.tile(base_point, [n_tiles_base_point, 1])</a>
+
+        mask_0 = gs.isclose(norm_tangent_vec, 0.)
+        mask_non0 = ~mask_0
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        n_coef_1 = n_tangent_vecs
+        if n_coef_1 != n_base_points:
+            <a id="change">if n_coef_1 == 1:
+                coef_1 = gs.squeeze(coef_1, axis=0)
+                einsum_str = &quoti,nj-&gt;nj&quot
+            elif n_base_points == 1:
+                base_point = gs.squeeze(base_point, axis=0)
+                einsum_str = &quotni,j-&gt;nj&quot
+            else:
+                raise ValueError(&quotShape mismatch in einsum.&quot)
+
+       </a> exp = (gs.einsum(einsum_str, coef_1, base_point)
+               + gs.einsum(&quotni,nj-&gt;nj&quot, coef_2, proj_tangent_vec))
+
+        return exp</code></pre>

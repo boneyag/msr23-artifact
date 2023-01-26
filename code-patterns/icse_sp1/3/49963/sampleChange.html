@@ -1,0 +1,71 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            predicted = self.results.predicted[self.selected_learner[0]]
+            selected = [i for i, t in enumerate(zip(actual, predicted))
+                        if t in indices]
+            <a id="change">if selected:
+                row_indices = self.results.row_indices[selected]
+                extra = []
+                class_var = self.data.domain.class_var
+                metas = self.data.domain.metas
+
+                if self.append_predictions:
+                    predicted = numpy.array(predicted[selected], dtype=object)
+                    extra.append(predicted.reshape(-1, 1))
+                    var = Orange.data.DiscreteVariable(
+                        "{}({})".format(class_var.name, learner_name),
+                        class_var.values
+                    )
+                    metas = metas + (var,)
+
+                if self.append_probabilities and \
+                        self.results.probabilities is not None:
+                    probs = self.results.probabilities[self.selected_learner[0],
+                                                       selected]
+                    extra.append(numpy.array(probs, dtype=object))
+                    pvars = [Orange.data.ContinuousVariable("p({})".format(value))
+                             for value in class_var.values]
+                    metas = metas + tuple(pvars)
+
+                X = self.data.X[row_indices]
+                Y = self.data.Y[row_indices]
+                M = self.data.metas[row_indices]
+                row_ids = self.data.ids[row_indices]
+
+                M = numpy.hstack((M,) + tuple(extra))
+                domain = Orange.data.Domain(
+                    self.data.domain.attributes,
+                    self.data.domain.class_vars,
+                    metas
+                )
+                data = Orange.data.Table.from_numpy(domain, X, Y, M)
+                data.ids = row_ids
+                data.name = learner_name
+            else:
+                data = None
+
+       </a> else:
+            data = None
+
+        self.send("Selected Data", data)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            if selected:
+                row_indices = self.results.row_indices[selected]
+                annotated_data = <a id="change">create_annotated_table(data, row_indices)</a>
+                data = data[row_indices]
+            else:
+                annotated_data = create_annotated_table(data, [])
+                data = None
+
+        else:
+            data = None
+            annotated_data = None
+
+        self.send("Selected Data", data)
+        <a id="change">self.send(ANNOTATED_DATA_SIGNAL_NAME, annotated_data)</a>
+
+    def _invalidate(self):
+        indices = self.tableview.selectedIndexes()
+        self.selection = {(ind.row() - 2, ind.column() - 2) for ind in indices}</code></pre>

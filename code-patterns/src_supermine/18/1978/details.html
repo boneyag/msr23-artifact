@@ -1,0 +1,63 @@
+<html><h3>35999e65a83c8b9f67b833623a5b9ce47af7cc71,luminoth/utils/training.py,,get_learning_rate,#Any#Any#,16
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    method = train_config.learning_rate_decay_method
+
+    <a id="change">if not method or method == &quotnone&quot:
+        return train_config.initial_learning_rate
+
+   </a> if method not in LEARNING_RATE_DECAY_METHODS:
+        raise ValueError(&quotInvalid learning_rate method "{}"&quot.format(method))
+
+    <a id="change">if method == &quotpiecewise_constant&quot:
+        learning_rate = tf.train.piecewise_constant(
+            global_step, boundaries=[
+                tf.cast(train_config.learning_rate_decay, tf.int64), ],
+            values=[
+                train_config.initial_learning_rate,
+                train_config.initial_learning_rate * 0.1
+            ], name=&quotlearning_rate_piecewise_constant&quot
+        )
+
+    elif method == &quotexponential_decay&quot:
+        learning_rate = tf.train.exponential_decay(
+            learning_rate=train_config.initial_learning_rate,
+            global_step=global_step,
+            decay_steps=train_config.learning_rate_decay, decay_rate=0.96,
+            staircase=True, name=&quotlearning_rate_with_decay&quot
+        )
+
+   </a> tf.summary.scalar(&quotlosses/learning_rate&quot, learning_rate)
+
+    return learning_rate
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    lr_config = train_config.learning_rate.copy()
+    decay_method = lr_config.pop(&quotdecay_method&quot, None)
+
+    <a id="change">if not decay_method or decay_method == &quotnone&quot:
+        return lr_config.get(&quotvalue&quot) or lr_config.get(&quotlearning_rate&quot)
+
+   </a> if decay_method not in LEARNING_RATE_DECAY_METHODS:
+        raise ValueError(&quotInvalid learning_rate method "{}"&quot.format(
+            decay_method
+        ))
+
+    if decay_method == &quotpiecewise_constant&quot:
+        <a id="change">lr_config[&quotx&quot] = global_step</a>
+    else:
+        lr_config[&quotglobal_step&quot] = global_step
+
+    &#47&#47 boundaries, when used, must be the same type as global_step (int64).
+    if &quotboundaries&quot in lr_config:
+        lr_config[&quotboundaries&quot] = [
+            tf.cast(b, tf.int64) for b in lr_config[&quotboundaries&quot]
+        ]
+
+    <a id="change">decay_function = LEARNING_RATE_DECAY_METHODS[decay_method]</a>
+    learning_rate = decay_function(
+        **lr_config
+    )
+</code></pre><img src="11001766.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 12</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/tryolabs/luminoth/commit/35999e65a83c8b9f67b833623a5b9ce47af7cc71#diff-38b7ec78c92d10533a50f565133c4ce2b0a8c2334d28f6c478aa302ce91ee4a8L28' target='_blank'>Link</a></div><div id='project'> Project Name: tryolabs/luminoth</div><div id='commit'> Commit Name: 35999e65a83c8b9f67b833623a5b9ce47af7cc71</div><div id='time'> Time: 2017-09-19</div><div id='author'> Author: javirey@gmail.com</div><div id='file'> File Name: luminoth/utils/training.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: get_learning_rate</div><BR><BR><div id='link'><a href='https://github.com/keras-team/autokeras/commit/13aa31bc1a0b87d6c4b5e787c9b041ec83831c34#diff-f607e6a0b58cd1d7cbef1451d1b0a93b4ffe437b096fc35e385930902845a520L110' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/autokeras</div><div id='commit'> Commit Name: 13aa31bc1a0b87d6c4b5e787c9b041ec83831c34</div><div id='time'> Time: 2020-07-31</div><div id='author'> Author: jin@tamu.edu</div><div id='file'> File Name: autokeras/blocks/reduction.py</div><div id='class'> Class Name: SpatialReduction</div><div id='method'> Method Name: build</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/3ec1dac0608e511d4cf28e93a3fb908bbabceac5#diff-623cca10c4dcb5767a0bcf91b3d96bd97d705e4320e0f8fdb22922f809d5fc44L15' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 3ec1dac0608e511d4cf28e93a3fb908bbabceac5</div><div id='time'> Time: 2017-04-26</div><div id='author'> Author: z.eaton-rosen@ucl.ac.uk</div><div id='file'> File Name: nn/loss.py</div><div id='class'> Class Name: LossFunction</div><div id='method'> Method Name: set_loss_type</div><BR>

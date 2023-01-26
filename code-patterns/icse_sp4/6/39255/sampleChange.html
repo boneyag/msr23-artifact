@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        if not np.isfinite(start.energy):
+            self.potential.raise_ok(self._logp_dlogp_func._ordering.vmap)
+            <a id="change">raise ValueError(&quotBad initial energy: %s. The model &quot
+                             &quotmight be misspecified.&quot % start.energy)</a>
+
+        adapt_step = self.tune and self.adapt_step_size
+        step_size = self.step_adapt.current(adapt_step)
+        self.step_size = step_size</code></pre><h3>After Change</h3><pre><code class='java'>
+        Perform a single HMC iteration.
+        p0 = self.potential.random()
+        start = self.integrator.compute_state(q0, p0)
+        <a id="change">model = self._model</a>
+    
+        if not np.isfinite(start.energy):
+            <a id="change">check_test_point = model.check_test_point()</a>
+            error_logp = <a id="change">check_test_point.loc[(np.abs(check_test_point) &gt;= 1e20) | np.isnan(check_test_point)]</a>
+            self.potential.raise_ok(self._logp_dlogp_func._ordering.vmap)
+            logger.error("Bad initial energy, check any log probabilities that are inf or -inf, nan or very small:\n{}".format(error_logp.to_string()))
+            raise ValueError(&quotBad initial energy&quot)
+</code></pre>

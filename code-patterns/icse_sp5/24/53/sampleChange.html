@@ -1,0 +1,81 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def test_get_non_excluded_scala_sources(self):
+    &#47&#47 this scala target has mixed *.scala and *.java sources.
+    &#47&#47 the *.java source should be filtered out.
+    <a id="change">scala_target_address_1 = BuildFileAddress(
+      self.add_to_build_file(
+        &quota/scala_1/BUILD&quot,
+        &quotscala_library(name="s1", sources=["Source1.java", "Source1.scala"])&quot),
+      &quots1&quot)</a>
+    <a id="change">self.build_graph.inject_address_closure(scala_target_address_1)</a>
+    <a id="change">scala_target_1 = self.build_graph.get_target(scala_target_address_1)</a>
+
+    &#47&#47 this scala target has single *.scala source but will be excluded out
+    &#47&#47 by the [scalastyle].[excludes] setting.
+    scala_target_address_2 = BuildFileAddress(
+      self.add_to_build_file(
+        &quota/scala_2/BUILD&quot, &quotscala_library(name="s2", sources=["Source2.scala"])&quot),
+      &quots2&quot)
+    self.build_graph.inject_address_closure(scala_target_address_2)
+    scala_target_2 = self.build_graph.get_target(scala_target_address_2)
+
+    &#47&#47 Create a custom context so we can manually inject scala targets
+    &#47&#47 with mixed sources in them to test the source filtering logic.
+    <a id="change">context = self._create_context(
+      scalastyle_config=self._create_scalastyle_config_file(),
+      excludes=self._create_scalastyle_excludes_file([&quota/scala_2/Source2.scala&quot]),
+      target_roots=[
+        scala_target_1,
+        scala_target_2
+      ]
+    )</a>
+
+    &#47&#47 Remember, we have the extra &quotscala-library-2.9.3&quot dep target.
+    self.assertEqual(3, len(context.targets()))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+      self.assertEqual(scala_target, result_targets[0])
+
+  def test_get_non_excluded_scala_sources(self):
+    <a id="change">with self.scala_platform_setup():
+      &#47&#47 this scala target has mixed *.scala and *.java sources.
+      &#47&#47 the *.java source should be filtered out.
+      scala_target_1 = self.make_target(&quota/scala_1:s1&quot,
+                                        ScalaLibrary,
+                                        sources=[&quotSource1.java&quot, &quotSource1.scala&quot])
+
+      &#47&#47 this scala target has single *.scala source but will be excluded out
+      &#47&#47 by the [scalastyle].[excludes] setting.
+      scala_target_2 = self.make_target(&quota/scala_2:s2&quot, ScalaLibrary, sources=[&quotSource2.scala&quot])
+
+      &#47&#47 Create a custom context so we can manually inject scala targets
+      &#47&#47 with mixed sources in them to test the source filtering logic.
+      context = self._create_context(
+        scalastyle_config=self._create_scalastyle_config_file(),
+        excludes=self._create_scalastyle_excludes_file([&quota/scala_2/Source2.scala&quot]),
+        target_roots=[
+          scala_target_1,
+          scala_target_2
+        ]
+      )
+
+      &#47&#47 Remember, we have the extra &quotscala-library&quot dep target.
+      self.assertEqual(3, len(context.targets()))
+
+      &#47&#47 Now create the task and run the scala source and exclusion filtering.
+      task = self.prepare_execute(context)
+
+      result_sources = task.get_non_excluded_scala_sources(
+        task.create_file_excluder(),
+        task.get_non_synthetic_scala_targets(context.targets()))
+
+      &#47&#47 Only the scala source from target 1 should remain
+      self.assertEquals(1, len(result_sources))
+      self.assertEqual(&quota/scala_1/Source1.scala&quot, result_sources[0])
+
+ </a> @ensure_cached(Scalastyle, expected_num_artifacts=1)
+  def test_end_to_end_pass(self):
+    &#47&#47 Default scalastyle config (import grouping rule) and no excludes.
+    with self.scala_platform_setup():</code></pre>

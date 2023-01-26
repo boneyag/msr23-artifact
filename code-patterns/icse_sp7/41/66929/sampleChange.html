@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_simple_overdet_complex(self):
+        a = [[1+2j,2],[4,5],[3,4]]
+        b = [1,2+4j,3]
+        <a id="change">x</a>,res,r,s = lstsq(a,b)
+        assert_array_almost_equal(x,direct_lstsq(a,b,cmplx=1))
+        assert_almost_equal(res, (abs(dot(a,x) - b)**2).sum(axis=0))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def test_simple_overdet_complex(self):
+
+        <a id="change">for dtype in COMPLEX_DTYPES:
+            a = np.array(((1+2j,2),(4,5),(3,4)), dtype=dtype)
+            b = np.array((1,2+4j,3), dtype=dtype)
+            for lapack_driver in TestLstsq.lapack_drivers:
+                for overwrite in (True,False):
+                    &#47&#47 Store values in case they are overwritten
+                    &#47&#47 later
+                    a1 = a.copy()
+                    b1 = b.copy()
+                    out = lstsq(a1,b1,lapack_driver=lapack_driver,
+                                overwrite_a=overwrite, overwrite_b=overwrite)
+                    x = out[0]
+                    residuals = out[1]
+                    r = out[2]
+                    assert_(r == 2, &quotunexpected efficient rank&quot)
+                    assert_allclose(abs((dot(a,x) - b)**2).sum(axis=0),
+                                        residuals,
+                                        rtol=25*np.finfo(a1.dtype).eps,
+                                        atol=25*np.finfo(a1.dtype).eps,
+                                        err_msg="driver: %s" % lapack_driver)
+                    assert_allclose(x,(-0.4831460674157303+0.258426966292135j,
+                                        0.921348314606741+0.292134831460674j),
+                                        rtol=25*np.finfo(a1.dtype).eps,
+                                        atol=25*np.finfo(a1.dtype).eps,
+                                        err_msg="driver: %s" % lapack_driver)
+
+   </a> def test_simple_underdet(self):
+        for dtype in REAL_DTYPES:
+            a = np.array(((1,2,3),(4,5,6)), dtype=dtype)
+            b = np.array((1,2), dtype=dtype)</code></pre>

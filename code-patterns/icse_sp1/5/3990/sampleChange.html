@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with gpytorch.settings.num_trace_samples(1000):
+            res = NonLazyTensor(self.mats_var).log_det()
+        actual = torch.cat(
+            [<a id="change">self</a>.mats_var_clone[0].det().log().unsqueeze(0), self.mats_var_clone[1].det().log().unsqueeze(0)]
+        )
+        self.assertTrue(approx_equal(res, actual, epsilon=1e-1))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Forward pass
+        with gpytorch.settings.num_trace_samples(2000):
+            res = NonLazyTensor(self.mats).log_det()
+        <a id="change">actual = torch.cat([mat.logdet().unsqueeze(0) for mat in self.mats_clone])</a>
+        self.assertEqual(res.shape, actual.shape)
+        self.assertLess(torch.max((res - actual).abs()).item(), 1e-1)
+
+        &#47&#47 Backward</code></pre>

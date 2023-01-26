@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return res
+
+    def _transform(self, df, verbose):
+        <a id="change">cols_to_exclude = self._exclude_columns.copy()</a>
+        if self._exclude_obj_cols:
+            obj_cols = list((df.dtypes[df.dtypes == object]).index)
+            obj_cols = [x for x in obj_cols if x not in cols_to_exclude]
+            <a id="change">cols_to_exclude += obj_cols</a>
+        self._col_order = list(df.columns)
+        if cols_to_exclude:
+            excluded = df[cols_to_exclude]
+            apply_to = df[
+                [col for col in df.columns if col not in cols_to_exclude]
+            ]
+        else:
+            apply_to = df
+        try:
+            res = pd.DataFrame(
+                data=self._scaler.transform(apply_to),
+                index=apply_to.index,
+                columns=apply_to.columns,
+            )
+        except Exception:
+            raise PipelineApplicationError(
+                "Exception raised when Scale applied to columns {}".format(
+                    apply_to.columns
+                )
+            )
+        if cols_to_exclude:
+            res = pd.concat([res, excluded], axis=1)
+            <a id="change">res = res[self._col_order]</a>
+        return res
+
+
+class TfidfVectorizeTokenLists(PdPipelineStage):</code></pre><h3>After Change</h3><pre><code class='java'>
+            )
+        if len(unscaled_cols) &gt; 0:
+            unscaled = df[unscaled_cols]
+            inter_df = pd.concat(<a id="change">[inter_df, unscaled]</a>, axis=1)
+            <a id="change">inter_df = inter_df[col_order]</a>
+        return inter_df
+
+
+class TfidfVectorizeTokenLists(PdPipelineStage):</code></pre>

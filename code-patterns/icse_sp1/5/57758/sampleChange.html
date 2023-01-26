@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        transport = ot.da.OTDA_sinkhorn()
+        transport.fit(a, b)
+        G1 = transport.G
+        time2 = <a id="change">time.time()</a>
+        transport = ot.gpu.da.OTDA_sinkhorn()
+        transport.fit(a, b)
+        G2 = transport.G
+        time3 = time.time()
+        print("Normal sinkhorn, time: {:6.2f} sec ".format(time2 - time1))
+        describe_res(G1)
+        print("   GPU sinkhorn, time: {:6.2f} sec ".format(<a id="change">time3 - time2</a>))
+        describe_res(G2)
+
+        np.testing.assert_allclose(G1, G2, rtol=1e-5, atol=1e-5)</code></pre><h3>After Change</h3><pre><code class='java'>
+        wb = ot.unif(n_samples)
+
+        M = ot.dist(a.copy(), b.copy())
+        <a id="change">M2 = ot.gpu.dist(a.copy(), b.copy(), to_numpy=False)</a>
+
+        reg = 1
+
+        G = ot.sinkhorn(wa, wb, M, reg)
+        G1 = ot.gpu.sinkhorn(wa, wb, M, reg)
+
+        np.testing.assert_allclose(G1, G, rtol=1e-10)
+
+        <a id="change">G2 = ot.gpu.sinkhorn(wa, wb, M2, reg, to_numpy=False)</a>
+
+
+@pytest.mark.skipif(nogpu, reason="No GPU available")
+def test_gpu_sinkhorn_lpl1():</code></pre>

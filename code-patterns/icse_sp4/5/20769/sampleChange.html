@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Cast to the right dtype
+        batch = self.cast(batch)
+        &#47&#47 Second, wrap as variable
+        batch = <a id="change">type(batch)([Variable(_batch, requires_grad=requires_grad, volatile=volatile)
+                             for _batch in batch])</a>
+        return batch
+
+    def next_iteration(self):
+        self._iteration_count += 1</code></pre><h3>After Change</h3><pre><code class='java'>
+        batch = self.cast(batch)
+        &#47&#47 Second, wrap as variable
+        variable_batch = []
+        <a id="change">for batch_num, _batch in enumerate(batch):
+            if thu.is_tensor(_batch):
+                variable_batch.append(Variable(batch, requires_grad=requires_grad,
+                                               volatile=volatile))
+            elif pyu.is_listlike(_batch):
+                variable_batch.append([Variable(__batch, requires_grad=requires_grad,
+                                                volatile=volatile)
+                                       for __batch in _batch])
+            else:
+                raise RuntimeError(f"Was Expecting batch at index {batch_num} to be either a "
+                                   f"tensor or a list of tensors. Got {type(_batch)} instead.")
+       </a> batch = type(batch)(variable_batch)
+        return batch
+
+    def next_iteration(self):</code></pre>

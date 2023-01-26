@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        derivatives_python = np.zeros((n_pos, n_atoms, n_comp, n_features))
+        for i_pos in range(len(positions)):
+            center = positions[i_pos]
+            d0 = <a id="change">soap.create(H2O, [center])</a>
+            for i_atom in range(len(H2O)):
+                for i_comp in range(3):
+                    H2O_disturbed = H2O.copy()
+                    translation = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]], dtype=np.float64)</code></pre><h3>After Change</h3><pre><code class='java'>
+        n_pos = len(positions)
+        n_comp = 3
+        for rbf in ["gto", "polynomial"]:
+            <a id="change">for average in ["off", "outer", "inner"]:
+                soap = SOAP(
+                    species=[1, 8],
+                    rcut=3,
+                    nmax=2,
+                    lmax=0,
+                    rbf=rbf,
+                    sparse=False,
+                    average=average,
+                )
+                n_features = soap.get_number_of_features()
+                n_centers = 1 if average != "off" else n_pos
+                derivatives_python = np.zeros((n_centers, n_atoms, n_comp, n_features))
+                d0 = soap.create(H2O, positions)
+                for i_atom in range(len(H2O)):
+                    for i_comp in range(3):
+                        H2O_disturbed = H2O.copy()
+                        translation = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]], dtype=np.float64)
+                        translation[i_atom, i_comp] = h
+                        H2O_disturbed.translate(translation)
+                        d1 = soap.create(H2O_disturbed, positions)
+                        ds = (-d0 + d1) / h
+                        derivatives_python[:, i_atom, i_comp, :] = ds
+
+                &#47&#47 Calculate with central finite difference implemented in C++
+                derivatives_cpp, d1 = soap.derivatives(H2O, positions=positions, method="numerical")
+
+                &#47&#47 Test that descriptor values are correct
+                d2 = soap.create(H2O, positions=positions)
+                self.assertTrue(np.allclose(d1, d2, atol=1e-5))
+
+                &#47&#47 Compare values
+                self.assertTrue(np.allclose(derivatives_python, derivatives_cpp, atol=1e-5))
+
+
+</a>class SoapDerivativeComparisonTests(unittest.TestCase):
+
+    def test_analytical_vs_numerical(self):
+        Tests the analytical SOAP GTO derivative values against the</code></pre>

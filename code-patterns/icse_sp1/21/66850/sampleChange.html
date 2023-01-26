@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        beta = self.beta.apply(x=x)
+        beta = tf.clip_by_value(t=beta, clip_value_min=log_eps, clip_value_max=-log_eps)
+        beta = <a id="change">tf.log(x=(tf.exp(x=beta) + 1.0)) + 1.0</a>
+
+        shape = (-1,) + self.action_spec[&quotshape&quot]
+        alpha = tf.reshape(tensor=alpha, shape=shape)
+        beta = tf.reshape(tensor=beta, shape=shape)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def tf_parametrize(self, x):
+        &#47&#47 Softplus to ensure alpha and beta &gt;= 1
+        <a id="change">one = tf.constant(value=1.0, dtype=util.tf_dtype(dtype=&quotfloat&quot))</a>
+        <a id="change">epsilon = tf.constant(value=util.epsilon, dtype=util.tf_dtype(dtype=&quotfloat&quot))</a>
+        log_epsilon = <a id="change">tf.constant(value=log(util.epsilon), dtype=util.tf_dtype(dtype=&quotfloat&quot))</a>
+        shape = (-1,) + self.action_spec[&quotshape&quot]
+
+        &#47&#47 Alpha
+        alpha = self.alpha.apply(x=x)
+        &#47&#47 epsilon &lt; 1.0, hence negative
+        alpha = tf.clip_by_value(t=alpha, clip_value_min=log_epsilon, clip_value_max=-log_epsilon)
+        alpha = tf.math.softplus(features=alpha) + one
+        alpha = tf.reshape(tensor=alpha, shape=shape)
+
+        &#47&#47 Beta
+        beta = self.beta.apply(x=x)
+        &#47&#47 epsilon &lt; 1.0, hence negative
+        beta = tf.clip_by_value(t=beta, clip_value_min=log_epsilon, clip_value_max=-log_epsilon)
+        beta = <a id="change">tf.math.softplus(features=beta) + one</a>
+        beta = tf.reshape(tensor=beta, shape=shape)
+
+        &#47&#47 Alpha + Beta
+        alpha_beta = tf.maximum(x=(alpha + beta), y=epsilon)</code></pre>

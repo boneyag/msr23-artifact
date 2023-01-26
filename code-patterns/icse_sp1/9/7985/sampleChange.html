@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        groups = self._groups & set(data.columns)
+
+        for pinfo in self._get_grouped_data(data, groups):
+            <a id="change">pinfo = dict((k, v) for k, v in pinfo.items()  &#47&#47 at layer level!
+                         if k in self.VALID_AES)</a>
+            pinfo.update(self.manual_aes)                  &#47&#47 at layer level!!
+
+            self._do_aes_renames(pinfo)
+            self._plot_unit(pinfo, ax)</code></pre><h3>After Change</h3><pre><code class='java'>
+            data = data.rename(columns={&quotlinestyle&quot: &quotlinetype&quot})
+
+        &#47&#47 should happen in the layer
+        <a id="change">data = data[list(set(data.columns) & set(self.valid_aes))]</a>
+
+        &#47&#47 aesthetic precedence
+        &#47&#47 geom.manual_aes &gt; geom.aes &gt; ggplot.aes (part of data)
+        &#47&#47 NOTE: currently geom.aes is not handled. This may be
+        &#47&#47 a bad place to do it -- may mess up faceting or just
+        &#47&#47 inefficient. Probably in ggplot or layer.
+
+        &#47&#47 Any aesthetic to be overridden by the manual aesthetics
+        &#47&#47 should not affect the grouping of the data
+        _overrided_aes = set(data.columns) & set(self.manual_aes)
+        for ae in _overrided_aes:
+            data.pop(ae)
+        <a id="change">data = data.rename(columns=self._aes_renames)</a>
+        groups = self._groups & set(data.columns)
+
+        &#47&#47 Create plot information that observes the aesthetic precedence
+        &#47&#47 (grouped data + manual aesthetics) overwrite the default aesthetics
+        for _data in self._get_grouped_data(data, groups):
+            _data.update(self._cache[&quotmanual_aes_mpl&quot])
+            <a id="change">pinfo = deepcopy(self._cache[&quotdefault_aes_mpl&quot])</a>
+            pinfo.update(_data)
+            self._plot_unit(pinfo, ax)
+
+    def __radd__(self, gg):</code></pre>

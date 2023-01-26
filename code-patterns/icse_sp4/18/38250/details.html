@@ -1,0 +1,53 @@
+<html><h3>65f5a9006cf5e7e8daef6187e7987d7792f0feb6,se3_cnn/non_linearities/gated_activation.py,GatedActivation,forward,#GatedActivation#Any#,61
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            zs.append(field)
+
+        &#47&#47 TODO change this cat into new_empty and fill
+        return <a id="change">torch.cat(zs, dim=1)</a>  &#47&#47 does not contain gates
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            g = self.gates(x)
+            begin_g = 0  &#47&#47 index of first scalar gate capsule
+
+        size_out = sum(mul * <a id="change">(2 * n + 1)</a> for n, mul in enumerate(self.repr_in))
+        <a id="change">z = x.new_empty((x.size(0), size_out, x.size(2), x.size(3), x.size(4)))</a>
+
+        for n, mul in enumerate(self.repr_in):
+            if mul == 0:
+                continue
+            dim = 2 * n + 1
+
+            &#47&#47 crop out capsules of order n
+            field_x = x[:, begin_x: begin_x + mul * dim]  &#47&#47 [batch, feature * repr, x, y, z]
+
+            if n == 0:
+                if self.scalar_act is not None:
+                    field = self.scalar_act(field_x)
+                else:
+                    field = field_x
+            else:
+                if self.gates is not None:
+                    &#47&#47 reshape channels in capsules and capsule entries
+                    field_x = field_x.contiguous()
+                    field_x = field_x.view(nbatch, mul, dim, nx, ny, nz)  &#47&#47 [batch, feature, repr, x, y, z]
+
+                    &#47&#47 crop out corresponding scalar gates
+                    field_g = g[:, begin_g: begin_g + mul]  &#47&#47 [batch, feature, x, y, z]
+                    begin_g += mul
+                    &#47&#47 reshape channels for broadcasting
+                    field_g = field_g.contiguous()
+                    field_g = field_g.view(nbatch, mul, 1, nx, ny, nz)  &#47&#47 [batch, feature, repr, x, y, z]
+
+                    &#47&#47 scale non-scalar capsules by gate values
+                    field = field_x * field_g  &#47&#47 [batch, feature, repr, x, y, z]
+                    field = field.view(nbatch, mul * dim, nx, ny, nz)  &#47&#47 [batch, feature * repr, x, y, z]
+                else:
+                    field = field_x
+
+            <a id="change">z[:, begin_x: begin_x + mul * dim] = field</a>
+            begin_x += mul * dim
+
+        return z
+</code></pre><img src="185381647.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 10</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/mariogeiger/se3cnn/commit/65f5a9006cf5e7e8daef6187e7987d7792f0feb6#diff-054e0c39634468b22647b9b8669c116296f33cbb72b7fbfa4cc915a047c9c2caL62' target='_blank'>Link</a></div><div id='project'> Project Name: mariogeiger/se3cnn</div><div id='commit'> Commit Name: 65f5a9006cf5e7e8daef6187e7987d7792f0feb6</div><div id='time'> Time: 2018-06-12</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: se3_cnn/non_linearities/gated_activation.py</div><div id='class'> Class Name: GatedActivation</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/jonas-koehler/s2cnn/commit/6dc79d867cea8e9ed4737d7449ad9481fd6492d2#diff-49dea9489d42b7d17558fc63cea326da67cc3646d9bb133c2442062d94fbe11cL44' target='_blank'>Link</a></div><div id='project'> Project Name: jonas-koehler/s2cnn</div><div id='commit'> Commit Name: 6dc79d867cea8e9ed4737d7449ad9481fd6492d2</div><div id='time'> Time: 2018-08-07</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: s2cnn/soft/so3_fft.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _so3_fft</div><BR><BR><div id='link'><a href='https://github.com/mariogeiger/se3cnn/commit/65f5a9006cf5e7e8daef6187e7987d7792f0feb6#diff-054e0c39634468b22647b9b8669c116296f33cbb72b7fbfa4cc915a047c9c2caL62' target='_blank'>Link</a></div><div id='project'> Project Name: mariogeiger/se3cnn</div><div id='commit'> Commit Name: 65f5a9006cf5e7e8daef6187e7987d7792f0feb6</div><div id='time'> Time: 2018-06-12</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: se3_cnn/non_linearities/gated_activation.py</div><div id='class'> Class Name: GatedActivation</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/mariogeiger/se3cnn/commit/aa7c004df5c781fc3b5b8131d7a9e64fd196203e#diff-4644b56b87a0de1b9d05d2b6efb46c0d17b6bcd620c7474d991e4f4eb1a87e1eL78' target='_blank'>Link</a></div><div id='project'> Project Name: mariogeiger/se3cnn</div><div id='commit'> Commit Name: aa7c004df5c781fc3b5b8131d7a9e64fd196203e</div><div id='time'> Time: 2018-05-26</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: se3_cnn/blocks/gated_block.py</div><div id='class'> Class Name: GatedBlock</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/jonas-koehler/s2cnn/commit/6dc79d867cea8e9ed4737d7449ad9481fd6492d2#diff-49dea9489d42b7d17558fc63cea326da67cc3646d9bb133c2442062d94fbe11cL107' target='_blank'>Link</a></div><div id='project'> Project Name: jonas-koehler/s2cnn</div><div id='commit'> Commit Name: 6dc79d867cea8e9ed4737d7449ad9481fd6492d2</div><div id='time'> Time: 2018-08-07</div><div id='author'> Author: geiger.mario@gmail.com</div><div id='file'> File Name: s2cnn/soft/so3_fft.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _so3_rfft</div><BR>

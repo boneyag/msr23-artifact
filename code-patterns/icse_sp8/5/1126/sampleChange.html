@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            train_eps=False)
+        self.convs = torch.nn.ModuleList()
+        for i in range(num_layers - 1):
+            <a id="change">self.convs.append(
+                GINConv(
+                    Sequential(
+                        Linear(hidden, hidden),
+                        ReLU(),
+                        Linear(hidden, hidden),
+                        ReLU(),
+                        BN(hidden),
+                    ),
+                    train_eps=False))</a>
+        self.jump = JumpingKnowledge(mode=mode)
+        if mode == &quotcat&quot:
+            self.lin1 = Linear(num_layers * hidden, hidden)
+        else:</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.lin2.reset_parameters()
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.e<a id="change">dge_index, data.batch
+        x = self.conv1(x</a>, edge_index)
+        for conv in self.convs:
+            x = conv(x, edge_index)
+        x = global_mean_pool(x, batch)
+        x = F.relu(self.lin1(x))
+        x = F.dropout(x, p=0.5, training=self.training)
+        x = self.lin2(x)
+        return F.log_softmax(x, dim=-1)
+
+    def __repr__(self):
+      <a id="change">  return self.__class__.__name__
+
+
+</a>class GIN0WithJK(torch.nn.Module):
+    def __init__(self, dataset, num_layers, hidden):
+        super(GIN0WithJK, self).__init__()
+        self.conv1 = GINConv(</code></pre>

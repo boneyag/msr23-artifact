@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    Adds metadata to the Rackspace VM
+    if not kwargs:
+        return
+    <a id="change">env = os.environ.copy()</a>
+    <a id="change">env.update(util.GetDefaultRackspaceNovaEnv(self.zone))</a>
+    <a id="change">cmd = [FLAGS.nova_path, &quotmeta&quot, self.id, &quotset&quot]</a>
+    for key, value in kwargs.iteritems():
+        cmd.append(&quot{0}={1}&quot.format(key, value))
+    <a id="change">vm_util.IssueCommand(cmd, env=env)</a>
+
+
+class DebianBasedRackspaceVirtualMachine(RackspaceVirtualMachine,
+                                         linux_virtual_machine.DebianMixin):</code></pre><h3>After Change</h3><pre><code class='java'>
+    raise errors.Resource.RetryableDeletionError(
+        &quotVM: %s has not been deleted. Retrying to check status.&quot % self.name)
+
+  def AddMetadata(<a id="change">self</a>, **kwargs):
+    Adds metadata to the VM via RackCLI update-metadata command.
+    if not kwargs:
+      return
+    <a id="change">cmd = util.RackCLICommand(self, &quotservers&quot, &quotinstance&quot, &quotupdate-metadata&quot)</a>
+    cmd.flags[&quotid&quot] = <a id="change">self.id</a>
+    <a id="change">cmd.flags[&quotmetadata&quot] = &quot,&quot.join(&quot{0}={1}&quot.format(key, value)
+                                     for key, value in kwargs.iteritems())</a>
+    <a id="change">cmd.Issue()</a>
+
+  def OnStartup(self):
+    Executes commands on the VM immediately after it has booted.
+    super(RackspaceVirtualMachine, self).OnStartup()</code></pre>

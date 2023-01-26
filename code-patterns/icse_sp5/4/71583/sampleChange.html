@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        self.distribution = RealNVP(real_nvp_config)
+
+        <a id="change">super().__init__(
+            env_spec,
+            obs_pl=self._observations_ph,
+            action=(
+                tf.tanh(self._distribution_z)
+                if squash
+                else self._distribution_z
+            ),
+            scope_name=&quotpolicy&quot
+        )</a>
+
+    @overrides
+    def get_action(self, observations):
+        Sample action based on the observations.</code></pre><h3>After Change</h3><pre><code class='java'>
+        ds = tf.contrib.distributions
+        self.bijector = RealNVPBijector(config=real_nvp_config,
+                                        event_ndims=self._Ds)
+        <a id="change">self.base_distribution = ds.MultivariateNormalDiag(
+            loc=tf.zeros(self._Ds), scale_diag=tf.ones(self._Ds))</a>
+
+        self.distribution = ds.TransformedDistribution(
+            distribution=self.base_distribution,
+            bijector=self.bijector,
+            name="RealNVPPolicyDistribution")
+
+
+        y = self.distribution.bijector.forward(self._observations_ph)
+        self.log_pi = self.distribution.log_prob(y)
+        self.pi = tf.exp(self.log_pi)
+        <a id="change">self._action</a> = tf.tanh(self.pi) if squash else self.pi
+
+    def get_action(self, observations):
+        Sample action based on the observations.</code></pre>

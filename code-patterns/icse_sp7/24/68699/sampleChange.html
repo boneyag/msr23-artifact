@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    core = snt.LSTM(hidden_size=5, cell_clip_value=1.0)
+    obs = tf.constant(np.random.rand(3, 10), dtype=tf.float32)
+    hidden = tf.placeholder(tf.float32, shape=[3, 5])
+    <a id="change">cell = tf.placeholder(tf.float32, shape=[3, 5])</a>
+    <a id="change">output</a> = core(obs, [hidden, cell])
+    <a id="change">with self.test_session() as sess:
+      sess.run(tf.global_variables_initializer())
+      unclipped = np.random.rand(3, 5) - 0.5
+      unclipped *= 2.0 / unclipped.max()
+      clipped = unclipped.clip(-1., 1.)
+
+      output1, (hidden1, cell1) = sess.run(output, feed_dict={hidden: unclipped,
+                                                              cell: unclipped})
+      output2, (hidden2, cell2) = sess.run(output, feed_dict={hidden: unclipped,
+                                                              cell: clipped})
+      self.assertAllClose(output1, output2)
+      self.assertAllClose(hidden1, hidden2)
+      self.assertAllClose(cell1, cell2)
+
+ </a> @parameterized.parameters(
+      (False, False, False, False),
+      (False, True, False, False),
+      (True, False, True, False),</code></pre><h3>After Change</h3><pre><code class='java'>
+    self.assertAllClose(hidden1, hidden2)
+    self.assertAllClose(cell1, cell2)
+
+  def testCellClipping(<a id="change">self</a>):
+    core = snt.LSTM(hidden_size=5, cell_clip_value=1.0)
+    obs = tf.constant(np.random.rand(3, 10), dtype=tf.float32)
+
+    unclipped = np.random.rand(3, 5) - 0.5
+    unclipped *= 2.0 / unclipped.max()
+    unclipped = unclipped.astype(np.float32)
+    clipped = unclipped.clip(-1., 1.)
+
+    hidden = tf.constant(unclipped)
+    cell = tf.constant(unclipped)
+    <a id="change">output</a> = core(obs, [hidden, cell])
+    <a id="change">self.evaluate(tf.global_variables_initializer())</a>
+    output1, (hidden1, cell1) = <a id="change">self.evaluate(output)</a>
+
+    <a id="change">cell = tf.constant(clipped)</a>
+    output = core(obs, [hidden, cell])
+    output2, (hidden2, cell2) = <a id="change">self.evaluate(output)</a>
+    self.assertAllClose(output1, output2)
+    self.assertAllClose(hidden1, hidden2)
+    self.assertAllClose(cell1, cell2)
+</code></pre>

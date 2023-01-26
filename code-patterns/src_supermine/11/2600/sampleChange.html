@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def load_test_model(opt, dummy_opt):
+     Read in multiple models for ensemble 
+    <a id="change">shared_fields = None</a>
+    <a id="change">shared_model_opt = None</a>
+    <a id="change">models = []</a>
+    for model_path in opt.models:
+        fields, model, model_opt = \
+            onmt.model_builder.load_test_model(opt,
+                                               dummy_opt,
+                                               model_path=model_path)
+        if shared_fields is None:
+            shared_fields = fields
+        else:
+            for key, field in fields.items():
+                if field is not None and &quotvocab&quot in field.__dict__:
+                    assert field.vocab.stoi == shared_fields[key].vocab.stoi, \
+                        &quotEnsemble models must use the same preprocessed data&quot
+        models.append(model)
+        if shared_model_opt is None:
+            shared_model_opt = model_opt
+    <a id="change">ensemble_model = EnsembleModel(models, opt.avg_raw_probs)</a>
+    <a id="change">return shared_fields, ensemble_model, shared_model_opt</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def init_state(self, src, memory_bank, enc_hidden):
+         See :obj:`RNNDecoderBase.init_state()` 
+        for i, model_decoder in enumerate(self.mo<a id="change">del_decoders):
+           </a> mode<a id="change">l_decoder.</a>init_state(src, memory_bank[i], enc_hidden[i])
+
+    def map_state(self, fn):
+        for model_decoder in self.model_decoders:
+            model_<a id="change">decoder.map_state</a>(fn)
+
+
+class EnsembleGenerator(nn.Module):
+    
+    Dummy Generator that delegates to individual real Generat<a id="change">ors,
+    and then a</a>verages the resulting target distributions.
+    
+    def __init__(self, model_generators, raw_probs=False):
+        super(EnsembleGenerator, self).__init__()
+        self.model_generators = nn.Modu<a id="change">leList(model_generators)
+        self._raw_probs = raw_probs
+
+    def forward(self, hidden, attn=None, src_</a>map=None):
+        
+        Compute a distribu<a id="change">tion over the target dictionary</a>
+        by averaging distributions from models in the ensemble.
+        All models in the ensemble must share a target vocabulary.
+        
+        distributions = torch.stack(</code></pre>

@@ -1,0 +1,24 @@
+<html><h3>984d17836d7a6240942cd44f2f61c92a427bb9bb,niftynet/layer/crop.py,CropLayer,layer_op,#CropLayer#Any#,25
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def layer_op(self, inputs):
+        spatial_rank = layer_util.infer_spatial_rank(inputs)
+        kernel_shape = np.hstack(<a id="change">(
+            [self.border * 2 + 1] * spatial_rank, 1, 1)</a>).flatten()
+        &#47&#47 initializer a kernel with all 0s, and set the central element to 1
+        np_kernel = layer_util.trivial_kernel(kernel_shape)
+        <a id="change">crop_kernel = tf.constant(np_kernel, dtype=inputs.dtype)</a>
+        &#47&#47 split channel dim
+        output_tensor = [tf.expand_dims(x, -1)
+                         for x in tf.unstack(inputs, axis=-1)]
+        output_tensor = [tf.nn.convolution(input=inputs,</code></pre><h3>After Change</h3><pre><code class='java'>
+    def layer_op(self, inputs):
+        spatial_rank = layer_util.infer_spatial_rank(inputs)
+        offsets = [0, *([int(self.border)] * spatial_rank), 0]
+        <a id="change">out_shape = [-1, *[int(d) - 2 * int(self.border) for d in list(inputs.shape)[1:-1]], -1]</a>
+        output_tensor = tf.slice(inputs, offsets, out_shape)
+        return output_tensor
+</code></pre><img src="15151231.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/984d17836d7a6240942cd44f2f61c92a427bb9bb#diff-8fd130746bb117134a0f2b871c50656b7039c9b30980502e5c0c6654e3528c8bL25' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 984d17836d7a6240942cd44f2f61c92a427bb9bb</div><div id='time'> Time: 2018-04-24</div><div id='author'> Author: z.eaton-rosen@ucl.ac.uk</div><div id='file'> File Name: niftynet/layer/crop.py</div><div id='class'> Class Name: CropLayer</div><div id='method'> Method Name: layer_op</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/f9f1242e23bc4ad0433577b81274b9a6065fbb89#diff-15ac27b5c43400930117d0241980e2c21794ad97119d8d702eaf90d16c4428e1L291' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: f9f1242e23bc4ad0433577b81274b9a6065fbb89</div><div id='time'> Time: 2017-07-13</div><div id='author'> Author: eli.gibson@gmail.com</div><div id='file'> File Name: niftynet/utilities/misc_io.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: match_volume_shape_to_patch_definition</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/45a10bc6d708fade197a37bfbc62312caf70e6a7#diff-8b47b9e5e34b597a82753dfe9c63351565768304f9de4bf6dade062804a5cc8bL438' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: 45a10bc6d708fade197a37bfbc62312caf70e6a7</div><div id='time'> Time: 2017-02-17</div><div id='author'> Author: francois.chollet@gmail.com</div><div id='file'> File Name: keras/layers/convolutional_recurrent.py</div><div id='class'> Class Name: ConvLSTM2D</div><div id='method'> Method Name: get_constants</div><BR>

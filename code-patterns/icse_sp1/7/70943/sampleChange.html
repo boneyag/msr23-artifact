@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      return x
+    inv_keep_prob = 1.0 / keep_prob
+
+    noise_shape = <a id="change">noise_shape if noise_shape is not None else tf.shape(x)</a>
+    if isinstance(noise_shape, (list, tuple)):
+      noise_shape = [d if isinstance(d, int) else tf.shape(x)[i] for (i, d) in enumerate(noise_shape)]
+    &#47&#47 uniform [keep_prob, 1.0 + keep_prob)
+    random_tensor = keep_prob</code></pre><h3>After Change</h3><pre><code class='java'>
+      from tensorflow.python.framework import tensor_util
+      noise_shape_v = tensor_util.constant_value(noise_shape)
+      if noise_shape_v is not None:
+        <a id="change">noise_shape = [int(noise_shape_v[i]) for i in range(x.shape.ndims)]</a>
+    &#47&#47 If noise_shape is fully static, calculate it outside of any ctx (e.g. recurrent loop).
+    &#47&#47 This effectively means that the mask would get reused for multiple frames, if `x` is inside a recurrent loop.
+    with same_control_flow_ctx(noise_shape):
+      &#47&#47 uniform [keep_prob, 1.0 + keep_prob)</code></pre>

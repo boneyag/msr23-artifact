@@ -1,0 +1,32 @@
+<html><h3>880e57c9796c5f4ed79195bdd38bc4b0d3abf25f,finetune/saver.py,Saver,save,#Saver#Any#Any#Any#,46
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        return SaverHook()
+
+    def save(self, finetune_obj, path, mkdir=True):
+        <a id="change">if self.values is None:
+            raise ValueError("No training has been run, cannot save")
+       </a> folder = os.path.dirname(path)
+        if not os.path.exists(folder) and mkdir:
+            os.mkdir(folder)
+        if self.save_dtype is not None:
+            self.values = [a.astype(self.save_dtype) for a in self.values]
+
+        <a id="change">included, excluded = self.find_trainable_variables()</a>
+        vars_reduced, vals_reduced = self.remove_unchanged(included, self.values, self.fallback)
+        <a id="change">var_names = [var.name for var in vars_reduced]</a>
+        var_dict = dict(zip(var_names, vals_reduced))
+        assert len(vals_reduced) == len(var_names) == len(var_dict)
+        joblib.dump((var_dict, finetune_obj), path)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        return self.fallback_
+
+    def save(self, finetune_obj, path, mkdir=True):
+        <a id="change">ckpt_reader = tf.train.load_checkpoint(finetune_obj.estimator_dir)</a>
+        <a id="change">variable_map = ckpt_reader.get_variable_to_shape_map()</a>
+        names = [name <a id="change">for</a> name in <a id="change">variable_map.keys()</a> if self.exclude_matches is None or self.exclude_matches not in name]
+        names = [name if name.endswith(":0") else name for name in names]  &#47&#47 strip the :0 off the end
+        values = [ckpt_reader.get_tensor(name) for name in names]
+        names = [name + ":0" for name in names]</code></pre><img src="230117815.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/IndicoDataSolutions/finetune/commit/880e57c9796c5f4ed79195bdd38bc4b0d3abf25f#diff-73b1a624f8e5f51c47309eb5895fdb2cf6682e5221a736a7a810d08158535330L32' target='_blank'>Link</a></div><div id='project'> Project Name: IndicoDataSolutions/finetune</div><div id='commit'> Commit Name: 880e57c9796c5f4ed79195bdd38bc4b0d3abf25f</div><div id='time'> Time: 2018-10-01</div><div id='author'> Author: benlt@hotmail.co.uk</div><div id='file'> File Name: finetune/saver.py</div><div id='class'> Class Name: Saver</div><div id='method'> Method Name: save</div><BR><BR><div id='link'><a href='https://github.com/dmlc/dgl/commit/ffe5898317c4f971483f649a1ffb53d81a29705a#diff-a09da36ed5ce141702c3c73710d1fd8e2fc8ed46242b7299284816c376dc2b0aL104' target='_blank'>Link</a></div><div id='project'> Project Name: dmlc/dgl</div><div id='commit'> Commit Name: ffe5898317c4f971483f649a1ffb53d81a29705a</div><div id='time'> Time: 2020-02-09</div><div id='author'> Author: classicxsong@gmail.com</div><div id='file'> File Name: apps/kg/eval.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: main</div><BR><BR><div id='link'><a href='https://github.com/facebookresearch/Horizon/commit/edd80ff9c99783868de91ef14aeceb0be1dbb090#diff-dded8012f86e5523514f1d52739a9b79fcb0178e347d80568c3de6bf7a087975L173' target='_blank'>Link</a></div><div id='project'> Project Name: facebookresearch/Horizon</div><div id='commit'> Commit Name: edd80ff9c99783868de91ef14aeceb0be1dbb090</div><div id='time'> Time: 2018-03-29</div><div id='author'> Author: edoardoc@fb.com</div><div id='file'> File Name: ml/rl/test/gym/open_ai_gym_environment.py</div><div id='class'> Class Name: OpenAIGymEnvironment</div><div id='method'> Method Name: policy</div><BR>

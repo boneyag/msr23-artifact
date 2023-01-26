@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      True if the resource was ready in time, False if the wait timed out
+        or an Exception occurred.
+    
+    <a id="change">cmd = util.AWS_PREFIX + [
+        &quotrds&quot,
+        &quotdescribe-db-instances&quot,
+        &quot--db-instance-identifier=%s&quot % instance_id,
+        &quot--region=%s&quot % self.region
+    ]</a>
+    start_time = datetime.datetime.now()
+
+    while True:
+      if (datetime.datetime.now() - start_time).seconds &gt;= timeout:
+        logging.exception(&quotTimeout waiting for sql instance to be ready&quot)
+        return False
+      <a id="change">stdout, _, _ = vm_util.IssueCommand(cmd, suppress_warning=True)</a>
+
+      try:
+        json_output = json.loads(stdout)
+        state = json_output[&quotDBInstances&quot][0][&quotDBInstanceStatus&quot]</code></pre><h3>After Change</h3><pre><code class='java'>
+      if (datetime.datetime.now() - start_time).seconds &gt;= timeout:
+        logging.exception(&quotTimeout waiting for sql instance to be ready&quot)
+        return False
+      <a id="change">json_output = self._DescribeInstance(instance_id)</a>
+      try:
+        state = json_output[&quotDBInstances&quot][0][&quotDBInstanceStatus&quot]
+        pending_values = json_output[&quotDBInstances&quot][0][&quotPendingModifiedValues&quot]
+        logging.info(&quotInstance state: %s&quot, state)
+        if pending_values:
+          logging.info(&quotPending values: %s&quot, (str(pending_values)))
+
+        if state == &quotavailable&quot and <a id="change">not</a> pending_values:
+          break
+      except:
+        logging.exception(&quotError attempting to read stdout. Creation failure.&quot)</code></pre>

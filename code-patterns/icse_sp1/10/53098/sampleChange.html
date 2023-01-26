@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        &#47&#47 get classifier
+        model = cnn.cnn_model(im_shape, act="relu")
+        <a id="change">model.compile(loss=&quotcategorical_crossentropy&quot, optimizer=&quotadam&quot, metrics=[&quotaccuracy&quot])</a>
+        model.fit(X_train, Y_train, epochs=1, batch_size=batch_size, verbose=0)
+        scores = model.evaluate(X_test, Y_test)
+        print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        session = tf.Session()
+        k.set_session(session)
+
+        <a id="change">comp_params = {"loss": &quotcategorical_crossentropy&quot,
+                       "optimizer": &quotadam&quot,
+                       "metrics": [&quotaccuracy&quot]}</a>
+
+        &#47&#47 get MNIST
+        batch_size, nb_train, nb_test = 100, 1000, 10
+        (X_train, Y_train), (X_test, Y_test) = load_mnist()
+        X_train, Y_train = X_train[:nb_train], Y_train[:nb_train]
+        X_test, Y_test = X_test[:nb_test], Y_test[:nb_test]
+        im_shape = X_train[0].shape
+
+        &#47&#47 get classifier
+        classifier = CNN(im_shape, act="relu")
+        <a id="change">classifier.compile(comp_params)</a>
+        classifier.fit(X_train, Y_train, epochs=1, batch_size=batch_size, verbose=0)
+        scores = classifier.evaluate(X_test, Y_test)
+        print("\naccuracy on test set: %.2f%%" % (scores[1] * 100))
+
+        df = DeepFool(<a id="change">classifier.model</a>, sess=session)
+        df.set_params(clip_min=0., clip_max=1.)
+        x_test_adv = df.generate(X_test)
+        self.assertFalse((X_test == x_test_adv).all())</code></pre>

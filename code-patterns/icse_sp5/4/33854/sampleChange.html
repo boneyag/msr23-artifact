@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    n = len(chunk)
+                    timeframe = timeframe.intersect(chunk_from_next_meter.timeframe)
+                    chunk += chunk_from_next_meter
+                    chunk = <a id="change">chunk.dropna()</a>
+                    if len(chunk) &lt; n:
+                        warn("Meters are not perfectly aligned.")
+
+            if chunk is None:</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Load each generator and yield the sum
+        while True:
+            chunk = <a id="change">pd.DataFrame()</a>
+            columns_to_average_counter = pd.DataFrame()
+            timeframe = TimeFrame()
+
+            &#47&#47 Go through each generator to try sum values together
+            for generator in generators:
+                try:
+                    chunk_from_next_meter = next(generator)
+                except StopIteration:
+                    continue
+
+                timeframe = timeframe.intersect(chunk_from_next_meter.timeframe)
+                <a id="change">chunk = chunk.add(chunk_from_next_meter, fill_value=0, level=&quotphysical_quantity&quot)</a>
+
+                if len(chunk) != len(chunk_from_next_meter):
+                    warn("Meters are not perfectly aligned.")
+
+                &#47&#47 Update columns_to_average_counter
+                physical_quantities = chunk_from_next_meter.columns.get_level_values(&quotphysical_quantity&quot)
+                columns_to_average = (set(PHYSICAL_QUANTITIES_TO_AVERAGE)
+                                      .intersection(physical_quantities))
+                counter_increment = pd.DataFrame(1, columns=columns_to_average, 
+                                                 index=chunk_from_next_meter.index)
+                columns_to_average_counter = columns_to_average_counter.add(
+                    counter_increment, fill_value=0)
+
+            if <a id="change">chunk.empty</a>:
+                break
+
+            &#47&#47 Divide any columns which need dividing to create mean values</code></pre>

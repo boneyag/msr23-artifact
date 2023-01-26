@@ -1,0 +1,48 @@
+<html><h3>bb099e4c5b48329b842dbf9884f086f7b514bc0a,gpflow/models/model.py,GPModel,predict_f_samples,#GPModel#Any#Any#Any#Any#,112
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        Produce samples from the posterior latent function(s) at the input points.
+        
+        mu, var = self.predict_f(Xnew, full_cov=full_cov)  &#47&#47 [N, P], [P, N, N]
+        <a id="change">num_latent_gps = var.shape[0]</a>
+        num_elems = tf.shape(var)[1]
+        <a id="change">var_jitter = ops.add_to_diagonal(var, default_jitter())</a>
+        L = tf.linalg.cholesky(var_jitter)  &#47&#47 [P, N, N]
+        <a id="change">V = tf.random.normal([num_latent_gps, num_elems, num_samples], dtype=mu.dtype)</a>  &#47&#47 [P, N, S]
+        LV = L @ V  &#47&#47 [P, N, S]
+        mu_t = tf.linalg.adjoint(mu)  &#47&#47 [P, N]
+        <a id="change">return tf.transpose(mu_t[..., np.newaxis] + LV)</a>  &#47&#47 [S, N, P]
+
+    def predict_y(
+        self, Xnew: DataPoint, full_cov: bool = False, full_output_cov: bool = False</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        Currently, the method does not support `full_output_cov=True` and `full_cov=True`.
+        
+        <a id="change">if full_cov and full_output_cov:
+            raise NotImplementedError(
+                "The combination of both `full_cov` and `full_output_cov` is not supported."
+            )
+
+        &#47&#47 check below for shape info
+       </a> mean, cov = self.predict_f(Xnew, full_cov=full_cov, full_output_cov=full_output_cov)
+        if full_cov:
+            &#47&#47 mean: [..., N, P]
+            &#47&#47 cov: [..., P, N, N]
+            mean_for_sample = tf.linalg.adjoint(mean)  &#47&#47 [..., P, N]
+            samples = sample_mvn(
+                mean_for_sample, cov, "full", num_samples=num_samples
+            )  &#47&#47 [..., (S), P, N]
+            samples = tf.linalg.adjoint(samples)  &#47&#47 [..., (S), N, P]
+        else:
+            &#47&#47 mean: [..., N, P]
+            &#47&#47 cov: [..., N, P] or [..., N, P, P]
+            cov_structure = "full" if full_output_cov else "diag"
+            <a id="change">samples = sample_mvn(
+                mean, cov, cov_structure, num_samples=num_samples
+            )</a>  &#47&#47 [..., (S), N, P]
+        <a id="change">return samples</a>  &#47&#47 [..., (S), N, P]
+
+    def predict_y(
+        self, Xnew: DataPoint, full_cov: bool = False, full_output_cov: bool = False</code></pre><img src="13453453.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/bb099e4c5b48329b842dbf9884f086f7b514bc0a#diff-7460b2b9b0f96f35d0814cca388a2a99ebcf0d032efcf674cd1b3cdba8448bc2L122' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: bb099e4c5b48329b842dbf9884f086f7b514bc0a</div><div id='time'> Time: 2020-03-16</div><div id='author'> Author: dutordoirv@gmail.com</div><div id='file'> File Name: gpflow/models/model.py</div><div id='class'> Class Name: GPModel</div><div id='method'> Method Name: predict_f_samples</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/bd1e9c04b48dd5ccca9619d5eaa2595a358bdb08#diff-962f898c379d54fa0e380920b8dafbf53e499289c195aa5e55624c4dfb470492L142' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: bd1e9c04b48dd5ccca9619d5eaa2595a358bdb08</div><div id='time'> Time: 2020-01-31</div><div id='author'> Author: st--@users.noreply.github.com</div><div id='file'> File Name: gpflow/kernels/misc.py</div><div id='class'> Class Name: Coregion</div><div id='method'> Method Name: K</div><BR><BR><div id='link'><a href='https://github.com/keras-team/keras/commit/ee8ff00a2a8a307c952fb8e7bef241188c7fb12b#diff-8d37272f22c146505301f9d7f2a729d60681f649b77fea252346332e7ac31327L1059' target='_blank'>Link</a></div><div id='project'> Project Name: keras-team/keras</div><div id='commit'> Commit Name: ee8ff00a2a8a307c952fb8e7bef241188c7fb12b</div><div id='time'> Time: 2016-07-03</div><div id='author'> Author: francois.chollet@gmail.com</div><div id='file'> File Name: keras/backend/tensorflow_backend.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: pool2d</div><BR>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if batch.candidate_vecs is None:
+                raise ValueError("If using candidate source &quotinline&quot, then "
+                    "bath.candidate_vecs can not be None.")
+            <a id="change">if batchsize &gt; 1 and (
+                torch.any(batch.candidate_vecs[0] != batch.candidate_vecs[1])):
+                raise ValueError("All examples in a batch must have the same "
+                    "candidate set.")
+
+           </a> cands = batch.candidates[0]
+            cand_vecs, _ = padded_tensor(batch.candidate_vecs[0],
+                use_cuda=self.use_cuda)
+            if label_vecs is not None:</code></pre><h3>After Change</h3><pre><code class='java'>
+            cands = batch.candidates
+            &#47&#47 batch.candidate_vecs is a [batchsize] list of [num_cand] lists of
+            &#47&#47 [seq_len] LongTensors
+            max_len = max(<a id="change">len</a>(t) for t_list in batch.candidate_vecs <a id="change">for</a> t in t_list)
+            cand_tensor_list = [self._cat_and_pad(cand_list, max_len=max_len,
+                use_cuda=self.use_cuda) for cand_list in batch.candidate_vecs]
+            &#47&#47 cand_tensor_list is a [batchsize] list of [num_cand, seq_len] LongTensors
+            <a id="change">cand_vecs = torch.stack(cand_tensor_list, 0)</a>
+            &#47&#47 cands is a [batchsize, cand_len, seq_len] LongTensor
+            if label_vecs is not None:
+                label_inds = label_vecs.new_empty(batchsize)
+                for i, label_vec in enumerate(label_vecs):</code></pre>

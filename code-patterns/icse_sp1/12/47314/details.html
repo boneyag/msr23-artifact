@@ -1,0 +1,50 @@
+<html><h3>4a1ec9808c64efb92d645c288c6d79e11a497fc4,gpytorch/variational/variational_strategy.py,VariationalStrategy,__call__,#VariationalStrategy#Any#Any#,135
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                self._variational_distribution.mean_init_std = orig_mean_init_std
+
+                &#47&#47 Reset the cache
+                <a id="change">if hasattr(self, "_memoize_cache"):
+                    delattr(self, "_memoize_cache")
+                    self._memoize_cache = dict()
+
+                &#47&#47 Mark that we have updated the variational strategy
+               </a> self.updated_strategy.fill_(True)
+
+        return super().__call__(x, prior=prior)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Return the distribution
+        return MultivariateNormal(predictive_mean, predictive_covar)
+
+    def __call__(<a id="change">self</a>, x, prior=False):
+        if not self.updated_strategy.item() and not prior:
+            with torch.no_grad():
+                &#47&#47 Get unwhitened p(u)
+                prior_function_dist = self(self.inducing_points, prior=True)
+                prior_mean = prior_function_dist.loc
+                L = self._cholesky_factor(prior_function_dist.lazy_covariance_matrix.add_jitter())
+
+                &#47&#47 Temporarily turn off noise that&quots added to the mean
+                orig_mean_init_std = self._variational_distribution.mean_init_std
+                self._variational_distribution.mean_init_std = 0.0
+
+                &#47&#47 Change the variational parameters to be whitened
+                variational_dist = self.variational_distribution
+                mean_diff = (variational_dist.loc - prior_mean).unsqueeze(-1).double()
+                whitened_mean = L.inv_matmul(mean_diff).squeeze(-1).to(variational_dist.loc.dtype)
+                covar_root = variational_dist.lazy_covariance_matrix.root_decomposition().root.evaluate().double()
+                whitened_covar = RootLazyTensor(L.inv_matmul(covar_root).to(variational_dist.loc.dtype))
+                whitened_variational_distribution = variational_dist.__class__(whitened_mean, whitened_covar)
+                self._variational_distribution.initialize_variational_distribution(whitened_variational_distribution)
+
+                &#47&#47 Reset the random noise parameter of the model
+                self._variational_distribution.mean_init_std = orig_mean_init_std
+
+                &#47&#47 Reset the cache
+                <a id="change">clear_cache_hook(self)</a>
+
+                &#47&#47 Mark that we have updated the variational strategy
+                self.updated_strategy.fill_(True)
+</code></pre><img src="219691685.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/4a1ec9808c64efb92d645c288c6d79e11a497fc4#diff-b8df600ed68bc86018e10e6510cc34d6cc560811b42ab003ddd30acf507f0bf5L135' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 4a1ec9808c64efb92d645c288c6d79e11a497fc4</div><div id='time'> Time: 2020-07-17</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: gpytorch/variational/variational_strategy.py</div><div id='class'> Class Name: VariationalStrategy</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/4a1ec9808c64efb92d645c288c6d79e11a497fc4#diff-a93cffc080722b94e6825eaf0ff86db30f72eeb1aae756f15641c65d0e54e856L104' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 4a1ec9808c64efb92d645c288c6d79e11a497fc4</div><div id='time'> Time: 2020-07-17</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: gpytorch/variational/_variational_strategy.py</div><div id='class'> Class Name: _VariationalStrategy</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/4a1ec9808c64efb92d645c288c6d79e11a497fc4#diff-7ff323019b2b155e4f9f2f007da86e069de856160fc52fa8a7caff2a8881f293L223' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 4a1ec9808c64efb92d645c288c6d79e11a497fc4</div><div id='time'> Time: 2020-07-17</div><div id='author'> Author: balandat@fb.com</div><div id='file'> File Name: gpytorch/variational/whitened_variational_strategy.py</div><div id='class'> Class Name: WhitenedVariationalStrategy</div><div id='method'> Method Name: __call__</div><BR>

@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        h_a = softsel(h, h_logits)  &#47&#47 [N, M, d]
+        u_a = softsel(u_aug, u_logits)  &#47&#47 [N, M, JX, d]
+        if tensor_dict is not None:
+            <a id="change">a_h = tf.nn.softmax(h_logits)</a>  &#47&#47 [N, M, JX]
+            a_u = tf.nn.softmax(u_logits)  &#47&#47 [N, M, JX, JQ]
+            <a id="change">tensor_dict[&quota_h&quot] = a_h</a>
+            tensor_dict[&quota_u&quot] = a_u
+        return u_avg, h_a, u_a
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            cell = SHCell(h.get_shape()[3])
+            h_len = tf.reduce_sum(tf.cast(h_mask, &quotint32&quot), 2)  &#47&#47 [N, M, JX]
+            in_ = tf.concat(3, [h, u_avg])
+            <a id="change">(</a>fw_h, bw_h), _ = bidirectional_dynamic_rnn(cell, cell, in_, h_len, dtype=&quotfloat&quot, scope=&quotu1&quot)  &#47&#47 [N, M, JX, 2d]
+            h_a = fw_h + bw_h
+
+        else:</code></pre>

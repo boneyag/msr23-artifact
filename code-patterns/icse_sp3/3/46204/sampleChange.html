@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  def encode_cache(self, accumulator):
+    &#47&#47 Need to wrap in np.array and call tolist to make it JSON serializable.
+    <a id="change">word</a>, count = accumulator
+    if self._input_dtype == tf.string:
+      word = tf.compat.as_text(word)
+    accumulator = (word, count)</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 If the value is a _WeightedMeanAndVarAccumulator, cast each field to a
+    &#47&#47 list for serialization.
+    try:
+      value = <a id="change">value._replace(
+          count=value.count.tolist(),
+          mean=value.mean.tolist(),
+          variance=value.variance.tolist(),
+          weight=value.weight.tolist())</a>
+    except AttributeError:
+      pass
+    accumulator = <a id="change">(token, value)</a>
+    return tf.compat.as_bytes(
+        json.dumps(np.array(accumulator, dtype=object).tolist()))
+
+  def decode_cache(self, encoded_accumulator):</code></pre>

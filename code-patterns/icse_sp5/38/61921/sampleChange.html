@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        -------
+        This method only returns values through the *ac* and *fr* parameters
+                
+        <a id="change">i = self.freq_data.indices</a>
+        <a id="change">self.steer_obj.f = (self.freq_data.fftfreq()[i]).tolist()</a>
+        nMics = self.freq_data.numchannels
+        normFactor = self.sig_loss_norm() * nMics**2
+        for cntFreq in <a id="change">range(len(i))</a>:
+            if not fr[<a id="change">i[cntFreq]</a>]:
+                csm = array(linalg.inv(array(self.freq_data.csm[<a id="change">i[cntFreq]</a>], dtype=&quotcomplex128&quot)), order=&quotC&quot)[newaxis]
+                beamformerOutput = <a id="change">self</a>.steer_obj._beamformerCall(cntFreq, self.r_diag, normFactor, <a id="change">(csm,)</a>)[0]
+                <a id="change">ac[i[cntFreq]]</a> = 1.0 / beamformerOutput
+                fr[<a id="change">i[cntFreq]</a>] = True
+
+class BeamformerEig( BeamformerBase ):
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+        buttons = OKCancelButtons
+        )
+
+    def calc(<a id="change">self</a>, ac, fr):
+        
+        Calculates the Capon result for the frequencies defined by :attr:`freq_data`
+        
+        This is an internal helper function that is automatically called when 
+        accessing the beamformer&quots :attr:`~BeamformerBase.result` or calling
+        its :meth:`~BeamformerBase.synthetic` method.        
+        
+        Parameters
+        ----------
+        ac : array of floats
+            This array of dimension ([number of frequencies]x[number of gridpoints])
+            is used as call-by-reference parameter and contains the calculated
+            value after calling this method. 
+        fr : array of booleans
+            The entries of this [number of frequencies]-sized array are either 
+            &quotTrue&quot (if the result for this frequency has already been calculated)
+            or &quotFalse&quot (for the frequencies where the result has yet to be calculated).
+            After the calculation at a certain frequency the value will be set
+            to &quotTrue&quot
+        
+        Returns
+        -------
+        This method only returns values through the *ac* and *fr* parameters
+                
+        <a id="change">kj = 2j*pi*self.freq_data.fftfreq()/self.c</a>
+        nMics = self.freq_data.numchannels
+        normFactor = self.sig_loss_norm() * nMics**2
+        <a id="change">steerVecFormulation = steerVecTranslation(self.steer)</a>
+        for i in self.freq_data.indices:
+            if not fr[i]:
+                csm = array(linalg.inv(array(self.freq_data.csm[i], dtype=&quotcomplex128&quot)), order=&quotC&quot)[newaxis]
+                <a id="change">kji = kj[i, newaxis]</a>
+                beamformerOutput = beamformerFreq(False, steerVecFormulation, self.r_diag, normFactor, <a id="change">(self.r0, self.rm, kji, csm)</a>)[0]
+                <a id="change">ac[i]</a> = 1.0 / beamformerOutput
+                fr[i] = True
+
+class BeamformerEig( BeamformerBase ):</code></pre>

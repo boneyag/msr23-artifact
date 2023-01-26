@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def _squash(self, raw_values):
+        &#47&#47 Make sure raw_values are not too high/low (such that tanh would
+        &#47&#47 return exactly 1.0/-1.0, which would lead to +/-inf log-probs).
+        <a id="change">return (torch.clamp(
+            torch.tanh(raw_values),
+            -1.0 + SMALL_NUMBER,
+            1.0 - SMALL_NUMBER) + 1.0) / 2.0 * (self.high - self.low) + \
+                self.low</a>
+
+    def _unsquash(self, values):
+        return atanh((values - self.low) / (self.high - self.low) * 2.0 - 1.0)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def _squash(self, raw_values):
+        &#47&#47 Returned values are within [low, high] (including `low` and `high`).
+        <a id="change">squashed = ((torch.tanh(raw_values) + 1.0) / 2.0) * \
+            (self.high - self.low) + self.low</a>
+        <a id="change">return torch.clamp(squashed, self.low, self.high)</a>
+
+    def _unsquash(self, values):
+        normed_values = (values - self.low) / (self.high - self.low) * 2.0 - \
+                        1.0</code></pre>

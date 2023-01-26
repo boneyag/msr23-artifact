@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 get rid of discontuinities in the mask.
+        kernel =  np.full((1, self.smooth_length), 1/self.smooth_length)
+        for channel in range(self.audio_signal.num_channels):
+            mask[:, :, channel] = convolve(<a id="change">normalized_melody_stft[:, :, channel]</a>, kernel)
+        return mask
+
+    def run(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 Need to threshold the melody stft since the synthesized
+        &#47&#47 F0 sequence overtones are at different weights.
+        <a id="change">stft = stft ** 2</a>
+        <a id="change">stft /= np.maximum(np.max(stft, axis=1, keepdims=True), 1e-7)</a>
+
+        mask = np.empty(self.stft.shape)
+
+        &#47&#47 Smoothing the mask row-wise using a low-pass filter to
+        &#47&#47 get rid of discontuinities in the mask.
+        kernel =  np.full((1, self.smooth_length), 1/self.smooth_length)
+        for ch in range(self.audio_signal.num_channels):
+            mask[..., ch] = convolve(stft[..., ch], kernel)
+            <a id="change">mask[..., ch] = maximum_filter(mask[..., ch], size=(5, 1))</a>
+            mask[..., ch] = gaussian_filter(mask[..., ch], sigma=1)
+        return mask
+
+    def run(self):</code></pre>

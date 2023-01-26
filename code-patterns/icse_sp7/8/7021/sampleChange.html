@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def _await_nailgun_server(self, workunit):
+    nailgun_timeout_seconds = 5
+    max_socket_connect_attempts = 10
+    <a id="change">nailgun = None</a>
+    port_parse_start = time.time()
+    with _safe_open(self._ng_out, &quotr&quot) as ng_out:
+      while not nailgun:
+        started = ng_out.readline()
+        if started:
+          port = self._parse_nailgun_port(started)
+          <a id="change">with open(self._pidfile, &quota&quot) as pidfile:
+            pidfile.write(&quot:%d\n&quot % port)
+         </a> nailgun = self._create_ngclient(port, workunit)
+          log.debug(&quotDetected ng server up on port %d&quot % port)
+        elif time.time() - port_parse_start &gt; nailgun_timeout_seconds:
+          raise NailgunError(&quotFailed to read ng output after %s seconds&quot % nailgun_timeout_seconds)</code></pre><h3>After Change</h3><pre><code class='java'>
+    start = time.time()
+
+    endpoint = self._get_nailgun_endpoint()
+    while <a id="change">endpoint is None:
+</a>      if time.time() - start &gt; nailgun_timeout_seconds:
+        raise NailgunError(&quotFailed to read ng output after %s seconds&quot % nailgun_timeout_seconds)
+      <a id="change">time.sleep(0.1)</a>
+      <a id="change">endpoint = self._get_nailgun_endpoint()</a>
+
+    port = endpoint[1]
+    nailgun = self._create_ngclient(port, workunit)
+    log.debug(&quotDetected ng server up on port %d&quot % port)</code></pre>

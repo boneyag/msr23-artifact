@@ -1,0 +1,77 @@
+<html><h3>29c4c9a4f78a190deb34daa80d0d21b413d14621,Reinforcement_learning_TUT/10_A3C/A3C_continuous_action.py,ACNet,__init__,#ACNet#Any#Any#,45
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                td = tf.subtract(self.v_target, self.v, name=&quotTD_error&quot)
+                with tf.name_scope(&quotc_loss&quot):
+                    <a id="change">self.c_loss = tf.reduce_sum(tf.square(td))</a>
+
+                with tf.name_scope(&quotwrap_a_out&quot):
+                    mu, sigma = mu * A_BOUND[1], sigma + 1e-4
+
+                normal_dist = tf.contrib.distributions.Normal(mu, sigma)
+
+                with tf.name_scope(&quota_loss&quot):
+                    log_prob = normal_dist.log_prob(self.a_his)
+                    exp_v = log_prob * td
+                    entropy = normal_dist.entropy()  &#47&#47 encourage exploration
+                    <a id="change">self.exp_v</a> = <a id="change">tf.reduce_sum(ENTROPY_BETA * entropy + exp_v)</a>
+                    <a id="change">self.a_loss</a> = -self.exp_v
+
+                with tf.name_scope(&quotchoose_a&quot):  &#47&#47 use local params to choose action
+                    self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=0), A_BOUND[0], A_BOUND[1])
+                with tf.name_scope(&quotlocal_grad&quot):
+                    self.a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/actor&quot)
+                    self.c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/critic&quot)
+                    <a id="change">self.a_grads</a> = tf.gradients(<a id="change">self.a_loss</a>, self.a_params)  &#47&#47 get local gradients
+                    <a id="change">self.c_grads</a> = tf.gradients(self.c_loss, self.c_params)
+
+            with tf.name_scope(&quotsync&quot):
+                with tf.name_scope(&quotpull&quot):
+                    self.pull_a_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.a_params, globalAC.a_params)]
+                    self.pull_c_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.c_params, globalAC.c_params)]
+                with tf.name_scope(&quotpush&quot):
+                    <a id="change">self.update_a_op</a> = OPT_A.apply_gradients(zip(self.a_grads, globalAC.a_params))
+                    <a id="change">self.update_c_op</a> = OPT_C.apply_gradients(zip(self.c_grads, globalAC.c_params))
+
+    def _build_net(self, n_a):
+        w_init = tf.random_normal_initializer(0., .1)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                td = tf.subtract(self.v_target, self.v, name=&quotTD_error&quot)
+                with tf.name_scope(&quotc_loss&quot):
+                    <a id="change">self.c_losses = tf.square(td)</a>   &#47&#47 shape (None, 1), use this to get sum of gradients over batch
+                    <a id="change">self.c_loss = tf.reduce_mean(self.c_losses)</a>
+
+                with tf.name_scope(&quotwrap_a_out&quot):
+                    mu, sigma = mu * A_BOUND[1], sigma + 1e-4
+
+                normal_dist = tf.contrib.distributions.Normal(mu, sigma)
+
+                with tf.name_scope(&quota_loss&quot):
+                    log_prob = normal_dist.log_prob(self.a_his)
+                    exp_v = log_prob * td
+                    entropy = normal_dist.entropy()  &#47&#47 encourage exploration
+                    <a id="change">self.exp_v</a> = <a id="change">ENTROPY_BETA * entropy + exp_v</a>
+                    <a id="change">self.a_losses</a> = -self.exp_v   &#47&#47 shape (None, 1), use this to get sum of gradients over batch
+                    <a id="change">self.a_loss = tf.reduce_mean(self.a_losses)</a>
+
+                with tf.name_scope(&quotchoose_a&quot):  &#47&#47 use local params to choose action
+                    self.A = tf.clip_by_value(tf.squeeze(normal_dist.sample(1), axis=0), A_BOUND[0], A_BOUND[1])
+                with tf.name_scope(&quotlocal_grad&quot):
+                    self.a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/actor&quot)
+                    self.c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + &quot/critic&quot)
+                    <a id="change">self.a_grads</a> = tf.gradients(<a id="change">self.a_losses</a>, self.a_params)  &#47&#47 use losses will give accumulated sum of gradients
+                    <a id="change">self.c_grads</a> = tf.gradients(self.c_losses, self.c_params)
+
+            with tf.name_scope(&quotsync&quot):
+                with tf.name_scope(&quotpull&quot):
+                    self.pull_a_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.a_params, globalAC.a_params)]
+                    self.pull_c_params_op = [l_p.assign(g_p) for l_p, g_p in zip(self.c_params, globalAC.c_params)]
+                with tf.name_scope(&quotpush&quot):
+                    <a id="change">self.update_a_op</a> = OPT_A.apply_gradients(zip(self.a_grads, globalAC.a_params))
+                    <a id="change">self.update_c_op</a> = OPT_C.apply_gradients(zip(self.c_grads, globalAC.c_params))
+
+    def _build_net(self, n_a):
+        w_init = tf.random_normal_initializer(0., .1)</code></pre><img src="215403222.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 35</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/MorvanZhou/tutorials/commit/29c4c9a4f78a190deb34daa80d0d21b413d14621#diff-bc2987740d4095703078784a6299361a9b135562c171ff495f1518b1bbd78445L44' target='_blank'>Link</a></div><div id='project'> Project Name: MorvanZhou/tutorials</div><div id='commit'> Commit Name: 29c4c9a4f78a190deb34daa80d0d21b413d14621</div><div id='time'> Time: 2017-04-01</div><div id='author'> Author: morvanzhou@gmail.com</div><div id='file'> File Name: Reinforcement_learning_TUT/10_A3C/A3C_continuous_action.py</div><div id='class'> Class Name: ACNet</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/MorvanZhou/tutorials/commit/29c4c9a4f78a190deb34daa80d0d21b413d14621#diff-cf65ba44c2818d632aa25675f9afba8a70b29f87081dbdc9d419f17ce10e8ff0L43' target='_blank'>Link</a></div><div id='project'> Project Name: MorvanZhou/tutorials</div><div id='commit'> Commit Name: 29c4c9a4f78a190deb34daa80d0d21b413d14621</div><div id='time'> Time: 2017-04-01</div><div id='author'> Author: morvanzhou@gmail.com</div><div id='file'> File Name: Reinforcement_learning_TUT/10_A3C/A3C_discrete_action.py</div><div id='class'> Class Name: ACNet</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/MorvanZhou/tutorials/commit/29c4c9a4f78a190deb34daa80d0d21b413d14621#diff-bc2987740d4095703078784a6299361a9b135562c171ff495f1518b1bbd78445L45' target='_blank'>Link</a></div><div id='project'> Project Name: MorvanZhou/tutorials</div><div id='commit'> Commit Name: 29c4c9a4f78a190deb34daa80d0d21b413d14621</div><div id='time'> Time: 2017-04-01</div><div id='author'> Author: morvanzhou@gmail.com</div><div id='file'> File Name: Reinforcement_learning_TUT/10_A3C/A3C_continuous_action.py</div><div id='class'> Class Name: ACNet</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/MorvanZhou/tutorials/commit/9352eece98d1205a01c2c7603538ea08a3d1f639#diff-0b784bc5d71e8f66a2187e72eb5fa0c927f2a125afa0df9338a39ee023dfb1e6L43' target='_blank'>Link</a></div><div id='project'> Project Name: MorvanZhou/tutorials</div><div id='commit'> Commit Name: 9352eece98d1205a01c2c7603538ea08a3d1f639</div><div id='time'> Time: 2017-04-02</div><div id='author'> Author: morvanzhou@gmail.com</div><div id='file'> File Name: Reinforcement_learning_TUT/experiments/Solve_BipedalWalker/A3C.py</div><div id='class'> Class Name: ACNet</div><div id='method'> Method Name: __init__</div><BR>

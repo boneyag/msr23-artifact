@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        layerop = getattr(l, layertype)
+        assert len(l.output) == 1
+        if len(l.input) == 1:
+            coreml_op_to_relay(layerop, l.input[0], <a id="change">l.output[0]</a>, etab)
+        else:
+            coreml_op_to_relay(layerop, list(l.input), l.output[0], etab)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 check there are multiple outputs in the model and all are there in etab
+    multi_out = all([bool(o.name in etab.exprs) for o in spec.description.output])
+    outexpr = <a id="change">_expr.Tuple(outexpr) if multi_out else outexpr[0]</a>
+
+    func = _function.Function(analysis.free_vars(outexpr), outexpr)
+    params = {k:_nd.array(np.array(v, dtype=np.float32)) for k, v in etab.params.items()}
+    return IRModule.from_expr(func), params</code></pre>

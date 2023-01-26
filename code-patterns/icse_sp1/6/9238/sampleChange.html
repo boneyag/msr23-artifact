@@ -1,0 +1,43 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def __init__(self, **params):
+        from catalyst.contrib.registry import Registry
+
+        <a id="change">config_ = params.copy()</a>
+        self.strategies: List[ExplorationStrategy] = []
+        self.probs = []
+
+        <a id="change">for key, expl in config_.items():
+            probability = expl["probability"]
+            expl_params = expl["params"] or {}
+            strategy = Registry.get_exploration(
+                strategy=expl["strategy"], **expl_params)
+            self.strategies.append(strategy)
+            self.probs.append(probability)
+
+       </a> self.num_strategies = len(self.probs)
+
+    def get_exploration_strategy(self):
+        strategy_idx = np.random.choice(self.num_strategies, p=self.probs)</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.exploration_strategies: List[ExplorationStrategy] = []
+        self.probs = []
+
+        <a id="change">for params_ in params:
+            exploration_name = params_.pop("exploration")
+            probability = params_.pop("probability")
+            strategy_fn = EXPLORATION.get(exploration_name)
+
+            if issubclass(strategy_fn, EpsilonGreedy):
+                assert isinstance(env.action_space, Discrete)
+                params_["num_actions"] = env.action_space.n
+
+            strategy = strategy_fn(**params_)
+            self.exploration_strategies.append(strategy)
+            self.probs.append(probability)
+
+       </a> self.num_strategies = len(self.probs)
+        assert np.isclose(np.sum(self.probs), 1.0)
+
+    def get_exploration_strategy(self):</code></pre>

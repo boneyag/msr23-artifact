@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def train(self, ts, n_predict=0):
+        n_data = ts.series_len
+        preds = None
+        <a id="change">x_train = np.stack(ts.tseries[0:self.n_lag], axis=1)</a>
+        y_train = ts.tseries[self.n_lag]
+        z_train = np.zeros(shape=(x_train.shape[0], self.state_size))
+        zero_state = np.zeros(shape=(self.batch_size, self.state_size))
+        with tf.Session() as sess:</code></pre><h3>After Change</h3><pre><code class='java'>
+        n_data = ts.series_len
+        preds = None
+        x_train = y_train = None
+        <a id="change">for x_train, y_train in ts.get_batches(self.n_lag, self.batch_size, single_output_only=True):
+            pass
+       </a> z_train = np.zeros(shape=(x_train.shape[0], self.state_size))
+        zero_state = np.zeros(shape=(self.batch_size, self.state_size))
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            for epoch in range(self.n_epochs):
+                for i, batch in enumerate(ts.get_batches(self.n_lag, self.batch_size, single_output_only=True)):
+                    x, y = batch
+                    sess.run([self.training_op],
+                             feed_dict={self.X: x, self.Y: y,
+                                        self.init_state: zero_state[0:x.shape[0], :]})
+
+                mse = self.err_loss.eval(feed_dict={self.X: x_train, self.Y: y_train,
+                                                    self.init_state: z_train})
+                logger.debug("epoch: %d, mse: %f" % (epoch, mse))
+
+            if n_predict &gt; 0:
+                <a id="change">preds = self.predict(ts.samples[-self.n_lag:, :], n=n_predict)</a>
+
+        return preds
+
+    def predict(self, start_ts, n=1):</code></pre>

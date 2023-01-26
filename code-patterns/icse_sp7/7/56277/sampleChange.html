@@ -1,0 +1,68 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        precisionTuple = _precision(self.precision)
+        
+        &#47&#47 check wether self.freq is part of SteeringVector.f
+        <a id="change">freqInSteerObjFreq = isclose(array(self._steer_obj.f), self.freq)</a>
+        if freqInSteerObjFreq.any():
+            freqInd = <a id="change">flatnonzero(freqInSteerObjFreq)[0]</a>
+        else:
+            warn(&quotPointSpreadFunction.freq (%s Hz) was appended to PointSpreadFunction._steer_obj.f, &quot\
+                 &quotas it was not an element of the original list!&quot % self.freq, Warning, stacklevel = 2)
+            self._steer_obj.f.append(self.freq)
+            freqInd = int(-1)
+        
+        &#47&#47 get the cached data, or, if non-existing, create new structure
+        if not fr in self.h5f.root:
+            if self.calcmode == &quotreadonly&quot:
+                raise ValueError(&quotCannot calculate missing PSF (freq %s) in \&quotreadonly\&quot mode.&quot % fr)
+            
+            group = self.h5f.create_group(self.h5f.root, fr) 
+            shape = (gs, gs)
+            atom = precisionTuple[3]()
+            filters = tables.Filters(complevel=5, complib=&quotblosc&quot)
+            ac = self.h5f.create_carray(group, &quotresult&quot, atom, shape, filters=filters)
+            shape = (gs,)
+            atom = tables.BoolAtom()
+            gp = self.h5f.create_carray(group, &quotgridpts&quot, atom, shape, filters=filters)
+            
+        else:
+            ac = self.h5f.get_node(&quot/&quot+fr, &quotresult&quot)
+            gp = self.h5f.get_node(&quot/&quot+fr, &quotgridpts&quot)
+        
+        &#47&#47 are there grid points for which the PSF hasn&quott been calculated yet?
+        if not gp[:][self.grid_indices].all():
+
+            if self.calcmode == &quotreadonly&quot:
+                raise ValueError(&quotCannot calculate missing PSF (points) in \&quotreadonly\&quot mode.&quot)
+
+            elif self.calcmode != &quotfull&quot:
+                &#47&#47 calc_ind has the form [True, True, False, True], except
+                &#47&#47 when it has only 1 entry (value True/1 would be ambiguous)
+                if self.grid_indices.size == 1:
+                    calc_ind = [0]
+                else:
+                    calc_ind = invert(gp[:][self.grid_indices])
+                
+                &#47&#47 get indices which have the value True = not yet calculated
+                g_ind_calc = self.grid_indices[calc_ind]
+            if self.calcmode == &quotsingle&quot:
+                for ind in g_ind_calc:
+                    ac[:,ind] = self._steer_obj._psfCall(freqInd, [ind], self.precision)[0,:,0]
+                    gp[ind] = True
+            elif self.calcmode == &quotfull&quot:
+                gp[:] = True
+                <a id="change">ac[:]</a> = self._steer_obj._psfCall(freqInd, arange(self._steer_obj.grid.size), self.precision)[0,:,:]
+            else: &#47&#47 &quotblock&quot
+                hh = self._steer_obj._psfCall(freqInd, g_ind_calc, self.precision)
+                indh = 0</code></pre><h3>After Change</h3><pre><code class='java'>
+                    gp[ind] = True
+            elif self.calcmode == &quotfull&quot: &#47&#47 calculate all psfs in one go
+                gp[:] = True
+                <a id="change">ac[:]</a> = <a id="change">self._psfCall(arange(gs))</a>
+            else: &#47&#47 &quotblock&quot &#47&#47 calculate selected psfs in one go
+                hh = self._psfCall(g_ind_calc)
+                indh = 0
+                for ind in g_ind_calc:</code></pre>

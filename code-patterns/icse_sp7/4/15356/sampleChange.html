@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    :rtype: :class:`Tensor`
+    
+    out = src
+    <a id="change">if src.numel() &gt; 0:
+        out = out - src.max()
+   </a> out = out.exp()
+
+    if ptr is not None:
+        out_sum = gather_csr(segment_csr(out, ptr, reduce=&quotsum&quot), ptr)</code></pre><h3>After Change</h3><pre><code class='java'>
+    :rtype: :class:`Tensor`
+    
+    if ptr is not None:
+        src_max = gather_csr(<a id="change">segment_csr(src, ptr, reduce=&quotmax&quot)</a>, ptr)
+        <a id="change">out = (src - src_max).exp()</a>
+        out_sum = gather_csr(segment_csr(out, ptr, reduce=&quotsum&quot), ptr)
+    elif index is not None:
+        N = maybe_num_nodes(index, num_nodes)
+        src_max = scatter(src, index, dim=0, dim_size=N, reduce=&quotmax&quot)[index]</code></pre>

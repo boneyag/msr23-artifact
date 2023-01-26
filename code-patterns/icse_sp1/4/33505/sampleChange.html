@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            lengths = [nbytes(frame) for frame in frames]
+            length_bytes = struct.pack(f"Q{nframes}Q", nframes, *lengths)
+
+            <a id="change">frames = [length_bytes, *frames]</a>
+            lengths = [len(length_bytes), *lengths]
+
+            if sum(lengths) &lt; 2 ** 17:  &#47&#47 128kiB
+                &#47&#47 small enough, send in one go
+                stream.write(b"".join(frames))
+            else:
+                &#47&#47 avoid large memcpy, send in many
+                <a id="change">for frame, frame_bytes in zip(frames, lengths):
+                    &#47&#47 Can&quott wait for the write() Future as it may be lost
+                    &#47&#47 ("If write is called again before that Future has resolved,
+                    &#47&#47   the previous future will be orphaned and will never resolve")
+                    if frame_bytes:
+                        future = stream.write(frame)
+                        bytes_since_last_yield += frame_bytes
+                        if bytes_since_last_yield &gt; 32e6:
+                            await future
+                            bytes_since_last_yield = 0
+       </a> except StreamClosedError as e:
+            self.stream = None
+            self._closed = True
+            if not shutting_down():</code></pre><h3>After Change</h3><pre><code class='java'>
+        frames_nbytes = sum(map(nbytes, frames))
+
+        header = pack_frames_prelude(frames)
+        header = <a id="change">struct.pack("Q", nbytes(header) + frames_nbytes)</a> + header
+
+        frames = [header, *frames]
+        <a id="change">frames_nbytes += nbytes(header)</a>
+
+        if frames_nbytes &lt; 2 ** 17:  &#47&#47 128kiB
+            &#47&#47 small enough, send in one go
+            frames = [b"".join(frames)]</code></pre>

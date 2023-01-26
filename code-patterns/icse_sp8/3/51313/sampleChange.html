@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self._update(dataset_iter, target_model, mean_advs, std_advs)
+
+    def act_and_train(self, obs, reward):
+        <a id="change">if hasattr(self.model, &quotobs_filter&quot):
+            xp = self.xp
+            b_state = self.batch_states([obs], xp, self.phi)
+            self.model.obs_filter.experience(b_state)
+
+       </a> action, v = self._act(obs)
+
+        &#47&#47 Update stats
+        self.average_v += (</code></pre><h3>After Change</h3><pre><code class='java'>
+            b_state = self.obs_normalizer(b_state, update=False)
+
+        &#47&#47 action_distrib will be recomputed when computing gradients
+        with chainer.using_config(&quottrain&quot, False), <a id="change">chainer.no_backprop_mode()</a>:
+            action_distrib, value = self.model(b_state)
+            action = chainer.cuda.to_cpu(action_distrib.sample().data)[0]
+            self.entropy_record.append(float(action_distrib.entropy.data))</code></pre>

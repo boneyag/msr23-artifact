@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 read the kmeans closest and the least used memory
+    &#47&#47 TODO: for now we assume infinite memory, hence least used is the first free cell
+    <a id="change">read_vectors = []</a>
+    pos = read_positions.squeeze().data.cpu().numpy()
+    <a id="change">for b in range(read_positions.size(0)):
+      read_vectors.append(T.stack([memory[b, p] for p in list(pos[b])], 0))
+   </a> <a id="change">read_vectors = T.stack(read_vectors, 0)</a>
+
+    return read_vectors, read_positions, read_weights
+
+  def read(self, read_query, hidden):</code></pre><h3>After Change</h3><pre><code class='java'>
+    read_positions = var(read_positions)
+    read_positions = T.cat([read_positions, last_used_mem.unsqueeze(1)], 2)
+
+    <a id="change">(b, m, w) = memory.size()</a>
+    read_vectors = memory.gather(1, read_positions.squeeze().unsqueeze(2).expand(b, self.K+1, w))
+
+    return read_vectors, read_positions, read_weights
+</code></pre>

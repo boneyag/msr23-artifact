@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+            &#47&#47 Accessing and updating the datase metadata
+            storage = node.disk_store
+            read_permission = <a id="change">{
+                "verify_key": verify_key.encode(encoder=HexEncoder).decode("utf-8"),
+                "request_id": request_id,
+            }</a>
+
+            update_dataset_metadata(key=object_id, read_permissions=read_permission)
+
+        &#47&#47 TODO:</code></pre><h3>After Change</h3><pre><code class='java'>
+            message="Invalid request payload, empty fields (status)!"
+        )
+
+    _req = <a id="change">node.data_requests.first(id=request_id)</a>
+
+    if not _req:
+        raise RequestError
+
+    if status not in ["accepted", "denied"]:
+        raise InvalidParameterValueError(
+            message=&quotRequest status should be either "accepted" or "denied"&quot
+        )
+
+    _can_triage_request = node.users.can_triage_requests(user_id=current_user_id)
+    _current_user_key = verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    _req_owner = _current_user_key == _req.verify_key
+
+    if status == "accepted" and _can_triage_request:
+        tmp_obj = node.store[UID.from_string(_req.object_id)]
+        tmp_obj.read_permissions[
+            VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
+        ] = _req.id
+        node.store[UID.from_string(_req.object_id)] = tmp_obj
+        node.data_requests.set(request_id=<a id="change">_req.id</a>, status=status)
+    elif status == "denied" and (_can_triage_request or _req_owner):
+        node.data_requests.set(request_id=_req.id, status=status)
+    else:</code></pre>

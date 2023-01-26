@@ -1,0 +1,116 @@
+<html><h3>45b6de2c579c4dfcd25345f1124ce9d1638bfd32,pynndescent/threaded.py,,nn_descent,#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#Any#,548
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                heap_updates, heap_update_counts, offsets, chunk_size, n_vertices, index
+            )
+
+        for _ in <a id="change">executor.map(shuffle, range(n_tasks))</a>:
+            pass
+
+        &#47&#47 then run reduce functions</code></pre><h3>After Change</h3><pre><code class='java'>
+    if rng_state is None:
+        rng_state = new_rng_state()
+
+    <a id="change">with Parallel(prefer="threads", n_jobs=n_jobs) as parallel:
+
+        n_vertices = data.shape[0]
+        n_tasks = int(math.ceil(float(n_vertices) / chunk_size))
+
+        current_graph = init_current_graph(
+            data,
+            dist,
+            dist_args,
+            n_neighbors,
+            chunk_size,
+            rng_state,
+            parallel,
+            seed_per_row=seed_per_row,
+        )
+
+        if rp_tree_init:
+            init_rp_tree(
+                data, dist, dist_args, current_graph, leaf_array, chunk_size, parallel
+            )
+
+        &#47&#47 store the updates in an array
+        &#47&#47 note that the factor here is `n_neighbors * n_neighbors`, not `max_candidates * max_candidates`
+        &#47&#47 since no more than `n_neighbors` candidates are added for each row
+        max_heap_update_count = chunk_size * n_neighbors * n_neighbors * 4
+        heap_updates = np.zeros((n_tasks, max_heap_update_count, 4))
+        heap_update_counts = np.zeros((n_tasks,), dtype=np.int64)
+
+        nn_descent_map_jit = make_nn_descent_map_jit(dist, dist_args)
+
+        for n in range(n_iters):
+            if verbose:
+                print("\t", n, " / ", n_iters)
+
+            (new_candidate_neighbors, old_candidate_neighbors) = new_build_candidates(
+                current_graph,
+                n_vertices,
+                n_neighbors,
+                max_candidates,
+                chunk_size,
+                rng_state,
+                rho,
+                parallel,
+                seed_per_row=seed_per_row,
+            )
+
+            def nn_descent_map(index):
+                rows = chunk_rows(chunk_size, index, n_vertices)
+                return (
+                    index,
+                    nn_descent_map_jit(
+                        rows,
+                        max_candidates,
+                        data,
+                        new_candidate_neighbors,
+                        old_candidate_neighbors,
+                        heap_updates[index],
+                        offset=0,
+                    ),
+                )
+
+            def nn_decent_reduce(index):
+                return nn_decent_reduce_jit(
+                    n_tasks, current_graph, heap_updates, offsets, index
+                )
+
+            &#47&#47 run map functions
+            for index, count in parallel(parallel_calls(nn_descent_map, n_tasks)):
+                heap_update_counts[index] = count
+
+            &#47&#47 sort and chunk heap updates so they can be applied in the reduce
+            max_count = heap_update_counts.max()
+            offsets = np.zeros((n_tasks, max_count), dtype=np.int64)
+
+            def shuffle(index):
+                return shuffle_jit(
+                    heap_updates,
+                    heap_update_counts,
+                    offsets,
+                    chunk_size,
+                    n_vertices,
+                    index,
+                )
+
+            parallel(parallel_calls(shuffle, n_tasks))
+
+            &#47&#47 then run reduce functions
+            c = 0
+            for c_part in parallel(parallel_calls(nn_decent_reduce, n_tasks)):
+                c += c_part
+
+            if c &lt;= delta * n_neighbors * data.shape[0]:
+                break
+
+        def deheap_sort_map(index):
+            rows = chunk_rows(chunk_size, index, n_vertices)
+            return index, deheap_sort_map_jit(rows, current_graph)
+
+        parallel(parallel_calls(deheap_sort_map, n_tasks))
+        return current_graph[0].astype(np.int64), current_graph[1]</a>
+</code></pre><img src="292883125.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/lmcinnes/pynndescent/commit/45b6de2c579c4dfcd25345f1124ce9d1638bfd32#diff-bb7ca258ccb3f48a248219bf0fd02e69f6f1d041d74012a16e6aeac62a8c6583L564' target='_blank'>Link</a></div><div id='project'> Project Name: lmcinnes/pynndescent</div><div id='commit'> Commit Name: 45b6de2c579c4dfcd25345f1124ce9d1638bfd32</div><div id='time'> Time: 2019-05-17</div><div id='author'> Author: tom.e.white@gmail.com</div><div id='file'> File Name: pynndescent/threaded.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: nn_descent</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/5e599fb01df65d156a40f7a138ab6627a06a50db#diff-4d2cb5545188a0cf58ba2560060ccfbd11dd31e0c647367138fe00714046a48dL120' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: 5e599fb01df65d156a40f7a138ab6627a06a50db</div><div id='time'> Time: 2020-05-07</div><div id='author'> Author: 6815729+condnsdmatters@users.noreply.github.com</div><div id='file'> File Name: gpflow/optimizers/natgrad.py</div><div id='class'> Class Name: NaturalGradient</div><div id='method'> Method Name: _natgrad_steps</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/b41d4f38436e4a090c940dbd3bc7e2afd39a283e#diff-4d2cb5545188a0cf58ba2560060ccfbd11dd31e0c647367138fe00714046a48dL120' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: b41d4f38436e4a090c940dbd3bc7e2afd39a283e</div><div id='time'> Time: 2020-04-23</div><div id='author'> Author: st--@users.noreply.github.com</div><div id='file'> File Name: gpflow/optimizers/natgrad.py</div><div id='class'> Class Name: NaturalGradient</div><div id='method'> Method Name: _natgrad_steps</div><BR>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def store_path(self, artifact, path, name=None, checksum=True, max_objects=None):
+        &#47&#47 Resolve the reference until the result is a concrete asset
+        &#47&#47 so that we don&quott have multiple hops.
+        <a id="change">artifact_id</a>, artifact_file_path = WBArtifactHandler.parse_path(path)
+        target_artifact = <a id="change">PublicApi().artifact_from_id(util.hex_to_b64_id(artifact_id))</a>
+        entry = target_artifact._manifest.get_entry_by_path(artifact_file_path)
+
+        while entry.ref is not None and urlparse(entry.ref).scheme == self._scheme:
+            artifact_id, artifact_file_path = WBArtifactHandler.parse_path(entry.ref)</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 Recursively resolve the reference until a concrete asset is found
+        while path is not None and urlparse(path).scheme == self._scheme:
+            artifact_id = util.host_from_path(path)
+            <a id="change">artifact_file_path = util.uri_from_path(path)</a>
+            target_artifact = <a id="change">PublicArtifact.from_id(
+                util.hex_to_b64_id(artifact_id), self.client
+            )</a>
+
+            &#47&#47 this should only have an effect if the user added the reference by url
+            &#47&#47 string directly (in other words they did not already load the artifact into ram.)
+            target_artifact._load_manifest()
+
+            entry = target_artifact._manifest.get_entry_by_path(artifact_file_path)
+            <a id="change">path = entry.ref</a>
+
+        &#47&#47 Create the path reference
+        path = "wandb-artifact://{}/{}".format(
+            util.b64_to_hex_id(target_artifact.id), artifact_file_path</code></pre>

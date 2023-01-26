@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                num_cpus=1, num_gpus=int(self.use_gpu))(DistributedTorchRunner)
+            &#47&#47 Compute batch size per replica
+            batch_size_per_replica = self.batch_size // num_replicas
+            <a id="change">if self.batch_size % num_replicas &gt; 0:
+                new_batch_size = batch_size_per_replica * num_replicas
+                logger.warning(
+                    ("Changing batch size from {old_batch_size} to "
+                     "{new_batch_size} to evenly distribute batches across "
+                     "{num_replicas} replicas.").format(
+                         old_batch_size=self.batch_size,
+                         new_batch_size=new_batch_size,
+                         num_replicas=num_replicas))
+            &#47&#47 Start workers
+           </a> self.workers = [
+                Runner.remote(
+                    self.model_creator,
+                    self.data_creator,</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def _start_workers(self, num_workers):
+        logger.debug(f"start_workers: Setting %d workers." % num_workers)
+        <a id="change">worker_config = self.config.copy()</a>
+        batch_size_per_worker = self._configure_and_split_batch(num_workers)
+        if batch_size_per_worker:
+            worker_config[BATCH_SIZE] = batch_size_per_worker
+        if num_workers == 1:</code></pre>

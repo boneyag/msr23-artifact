@@ -1,0 +1,53 @@
+<html><h3>86cff17e7ef1b355e1ab4862ccd664ed4c856227,python/ray/util/sgd/torch/examples/cifar_pytorch_example.py,,tune_example,#,103
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        "num_workers": num_workers,
+        "initialization_hook": initialization_hook,
+        "use_gpu": use_gpu,
+        "config": <a id="change">{
+            "lr": tune.choice([1e-4, 1e-3]),
+            BATCH_SIZE: 128,
+            "test_mode": test_mode
+        }</a>,
+        "backend": "nccl" if use_gpu else "gloo"
+    }
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        scheduler_creator=scheduler_creator,
+        initialization_hook=initialization_hook,
+        num_workers=num_workers,
+        config=<a id="change">{
+            "test_mode": test_mode,  &#47&#47 user-defined param to subset the data
+            BATCH_SIZE: 128 * num_workers,
+        }</a>,
+        use_gpu=use_gpu,
+        scheduler_step_freq="epoch",
+        use_fp16=use_fp16)
+
+    pbt_scheduler = PopulationBasedTraining(
+        time_attr="training_iteration",
+        metric="val_loss",
+        mode="min",
+        perturbation_interval=1,
+        hyperparam_mutations=<a id="change">{
+            &#47&#47 distribution for resampling
+            "lr": lambda: np.random.uniform(0.001, 1),
+            &#47&#47 allow perturbations within this set of categorical values
+            "momentum": [0.8, 0.9, 0.99],
+        }</a>)
+
+    reporter = CLIReporter()
+    reporter.add_metric_column("val_loss", "loss")
+    reporter.add_metric_column("val_accuracy", "acc")
+
+    analysis = tune.run(
+        TorchTrainable,
+        num_samples=4,
+        config=<a id="change">{
+            "lr": tune.choice([0.001, 0.01, 0.1]),
+            "momentum": 0.8
+        }</a>,
+        stop={"training_iteration": 2 if test_mode else 100},
+        max_failures=3,  &#47&#47 used for fault tolerance
+        checkpoint_freq=3,  &#47&#47 used for fault tolerance</code></pre><img src="413502.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/86cff17e7ef1b355e1ab4862ccd664ed4c856227#diff-0f59e5ae15cf5817ba43720721e0dca6ebd314ffa728cb407464f4243109e3fdL104' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 86cff17e7ef1b355e1ab4862ccd664ed4c856227</div><div id='time'> Time: 2020-03-30</div><div id='author'> Author: rliaw@berkeley.edu</div><div id='file'> File Name: python/ray/util/sgd/torch/examples/cifar_pytorch_example.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: tune_example</div><BR><BR><div id='link'><a href='https://github.com/NVIDIA/OpenSeq2Seq/commit/67842cd162a98fcd1e469dcb0f1528de56d9f956#diff-de43da3a2a6846792934964862f4e65807c7ead20967a64a95269091ffbcb16dL13' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/OpenSeq2Seq</div><div id='commit'> Commit Name: 67842cd162a98fcd1e469dcb0f1528de56d9f956</div><div id='time'> Time: 2018-08-17</div><div id='author'> Author: xravitejax@gmail.com</div><div id='file'> File Name: example_configs/speech2text/w2l_large_8gpus_mp.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR><BR><div id='link'><a href='https://github.com/NVIDIA/OpenSeq2Seq/commit/67842cd162a98fcd1e469dcb0f1528de56d9f956#diff-4f27ca7b095c5c1c46198129d20a9f4abdc2af650abb90cda7990cae9a1a1defL13' target='_blank'>Link</a></div><div id='project'> Project Name: NVIDIA/OpenSeq2Seq</div><div id='commit'> Commit Name: 67842cd162a98fcd1e469dcb0f1528de56d9f956</div><div id='time'> Time: 2018-08-17</div><div id='author'> Author: xravitejax@gmail.com</div><div id='file'> File Name: example_configs/speech2text/w2l_large_8gpus.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: </div><BR>

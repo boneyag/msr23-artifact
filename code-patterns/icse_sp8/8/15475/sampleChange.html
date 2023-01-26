@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            )
+        &#47&#47 print(&quotmean estimate shape = {}&quot.format(tf.shape(mean_estimate)))
+
+        <a id="change">return tf.cond(
+            pred=(count &gt; 1),
+            true_fn=(lambda: (state - mean_estimate) / (tf.maximum(x=tf.sqrt(x=variance_estimate), y=util.epsilon))),
+            false_fn=(lambda: state)
+        )</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        with tf.control_dependencies(control_inputs=(assignment,)):
+            &#47&#47 Mean update
+            <a id="change">mean = tf.reduce_sum(input_tensor=(tensor - mean_estimate), axis=0)</a>
+            <a id="change">assignment = tf.assign_add(ref=mean_estimate, value=(mean / count))</a>
+
+        <a id="change">with tf.control_dependencies(control_inputs=(assignment,)):
+
+            def first_run():
+                &#47&#47 No meaningful mean and variance yet
+                return tensor
+
+            def later_run():
+                &#47&#47 Variance update
+                variance = tf.reduce_sum(input_tensor=((tensor - mean_estimate) * mean), axis=0)
+                assignment = tf.assign_add(ref=variance_sum_estimate, value=variance)
+                with tf.control_dependencies(control_inputs=(assignment,)):
+                    variance_estimate = variance_sum_estimate / (count - 1.0)
+                    &#47&#47 Standardize tensor
+                    return (tensor - mean_estimate) / tf.maximum(x=tf.sqrt(x=variance_estimate), y=util.epsilon)
+
+            return tf.cond(pred=(count &gt; 1.0), true_fn=later_run, false_fn=first_run)</a>
+</code></pre>

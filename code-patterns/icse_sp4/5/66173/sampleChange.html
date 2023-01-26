@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    if not kern.on_separate_dimensions:
+        raise NotImplementedError("Product currently needs to be defined on separate dimensions.")  &#47&#47 pragma: no cover
+    <a id="change">with tf.control_dependencies([
+        tf.assert_equal(tf.rank(p.var), 2,
+                        message="Product currently only supports diagonal Xcov.", name="assert_Xcov_diag"),
+    ]):
+        _expectation_fn = lambda k: _expectation(p, k, feat, k, feat)
+        return functools.reduce(tf.multiply, [_expectation_fn(k) for k in kern.kern_list])
+
+
+</a>@dispatch(DiagonalGaussian, object, (InducingFeature, type(None)), object, (InducingFeature, type(None)))
+def _expectation(p, obj1, obj2, obj3, obj4):
+    gauss = Gaussian(p.mu, tf.matrix_diag(p.var))
+    return _expectation(gauss, obj1, obj2, obj3, obj4)</code></pre><h3>After Change</h3><pre><code class='java'>
+    :return: NxDxQ
+    
+    with params_as_tensors_for(mean1), params_as_tensors_for(mean2):
+        N = <a id="change">tf</a>.shape(p.mu)[0]
+        e_xxt = p.cov + (p.mu[:, :, None] * p.mu[:, None, :])  &#47&#47 NxDxD
+        e_xxt_A = tf.matmul(e_xxt, tf.tile(mean2.A[None, ...], (N, 1, 1)))  &#47&#47 NxDxQ
+        e_x_bt = p.mu[:, :, None] * mean2.b[None, None, :]  &#47&#47 NxDxQ</code></pre>

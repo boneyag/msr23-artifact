@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    input_shape = quaternion.shape
+    if len(input_shape) == 1:
+        <a id="change">quaternion = torch.unsqueeze(quaternion, dim=0)</a>
+
+    assert quaternion.size(1) == 4, &quotInput must be a vector of length 4&quot
+    normalizer = 1 / torch.norm(quaternion, dim=1)
+    q1 = quaternion[:, 1] * normalizer
+    q2 = quaternion[:, 2] * normalizer
+    q3 = quaternion[:, 3] * normalizer
+
+    sin_squared = q1 * q1 + q2 * q2 + q3 * q3
+    mask = (sin_squared &gt; eps).to(sin_squared.device)
+    mask_pos = (mask).type_as(sin_squared)
+    mask_neg = (mask == False).type_as(sin_squared)  &#47&#47 noqa
+    batch_size = quaternion.size(0)
+    angle_axis = torch.zeros(
+        batch_size, 3, dtype=quaternion.dtype).to(
+        quaternion.device)
+
+    sin_theta = torch.sqrt(sin_squared)
+    cos_theta = quaternion[:, 0] * normalizer
+    mask_theta = (cos_theta &lt; eps).view(1, -1)
+    mask_theta_neg = (mask_theta).type_as(cos_theta)
+    mask_theta_pos = (mask_theta == False).type_as(cos_theta)  &#47&#47 noqa
+
+    theta = torch.atan2(-sin_theta, -cos_theta) * mask_theta_neg \
+        + torch.atan2(sin_theta, cos_theta) * mask_theta_pos
+
+    two_theta = 2 * theta
+    k_pos = two_theta / sin_theta
+    k_neg = 2.0
+    k = k_neg * mask_neg + k_pos * mask_pos
+
+    angle_axis[:, 0] = q1 * k
+    angle_axis[:, 1] = q2 * k
+    angle_axis[:, 2] = q3 * k
+
+    <a id="change">if len(input_shape) == 1:
+        angle_axis = angle_axis.squeeze(0)
+
+   </a> return angle_axis
+
+&#47&#47 TODO: add below funtionalities
+&#47&#47  - pose_to_rtvec</code></pre><h3>After Change</h3><pre><code class='java'>
+            type(quaternion)))
+
+    if len(quaternion.shape) != 2 and quaternion.shape[1] != 4:
+        <a id="change">raise ValueError("Input must be a tensor of shape Nx4. Got {}".format(
+            quaternion.shape))</a>
+
+    normalizer = 1 / torch.norm(quaternion, dim=1)
+    q1 = quaternion[:, 1] * normalizer
+    q2 = quaternion[:, 2] * normalizer</code></pre>

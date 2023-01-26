@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 Weights shape: (batch-size, ..., units, prod(lattice_sizes))
+        &#47&#47 Kernel shape:  (prod(lattice_sizes), units)
+        return tf.reduce_sum(
+            interpolation_weights * <a id="change">tf.transpose(self.kernel)</a>, axis=-1)
+
+  def compute_output_shape(self, input_shape):
+    Standard Keras compute_output_shape() method.</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Wrap this constant into pure op since in TF 2.0 there are issues passing
+    &#47&#47 tensors into control_dependencies.
+    with tf.control_dependencies([tf.identity(self.lattice_sizes_tensor)]):
+      <a id="change">if self.interpolation == "simplex":
+        return lattice_lib.evaluate_with_simplex_interpolation(
+            inputs=inputs,
+            kernel=self.kernel,
+            units=self.units,
+            lattice_sizes=self.lattice_sizes,
+            clip_inputs=self.clip_inputs)
+      elif self.interpolation == "hypercube":
+        return lattice_lib.evaluate_with_hypercube_interpolation(
+            inputs=inputs,
+            kernel=self.kernel,
+            units=self.units,
+            lattice_sizes=self.lattice_sizes,
+            clip_inputs=self.clip_inputs)
+      else:
+        raise ValueError("Unknown interpolation type: %s" % self.interpolation)
+
+ </a> def compute_output_shape(self, input_shape):
+    Standard Keras compute_output_shape() method.
+    if isinstance(input_shape, list):
+      input_shape = input_shape[0]</code></pre>

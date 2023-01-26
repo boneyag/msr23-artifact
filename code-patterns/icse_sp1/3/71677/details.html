@@ -1,0 +1,67 @@
+<html><h3>d42df89c351e0c2a031ea3a9ae17fb7b844e7b79,tensorlayer/layers.py,BatchNormLayer,__init__,#BatchNormLayer#Any#Any#Any#Any#Any#Any#Any#Any#,1680
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    return tf.identity(mean), tf.identity(variance)
+
+            if is_train:
+                is_train = tf.cast(tf.ones(<a id="change">[]</a>), tf.bool)
+            else:
+                is_train = tf.cast(tf.zeros([]), tf.bool)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+                                      trainable=False,)&#47&#47   restore=restore)
+            moving_variance = tf.get_variable(&quotmoving_variance&quot,
+                                          params_shape,
+                                          initializer=<a id="change">tf.constant_initializer(1.)</a>,
+                                          trainable=False,)&#47&#47   restore=restore)
+
+            &#47&#47&#47&#47 3.
+            &#47&#47 These ops will only be preformed when training.
+            mean, variance = tf.nn.moments(self.inputs, axis)
+            try:    &#47&#47 TF12
+                update_moving_mean = moving_averages.assign_moving_average(
+                                moving_mean, mean, decay, zero_debias=False)     &#47&#47 if zero_debias=True, has bias
+                update_moving_variance = moving_averages.assign_moving_average(
+                                moving_variance, variance, decay, zero_debias=False) &#47&#47 if zero_debias=True, has bias
+                &#47&#47 print("TF12 moving")
+            except Exception as e:  &#47&#47 TF11
+                update_moving_mean = moving_averages.assign_moving_average(
+                                moving_mean, mean, decay)
+                update_moving_variance = moving_averages.assign_moving_average(
+                                moving_variance, variance, decay)
+                &#47&#47 print("TF11 moving")
+
+            def mean_var_with_update():
+                with tf.control_dependencies([update_moving_mean, update_moving_variance]):
+                    return tf.identity(mean), tf.identity(variance)
+
+            &#47&#47 ema = tf.train.ExponentialMovingAverage(decay=decay)    &#47&#47 Akara
+            &#47&#47 def mean_var_with_update():
+            &#47&#47     ema_apply_op = ema.apply([moving_mean, moving_variance])
+            &#47&#47     with tf.control_dependencies([ema_apply_op]):
+            &#47&#47         return tf.identity(mean), tf.identity(variance)
+
+            &#47&#47&#47&#47 4. behaviour for training and testing
+            &#47&#47 if not is_train:    &#47&#47 test : mean=0, std=1
+            &#47&#47 &#47&#47 if is_train:      &#47&#47 train : mean=0, std=1
+            &#47&#47     is_train = tf.cast(tf.ones([]), tf.bool)
+            &#47&#47 else:
+            &#47&#47     is_train = tf.cast(tf.zeros([]), tf.bool)
+            &#47&#47
+            &#47&#47 &#47&#47 mean, var = control_flow_ops.cond(
+            &#47&#47 mean, var = tf.cond(
+            &#47&#47     &#47&#47 is_train, lambda: (mean, variance),     &#47&#47 when training, (x-mean(x))/var(x)
+            &#47&#47     is_train, mean_var_with_update,
+            &#47&#47     lambda: (moving_mean, moving_variance)) &#47&#47 when inferencing, (x-0)/1
+            &#47&#47
+            &#47&#47 self.outputs = act( tf.nn.batch_normalization(self.inputs, mean, var, beta, gamma, epsilon) )
+            if is_train:
+                mean, var = mean_var_with_update()
+                self.outputs = act( tf.nn.batch_normalization(self.inputs, mean, var, beta, gamma, epsilon) )
+            else:
+                &#47&#47 self.outputs = act( tf.nn.batch_normalization(self.inputs, ema.average(mean), ema.average(variance), beta, gamma, epsilon) ) &#47&#47 Akara
+                <a id="change">self.outputs = act( tf.nn.batch_normalization(self.inputs, moving_mean, moving_variance, beta, gamma, epsilon) )</a>    &#47&#47 Simiao
+                &#47&#47 self.outputs = act( tf.nn.batch_normalization(self.inputs, mean, variance, beta, gamma, epsilon) )
+
+            &#47&#47 variables = tf.get_collection(TF_GRAPHKEYS_VARIABLES, scope=vs.name)  &#47&#47 8 params in TF12 if zero_debias=True</code></pre><img src="325974940.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 3</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/zsdonghao/text-to-image/commit/d42df89c351e0c2a031ea3a9ae17fb7b844e7b79#diff-4ae88bc9e7591485a5eb7a2f6592a370c907bee8518c1e2210e18586f5b75f96L1744' target='_blank'>Link</a></div><div id='project'> Project Name: zsdonghao/text-to-image</div><div id='commit'> Commit Name: d42df89c351e0c2a031ea3a9ae17fb7b844e7b79</div><div id='time'> Time: 2017-01-18</div><div id='author'> Author: dhsig552@163.com</div><div id='file'> File Name: tensorlayer/layers.py</div><div id='class'> Class Name: BatchNormLayer</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/GPflow/GPflow/commit/c30478e278c4b6fe66a8c00784cbdaa22372e960#diff-24e76a6e4196c7d617c1dc88c57b40f818eb51bbc38f08cfa4c26d550d3bf4a4L169' target='_blank'>Link</a></div><div id='project'> Project Name: GPflow/GPflow</div><div id='commit'> Commit Name: c30478e278c4b6fe66a8c00784cbdaa22372e960</div><div id='time'> Time: 2017-09-29</div><div id='author'> Author: art.art.v@gmail.com</div><div id='file'> File Name: gpflow/params.py</div><div id='class'> Class Name: Param</div><div id='method'> Method Name: _build_parameter</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/d8312d9721ae182a1bdd48ba1d59ebbc4a95ef4c#diff-a1968f7f71e80b0fef892163d2e0b92df6da60317b19f5f7c790ed8989f65314L48' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: d8312d9721ae182a1bdd48ba1d59ebbc4a95ef4c</div><div id='time'> Time: 2017-12-22</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/network/interventional_dense_net.py</div><div id='class'> Class Name: INetDense</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/OpenNMT/OpenNMT-tf/commit/963710e3d38c9ad1d8b8cc1419a3bd1b3dddde1f#diff-ff657e253fb906e24176aa24effb3097b746169231a46b0016fb4daf4a86b895L102' target='_blank'>Link</a></div><div id='project'> Project Name: OpenNMT/OpenNMT-tf</div><div id='commit'> Commit Name: 963710e3d38c9ad1d8b8cc1419a3bd1b3dddde1f</div><div id='time'> Time: 2018-11-09</div><div id='author'> Author: guillaumekln@users.noreply.github.com</div><div id='file'> File Name: opennmt/utils/optim.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: optimize</div><BR>

@@ -1,0 +1,33 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 clear backward cache explicitly
+        ctx.backward_cache = None
+        out_name = utils.get_edata_name(g, &quotout&quot)
+        <a id="change">accum_name = utils.get_ndata_name(g, &quotaccum&quot)</a>
+        grad_score_name = utils.get_edata_name(g, &quotgrad_score&quot)
+        g.edata[out_name] = out
+        g.edata[grad_score_name] = out * grad_out
+        g.update_all(fn.copy_e(grad_score_name, &quotm&quot), fn.sum(&quotm&quot, accum_name))
+        g.apply_edges(fn.e_mul_v(out_name, accum_name, out_name))
+        <a id="change">g.ndata.pop(accum_name)</a>
+        grad_score = <a id="change">g</a>.edata.pop(grad_score_name) - g.edata.pop(out_name)
+        return None, grad_score
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        return grad_score.data
+        
+        g = ctx.backward_cache
+        g = <a id="change">g.local_var()</a>
+        out, = ctx.saved_tensors
+        &#47&#47 clear backward cache explicitly
+        ctx.backward_cache = None
+        g.edata[&quotout&quot] = out
+        g.edata[&quotgrad_s&quot] = out * grad_out
+        g.update_all(fn.copy_e(&quotgrad_s&quot, &quotm&quot), fn.sum(&quotm&quot, &quotaccum&quot))
+        g.apply_edges(fn.e_mul_v(&quotout&quot, &quotaccum&quot, &quotout&quot))
+        grad_score = <a id="change">g.edata[&quotgrad_s&quot]</a> - g.edata[&quotout&quot]
+        return None, grad_score
+
+</code></pre>

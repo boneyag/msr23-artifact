@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    tmpfiles = []
+    with _close_temp_files(tmpfiles):
+        audio_tempfile, audio_tempfile_name = save_audio_signal_to_tempfile(audio_signal)
+        <a id="change">output_tempfile</a>, output_tempfile_name = make_empty_audio_file()
+        tmpfiles.append(audio_tempfile)
+        tmpfiles.append(output_tempfile)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def apply_ffmpeg_filter(audio_signal, _filter, silent=True, **kwargs):
+    tmpfiles = []
+    with _close_temp_files(tmpfiles):
+        <a id="change">input_tempfile = tempfile.NamedTemporaryFile(suffix=".wav")</a>
+        <a id="change">output_tempfile = tempfile.NamedTemporaryFile(suffix=".wav")</a>
+        tmpfiles.append(input_tempfile)
+        tmpfiles.append(output_tempfile)
+
+        audio_signal.write_audio_to_file(input_tempfile)
+
+        if silent:
+            input_kwargs = {&quotloglevel&quot: &quotquiet&quot}
+        else:
+            input_kwargs = {}
+        
+        output = (ffmpeg
+            .input(<a id="change">input_tempfile.name</a>, **input_kwargs)
+            .filter(_filter, **kwargs)
+            .output(output_tempfile.name)
+            .overwrite_output()
+            .run()
+        )
+        
+        augmented_signal = AudioSignal(path_to_input_file=output_tempfile.name)
+        <a id="change">output_tempfile.close()</a>
+        input_tempfile.close()
+    return augmented_signal
+</code></pre>

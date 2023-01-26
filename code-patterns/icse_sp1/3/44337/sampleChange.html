@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                script_file = tempfile.NamedTemporaryFile(mode=&quotw+t&quot, suffix=self.suffix, delete=False).name
+                with open(script_file, &quotw&quot) as sfile:
+                    sfile.write(self.script)
+                cmd = self.interpreter.replace(&quot{}&quot, <a id="change">shlex.quote(script_file)</a>)
+                &#47&#47
+                if env.run_mode == &quotinteractive&quot:
+                    &#47&#47 need to catch output and send to python output, which will in trun be hijacked by SoS notebook</code></pre><h3>After Change</h3><pre><code class='java'>
+                    if not self.args:
+                        self.args = &quot${filename!q}&quot
+                else:
+                    <a id="change">if sys.platform == &quotwin32&quot:
+                        &#47&#47 in the case there is no interpreter, we put the script
+                        &#47&#47 at first (this is the case for windows)
+                        &#47&#47
+                        &#47&#47 and we donot add default args.
+                        self.interpreter = &quot${filename!q}&quot
+                    else:
+                        &#47&#47 if there is a shebang line, we ...
+                        if self.script.startswith(&quot&#47&#47!&quot):
+                            &#47&#47 make the script executable
+                            os.chmod(script_file, 0o775)
+                            self.interpreter = &quot${filename!q}&quot
+                        else:
+                            self.interpreter = &quot/bin/bash&quot
+                            if not self.args:
+                                self.args = &quot${filename!q}&quot
+                &#47&#47
+               </a> cmd = interpolate(&quot{} {}&quot.format(self.interpreter, self.args), &quot${ }&quot, {&quotfilename&quot: script_file})
+                &#47&#47
+                if env.run_mode == &quotinteractive&quot:
+                    &#47&#47 need to catch output and send to python output, which will in trun be hijacked by SoS notebook</code></pre>

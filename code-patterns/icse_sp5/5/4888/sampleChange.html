@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    def _try_reserve_and_set_cuda(self):
+        use_found_device = os.environ.get("CUDA_VISIBLE_DEVICES") is None \
+                           and <a id="change">torch.cuda.is_initialized()</a>
+        device = reserve_cuda_device()
+        &#47&#47 This needs to be set even if torch.cuda is already
+        &#47&#47 initialized because the env var is used later when
+        &#47&#47 starting the DDP setup.
+        os.environ["CUDA_VISIBLE_DEVICES"] = device
+        <a id="change">if use_found_device:
+            &#47&#47 Once cuda is initialized, torch.device ignores the os.env
+            &#47&#47 so we have to set the right actual device.
+            self._set_cuda_device(device)
+        else:
+            &#47&#47 if CUDA is not initialized, we can set the os.env.
+            &#47&#47 Even if initialized, we want to set the device to use BatchNorm.
+            &#47&#47 and make Torch think it only sees 1 GPU.
+            self._set_cuda_device("0")
+
+   </a> def _set_cuda_device(self, device_str):
+        Sets the CUDA device for this current local worker.
+        if self._is_set:
+            raise RuntimeError("CUDA devices already set.")</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 initialized because the env var is used later when
+        &#47&#47 starting the DDP setup.
+        os.environ["CUDA_VISIBLE_DEVICES"] = reserved_device
+        <a id="change">if visible_devices:
+            &#47&#47 We want to set the index on the visible devices list.
+            if reserved_device not in visible_devices:
+                raise RuntimeError(
+                    "TorchTrainer reserved a device {} that was not in the "
+                    "CUDA_VISIBLE_DEVICES {}. This may be because the "
+                    "Ray cluster is not set with the right env vars. "
+                    "If that is not the issue, please raise a "
+                    "Github issue.".format(reserved_device, visible_devices))
+            devices = visible_devices.split(",")
+            scoped_index = devices.index(reserved_device)
+            self._set_cuda_device(str(scoped_index))
+        else:
+            &#47&#47 Once cuda is initialized, torch.device ignores the os.env
+            &#47&#47 so we have to set the right actual device.
+            self._set_cuda_device(reserved_device)
+
+   </a> def _set_cuda_device(self, device_str):
+        Sets the CUDA device for this current local worker.
+        if self._is_set:
+            raise RuntimeError("CUDA devices already set.")</code></pre>

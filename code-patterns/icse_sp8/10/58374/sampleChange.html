@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    global _spark_table_info_listener
+    if _get_current_listener() is None:
+        active_session = _get_active_spark_session()
+        <a id="change">if active_session is None:
+            raise MlflowException(
+                "No active SparkContext found, refusing to enable Spark datasource "
+                "autologging. Please create a SparkSession e.g. via "
+                "SparkSession.builder.getOrCreate() (see API docs at "
+                "https://spark.apache.org/docs/latest/api/python/"
+                "pyspark.sql.html&#47&#47pyspark.sql.SparkSession) "
+                "before attempting to enable autologging"
+            )
+        &#47&#47 We know SparkContext exists here already, so get it
+       </a> sc = SparkContext.getOrCreate()
+        if _get_spark_major_version(sc) &lt; 3:
+            raise MlflowException("Spark autologging unsupported for Spark versions &lt; 3")
+        gw = active_session.sparkContext._gateway
+        <a id="change">params = gw.callback_server_parameters</a>
+        callback_server_params = CallbackServerParameters(
+            address=params.address,
+            port=params.port,
+            daemonize=True,
+            daemonize_connections=True,
+            eager_load=<a id="change">params.eager_load</a>,
+            ssl_context=params.ssl_context,
+            accept_timeout=params.accept_timeout,
+            read_timeout=<a id="change">params.read_timeout</a>,
+            auth_token=params.auth_token,
+        )
+        gw.start_callback_server(callback_server_params)
+
+        event_publisher = _get_jvm_event_publisher()
+        try:
+            <a id="change">event_publisher.init(1)</a>
+            <a id="change">_spark_table_info_listener = PythonSubscriber()</a>
+            _spark_table_info_listener.register()
+        except Exception as e:
+            raise MlflowException(
+                "Exception while attempting to initialize JVM-side state for "</code></pre><h3>After Change</h3><pre><code class='java'>
+    wrap_patch(SparkSession, "__init__", __init__)
+
+    active_session = _get_active_spark_session()
+    <a id="change">if active_session is not None:
+        &#47&#47 We know SparkContext exists here already, so get it
+        sc = SparkContext.getOrCreate()
+
+        _listen_for_spark_activity(sc)
+
+
+</a>def _get_repl_id():
+    
+    Get a unique REPL ID for a PythonSubscriber instance. This is used to distinguish between
+    REPLs in multitenant, REPL-aware environments where multiple Python processes may share the</code></pre>

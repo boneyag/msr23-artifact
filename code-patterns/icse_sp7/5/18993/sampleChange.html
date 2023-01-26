@@ -1,0 +1,30 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  Raises:
+    ValueError: If called outside of TPU context.
+  
+  <a id="change">with tf.name_scope(name, "cross_replica_sum", [tensor]):
+    num_shards = get_num_tpu_shards()
+    if num_shards is None:
+      raise ValueError(
+          "Cannot take cross_replica_sum() outside of TPU Context.")
+    if num_shards == 1:
+      return tensor
+    return tf.contrib.tpu.cross_replica_sum(tensor)
+
+
+</a>def get_replica_id():
+  Returns an id number for the current replica, counting from 0.
+  &#47&#47 This code is based on TensorTracer._add_replica_id_to_graph().
+</code></pre><h3>After Change</h3><pre><code class='java'>
+  num_replicas = get_num_replicas()
+
+  if num_replicas and num_replicas &gt; 1:
+    <a id="change">with tf.name_scope(name, "cross_replica_sum", nest.flatten(structure)):
+      return nest.map_structure(tf.contrib.tpu.cross_replica_sum, structure)
+ </a> else:
+    return structure
+
+</code></pre>

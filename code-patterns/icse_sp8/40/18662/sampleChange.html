@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        si = 0
+
+        &#47&#47 setup feed dict for dropout
+        <a id="change">fd = {self.is_training:False}</a>
+        <a id="change">for li in range(self.cnn_layers):
+            fd[self.cnn_dropout_ph[li]] = 0
+       </a> <a id="change">for li in range(self.dcnn_layers):
+            fd[self.dcnn_dropout_ph[li]] = 0
+       </a> <a id="change">for li in range(self.rnn_layers):
+            fd[self.rnn_dropout_ph[li]] = 0
+
+        &#47&#47 get first batch
+       </a> Xb, Yb, NAb, Nb = batcher.next()
+
+        while Xb is not None:
+            &#47&#47 update feed dict</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.save_reprs = job.get(&quotsave_reprs&quot, False)
+
+
+    def test(<a id="change">self</a>, sess, batcher, rc_avg=False, return_preds=False, down_sample=1):
+        &quot&quot&quot Compute model accuracy on a test set.
+
+        Args:
+          sess:         TensorFlow session
+          batcher:      Batcher object to provide data
+          rc_avg:       Average predictions from the forward and reverse complement sequences
+          return_preds: Bool indicating whether to return predictions
+          down_sample:  Int specifying to consider uniformly spaced sampled positions
+
+        Returns:
+          mean_loss:    Mean loss across targets
+          mean_r2:      Mean R^2 across targets
+          preds:        Predictions
+        &quot&quot&quot
+
+        batch_losses = []
+
+        &#47&#47 determine non-buffer region
+        buf_start = self.batch_buffer // self.target_pool
+        buf_end = (self.batch_length - self.batch_buffer) // self.target_pool
+        buf_len = buf_end - buf_start
+
+        &#47&#47 uniformly sample indexes
+        ds_indexes = np.arange(0, buf_len, down_sample)
+
+        &#47&#47 initialize prediction and target arrays
+        preds = np.zeros((batcher.num_seqs, len(ds_indexes), self.num_targets), dtype=&quotfloat16&quot)
+        targets = np.zeros((batcher.num_seqs, len(ds_indexes), self.num_targets), dtype=&quotfloat16&quot)
+        targets_na = np.zeros((batcher.num_seqs, len(ds_indexes)), dtype=&quotbool&quot)
+        si = 0
+
+        &#47&#47 setup feed dict
+        <a id="change">fd = self.set_mode(&quottest&quot)</a>
+
+        &#47&#47 get first batch
+        Xb, Yb, NAb, Nb = batcher.next()
+</code></pre>

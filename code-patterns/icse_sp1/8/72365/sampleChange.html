@@ -1,0 +1,65 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                position_op = tf.cast(
+                    tf.mod(accumulated, num_updates_tensor), tf.int32)
+                &#47&#47 update value
+                <a id="change">accumulator_op = tf.scatter_update(accumulator, position,
+                                                   validation_accuracy)</a>
+
+                &#47&#47 update the amount of accumulated value of the whole train process
+                accumulated_op = tf.assign_add(accumulated, 1)
+
+                &#47&#47 assing the right operations to position, accumulator, and
+                &#47&#47 accumulated tensors, basing the decision on the trigger value
+
+                position = tf.cond(
+                    tf.equal(trigger, 1), lambda: tf.assign(position, 0),
+                    lambda: position_op)
+
+                def reset_accumulator():
+                    set past validation accuracies to 0 and place actual
+                    validation accuracy in position 0
+                    return tf.scatter_update(
+                        accumulator, [i for i in range(num_updates)],
+                        [validation_accuracy] +
+                        [0.0 for i in range(1, num_updates)])
+
+                <a id="change">accumulator = tf.cond(
+                    tf.equal(trigger, 1), reset_accumulator,
+                    lambda: accumulator_op)</a>
+
+                accumulated = tf.cond(
+                    tf.equal(trigger, 1), lambda: tf.assign(accumulated, 1),
+                    lambda: accumulated_op)</code></pre><h3>After Change</h3><pre><code class='java'>
+                    lambda: tf.cast(tf.mod(accumulated, num_updates_tensor), tf.int32))
+
+                &#47&#47 execute only after position update
+                <a id="change">with tf.control_dependencies([position]):
+
+                    def reset_accumulator():
+                        set past validation accuracies to 0 and place actual
+                        validation accuracy in position 0
+                        return tf.scatter_update(
+                            accumulator, [i for i in range(num_updates)],
+                            [validation_accuracy] +
+                            [0.0 for i in range(1, num_updates)])
+
+                    &#47&#47 update accumulator
+                    &#47&#47 if trigger: reset_acculator, else accumulator[position] = va
+                    accumulator = tf.cond(
+                        tf.equal(trigger, 1), reset_accumulator,
+                        lambda: tf.scatter_update(accumulator, position, validation_accuracy)
+                    )
+                    &#47&#47 update accumulated (for current prob)
+                    &#47&#47 if trigger; accumulated = 1, else accumulated +=1
+                    accumulated = tf.cond(
+                        tf.equal(trigger, 1),
+                        lambda: tf.assign(accumulated, 1),
+                        lambda: tf.assign_add(accumulated, 1))
+
+       </a> return keep_prob
+
+
+def train():</code></pre>

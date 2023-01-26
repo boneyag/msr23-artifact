@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    
+    &#47&#47 All generators from the Boiler Generator Association table (860)
+    gens8 = bga8.drop_duplicates(
+        subset=<a id="change">[&quotplant_id_eia&quot, &quotplant_id_pudl&quot, &quotgenerator_id&quot]</a>)
+    &#47&#47 All generators from the generation table (923)/
+    gens9 = g9_summed.drop_duplicates(
+        subset=[&quotplant_id_eia&quot, &quotplant_id_pudl&quot, &quotgenerator_id&quot,</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Find all the generator records that were ever missing a boiler:
+    unassociated_generators = gens[~gens[&quotboiler_generator_assn&quot]]
+    &#47&#47 Create a list of plants with unassociated generators, by year.
+    unassociated_plants = <a id="change">unassociated_generators</a>.\
+        drop_duplicates(subset=<a id="change">[id_col, &quotreport_date&quot]</a>).\
+        drop([&quotgenerator_id&quot, &quotboiler_id&quot, &quotboiler_generator_assn&quot], axis=1)
+    &#47&#47 Tag those plant-years as being unassociated
+    unassociated_plants[&quotplant_assn&quot] = False
+
+    &#47&#47 Merge the plant association flag back in to the generators
+    gens = pd.merge(gens, unassociated_plants, how=&quotleft&quot,
+                    on=[&quotplant_id_eia&quot, &quotplant_id_pudl&quot, &quotreport_date&quot])
+    &#47&#47 Tag the rest of the generators as being part of a plant association...
+    &#47&#47 This may or may not be true. Need to filter out partially associated
+    &#47&#47 plants in the next step.
+    gens[&quotplant_assn&quot] = gens.plant_assn.fillna(value=True)
+
+    &#47&#47 Using the associtated plants, extract the generator/boiler combos
+    &#47&#47 that represent complete plants at any time to preserve
+    &#47&#47 associations (i.e. if a coal plant had its boilers and generators
+    &#47&#47 fully associated in the bga table in 2011 and then adds a
+    &#47&#47 combined cycle plant the coal boiler/gen combo will be saved).
+
+    &#47&#47 Remove the report_date:
+    <a id="change">gens_complete = gens.drop(&quotreport_date&quot, axis=1)</a>
+    &#47&#47 Select only those generators tagged as being part of a complete plant:
+    gens_complete = gens_complete[gens_complete[&quotplant_assn&quot]]
+
+    gens_complete = gens_complete.drop_duplicates(subset=[&quotplant_id_eia&quot,</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+@dispatch(Gaussian, kernels.Sum, InducingPoints, kernels.Sum, InducingPoints)
+@quadrature_fallback
+def _expectation(p, kern1, feat1, kern2, feat2):
+    <a id="change">if feat1 != feat2:
+        raise NotImplementedError("Different features are not supported")
+
+   </a> feat = feat1
+    crossexps = []
+
+    for k1, k2 in it.product(kern1.kern_list, kern2.kern_list):
+        if k1.on_separate_dims(k2):
+            <a id="change">eKxz1 = _expectation(p, k1, feat, None, None)</a>
+            eKxz2 = _expectation(p, k2, feat, None, None)
+            result = eKxz1[<a id="change">:, :, None</a>] * eKxz2[:, None, :]
+        else:
+            result = _expectation(p, k1, feat, k2, feat)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            crossexps.append(expectation(p, (k1, feat1), (k1, feat1)))
+
+            for k2 in kern1.kern_list[:i]:
+                eKK = expectation(p, (k1, feat1), <a id="change">(k2, feat2)</a>)
+                eKK += tf.matrix_transpose(eKK)
+                crossexps.append(eKK)
+    else:</code></pre>

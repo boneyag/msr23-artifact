@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if cls.SINCE_VERSION &lt; 11:  &#47&#47 for opset 1 and opset 2
+      paddings = node.attrs.pop("pads", None)
+      &#47&#47 tf requires int32 paddings
+      <a id="change">paddings = tf.constant(
+          np.transpose(
+              np.array(paddings).reshape([2, num_dim]).astype(np.int32)))</a>
+      constant_values = node.attrs.pop("value", 0.)
+
+    else:  &#47&#47 for opset 11
+      paddings = tensor_dict[node.inputs[1]]</code></pre><h3>After Change</h3><pre><code class='java'>
+      constant_values = tensor_dict[node.inputs[2]] if len(
+          node.inputs) == 3 else 0
+
+    cond = <a id="change">tf.cond(check_positive(paddings),
+                   lambda: process_pos_pads(x, paddings),
+                   lambda: process_neg_pads(x, paddings))</a>
+    return cond
+
+  @classmethod
+  def version_1(cls, node, **kwargs):</code></pre>

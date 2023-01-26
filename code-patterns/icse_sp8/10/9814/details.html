@@ -1,0 +1,101 @@
+<html><h3>33d61460bcda81161f0254b074c3a0eda3ce70ee,cde/density_estimator/NF.py,NormalizingFlowEstimator,_build_model,#NormalizingFlowEstimator#,156
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with tf.variable_scope(self.name):
+            &#47&#47 adds placeholders, data normalization and data noise to graph as desired
+            self.layer_in_x, self.layer_in_y = self._build_input_layers()
+            <a id="change">self.y_input</a> = L.get_output(self.layer_in_y)
+
+            flow_classes = [FLOWS[flow_name] for flow_name in self.flows_type]
+            &#47&#47 get the individual parameter sizes for each flow
+            param_split_sizes = [flow.get_param_size(self.ndim_y) for flow in flow_classes]
+            mlp_output_dim = sum(param_split_sizes)
+            core_network = MLP(
+                name="core_network",
+                input_layer=self.layer_in_x,
+                output_dim=mlp_output_dim,
+                hidden_sizes=self.hidden_sizes,
+                hidden_nonlinearity=self.hidden_nonlinearity,
+                output_nonlinearity=None,
+                weight_normalization=self.weight_normalization
+            )
+            outputs = L.get_output(core_network.output_layer)
+            flow_params = tf.split(value=outputs, num_or_size_splits=param_split_sizes, axis=1)
+
+            &#47&#47 instanciate the flows with their parameters
+            flows = [flow(params, self.ndim_y) for flow, params in zip(flow_classes, flow_params)]
+
+            &#47&#47 build up the base distribution that will be transformed by the flows
+            base_dist = tf.distributions.Normal(loc=[0.]*self.ndim_y, scale=[1.]*self.ndim_y)
+
+            &#47&#47 chain the flows together and build the transformed distribution using the base_dist + flows
+            &#47&#47 Chaining applies the flows in reverse, Chain([a,b]).forward(x) being a.forward(b.forward(x))
+            &#47&#47 We reverse them so the flows are stacked ontop of the base distribution in the original order
+            flows.reverse()
+            chain = tf.contrib.distributions.bijectors.Chain(flows)
+            target_dist = tf.contrib.distributions.TransformedDistribution(distribution=base_dist, bijector=chain)
+
+            &#47&#47 since we operate with matrices not vectors, the output would have dimension (?,1)
+            &#47&#47 and therefor has to be reduce first to have shape (?,)
+            if self.data_normalization:
+                self.pdf_ = tf.squeeze(target_dist.prob(self.y_input) / tf.reduce_prod(self.std_y_sym), axis=1)
+                self.log_pdf_ = tf.squeeze(target_dist.log_prob(self.y_input) - tf.reduce_sum(tf.log(self.std_y_sym)), axis=1)
+                self.cdf_ = tf.squeeze(<a id="change">target_dist.cdf(self.y_input)</a> / tf.reduce_prod(self.std_y_sym), axis=1)
+            else:
+                self.pdf_ = tf.squeeze(target_dist.prob(self.y_input), axis=1)
+                self.log_pdf_ = tf.squeeze(target_dist.log_prob(self.y_input), axis=1)</code></pre><h3>After Change</h3><pre><code class='java'>
+        assert p.shape[0] == X.shape[0], "Shapes should be equal, are {} != {}".format(p.shape[0], X.shape[0])
+        return p
+
+    def _build_model(<a id="change">self</a>):
+        
+        implementation of the flow model
+        
+        with tf.variable_scope(self.name):
+            &#47&#47 adds placeholders, data normalization and data noise to graph as desired
+            self.layer_in_x, self.layer_in_y = self._build_input_layers()
+            self.y_input = L.get_output(self.layer_in_y)
+
+            flow_classes = [FLOWS[flow_name] for flow_name in self.flows_type]
+            &#47&#47 get the individual parameter sizes for each flow
+            param_split_sizes = [flow.get_param_size(self.ndim_y) for flow in flow_classes]
+            mlp_output_dim = sum(param_split_sizes)
+            core_network = MLP(
+                name="core_network",
+                input_layer=self.layer_in_x,
+                output_dim=mlp_output_dim,
+                hidden_sizes=self.hidden_sizes,
+                hidden_nonlinearity=self.hidden_nonlinearity,
+                output_nonlinearity=None,
+                weight_normalization=self.weight_normalization
+            )
+            outputs = L.get_output(core_network.output_layer)
+            flow_params = tf.split(value=outputs, num_or_size_splits=param_split_sizes, axis=1)
+
+            &#47&#47 instanciate the flows with their parameters
+            flows = [flow(params, self.ndim_y) for flow, params in zip(flow_classes, flow_params)]
+
+            &#47&#47 build up the base distribution that will be transformed by the flows
+            <a id="change">if self.ndim_y == 1:
+                &#47&#47 this is faster for 1-D than the multivariate version
+                &#47&#47 it also supports a cdf, which isn&quott implemented for Multivariate
+                base_dist = tf.distributions.Normal(loc=0., scale=1.)
+            else:
+                base_dist = tf.contrib.distributions.MultivariateNormalDiag(loc=[0.] * self.ndim_y,
+                                                                            scale_diag=[1.] * self.ndim_y)
+
+            &#47&#47 chain the flows together and build the transformed distribution using the base_dist + flows
+            &#47&#47 Chaining applies the flows in reverse, Chain([a,b]).forward(x) being a.forward(b.forward(x))
+            &#47&#47 We reverse them so the flows are stacked ontop of the base distribution in the original order
+           </a> flows.reverse()
+            chain = tf.contrib.distributions.bijectors.Chain(flows)
+            target_dist = tf.contrib.distributions.TransformedDistribution(distribution=base_dist, bijector=chain)
+
+            &#47&#47 since we operate with matrices not vectors, the output would have dimension (?,1)
+            &#47&#47 and therefor has to be reduce first to have shape (?,)
+            if <a id="change">self.ndim_y</a> == 1:
+                &#47&#47 for x shape (batch_size, 1) normal_distribution.pdf(x) outputs shape (batch_size, 1) -&gt; squeeze
+                self.pdf_ = tf.squeeze(target_dist.prob(self.y_input), axis=1)
+                self.log_pdf_ = tf.squeeze(target_dist.log_prob(self.y_input), axis=1)</code></pre><img src="65849385.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 8</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/freelunchtheorem/Conditional_Density_Estimation/commit/33d61460bcda81161f0254b074c3a0eda3ce70ee#diff-b8db0013ceb46bc7c6ef2a2c9b53eb443d3fc4bf9e3f80d65b9754857f466954L156' target='_blank'>Link</a></div><div id='project'> Project Name: freelunchtheorem/Conditional_Density_Estimation</div><div id='commit'> Commit Name: 33d61460bcda81161f0254b074c3a0eda3ce70ee</div><div id='time'> Time: 2019-05-02</div><div id='author'> Author: simonboehm@mailbox.org</div><div id='file'> File Name: cde/density_estimator/NF.py</div><div id='class'> Class Name: NormalizingFlowEstimator</div><div id='method'> Method Name: _build_model</div><BR><BR><div id='link'><a href='https://github.com/freelunchtheorem/Conditional_Density_Estimation/commit/33d61460bcda81161f0254b074c3a0eda3ce70ee#diff-b8db0013ceb46bc7c6ef2a2c9b53eb443d3fc4bf9e3f80d65b9754857f466954L156' target='_blank'>Link</a></div><div id='project'> Project Name: freelunchtheorem/Conditional_Density_Estimation</div><div id='commit'> Commit Name: 33d61460bcda81161f0254b074c3a0eda3ce70ee</div><div id='time'> Time: 2019-05-02</div><div id='author'> Author: simonboehm@mailbox.org</div><div id='file'> File Name: cde/density_estimator/NF.py</div><div id='class'> Class Name: NormalizingFlowEstimator</div><div id='method'> Method Name: _build_model</div><BR><BR><div id='link'><a href='https://github.com/pymc-devs/pymc3/commit/21c16153ecd473a027df2af1e9a4fd3c71810e1a#diff-1c71623cc54951ea995eecb09cd6bd21ed80929a85e511307e471df1701848e2L26' target='_blank'>Link</a></div><div id='project'> Project Name: pymc-devs/pymc3</div><div id='commit'> Commit Name: 21c16153ecd473a027df2af1e9a4fd3c71810e1a</div><div id='time'> Time: 2017-04-14</div><div id='author'> Author: maxim.v.kochurov@gmail.com</div><div id='file'> File Name: pymc3/variational/callbacks.py</div><div id='class'> Class Name: CheckLossConvergence</div><div id='method'> Method Name: __call__</div><BR><BR><div id='link'><a href='https://github.com/pymc-devs/pymc3/commit/d493caa1278c158b78aa02c8f23d4f56c311f975#diff-1c71623cc54951ea995eecb09cd6bd21ed80929a85e511307e471df1701848e2L33' target='_blank'>Link</a></div><div id='project'> Project Name: pymc-devs/pymc3</div><div id='commit'> Commit Name: d493caa1278c158b78aa02c8f23d4f56c311f975</div><div id='time'> Time: 2017-04-14</div><div id='author'> Author: maxim.v.kochurov@gmail.com</div><div id='file'> File Name: pymc3/variational/callbacks.py</div><div id='class'> Class Name: CheckLossConvergence1</div><div id='method'> Method Name: __call__</div><BR>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.tau = tt.as_tensor_variable(tau)
+        self.cov = tt.as_tensor_variable(cov)
+        self.gpu_compat = gpu_compat
+        <a id="change">if gpu_compat is False and theano.config.device == &quotgpu&quot:
+            warnings.warn("The function used is not GPU compatible. Please check the gpu_compat flag")
+
+   </a> def random(self, point=None, size=None):
+        mu, cov = draw_values([self.mu, self.cov], point=point)
+
+        def _random(mean, cov, size=None):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    def __init__(self, mu, cov=None, tau=None, chol=None, *args, **kwargs):
+        super(MvNormal, self).__init__(*args, **kwargs)
+        <a id="change">if len([i for i in [tau, cov, chol] if i is not None]) != 1:
+            raise ValueError(&quotIncompatible parameterization. Specify exactly &quot
+                             &quotone of tau, cov, or chol to specify &quot
+                             &quotdistribution.&quot)
+       </a> self.mean = self.median = self.mode = self.mu = tt.as_tensor_variable(mu)
+        self.solve = tt.slinalg.Solve(A_structure="lower_triangular", lower=True)
+
+        <a id="change">self.has_tau = tau is not None</a>
+        if cov is not None:
+            self.chol_cov = tt.slinalg.cholesky(tt.as_tensor_variable(cov))
+        elif <a id="change">tau</a> is not None:
+            self.chol_tau = tt.slinalg.cholesky(tt.as_tensor_variable(tau))
+        else:
+            self.chol_cov = tt.as_tensor_variable(chol)</code></pre>

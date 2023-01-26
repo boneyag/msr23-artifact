@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &#47&#47 logger.warning("Dumping to {}".format(&quot"/Users/chaubold/Desktop/dump.h5"&quot))
+                &#47&#47 vigra.impex.writeHDF5(reordered_feature_image[z,...], "data", "/Users/chaubold/Desktop/dump.h5")
+                result_slice = self._pytorch_net.forward([reordered_feature_image[z:z+1,...]])[0]
+                <a id="change">logger.info("Resulting slice {} has shape {}".format(z, result_slice.shape))</a>
+                result[z, 0, ...] = result_slice
+
+            logger.info("Obtained a predicted block of shape {}".format(result.shape))
+            </code></pre><h3>After Change</h3><pre><code class='java'>
+                &#47&#47 vigra.impex.writeHDF5(reordered_feature_image[z,...], "data", "/Users/chaubold/Desktop/dump.h5")
+
+                &#47&#47 create batch of desired num slices. Multiple slices can be processed on multiple GPUs!
+                batch = [reordered_feature_image[zi:zi+1,...] <a id="change">for</a> zi in range(z, <a id="change">min(z+self.BATCH_SIZE, reordered_feature_image.shape[0])</a>)]
+
+                result_batch = self._pytorch_net.forward(batch)
+                logger.info("Resulting slices from {} to {} have shape {}".format(z, z+len(batch), result_batch[0].shape))</code></pre>

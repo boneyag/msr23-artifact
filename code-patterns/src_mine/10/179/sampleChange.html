@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        raw_bbox[:, 2:] += raw_bbox[:, :2]
+        raw_bbox *= self.insize / self.extractor.grid
+
+        raw_score = <a id="change">self.xp.exp(conf[:, 1:])</a>
+        raw_score /= raw_score.sum(axis=1, keepdims=True)
+        raw_score /= 1 + self.xp.exp(-conf[:, 0, None])
+
+        bbox = []
+        label = []
+        score = []
+        for l in range(self.n_fg_class):
+            bbox_l = raw_bbox
+            score_l = raw_score[:, l]
+
+            mask = score_l &gt;= self.score_thresh
+            bbox_l = bbox_l[mask]
+            <a id="change">score_l</a> = score_l[mask]
+
+            indices = utils.non_maximum_suppression(
+                bbox_l, self.nms_thresh, score_l)
+            <a id="change">bbox_l</a> = bbox_l[indices]
+            score_l = score_l[indices]
+
+            bbox.append(cuda.to_cpu(bbox_l))</code></pre><h3>After Change</h3><pre><code class='java'>
+        raw_bbox[:, 2:] += raw_bbox[:, :2]
+        raw_bbox *= self.insize / self.extractor.grid
+
+        obj = 1 / (1 + <a id="change">self.xp.exp(-obj)</a>)
+        conf = self.xp.exp(conf)
+        conf /= conf.sum(axis=1, keepdims=True)
+        raw_score = obj[:, None] * conf
+
+        bbox = []
+        label = []
+        score = []
+        for l in range(self.n_fg_class):
+            bbox_l = raw_bbox
+            score_l = raw_score[:, l]
+
+            mask = score_l &gt;= self.score_thresh
+            bbox_l = bbox_l[mask]
+            <a id="change">score_l</a> = score_l[mask]
+
+            indices = utils.non_maximum_suppression(
+                bbox_l, self.nms_thresh, score_l)
+            <a id="change">bbox_l</a> = bbox_l[indices]
+            score_l = score_l[indices]
+
+            bbox.append(cuda.to_cpu(bbox_l))</code></pre>

@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        num_time_steps = layer_input.shape[0]
+        num_sequences = layer_input.shape[1]
+        num_samples = self.network.num_noise_samples
+        num_classes = <a id="change">self.network.vocabulary.num_classes()</a>
+
+        &#47&#47 Sample k noise words from unigram distribution. These are shared
+        &#47&#47 across mini-batch. We need to repeat the distribution as many times as
+        &#47&#47 we want samples, because multinomial() does not yet use the size</code></pre><h3>After Change</h3><pre><code class='java'>
+        num_time_steps = layer_input.shape[0]
+        num_sequences = layer_input.shape[1]
+        num_samples = self.network.num_noise_samples
+        num_classes = numpy.int64(<a id="change">self.network.vocabulary.num_classes()</a>)
+        random = self.network.random
+
+        &#47&#47 Sample k noise words from unigram distribution. These are shared
+        &#47&#47 across mini-batch. We need to repeat the distribution as many times as
+        &#47&#47 we want samples, because multinomial() does not yet use the size
+        &#47&#47 argument.
+        if self.network.noise_probs is None:
+            &#47&#47 The upper bound is exclusive, so this always creates samples that
+            &#47&#47 are &lt; num_classes
+            sample = random.uniform((num_samples,)) * num_classes
+            sample = sample.astype(&quotint64&quot)
+        else:
+            class_probs = self.network.noise_probs[None, :]
+            class_probs = tensor.tile(class_probs, [num_samples, 1])
+            sample = self.network.random.multinomial(pvals=class_probs)
+            sample = sample.argmax(1)
+        self.shared_sample_logprobs = \
+            self._get_target_list_preact(layer_input, sample)
+        self.shared_sample = sample
+
+        &#47&#47 Sample k noise words per training word from unigram distribution.
+        &#47&#47 multinomial() is only implemented for dimension &lt;= 2, so we&quotll create
+        &#47&#47 a 2-dimensional probability distribution and then reshape the result.
+        num_batch_samples = num_time_steps * num_sequences * num_samples
+        if self.network.noise_probs is None:
+            &#47&#47 The upper bound is exclusive, so this always creates samples that
+            &#47&#47 are &lt; num_classes
+            sample = <a id="change">random.uniform((num_batch_samples,)) * num_classes</a>
+            sample = sample.astype(&quotint64&quot)
+        else:
+            class_probs = self.network.noise_probs[None, :]
+            class_probs = tensor.tile(class_probs, [num_batch_samples, 1])</code></pre>

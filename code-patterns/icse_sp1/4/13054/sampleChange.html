@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def test_glmnet():
+    Test glmnet.
+    scaler = <a id="change">StandardScaler()</a>
+    n_samples, n_features = 100, 10
+
+    &#47&#47 coefficients
+    beta0 = 1. / (np.float(n_features) + 1.) * \
+        np.random.normal(0.0, 1.0)
+    beta = 1. / (np.float(n_features) + 1.) * \
+        np.random.normal(0.0, 1.0, (n_features,))
+
+    distrs = [&quotsoftplus&quot, &quotgaussian&quot, &quotpoisson&quot, &quotbinomial&quot, &quotprobit&quot]
+    solvers = [&quotbatch-gradient&quot, &quotcdfast&quot]
+    score_metric = &quotpseudo_R2&quot
+    learning_rate = 2e-1
+
+    for solver in solvers:
+        for distr in distrs:
+
+            glm = GLM(distr, learning_rate=learning_rate,
+                      solver=solver, score_metric=score_metric)
+
+            assert_true(repr(glm))
+
+            np.random.seed(glm.random_state)
+            X_train = np.random.normal(0.0, 1.0, [n_samples, n_features])
+            y_train = simulate_glm(glm.distr, beta0, beta, X_train)
+
+            <a id="change">X_train = scaler.fit_transform(X_train)</a>
+            glm.fit(X_train, y_train)
+
+            beta_ = glm.beta_
+            assert_allclose(beta, beta_, atol=0.5)  &#47&#47 check fit</code></pre><h3>After Change</h3><pre><code class='java'>
+            from pyglmnet.pyglmnet import _loss
+            l_true = _loss(distr, 0., np.eye(beta.shape[0]), 0.,
+                           X_train, y_train, 2.0, None,
+                           np.concatenate((<a id="change">[beta0]</a>, beta)))
+
+            glm.fit(X_train, y_train)
+            assert_allclose(glm._loss[-1], l_true, rtol=1e-4, atol=1e-7)</code></pre>

@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        import_format = request.POST[&quotformat&quot]
+        try:
+            if import_format == &quotcsv&quot:
+                <a id="change">form_data = TextIOWrapper(
+                    request.FILES[&quotfile&quot].file, encoding=&quotutf-8&quot)</a>
+                if project.is_type_of(Project.SEQUENCE_LABELING):
+                    Document.objects.bulk_create([
+                        Document(text=line.strip(), project=project)
+                        for line in form_data
+                    ])
+                else:
+                    reader = csv.reader(form_data)
+                    Document.objects.bulk_create([
+                        Document(text=line[0].strip(), project=project)
+                        for line in reader
+                    ])
+
+            elif import_format == &quotjson&quot:
+                form_data = request.FILES[&quotfile&quot].file
+                Document.objects.bulk_create([
+                    Document(text=<a id="change">json</a>.loads(entry)[&quottext&quot], project=project)
+                    <a id="change">for</a> entry in form_data
+                ])
+            return HttpResponseRedirect(reverse(&quotdataset&quot, args=[project.id]))
+        except:</code></pre><h3>After Change</h3><pre><code class='java'>
+    def post(self, request, *args, **kwargs):
+        project = get_object_or_404(Project, pk=kwargs.get(&quotproject_id&quot))
+        import_format = request.POST[&quotformat&quot]
+        <a id="change">try:
+            file = request.FILES[&quotfile&quot].file
+            documents = []
+            if import_format == &quotcsv&quot:
+                documents = self.csv_to_documents(project, file)
+                
+            elif import_format == &quotjson&quot:
+                documents = self.json_to_documents(project, file)
+
+            &#47&#47 TODO: Move to the configuration
+            batch_size = 500
+            while True:
+                batch = list(it.islice(documents, batch_size))
+                if not batch:
+                    break
+
+                Document.objects.bulk_create(batch, batch_size=batch_size)
+                return HttpResponseRedirect(reverse(&quotdataset&quot, args=[project.id]))
+        except DataUpload.ImportFileError as e:
+            messages.add_message(request, messages.ERROR, e.message)
+            return HttpResponseRedirect(reverse(&quotupload&quot, args=[project.id]))
+        except Exception as e:
+            logger.exception(e)
+            messages.add_message(request, messages.ERROR, &quotSomething went wrong&quot)
+            return HttpResponseRedirect(reverse(&quotupload&quot, args=[project.id]))
+
+
+</a>class DataDownload(SuperUserMixin, LoginRequiredMixin, TemplateView):
+    template_name = &quotadmin/dataset_download.html&quot
+
+</code></pre>

@@ -1,0 +1,48 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        images, _ = self._process_input(images)
+        n = len(images)
+        images = <a id="change">torch.from_numpy(images)</a>
+        <a id="change">images = images.to(self.device)</a>
+
+        if self._old_pytorch():  &#47&#47 pragma: no cover
+            images = Variable(images, volatile=True)
+            predictions = self._model(images)
+            predictions = predictions.data
+        else:
+            predictions = self._model(images)
+            &#47&#47 TODO: add no_grad once we have a solution
+            &#47&#47 for models that require grads internally
+            &#47&#47 for inference
+            &#47&#47 with torch.no_grad():
+            &#47&#47     predictions = self._model(images)        
+        <a id="change">predictions = predictions.to(self.device)</a>
+        if not self._old_pytorch():
+            predictions = predictions.detach()
+        predictions = predictions.numpy()
+        assert predictions.ndim == 2</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        images, _ = self._process_input(images)
+        n = len(images)
+        images = <a id="change">torch.from_numpy(images).to(self.device)</a>
+
+        if self._old_pytorch():  &#47&#47 pragma: no cover
+            images = Variable(images, volatile=True)
+            predictions = self._model(images)
+            predictions = predictions.data
+        else:
+            predictions = self._model(images)
+            &#47&#47 TODO: add no_grad once we have a solution
+            &#47&#47 for models that require grads internally
+            &#47&#47 for inference
+            &#47&#47 with torch.no_grad():
+            &#47&#47     predictions = self._model(images)        
+        <a id="change">if self.device != "cpu":
+            predictions = predictions.to("cpu")
+       </a> if not self._old_pytorch():
+            predictions = predictions.detach()
+        predictions = predictions.numpy()
+        assert predictions.ndim == 2</code></pre>

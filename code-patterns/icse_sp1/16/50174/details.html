@@ -1,0 +1,71 @@
+<html><h3>58a220cb0fa5ea7d86486f1b3af8036b905de081,cellprofiler/modules/applythreshold.py,ApplyThreshold,_threshold_otsu3,#ApplyThreshold#Any#,787
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    assign_middle_to_foreground=self.assign_middle_to_foreground.value == O_FOREGROUND
+                )
+
+            t_local *= <a id="change">self</a>.threshold_correction_factor.value
+
+            &#47&#47 Constrain the local threshold to be within [0.7, 1.5] * global_threshold. It&quots for the pretty common case
+            &#47&#47 where you have regions of the image with no cells whatsoever that are as large as whatever window you&quotre
+            &#47&#47 using. Without a lower bound, you start having crazy threshold s that detect noise blobs. And same for
+            &#47&#47 very crowded areas where there is zero background in the window. You want the foreground to be all
+            &#47&#47 detected.
+            t_min = max(self.threshold_range.min, t_global * 0.7)
+
+            t_max = min(self.threshold_range.max, t_global * 1.5)
+
+            t_local[t_local &lt; t_min] = t_min
+
+            t_local[t_local &gt; t_max] = t_max
+
+            return t_local, t_global
+
+        <a id="change">t_local = t_global * self.threshold_correction_factor.value</a>
+
+        <a id="change">return min(max(t_local, self.threshold_range.min), self.threshold_range.max), t_global</a>
+
+    def _threshold_robust_background(self, image):
+        average_fn = {
+            RB_MEAN: numpy.mean,</code></pre><h3>After Change</h3><pre><code class='java'>
+            assign_middle_to_foreground=self.assign_middle_to_foreground.value == O_FOREGROUND
+        )
+
+        t_global = <a id="change">self._correct_global_threshold(t_global)</a>
+
+        if self.threshold_scope.value == TS_ADAPTIVE:
+            if image.volumetric:
+                t_local = numpy.zeros_like(data)
+
+                for index, plane in enumerate(data):
+                    t_local[index] = centrosome.threshold.get_adaptive_threshold(
+                        centrosome.threshold.TM_OTSU,
+                        plane,
+                        t_global,
+                        mask=mask[index],
+                        adaptive_window_size=3,
+                        two_class_otsu=False,
+                        assign_middle_to_foreground=self.assign_middle_to_foreground.value == O_FOREGROUND
+                    )
+            else:
+                t_local = centrosome.threshold.get_adaptive_threshold(
+                    centrosome.threshold.TM_OTSU,
+                    data,
+                    t_global,
+                    mask=mask,
+                    adaptive_window_size=3,
+                    two_class_otsu=False,
+                    assign_middle_to_foreground=self.assign_middle_to_foreground.value == O_FOREGROUND
+                )
+
+            t_local = self._correct_local_threshold(t_local, t_global)
+
+            return t_local, t_global
+
+        <a id="change">return t_global, t_global</a>
+
+    def _threshold_robust_background(self, image):
+        average_fn = {
+            RB_MEAN: numpy.mean,</code></pre><img src="233084100.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 14</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/CellProfiler/CellProfiler/commit/58a220cb0fa5ea7d86486f1b3af8036b905de081#diff-e1df6b8d14e72bb669040b43f8c658c9919e8306458004935c78ffded3fa8020L787' target='_blank'>Link</a></div><div id='project'> Project Name: CellProfiler/CellProfiler</div><div id='commit'> Commit Name: 58a220cb0fa5ea7d86486f1b3af8036b905de081</div><div id='time'> Time: 2017-02-22</div><div id='author'> Author: mcquin@broadinstitute.org</div><div id='file'> File Name: cellprofiler/modules/applythreshold.py</div><div id='class'> Class Name: ApplyThreshold</div><div id='method'> Method Name: _threshold_otsu3</div><BR><BR><div id='link'><a href='https://github.com/CellProfiler/CellProfiler/commit/58a220cb0fa5ea7d86486f1b3af8036b905de081#diff-e1df6b8d14e72bb669040b43f8c658c9919e8306458004935c78ffded3fa8020L787' target='_blank'>Link</a></div><div id='project'> Project Name: CellProfiler/CellProfiler</div><div id='commit'> Commit Name: 58a220cb0fa5ea7d86486f1b3af8036b905de081</div><div id='time'> Time: 2017-02-22</div><div id='author'> Author: mcquin@broadinstitute.org</div><div id='file'> File Name: cellprofiler/modules/applythreshold.py</div><div id='class'> Class Name: ApplyThreshold</div><div id='method'> Method Name: _threshold_otsu3</div><BR><BR><div id='link'><a href='https://github.com/CellProfiler/CellProfiler/commit/ecf62ac20ef561df4265c3d1abd8c59b1e73895f#diff-481f7d7050125ebbffc03ba28b9c9c2842832ac3587a93bbfb4ae15ba4a58b5bL745' target='_blank'>Link</a></div><div id='project'> Project Name: CellProfiler/CellProfiler</div><div id='commit'> Commit Name: ecf62ac20ef561df4265c3d1abd8c59b1e73895f</div><div id='time'> Time: 2020-06-11</div><div id='author'> Author: dstirling@broadinstitute.org</div><div id='file'> File Name: cellprofiler/modules/threshold.py</div><div id='class'> Class Name: Threshold</div><div id='method'> Method Name: get_threshold</div><BR><BR><div id='link'><a href='https://github.com/CellProfiler/CellProfiler/commit/58a220cb0fa5ea7d86486f1b3af8036b905de081#diff-e1df6b8d14e72bb669040b43f8c658c9919e8306458004935c78ffded3fa8020L713' target='_blank'>Link</a></div><div id='project'> Project Name: CellProfiler/CellProfiler</div><div id='commit'> Commit Name: 58a220cb0fa5ea7d86486f1b3af8036b905de081</div><div id='time'> Time: 2017-02-22</div><div id='author'> Author: mcquin@broadinstitute.org</div><div id='file'> File Name: cellprofiler/modules/applythreshold.py</div><div id='class'> Class Name: ApplyThreshold</div><div id='method'> Method Name: _threshold_li</div><BR>

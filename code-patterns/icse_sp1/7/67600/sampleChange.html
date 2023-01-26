@@ -1,0 +1,24 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    sampler.update_negative_state(steps)
+
+    &#47&#47 compute the gradient
+    return model.gradient(<a id="change">*</a>sampler.get_states())
+
+&#47&#47 alias
+pcd = persistent_contrastive_divergence</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 compute the conditional sampling on all visible-side layers,
+    &#47&#47 inclusive over hidden-side layers
+    <a id="change">for i in range(1, model.num_layers - 1):
+        clamped_layers = list(range(i))
+        sampler.update_positive_state(steps, clamped=clamped_layers)
+        sampler.update_negative_state(steps, clamped=clamped_layers)
+
+    &#47&#47 make a mean field step to copmute the expectation on the last layer
+   </a> clamped_layers = list(range(model.num_layers - 1))
+    grad_data_state = model.mean_field_iteration(1, sampler.pos_state, clamped=clamped_layers)
+    grad_model_state = model.mean_field_iteration(1, sampler.neg_state, clamped=clamped_layers)
+</code></pre>

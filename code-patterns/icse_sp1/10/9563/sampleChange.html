@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    var_map = {}
+    for var in tf.global_variables():
+      if var.op.name.startswith(scope):
+        <a id="change">var_map[var.op.name[len(scope)+1:]]</a> = var
+
+    if var_map:
+      tf.train.init_from_checkpoint(checkpoint_path, var_map)</code></pre><h3>After Change</h3><pre><code class='java'>
+    var_map = {}
+    for var in tf.global_variables():
+      var_name = var.op.name
+      <a id="change">if not var_name.startswith(scope):
+        continue
+
+      &#47&#47 Generate original name before importing into scope.
+     </a> original_var_name = var_name[len(scope)+1:]
+
+      match = _PARTITIONED_VARIABLE_NAME_RE.match(original_var_name)
+      if match:
+        &#47&#47 If the variable is partitioned, extract the base variable name and
+        &#47&#47 the index in the partition, then update var_map[base_name] to have
+        &#47&#47 var_map[base_name][partition_index] = var.
+        <a id="change">base_name = match.group(1)</a>
+        <a id="change">partition_index = int(match.group(2))</a>
+        if base_name not in var_map:
+          var_map[base_name] = []
+        while not partition_index &lt; len(var_map[base_name]):
+          var_map[base_name].append(None)</code></pre>

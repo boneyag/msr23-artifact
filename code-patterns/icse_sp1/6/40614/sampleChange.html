@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  X = np.random.rand(num_datapoints, num_features)
+  y = np.random.randint(2, size=(num_datapoints, num_tasks))
+  w = np.random.randint(2, size=(num_datapoints, num_tasks))
+  <a id="change">ids = np.array(["id"] * num_datapoints)</a>
+
+  dataset = dc.data.DiskDataset.from_numpy(X, y, w, ids, legacy_metadata=True)
+  assert dataset.legacy_metadata
+  assert len(dataset.metadata_df.columns) == 4</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  &#47&#47 legacy_dataset_reshard is a shared dataset in the legacy format kept
+  &#47&#47 around for testing resharding.
+  <a id="change">current_dir = os.path.dirname(os.path.abspath(__file__))</a>
+  data_dir = os.path.join(current_dir, "legacy_dataset_reshard")
+  dataset = dc.data.DiskDataset(data_dir)
+  assert dataset.legacy_metadata
+  assert len(dataset.metadata_df.columns) == 4
+  assert list(dataset.metadata_df.columns) == [&quotids&quot, &quotX&quot, &quoty&quot, &quotw&quot]
+
+  with tempfile.TemporaryDirectory() as tmpdirname:
+    <a id="change">copy = dataset.copy(tmpdirname)</a>
+    assert np.all(copy.X == dataset.X)
+    assert np.all(copy.y == dataset.y)
+    assert np.all(copy.w == dataset.w)
+    assert np.all(copy.ids == dataset.ids)</code></pre>

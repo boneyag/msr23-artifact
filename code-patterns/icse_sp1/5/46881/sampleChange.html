@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &quotPolicyInfo&quot,
+        (&quotlog_probability&quot, &quotpredicted_rewards&quot))
+    &#47&#47 Set default empty tuple for all fields.
+    PolicyInfo.__new__.__defaults__ = (<a id="change">()</a>,) * len(PolicyInfo._fields)
+
+    action_spec = [
+        tensor_spec.BoundedTensorSpec((2, 3), dtype, -10, 10),</code></pre><h3>After Change</h3><pre><code class='java'>
+        tensor_spec.BoundedTensorSpec((2, 3), dtype, -10, 10),
+        tensor_spec.BoundedTensorSpec((1, 2), dtype, -10, 10)
+    ]
+    <a id="change">info_spec = [
+        tensor_spec.TensorSpec([1], dtype=tf.float32, name=&quotloc&quot),
+        tensor_spec.TensorSpec([1], dtype=tf.float32, name=&quotscale&quot)
+    ]</a>
+    time_step_spec, time_step = self.create_time_step()
+    policy = random_tf_policy.RandomTFPolicy(
+        time_step_spec=time_step_spec,
+        action_spec=action_spec,
+        info_spec=info_spec)
+
+    &#47&#47 Test without batch
+    action_step = policy.action(time_step)
+    tf.nest.assert_same_structure(action_spec, action_step.action)
+    self.assertEqual((2, 3,), action_step.action[0].shape)
+    self.assertEqual((1, 2,), action_step.action[1].shape)
+    tf.nest.assert_same_structure(info_spec, action_step.info)
+    self.assertEqual((1,), action_step.info[0].shape)
+    self.assertEqual((1,), action_step.info[1].shape)
+
+    &#47&#47 Test with batch, we should see the additional outer batch dim for both
+    &#47&#47 `action` and `info`.
+    batch_size = 2
+    <a id="change">batched_time_step = self.create_batch(time_step, batch_size)</a>
+    <a id="change">batched_action_step = policy.action(batched_time_step)</a>
+    tf.nest.assert_same_structure(action_spec, batched_action_step.action)
+    self.assertEqual((batch_size, 2, 3,), batched_action_step.action[0].shape)
+    self.assertEqual((batch_size, 1, 2,), batched_action_step.action[1].shape)
+    tf.nest.assert_same_structure(info_spec, batched_action_step.info)</code></pre>

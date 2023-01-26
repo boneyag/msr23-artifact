@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        Returns the learned model(s).
+        models = self.model_creator(self.config)
+        state = self.local_worker.get_state()
+        <a id="change">if len(state["models"]) == 1:
+            models.load_state_dict(state["models"][0])
+        else:
+            for model, state_dict in zip(models, state["models"]):
+                model.load_state_dict(state_dict)
+       </a> return models
+
+    def state_dict(self):
+        return self.local_worker.get_state()</code></pre><h3>After Change</h3><pre><code class='java'>
+    def get_model(self):
+        Returns the learned model(s).
+        unwrapped = []
+        <a id="change">for model in self.local_worker.models:
+            unwrapped += [model.module if hasattr(model, "module") else model]
+       </a> if len(unwrapped) == 1:
+            return <a id="change">unwrapped[0]</a>
+        return unwrapped
+
+    def state_dict(self):
+        return self.local_worker.state_dict()</code></pre>

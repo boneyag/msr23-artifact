@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    devices = {&quotmain&quot: args.gpu[0]}
+    devices.update(
+        (&quotother{:d}&quot.format(i + 1), gpu) <a id="change">for</a> i, gpu in enumerate(args.gpu[1:]))
+    updater = training.ParallelUpdater(train_iter, optimizer, devices=devices)
+    trainer = training.Trainer(updater, (120000, &quotiteration&quot), args.out)
+    trainer.extend(</code></pre><h3>After Change</h3><pre><code class='java'>
+    parser.add_argument(&quot--resume&quot)
+    args = parser.parse_args()
+
+    comm = <a id="change">chainermn.create_communicator()</a>
+    device = comm.intra_rank
+
+    if args.model == &quotssd300&quot:
+        model = SSD300(
+            n_fg_class=len(voc_bbox_label_names),
+            pretrained_model=&quotimagenet&quot)
+    elif args.model == &quotssd512&quot:
+        model = SSD512(
+            n_fg_class=len(voc_bbox_label_names),
+            pretrained_model=&quotimagenet&quot)
+
+    model.use_preset(&quotevaluate&quot)
+    train_chain = MultiboxTrainChain(model)
+    chainer.cuda.get_device_from_id(device).use()
+    model.to_gpu()
+
+    if comm.rank == 0:
+        train = TransformDataset(
+            ConcatenatedDataset(
+                VOCBboxDataset(year=&quot2007&quot, split=&quottrainval&quot),
+                VOCBboxDataset(year=&quot2012&quot, split=&quottrainval&quot)
+            ),
+            Transform(model.coder, model.insize, model.mean))
+        test = VOCBboxDataset(
+            year=&quot2007&quot, split=&quottest&quot,
+            use_difficult=True, return_difficult=True)
+        test_iter = chainer.iterators.SerialIterator(
+            test, args.test_batchsize, repeat=False, shuffle=False)
+    else:
+        train = None
+
+    <a id="change">train = chainermn.scatter_dataset(train, comm, shuffle=True)</a>
+    train_iter = chainer.iterators.MultiprocessIterator(train, args.batchsize)
+
+    &#47&#47 initial lr is set to 1e-3 by ExponentialShift
+    optimizer = chainermn.create_multi_node_optimizer(</code></pre>

@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 vsplits = np.split(imgs, num_blocks[0], axis=1)
+    &#47&#47 splits = [np.split(vs, num_blocks[1], axis=2) for vs in vsplits]
+    &#47&#47 blocks_imgs = np.concatenate(splits)
+    result = <a id="change">np.concatenate(np.split(result, num_blocks[1], axis=2), axis=1)</a>
+
+    return result
+
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    result = np.zeros((imgs, img_size[0], img_size[1]))
+
+    result_idx = <a id="change">np.arange(0, np.prod(num_blocks)).reshape(num_blocks[0], num_blocks[1])</a>
+
+    for block_pos, block_values in blocks.items():
+        if type(block_pos) == int:
+            block_pos = [block_pos]
+        sub_blocks = np.split(block_values, len(block_pos), axis=1)
+        for bp, bv in zip(block_pos, sub_blocks):
+            bv = bv.reshape(-1, block_size[0], block_size[1])
+            <a id="change">idx, idy = np.where(result_idx == bp)</a>
+            idx = idx[0] * block_size[0]
+            idy = idy[0] * block_size[1]
+            result[:, idx:idx+block_size[0], idy:idy + block_size[1]] = bv
+</code></pre>

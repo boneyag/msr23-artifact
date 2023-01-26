@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        Y[key] = baseVec
+    f.stdout.close()
+    <a id="change">f.wait()</a>
+
+    X = {}
+    f = subprocess.Popen(shlex.split("gzip -fdc %s" % (tensor_fn) ), stdout=subprocess.PIPE, bufsize=8388608)
+    total = 0</code></pre><h3>After Change</h3><pre><code class='java'>
+        f.wait()
+
+    Y = {}
+    <a id="change">if var_fn != None:
+        f = subprocess.Popen(shlex.split("gzip -fdc %s" % (var_fn) ), stdout=subprocess.PIPE, bufsize=8388608)
+        for row in f.stdout:
+            row = row.split()
+            ctgName = row[0]
+            pos = int(row[1])
+            if bed_fn != None:
+                if len(tree[ctgName].search(pos)) == 0:
+                    continue
+            key = ctgName + ":" + str(pos)
+
+            baseVec = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+            &#47&#47          --------------  ------  ------------    ------------------
+            &#47&#47          Base chng       Zygo.   Var type        Var length
+            &#47&#47          A   C   G   T   HET HOM REF SNP INS DEL 0   1   2   3   4   &gt;=4
+            &#47&#47          0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
+
+            if row[4] == "0" and row[5] == "1":
+                if len(row[2]) == 1 and len(row[3]) == 1:
+                    baseVec[base2num[row[2][0]]] = 0.5
+                    baseVec[base2num[row[3][0]]] = 0.5
+                elif len(row[2]) &gt; 1 or len(row[3]) &gt; 1:
+                    baseVec[base2num[row[2][0]]] = 0.5
+                baseVec[4] = 1.
+
+            elif row[4] == "1" and row[5] == "1":
+                if len(row[2]) == 1 and len(row[3]) == 1:
+                    baseVec[base2num[row[3][0]]] = 1
+                elif len(row[2]) &gt; 1 or len(row[3]) &gt; 1:
+                    pass
+                baseVec[5] = 1.
+
+            if len(row[2]) &gt; 1 and len(row[3]) == 1: baseVec[9] = 1. &#47&#47 deletion
+            elif len(row[3]) &gt; 1 and len(row[2]) == 1: baseVec[8] = 1.  &#47&#47 insertion
+            else: baseVec[7] = 1.  &#47&#47 SNP
+
+            varLen = abs(len(row[2])-len(row[3]))
+            if varLen &gt; 4: baseVec[15] = 1.
+            else: baseVec[10+varLen] = 1.
+
+            Y[key] = baseVec
+        f.stdout.close()
+        f.wait()
+
+   </a> X = {}
+    f = subprocess.Popen(shlex.split("gzip -fdc %s" % (tensor_fn) ), stdout=subprocess.PIPE, bufsize=8388608)
+    total = 0
+    mat = np.empty(((2*param.flankingBaseNum+1)*4*param.matrixNum), dtype=np.float32)</code></pre>

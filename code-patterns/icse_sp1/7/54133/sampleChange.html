@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        logits_bwd = hid2voc(bwd[:,1:,:]).view(b_size * seq_len, -1)
+        logits = torch.cat([logits_fwd, logits_bwd], dim=0).view(2 * b_size * seq_len, -1)
+        out[&quotlogits&quot] = logits
+        <a id="change">pdb.set_trace()</a>
+
+        if &quottrg_fwd&quot in batch:
+            targs = torch.cat([batch[&quottrg_fwd&quot][&quotwords&quot].view(-1),
+                               batch[&quottrg_bwd&quot][&quotwords&quot].view(-1)])</code></pre><h3>After Change</h3><pre><code class='java'>
+        sent, mask = self.sent_encoder(batch[&quotinput&quot])
+        sent = sent.masked_fill(1 - mask.byte(), 0) &#47&#47 avoid NaNs
+        split = int(self.sent_encoder.output_dim / 2)
+        <a id="change">fwd, bwd = sent[:, :, :split], sent[:, :, split:]</a>
+
+        hid2voc = getattr(self, "%s_hid2voc" % task.name)
+        logits_fwd = hid2voc(fwd[:,:-1,:]).view(b_size * seq_len, -1)
+        logits_bwd = hid2voc(bwd[:,1:,:]).view(b_size * seq_len, -1)</code></pre>

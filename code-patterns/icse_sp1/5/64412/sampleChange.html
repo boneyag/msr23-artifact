@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+        try:
+            nframes = len(frames)
+            lengths = [nbytes(frame) <a id="change">for</a> frame in frames]
+            length_bytes = struct.pack(f"Q{nframes}Q", nframes, *lengths)
+
+            frames = [length_bytes, *frames]
+            lengths = [len(length_bytes), *lengths]
+
+            if sum(lengths) &lt; 2 ** 17:  &#47&#47 128kiB
+                &#47&#47 small enough, send in one go
+                stream.write(b"".join(frames))
+            else:
+                &#47&#47 avoid large memcpy, send in many
+                for frame, frame_bytes in zip(frames, lengths):
+                    &#47&#47 Can&quott wait for the write() Future as it may be lost
+                    &#47&#47 ("If write is called again before that Future has resolved,
+                    &#47&#47   the previous future will be orphaned and will never resolve")
+                    if frame_bytes:
+                        future = stream.write(frame)
+                        bytes_since_last_yield += frame_bytes
+                        if bytes_since_last_yield &gt; 32e6:
+                            await future
+                            bytes_since_last_yield = 0
+        except StreamClosedError as e:
+            self.stream = None
+            self._closed = True
+            if not shutting_down():
+                convert_stream_closed_error(self, e)
+        except Exception:
+            &#47&#47 Some OSError or a another "low-level" exception. We do not really know what
+            &#47&#47 was already written to the underlying socket, so it is not even safe to retry
+            &#47&#47 here using the same stream. The only safe thing to do is to abort.
+            &#47&#47 (See also GitHub &#47&#474133).
+            if stream._write_buffer is None:
+                logger.info("tried to write message %s on closed stream", msg)
+            self.abort()
+            raise
+
+        return <a id="change">sum(lengths)</a>
+
+    @gen.coroutine
+    def close(self):
+        &#47&#47 We use gen.coroutine here rather than async def to avoid errors like</code></pre><h3>After Change</h3><pre><code class='java'>
+                **self.handshake_options,
+            },
+        )
+        frames_nbytes = sum(<a id="change">map(nbytes, frames)</a>)
+
+        header = pack_frames_prelude(frames)
+        header = struct.pack("Q", nbytes(header) + frames_nbytes) + header
+
+        frames = [header, *frames]
+        <a id="change">frames_nbytes += nbytes(header)</a>
+
+        if frames_nbytes &lt; 2 ** 17:  &#47&#47 128kiB
+            &#47&#47 small enough, send in one go
+            frames = [b"".join(frames)]</code></pre>

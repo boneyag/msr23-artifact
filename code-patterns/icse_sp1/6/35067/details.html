@@ -1,0 +1,61 @@
+<html><h3>aab3902d4a7d55f5a86058854adc36b8a12c873f,catalyst/dl/callbacks/base.py,OptimizerCallback,on_batch_end,#OptimizerCallback#Any#,202
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            return
+
+        self._accumulation_counter += 1
+        <a id="change">if not self.fp16:
+            model = state.model
+            optimizer = state.get_key(
+                key="optimizer", inner_key=self.optimizer_key
+            )
+            loss.backward()
+
+            if (self._accumulation_counter + 1) % self.accumulation_steps == 0:
+                self.grad_step(
+                    optimizer=optimizer,
+                    optimizer_wd=self._optimizer_wd,
+                    grad_clip_fn=self.grad_clip_fn
+                )
+                model.zero_grad()
+                self._accumulation_counter = 0
+        else:
+            model = state.model
+            model.zero_grad()
+            optimizer = state.get_key(
+                key="optimizer", inner_key=self.optimizer_key
+            )
+            loss = state.get_key(key="loss", inner_key=self.optimizer_key)
+            scaled_loss = self.fp16_grad_scale * loss.float()
+            scaled_loss.backward()
+
+            master_params = list(optimizer.param_groups[0]["params"])
+            model_params = list(
+                filter(lambda p: p.requires_grad, model.parameters())
+            )
+            copy_grads(source=model_params, target=master_params)
+            for param in master_params:
+                param.grad.data.mul_(1. / self.fp16_grad_scale)
+            self.grad_step(
+                optimizer=optimizer,
+                optimizer_wd=self._optimizer_wd,
+                grad_clip_fn=self.grad_clip_fn
+            )
+            copy_params(source=master_params, target=model_params)
+            torch.cuda.synchronize()
+
+   </a> def on_epoch_end(self, state):
+        optimizer = state.get_key(
+            key="optimizer", inner_key=self.optimizer_key
+        )</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 or expose another c&quottor argument.
+        if hasattr(optimizer, &quot_amp_stash&quot):
+            from apex import amp
+            <a id="change">with amp.scale_loss(loss, optimizer) as scaled_loss:
+                scaled_loss.backward()
+       </a> else:
+            loss.backward()
+
+        if (self._accumulation_counter + 1) % self.accumulation_steps == 0:</code></pre><img src="171799423.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 5</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/aab3902d4a7d55f5a86058854adc36b8a12c873f#diff-94f0b9669517bfb949ba9c8c8bd57cbd96ea0f16b7482a95010f509c6c577190L197' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: aab3902d4a7d55f5a86058854adc36b8a12c873f</div><div id='time'> Time: 2019-05-20</div><div id='author'> Author: ekhvedchenya@gmail.com</div><div id='file'> File Name: catalyst/dl/callbacks/base.py</div><div id='class'> Class Name: OptimizerCallback</div><div id='method'> Method Name: on_batch_end</div><BR><BR><div id='link'><a href='https://github.com/layumi/Person_reID_baseline_pytorch/commit/8d57309574a957dd56e14bd9ed961542d34f1d04#diff-ed183d67207df065a11e1289f19d34cc2abbc5448dea952683cfe9728c342b95L181' target='_blank'>Link</a></div><div id='project'> Project Name: layumi/Person_reID_baseline_pytorch</div><div id='commit'> Commit Name: 8d57309574a957dd56e14bd9ed961542d34f1d04</div><div id='time'> Time: 2019-03-09</div><div id='author'> Author: zdzheng12@gmail.com</div><div id='file'> File Name: train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train_model</div><BR><BR><div id='link'><a href='https://github.com/layumi/Person_reID_baseline_pytorch/commit/4888cb7a5299f7eed9214ddc70871dc05ea0f4d2#diff-daf83987604b2fc2b5e24489ce9856f42ab1265ee61e58e7f31da1a264ae7c95L181' target='_blank'>Link</a></div><div id='project'> Project Name: layumi/Person_reID_baseline_pytorch</div><div id='commit'> Commit Name: 4888cb7a5299f7eed9214ddc70871dc05ea0f4d2</div><div id='time'> Time: 2019-03-20</div><div id='author'> Author: zdzheng12@gmail.com</div><div id='file'> File Name: model/ft_ResNet50/train.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: train_model</div><BR>

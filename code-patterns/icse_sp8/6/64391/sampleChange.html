@@ -1,0 +1,35 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def get_single_agent_specs(self, time_step_spec, action_spec):
+    Get single agent version of environment specs to feed to baby agents.
+    single_obs_spec = collections.OrderedDict()
+    <a id="change">for k in time_step_spec.observation.keys():
+      if k == &quotdirection&quot:
+        shape = [1]
+      elif k == &quotimage&quot:
+        &#47&#47 Remove agent dimension
+        shape = time_step_spec.observation[k].shape[1:]
+      else:
+        &#47&#47 Additional control fields like &quotreward&quot, and &quotdone&quot should not be sent
+        &#47&#47 to individual agents
+        continue
+      single_obs_spec[k] = tensor_spec.BoundedTensorSpec(
+          shape=shape, name=time_step_spec.observation[k].name,
+          minimum=time_step_spec.observation[k].minimum,
+          maximum=time_step_spec.observation[k].maximum,
+          dtype=time_step_spec.observation[k].dtype)
+   </a> single_reward_spec = tensor_spec.TensorSpec(
+        shape=(), dtype=time_step_spec.reward.dtype, name=&quotreward&quot)
+    single_time_step_spec = ts_lib.TimeStep(
+        time_step_spec.step_type, single_reward_spec,</code></pre><h3>After Change</h3><pre><code class='java'>
+          maximum=spec.maximum,
+          dtype=spec.dtype)
+
+    single_obs_spec = <a id="change">tf.nest.map_structure(make_single_agent_spec,
+                                            time_step_spec.observation)</a>
+    single_reward_spec = tensor_spec.TensorSpec(
+        shape=(), dtype=time_step_spec.reward.dtype, name=&quotreward&quot)
+    single_time_step_spec = ts_lib.TimeStep(time_step_spec.step_type,
+                                            single_reward_spec,</code></pre>

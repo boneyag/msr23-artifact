@@ -1,0 +1,53 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            need_weights=False,
+            attn_mask=self_attn_mask,
+        )
+        <a id="change">x = F.dropout(x, p=self.dropout, training=self.training)</a>
+        x = residual + x
+
+        residual = x
+        x = self.final_layer_norm(x)
+        x = self.activation_fn(self.fc1(x))
+        <a id="change">x = F.dropout(x, p=self.activation_dropout, training=self.training)</a>
+        x = self.fc2(x)
+        <a id="change">x = F.dropout(x, p=self.dropout, training=self.training)</a>
+        x = residual + x
+        return x, None
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        )
+
+    def forward(
+        <a id="change">self</a>,
+        x: torch.Tensor,
+        self_attn_mask: torch.Tensor = None,
+        self_attn_padding_mask: torch.Tensor = None,
+    ):
+        
+        LayerNorm is applied either before or after the self-attention/ffn
+        modules similar to the original Transformer imlementation.
+        
+        residual = x
+        x = self.self_attn_layer_norm(x)
+        x, attn = self.self_attn(
+            query=x,
+            key=x,
+            value=x,
+            key_padding_mask=self_attn_padding_mask,
+            need_weights=False,
+            attn_mask=self_attn_mask,
+        )
+        x = <a id="change">self.dropout_module(x)</a>
+        x = residual + x
+
+        residual = x
+        x = self.final_layer_norm(x)
+        x = self.activation_fn(self.fc1(x))
+        <a id="change">x = self.activation_dropout_module(x)</a>
+        x = self.fc2(x)
+        <a id="change">x = self.dropout_module(x)</a>
+        x = residual + x
+        return x, None
+</code></pre>

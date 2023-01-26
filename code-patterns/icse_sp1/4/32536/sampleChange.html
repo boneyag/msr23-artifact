@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        lt = self.lazy_tensor
+        if isinstance(self.diag_tensor, KroneckerProductDiagLazyTensor):
+            if all(isinstance(tdiag, ConstantDiagLazyTensor) for tdiag in dlt.lazy_tensors):
+                <a id="change">sub_evals, sub_evecs = [], []</a>
+                for lt_, dlt_ in zip(lt.lazy_tensors, dlt.lazy_tensors):
+                    evals_, evecs_ = lt_.symeig(eigenvectors=True)
+                    sub_evals.append(DiagLazyTensor(evals_ / dlt_.diag_values))
+                    sub_evecs.append(evecs_)</code></pre><h3>After Change</h3><pre><code class='java'>
+        if isinstance(self.diag_tensor, KroneckerProductDiagLazyTensor):
+            if all(isinstance(tdiag, ConstantDiagLazyTensor) for tdiag in dlt.lazy_tensors):
+                evals_p_i, evecs = _constant_kpadlt_constructor(lt, dlt)
+                <a id="change">evals_p_i_inv_root = DiagLazyTensor(evals_p_i.diag().reciprocal().sqrt())</a>
+                &#47&#47 here we need to scale the eigenvectors by the constants as
+                &#47&#47 A = D^{1/2} Q (\kron a_i^{-1} \Lambda_i + I) Q^\top D^{1/2}
+                &#47&#47 so that we compute
+                &#47&#47 L^{-1/2} = D^{1/2} Q (\kron a_i^{-1} \Lambda_i + I)^{1/2}</code></pre>

@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        num_inducing = tf.shape(self.Z)[0]
+        psi0 = tf.reduce_sum(self.kern.eKdiag(self.X_mean, self.X_var), 0)
+        psi1 = self.kern.eKxz(self.Z, self.X_mean, self.X_var)
+        psi2 = <a id="change">tf.reduce_sum(self.kern.eKzxKxz(self.Z, self.X_mean, self.X_var), 0)</a>
+        Kuu = self.kern.K(self.Z) + tf.eye(num_inducing, dtype=settings.float_type) * settings.numerics.jitter_level
+        L = tf.cholesky(Kuu)
+        sigma2 = self.likelihood.variance
+        sigma = tf.sqrt(sigma2)</code></pre><h3>After Change</h3><pre><code class='java'>
+        
+        pX = DiagonalGaussian(self.X_mean, self.X_var)
+
+        num_inducing = <a id="change">len(self.feature)</a>
+        psi0 = tf.reduce_sum(expectation(pX, self.kern))
+        psi1 = expectation(pX, (self.feature, self.kern))
+        psi2 = tf.reduce_sum(expectation(pX, (self.feature, self.kern), (self.feature, self.kern)), axis=0)
+        Kuu = self.feature.Kuu(self.kern, jitter=settings.numerics.jitter_level)</code></pre>

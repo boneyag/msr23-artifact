@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        (32, 1, 30)
+    ```
+    
+    <a id="change">if ndim(x) &lt; 3 or ndim(y) &lt; 3:
+        raise ValueError(&quotInvalid dimensions for batch_dot: &quot, ndim(x), ndim(y))
+   </a> if isinstance(axes, int):
+        axes = (axes, axes)
+    if axes is not None:
+        adj_x = None if axes[0] == ndim(x) - 1 else True</code></pre><h3>After Change</h3><pre><code class='java'>
+    
+    if isinstance(axes, int):
+        axes = (axes, axes)
+    <a id="change">if ndim(x) == 2 and ndim(y) == 2:
+        if axes[0] == axes[1]:
+            out = tf.reduce_sum(tf.mul(x, y), axes[0])
+        else:
+            out = tf.reduce_sum(tf.mul(tf.transpose(x, [1, 0]), y), axes[1])
+    else:
+        if axes is not None:
+            adj_x = None if axes[0] == ndim(x) - 1 else True
+            adj_y = True if axes[1] == ndim(y) - 1 else None
+        else:
+            adj_x = None
+            adj_y = None
+        &#47&#47 TODO: remove later.
+        if hasattr(tf, &quotbatch_matmul&quot):
+            try:
+                out = tf.batch_matmul(x, y, adj_a=adj_x, adj_b=adj_y)
+            except TypeError:
+                out = tf.batch_matmul(x, y, adj_x=adj_x, adj_y=adj_y)
+        else:
+            out = tf.matmul(x, y, adjoint_a=adj_x, adjoint_b=adj_y)
+   </a> if ndim(out) == 1:
+        out = expand_dims(out, 1)
+    return out
+</code></pre>

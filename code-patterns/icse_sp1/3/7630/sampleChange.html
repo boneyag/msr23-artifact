@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                    if ep_t &gt; UPDATE_GLOBAL_ITER - 1:  &#47&#47 not beginning of this episode
+                        feed_dict[self.AC.init_state] = state
+                    state = <a id="change">self.AC.update_global(feed_dict)</a>
+                    buffer_s, buffer_a, buffer_r = [], [], []
+                    self.AC.pull_global()
+
+                s = s_</code></pre><h3>After Change</h3><pre><code class='java'>
+            s = self.env.reset()
+            ep_r = 0
+            rnn_state = SESS.run(self.AC.init_state)    &#47&#47 zero rnn state at beginning
+            <a id="change">keep_state = rnn_state.copy()</a>       &#47&#47 keep rnn state for updating global net
+            for ep_t in range(MAX_EP_STEP):
+                if self.name == &quotW_0&quot:
+                    self.env.render()
+
+                a, rnn_state_ = self.AC.choose_action(s, rnn_state)  &#47&#47 get the action and next rnn state
+                s_, r, done, info = self.env.step(a)
+                done = True if ep_t == MAX_EP_STEP - 1 else False
+                r /= 10     &#47&#47 normalize reward
+
+                ep_r += r
+                buffer_s.append(s)
+                buffer_a.append(a)
+                buffer_r.append(r)
+
+                if total_step % UPDATE_GLOBAL_ITER == 0 or done:   &#47&#47 update global and assign to local net
+                    if done:
+                        v_s_ = 0   &#47&#47 terminal
+                    else:
+                        v_s_ = SESS.run(self.AC.v, {self.AC.s: s_[np.newaxis, :], self.AC.init_state: rnn_state_})[0, 0]
+                    buffer_v_target = []
+                    for r in buffer_r[::-1]:    &#47&#47 reverse buffer r
+                        v_s_ = r + GAMMA * v_s_
+                        buffer_v_target.append(v_s_)
+                    buffer_v_target.reverse()
+
+                    buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.vstack(buffer_a), np.vstack(buffer_v_target)
+
+                    feed_dict = {
+                        self.AC.s: buffer_s,
+                        self.AC.a_his: buffer_a,
+                        self.AC.v_target: buffer_v_target,
+                        self.AC.init_state: keep_state,
+                    }
+
+                    <a id="change">self.AC.update_global(feed_dict)</a>
+                    buffer_s, buffer_a, buffer_r = [], [], []
+                    self.AC.pull_global()
+                    keep_state = rnn_state_.copy()   &#47&#47 replace the keep_state as the new initial rnn state_
+</code></pre>

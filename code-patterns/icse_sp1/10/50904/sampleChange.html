@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+          inputs = inputs[0]
+        outputs = self.model(inputs)
+        if isinstance(outputs, tf.Tensor):
+          outputs = <a id="change">[outputs]</a>
+        if self._loss_outputs is not None:
+          <a id="change">outputs = [outputs[i] for i in self._loss_outputs]</a>
+        batch_loss = loss(outputs, labels, weights)
+      if variables is None:
+        vars = self.model.trainable_variables
+      else:</code></pre><h3>After Change</h3><pre><code class='java'>
+      loss = self._loss_fn
+    var_key = None
+    if variables is not None:
+      <a id="change">var_key = tuple(v.experimental_ref() for v in variables)</a>
+
+      &#47&#47 The optimizer creates internal variables the first time apply_gradients()
+      &#47&#47 is called for a new set of variables.  If that happens inside a function
+      &#47&#47 annotated with tf.function it throws an exception, so call it once here.
+
+      zero_grads = [tf.zeros(v.shape) for v in variables]
+      self._tf_optimizer.apply_gradients(zip(zero_grads, variables))
+    <a id="change">if var_key not in self._gradient_fn_for_vars:
+      self._gradient_fn_for_vars[var_key] = self._create_gradient_fn(variables)
+   </a> apply_gradient_for_batch = <a id="change">self._gradient_fn_for_vars[var_key]</a>
+    time1 = time.time()
+
+    &#47&#47 Main training loop.
+</code></pre>

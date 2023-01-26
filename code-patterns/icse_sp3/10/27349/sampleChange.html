@@ -1,0 +1,54 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            early_stop = None
+        else:
+            early_stop = min(epsilons)
+        limit_epsilons = <a id="change">[eps if eps is not None else ep.inf for eps in epsilons]</a>
+        del epsilons
+
+        &#47&#47 run the actual attack
+        xp = self.run(model, x, criterion, early_stop=early_stop, **kwargs)
+        &#47&#47 TODO: optionally improve using a binary search?
+        &#47&#47 TODO: optionally reduce size to the different epsilons and recompute is_adv
+
+        is_adv = is_adversarial(xp)
+        assert is_adv.shape == (N,)
+
+        distances = self.distance(x, xp)
+        assert distances.shape == (N,)
+
+        in_limits = <a id="change">ep.stack(
+            [distances &lt;= epsilon for epsilon in limit_epsilons], axis=0
+        )</a>
+        assert in_limits.shape == (K, N)
+
+        <a id="change">success = ep.logical_and(in_limits, is_adv)</a>
+        assert success.shape == (K, N)
+
+        xp_ = restore_type(xp)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 run the actual attack
+        xp = self.run(model, x, criterion, early_stop=early_stop, **kwargs)
+
+        <a id="change">xpcs = []</a>
+        success = []
+        for epsilon in epsilons:
+            if epsilon is None:
+                xpc = xp
+            else:
+                xpc = self.distance.clip_perturbation(x, xp, epsilon)
+            is_adv = is_adversarial(xpc)
+
+            xpcs.append(xpc)
+            success.append(is_adv)
+
+        success_ = ep.stack(success)
+        assert success_.shape == (K, N)
+
+        xp_ = restore_type(xp)
+        xpcs_ = [restore_type(xpc) <a id="change">for</a> xpc in xpcs]
+
+        if was_iterable:
+            return [xp_] * K, xpcs_, restore_type(success)</code></pre>

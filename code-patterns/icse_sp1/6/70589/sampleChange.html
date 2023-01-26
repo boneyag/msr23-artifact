@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    &#47&#47 convolutional layer
+    for conv in self.conv_layers:
+      node_feat = <a id="change">conv(node_feat, edge_index)</a>
+
+    &#47&#47 pooling
+    graph_feat = self.pooling(node_feat, data.batch)
+    <a id="change">graph_feat = F.leaky_relu(self.fc(graph_feat))</a>
+    out = self.out(graph_feat)
+
+    if self.mode == &quotregression&quot:
+      return out</code></pre><h3>After Change</h3><pre><code class='java'>
+    out = self.model(g, node_feats)
+
+    if self.mode == &quotclassification&quot:
+      <a id="change">if self.n_tasks == 1:
+        logits = out.view(-1, self.n_classes)
+        softmax_dim = 1
+      else:
+        logits = out.view(-1, self.n_tasks, self.n_classes)
+        softmax_dim = 2
+     </a> proba = F.softmax(logits, dim=softmax_dim)
+      return proba, logits
+    else:
+      return out</code></pre>

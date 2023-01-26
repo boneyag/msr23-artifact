@@ -1,0 +1,132 @@
+<html><h3>3a98035c89132a53eb67d197ccf9f2937977f96f,muselsl/stream.py,,stream,#Any#Any#Any#Any#Any#Any#Any#Any#,62
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                  + &quot:&quot.join(filter(None, [name, address])) + &quot...&quot)
+        print(&quot\n*BlueMuse will auto connect and stream when the device is found. \n*You can also use the BlueMuse interface to manage your stream(s).&quot)
+        muse.start()
+        <a id="change">return</a>
+
+    didConnect = muse.connect()
+
+    if(didConnect):</code></pre><h3>After Change</h3><pre><code class='java'>
+&#47&#47 Begins LSL stream(s) from a Muse with a given address with data sources determined by arguments
+def stream(address, backend=&quotauto&quot, interface=None, name=None, ppg_enabled=False, acc_enabled=False, gyro_enabled=False, eeg_disabled=False,):
+    &#47&#47 If no data types are enabled, we warn the user and return immediately.
+    <a id="change">if eeg_disabled and not ppg_enabled and not acc_enabled and not gyro_enabled:
+        print(&quotStream initiation failed: At least one data source must be enabled.&quot)
+        return
+
+    &#47&#47 For any backend except bluemuse, we will start LSL streams hooked up to the muse callbacks.
+   </a> if backend != &quotbluemuse&quot:
+        if not address:
+            found_muse = find_muse(name)
+            if not found_muse:
+                return
+            else:
+                address = found_muse[&quotaddress&quot]
+                name = found_muse[&quotname&quot]
+
+        if not eeg_disabled:
+            eeg_info = StreamInfo(&quotMuse&quot, &quotEEG&quot, MUSE_NB_EEG_CHANNELS, MUSE_SAMPLING_EEG_RATE, &quotfloat32&quot,
+                                &quotMuse%s&quot % address)
+            eeg_info.desc().append_child_value("manufacturer", "Muse")
+            eeg_channels = eeg_info.desc().append_child("channels")
+
+            for c in [&quotTP9&quot, &quotAF7&quot, &quotAF8&quot, &quotTP10&quot, &quotRight AUX&quot]:
+                eeg_channels.append_child("channel") \
+                    .append_child_value("label", c) \
+                    .append_child_value("unit", "microvolts") \
+                    .append_child_value("type", "EEG")
+
+            eeg_outlet = StreamOutlet(eeg_info, LSL_EEG_CHUNK)
+
+        if ppg_enabled:
+            ppg_info = StreamInfo(&quotMuse&quot, &quotPPG&quot, MUSE_NB_PPG_CHANNELS, MUSE_SAMPLING_PPG_RATE,
+                                &quotfloat32&quot, &quotMuse%s&quot % address)
+            ppg_info.desc().append_child_value("manufacturer", "Muse")
+            ppg_channels = ppg_info.desc().append_child("channels")
+
+            for c in [&quotPPG1&quot, &quotPPG2&quot, &quotPPG3&quot]:
+                ppg_channels.append_child("channel") \
+                    .append_child_value("label", c) \
+                    .append_child_value("unit", "mmHg") \
+                    .append_child_value("type", "PPG")
+
+            ppg_outlet = StreamOutlet(ppg_info, LSL_PPG_CHUNK)
+
+        if acc_enabled:
+            acc_info = StreamInfo(&quotMuse&quot, &quotACC&quot, MUSE_NB_ACC_CHANNELS, MUSE_SAMPLING_ACC_RATE,
+                                &quotfloat32&quot, &quotMuse%s&quot % address)
+            acc_info.desc().append_child_value("manufacturer", "Muse")
+            acc_channels = acc_info.desc().append_child("channels")
+
+            for c in [&quotX&quot, &quotY&quot, &quotZ&quot]:
+                acc_channels.append_child("channel") \
+                    .append_child_value("label", c) \
+                    .append_child_value("unit", "g") \
+                    .append_child_value("type", "accelerometer")
+
+            acc_outlet = StreamOutlet(acc_info, LSL_ACC_CHUNK)
+
+        if gyro_enabled:
+            gyro_info = StreamInfo(&quotMuse&quot, &quotGYRO&quot, MUSE_NB_GYRO_CHANNELS, MUSE_SAMPLING_GYRO_RATE,
+                                &quotfloat32&quot, &quotMuse%s&quot % address)
+            gyro_info.desc().append_child_value("manufacturer", "Muse")
+            gyro_channels = gyro_info.desc().append_child("channels")
+
+            for c in [&quotX&quot, &quotY&quot, &quotZ&quot]:
+                gyro_channels.append_child("channel") \
+                    .append_child_value("label", c) \
+                    .append_child_value("unit", "dps") \
+                    .append_child_value("type", "gyroscope")
+
+            gyro_outlet = StreamOutlet(gyro_info, LSL_GYRO_CHUNK)
+
+        def push(data, timestamps, outlet):
+            for ii in range(data.shape[1]):
+                outlet.push_sample(data[:, ii], timestamps[ii])
+
+        push_eeg = partial(push, outlet=eeg_outlet) if not eeg_disabled else None
+        push_ppg = partial(push, outlet=ppg_outlet) if ppg_enabled else None
+        push_acc = partial(push, outlet=acc_outlet) if acc_enabled else None
+        push_gyro = partial(push, outlet=gyro_outlet) if gyro_enabled else None
+
+        muse = Muse(address=address, callback_eeg=push_eeg, callback_ppg=push_ppg, callback_acc=push_acc, callback_gyro=push_gyro,
+                    backend=backend, interface=interface, name=name)
+
+        didConnect = muse.connect()
+
+        if(didConnect):
+            print(&quotConnected.&quot)
+            muse.start()
+
+            eeg_string = " EEG" if not eeg_disabled else ""
+            ppg_string = " PPG" if ppg_enabled else ""
+            acc_string = " ACC" if acc_enabled else ""
+            gyro_string = " GYRO" if gyro_enabled else ""
+
+            print("Streaming%s%s%s%s..." %
+                (eeg_string, ppg_string, acc_string, gyro_string))
+
+            while time() - muse.last_timestamp &lt; AUTO_DISCONNECT_DELAY:
+                try:
+                    sleep(1)
+                except KeyboardInterrupt:
+                    muse.stop()
+                    muse.disconnect()
+                    break
+
+            print(&quotDisconnected.&quot)
+
+    &#47&#47 For bluemuse backend, we don&quott need to create LSL streams directly, since these are handled in BlueMuse itself.
+    else:
+        &#47&#47 Toggle all data stream types in BlueMuse.
+        subprocess.call(&quotstart bluemuse://setting?key=eeg_enabled!value={}&quot.format(&quotfalse&quot if eeg_disabled else &quottrue&quot), shell=True)
+        <a id="change">subprocess.call(&quotstart bluemuse://setting?key=ppg_enabled!value={}&quot.format(&quottrue&quot if ppg_enabled else &quotfalse&quot), shell=True)</a>
+        <a id="change">subprocess.call(&quotstart bluemuse://setting?key=accelerometer_enabled!value={}&quot.format(&quottrue&quot if acc_enabled else &quotfalse&quot), shell=True)</a>
+        subprocess.call(&quotstart bluemuse://setting?key=gyroscope_enabled!value={}&quot.format(&quottrue&quot if gyro_enabled else &quotfalse&quot), shell=True)
+
+        muse = Muse(address=address, callback_eeg=None, callback_ppg=None, callback_acc=None, callback_gyro=None,
+                    backend=backend, interface=interface, name=name)</code></pre><img src="143071367.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 4</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/alexandrebarachant/muse-lsl/commit/3a98035c89132a53eb67d197ccf9f2937977f96f#diff-c13b77af06e1d9a54d7ac9020fc8bc2f438564bcaa9f58c04c11119dd9ea56bbL63' target='_blank'>Link</a></div><div id='project'> Project Name: alexandrebarachant/muse-lsl</div><div id='commit'> Commit Name: 3a98035c89132a53eb67d197ccf9f2937977f96f</div><div id='time'> Time: 2020-06-25</div><div id='author'> Author: kowaleskij@gmail.com</div><div id='file'> File Name: muselsl/stream.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: stream</div><BR><BR><div id='link'><a href='https://github.com/alexandrebarachant/muse-lsl/commit/2a253ec16e2933b4be6ab491edffa534ac28a4ff#diff-7b57579aa32b968c01701f98468ab13fefd2bb368007a1301ae49593deb8e4bfL175' target='_blank'>Link</a></div><div id='project'> Project Name: alexandrebarachant/muse-lsl</div><div id='commit'> Commit Name: 2a253ec16e2933b4be6ab491edffa534ac28a4ff</div><div id='time'> Time: 2018-05-07</div><div id='author'> Author: kowaleskij@gmail.com</div><div id='file'> File Name: muselsl/muselsl/muse.py</div><div id='class'> Class Name: Muse</div><div id='method'> Method Name: stop</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/models/commit/5fc4c351699c9007a727eaaef99413962cf0818f#diff-9dab598652c5f80aa355291c1bdd38074b62cb28492ed5df07a2efb6877a52c2L34' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/models</div><div id='commit'> Commit Name: 5fc4c351699c9007a727eaaef99413962cf0818f</div><div id='time'> Time: 2020-12-09</div><div id='author'> Author: hongkuny@google.com</div><div id='file'> File Name: official/nlp/modeling/layers/self_attention_mask.py</div><div id='class'> Class Name: SelfAttentionMask</div><div id='method'> Method Name: call</div><BR>

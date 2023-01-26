@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  if sum(len(sents) for sents in new_sentences_by_line) &lt; min_num_sentences:
+    counter_inc_fn("filtered-doc-toofewsentences")
+    return
+  <a id="change">yield (url, "\n".join(" ".join(sent) for sent in new_sentences_by_line))</a>
+
+
+def remove_duplicate_text(pages, sentence_window_size=3):
+  Utility to remove duplicate sentence windows across text documents.</code></pre><h3>After Change</h3><pre><code class='java'>
+    features: The page features with sentences removed.
+  
+  url, join_values = el
+  <a id="change">features = join_values["features"]</a>
+
+  assert len(features) == 1, "Invalid page count (%d) for %s" % (len(features),
+                                                                 url)
+  <a id="change">features</a> = features[0]
+  text = features["text"]
+  sentences_to_remove = set(join_values["sentences"])
+  sentences_by_line = _get_sentences_by_line(text, lower=False)
+  new_sentences_by_line = []
+  for line_sentences in sentences_by_line:
+    indices_to_remove = set()
+    for i in range(
+        len(line_sentences) - min(len(line_sentences), max_window_size) + 1):
+      sentence_window = tuple(
+          s.lower() for s in line_sentences[i:i+max_window_size])
+      if sentence_window in sentences_to_remove:
+        indices_to_remove.update(range(i, i+len(sentence_window)))
+    counter_inc_fn("filtered-sentence-duplicate", len(indices_to_remove))
+    new_line_sentences = [
+        s for i, s in enumerate(line_sentences) if i not in indices_to_remove]
+    if new_line_sentences:
+      new_sentences_by_line.append(new_line_sentences)
+  if sum(len(sents) for sents in new_sentences_by_line) &lt; min_num_sentences:
+    counter_inc_fn("filtered-doc-toofewsentences")
+    return
+  <a id="change">features["text"] = "\n".join(" ".join(sent) for sent in new_sentences_by_line)</a>
+  <a id="change">yield (url, features)</a>
+
+
+def remove_duplicate_text(pages, sentence_window_size=3):
+  Utility to remove duplicate sentence windows across text documents.</code></pre>

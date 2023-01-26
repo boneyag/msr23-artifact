@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    qnum = qnum.tolist()
+                finals[qnum] = np.argmax(ys[i][-1][:N_GUESSERS]).tolist()
+                buzzes[qnum] = [-1, -1]
+                for pos, chosen in <a id="change">enumerate(action)</a>:
+                    <a id="change">if chosen &lt; N_GUESSERS:
+                        buzzes[qnum] = (pos, chosen)
+                        break
+           </a> progress_bar(*test_iter.epoch_detail)
+        test_iter.finalize(reset=True)
+        progress_bar.finalize()
+        return buzzes, finals</code></pre><h3>After Change</h3><pre><code class='java'>
+            ys = F.softmax(ys) &#47&#47 length * batch_size, n_guessers
+            ys = F.swapaxes(F.reshape(ys, (length, batch_size, -1)), 0, 1)
+            ys.to_cpu()
+            <a id="change">masks = batch.mask.T.tolist()</a>
+            assert len(masks) == batch_size
+            for qnum, scores, mask in zip(batch.qids, ys.data, masks):
+                if isinstance(qnum, np.ndarray):
+                    qnum = qnum.tolist()
+                total = int(sum(mask))
+                <a id="change">buzzes[qnum] = scores[:total].tolist()</a>
+            progress_bar(*test_iter.epoch_detail)
+        test_iter.finalize(reset=True)
+        progress_bar.finalize()
+        return buzzes</code></pre>

@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    models = []
+    with tf.variable_scope("models", caching_device="/cpu:0"):
+        for gpu_idx in range(config.num_gpus):
+            with tf.device("/gpu:{}".format(gpu_idx)), <a id="change">tf.name_scope("gpu_{}".format(gpu_idx))</a>:
+                model = Model(config)
+            models.append(model)
+            tf.get_variable_scope().reuse_variables()</code></pre><h3>After Change</h3><pre><code class='java'>
+    models = []
+    for gpu_idx in range(config.num_gpus):
+        &#47&#47 with tf.variable_scope("models", caching_device="/gpu:{}".format(gpu_idx)):
+        with tf.device("/gpu:{}".format(gpu_idx)), <a id="change">tf.name_scope("model_{}".format(gpu_idx))</a> as scope:
+            model = Model(config, scope)
+            models.append(model)
+            tf.get_variable_scope().reuse_variables()</code></pre>

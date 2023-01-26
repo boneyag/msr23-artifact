@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def test_threads_omp_env_arg_borked(self):
+        import os
+        os.environ[&quotOMP_NUM_THREADS&quot] = &quotthis is not right&quot
+        <a id="change">try:
+            import psutil
+            X = np.random.random((1000, 3))
+            centers = X[np.random.choice(1000, 10)]
+            &#47&#47 note: we want another job number here, but it will be ignored!
+            res = coor.assign_to_centers(X, centers, n_jobs=None, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, psutil.cpu_count())
+        finally:
+            del os.environ[&quotOMP_NUM_THREADS&quot]
+
+   </a> def test_threads_cpu_count_def_arg(self):
+        import psutil
+        X = np.random.random((1000, 3))
+        centers = X[np.random.choice(1000, 10)]</code></pre><h3>After Change</h3><pre><code class='java'>
+    def test_threads_omp_env_arg_borked(self):
+         if the env var can not be interpreted as int, fall back to one thread. 
+        expected = 3
+        with patch(&quotpsutil.cpu_count&quot, lambda: expected), <a id="change">temporary_env(&quotOMP_NUM_THREADS&quot, &quotthis is not right&quot)</a>:
+            res = coor.assign_to_centers(self.X, self.centers_big, n_jobs=None, return_dtrajs=False)
+            self.assertEqual(res.n_jobs, expected)
+</code></pre>

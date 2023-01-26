@@ -1,0 +1,58 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 TODO: share the decreasing timeout logic here with NailgunProtocol.iter_chunks() by adding
+        &#47&#47 a method to pants.util.contextutil!
+        remaining_time = time.time() - (start_time + timeout)
+        <a id="change">if remaining_time &gt; 0:
+          stderr = read_file(self._ng_stderr, binary_mode=True)
+          raise self.InitialNailgunConnectTimedOut(
+            timeout=timeout,
+            stdout=accumulated_stdout,
+            stderr=stderr,
+          )
+
+       </a> readable, _, _ = select.select([ng_stdout], [], [], (-1 * remaining_time))
+        if readable:
+          line = ng_stdout.readline()                          &#47&#47 TODO: address deadlock risk here.
+          try:</code></pre><h3>After Change</h3><pre><code class='java'>
+          stderr=stderr,
+        )
+
+    <a id="change">if PY3:
+      &#47&#47 NB: We use PollSelector, rather than the more efficient DefaultSelector, because
+      &#47&#47 DefaultSelector results in using the epoll() syscall on Linux, which does not work with
+      &#47&#47 regular text files like ng_stdout. See https://stackoverflow.com/a/8645770.
+      with selectors.PollSelector() as selector, \
+        safe_open(self._ng_stdout, &quotr&quot) as ng_stdout:
+        selector.register(ng_stdout, selectors.EVENT_READ)
+        while 1:
+          remaining_time = calculate_remaining_time()
+          possibly_raise_timeout(remaining_time)
+          events = selector.select(timeout=-1 * remaining_time)
+          if events:
+            line = ng_stdout.readline()  &#47&#47 TODO: address deadlock risk here.
+            try:
+              return self._NG_PORT_REGEX.match(line).group(1)
+            except AttributeError:
+              pass
+            accumulated_stdout += line
+    else:
+      with safe_open(self._ng_stdout, &quotr&quot) as ng_stdout:
+        while 1:
+          remaining_time = calculate_remaining_time()
+          possibly_raise_timeout(remaining_time)
+          readable, _, _ = select.select([ng_stdout], [], [], (-1 * remaining_time))
+          if readable:
+            line = ng_stdout.readline()  &#47&#47 TODO: address deadlock risk here.
+            try:
+              return self._NG_PORT_REGEX.match(line).group(1)
+            except AttributeError:
+              pass
+            accumulated_stdout += line
+
+ </a> def _create_ngclient(self, port, stdout, stderr, stdin):
+    return NailgunClient(port=port, ins=stdin, out=stdout, err=stderr)
+
+  def ensure_connectable(self, nailgun):</code></pre>

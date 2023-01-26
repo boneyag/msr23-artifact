@@ -1,0 +1,167 @@
+<html><h3>dfdad808d0979d6e45419720fa0d73b4cedcbb96,niftynet/application/segmentation_application.py,SegmentationApplication,initialise_dataset_loader,#SegmentationApplication#Any#Any#,59
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        if self.is_training:
+            self.reader = ImageReader(SUPPORTED_INPUT)
+        else:  &#47&#47 in the inference process use image input only
+            <a id="change">self.reader</a> = <a id="change">ImageReader([&quotimage&quot])</a>
+        <a id="change">self</a>.reader.initialise_reader(data_param, task_param)
+
+        if self.net_param.normalise_foreground_only:
+            foreground_masking_layer = BinaryMaskingLayer(
+                type_str=self.net_param.foreground_type,
+                multimod_fusion=self.net_param.multimod_foreground_type,
+                threshold=0.0)
+        else:
+            foreground_masking_layer = None
+
+        mean_var_normaliser = MeanVarNormalisationLayer(
+            image_name=&quotimage&quot, binary_masking_func=foreground_masking_layer)
+        if self.net_param.histogram_ref_file:
+            histogram_normaliser = HistogramNormalisationLayer(
+                image_name=&quotimage&quot,
+                modalities=vars(task_param).get(&quotimage&quot),
+                model_filename=self.net_param.histogram_ref_file,
+                binary_masking_func=foreground_masking_layer,
+                norm_type=self.net_param.norm_type,
+                cutoff=self.net_param.cutoff,
+                name=&quothist_norm_layer&quot)
+        else:
+            histogram_normaliser = None
+
+        if self.net_param.histogram_ref_file:
+            label_normaliser = DiscreteLabelNormalisationLayer(
+                image_name=&quotlabel&quot,
+                modalities=vars(task_param).get(&quotlabel&quot),
+                model_filename=self.net_param.histogram_ref_file)
+        else:
+            label_normaliser = None
+
+        normalisation_layers = []
+        if self.net_param.normalisation:
+            normalisation_layers.append(histogram_normaliser)
+        if self.net_param.whitening:
+            normalisation_layers.append(mean_var_normaliser)
+        if task_param.label_normalisation:
+            normalisation_layers.append(label_normaliser)
+
+        augmentation_layers = []
+        if self.is_training:
+            if self.action_param.random_flipping_axes != -1:
+                augmentation_layers.append(RandomFlipLayer(
+                    flip_axes=self.action_param.random_flipping_axes))
+            if self.action_param.scaling_percentage:
+                augmentation_layers.append(RandomSpatialScalingLayer(
+                    min_percentage=self.action_param.scaling_percentage[0],
+                    max_percentage=self.action_param.scaling_percentage[1]))
+            if self.action_param.rotation_angle or \
+                    self.action_param.rotation_angle_x or \
+                    self.action_param.rotation_angle_y or \
+                    self.action_param.rotation_angle_z:
+                rotation_layer = RandomRotationLayer()
+                if self.action_param.rotation_angle:
+                    rotation_layer.init_uniform_angle(
+                        self.action_param.rotation_angle)
+                else:
+                    rotation_layer.init_non_uniform_angle(
+                        self.action_param.rotation_angle_x,
+                        self.action_param.rotation_angle_y,
+                        self.action_param.rotation_angle_z)
+                augmentation_layers.append(rotation_layer)
+
+        volume_padding_layer = []
+        if self.net_param.volume_padding_size:
+            volume_padding_layer.append(PadLayer(
+                image_name=SUPPORTED_INPUT,
+                border=self.net_param.volume_padding_size))
+        <a id="change">self</a>.reader.add_preprocessing_layers(
+            volume_padding_layer + normalisation_layers + augmentation_layers)
+
+    def initialise_uniform_sampler(self):</code></pre><h3>After Change</h3><pre><code class='java'>
+
+        &#47&#47 read each line of csv files into an instance of Subject
+        if self.is_training:
+            self.readers = <a id="change">[ImageReader(SUPPORTED_INPUT, phase=&quottrain&quot),
+                            ImageReader(SUPPORTED_INPUT, phase=&quotvalidation&quot)]</a>
+        else:  &#47&#47 in the inference process use image input only
+            <a id="change">self.readers</a> = <a id="change">[ImageReader([&quotimage&quot], phase=&quottest&quot)]</a>
+        <a id="change">for reader in self.readers:
+            reader.initialise_reader(data_param, task_param)
+
+       </a> if self.net_param.normalise_foreground_only:
+            foreground_masking_layer = BinaryMaskingLayer(
+                type_str=self.net_param.foreground_type,
+                multimod_fusion=self.net_param.multimod_foreground_type,
+                threshold=0.0)
+        else:
+            foreground_masking_layer = None
+
+        mean_var_normaliser = MeanVarNormalisationLayer(
+            image_name=&quotimage&quot, binary_masking_func=foreground_masking_layer)
+        if self.net_param.histogram_ref_file:
+            histogram_normaliser = HistogramNormalisationLayer(
+                image_name=&quotimage&quot,
+                modalities=vars(task_param).get(&quotimage&quot),
+                model_filename=self.net_param.histogram_ref_file,
+                binary_masking_func=foreground_masking_layer,
+                norm_type=self.net_param.norm_type,
+                cutoff=self.net_param.cutoff,
+                name=&quothist_norm_layer&quot)
+        else:
+            histogram_normaliser = None
+
+        if self.net_param.histogram_ref_file:
+            label_normaliser = DiscreteLabelNormalisationLayer(
+                image_name=&quotlabel&quot,
+                modalities=vars(task_param).get(&quotlabel&quot),
+                model_filename=self.net_param.histogram_ref_file)
+        else:
+            label_normaliser = None
+
+        normalisation_layers = []
+        if self.net_param.normalisation:
+            normalisation_layers.append(histogram_normaliser)
+        if self.net_param.whitening:
+            normalisation_layers.append(mean_var_normaliser)
+        if task_param.label_normalisation:
+            normalisation_layers.append(label_normaliser)
+
+        augmentation_layers = []
+        if self.is_training:
+            if self.action_param.random_flipping_axes != -1:
+                augmentation_layers.append(RandomFlipLayer(
+                    flip_axes=self.action_param.random_flipping_axes))
+            if self.action_param.scaling_percentage:
+                augmentation_layers.append(RandomSpatialScalingLayer(
+                    min_percentage=self.action_param.scaling_percentage[0],
+                    max_percentage=self.action_param.scaling_percentage[1]))
+            if self.action_param.rotation_angle or \
+                    self.action_param.rotation_angle_x or \
+                    self.action_param.rotation_angle_y or \
+                    self.action_param.rotation_angle_z:
+                rotation_layer = RandomRotationLayer()
+                if self.action_param.rotation_angle:
+                    rotation_layer.init_uniform_angle(
+                        self.action_param.rotation_angle)
+                else:
+                    rotation_layer.init_non_uniform_angle(
+                        self.action_param.rotation_angle_x,
+                        self.action_param.rotation_angle_y,
+                        self.action_param.rotation_angle_z)
+                augmentation_layers.append(rotation_layer)
+
+        volume_padding_layer = []
+        if self.net_param.volume_padding_size:
+            volume_padding_layer.append(PadLayer(
+                image_name=SUPPORTED_INPUT,
+                border=self.net_param.volume_padding_size))
+        <a id="change">for reader in self.readers:
+            reader.add_preprocessing_layers(
+            volume_padding_layer + normalisation_layers + augmentation_layers)
+
+   </a> def initialise_uniform_sampler(self):
+        self.sampler = [[UniformSampler(
+            reader=reader,
+            data_param=self.data_param,</code></pre><img src="33633601.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 17</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/dfdad808d0979d6e45419720fa0d73b4cedcbb96#diff-73a8c4cc65d49e3b8afd6d829c764ee82a8f8e8bf8d43473328c27f044c442b9L59' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: dfdad808d0979d6e45419720fa0d73b4cedcbb96</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: eli.gibson@gmail.com</div><div id='file'> File Name: niftynet/application/segmentation_application.py</div><div id='class'> Class Name: SegmentationApplication</div><div id='method'> Method Name: initialise_dataset_loader</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/dfdad808d0979d6e45419720fa0d73b4cedcbb96#diff-73a8c4cc65d49e3b8afd6d829c764ee82a8f8e8bf8d43473328c27f044c442b9L59' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: dfdad808d0979d6e45419720fa0d73b4cedcbb96</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: eli.gibson@gmail.com</div><div id='file'> File Name: niftynet/application/segmentation_application.py</div><div id='class'> Class Name: SegmentationApplication</div><div id='method'> Method Name: initialise_dataset_loader</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/53633acd7c861fd73e3954088a48d0ac8dc42895#diff-6ff46c67b8999bcbeb83ebbdfdd33075974063c86a45d9d4945ce74fb12b353bL42' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 53633acd7c861fd73e3954088a48d0ac8dc42895</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: eli.gibson@gmail.com</div><div id='file'> File Name: niftynet/application/gan_application.py</div><div id='class'> Class Name: GANApplication</div><div id='method'> Method Name: initialise_dataset_loader</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/53633acd7c861fd73e3954088a48d0ac8dc42895#diff-30ee55ffacfcb677278b40ae1b0b72bf843ac0b9035a44dbc65144e2af1c8230L56' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: 53633acd7c861fd73e3954088a48d0ac8dc42895</div><div id='time'> Time: 2017-11-01</div><div id='author'> Author: eli.gibson@gmail.com</div><div id='file'> File Name: niftynet/application/regression_application.py</div><div id='class'> Class Name: RegressionApplication</div><div id='method'> Method Name: initialise_dataset_loader</div><BR>

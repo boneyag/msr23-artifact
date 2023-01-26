@@ -1,0 +1,79 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    header = dv_vcf_constants.deepvariant_header(
+        contigs=contigs, sample_names=[sample_name])
+    use_csi = _decide_to_use_csi(contigs)
+    <a id="change">with tempfile.NamedTemporaryFile() as temp:
+      start_time = time.time()
+      postprocess_variants_lib.process_single_sites_tfrecords(
+          contigs, paths, temp.name)
+      logging.info(&quotCVO sorting took %s minutes&quot,
+                   (time.time() - start_time) / 60)
+
+      logging.info(&quotTransforming call_variants_output to variants.&quot)
+      start_time = time.time()
+      independent_variants = _transform_call_variants_output_to_variants(
+          input_sorted_tfrecord_path=temp.name,
+          qual_filter=FLAGS.qual_filter,
+          multi_allelic_qual_filter=FLAGS.multi_allelic_qual_filter,
+          sample_name=sample_name,
+          group_variants=FLAGS.group_variants)
+      variant_generator = haplotypes.maybe_resolve_conflicting_variants(
+          independent_variants)
+
+      start_time = time.time()
+      if not FLAGS.nonvariant_site_tfrecord_path:
+        logging.info(&quotWriting variants to VCF.&quot)
+        write_variants_to_vcf(
+            variant_iterable=variant_generator,
+            output_vcf_path=FLAGS.outfile,
+            header=header)
+        if FLAGS.outfile.endswith(&quot.gz&quot):
+          build_index(FLAGS.outfile, use_csi)
+        logging.info(&quotVCF creation took %s minutes&quot,
+                     (time.time() - start_time) / 60)
+      else:
+        logging.info(&quotMerging and writing variants to VCF and gVCF.&quot)
+        lessthanfn = _get_contig_based_lessthan(contigs)
+        with vcf.VcfWriter(
+            FLAGS.outfile, header=header, round_qualities=True) as vcf_writer, \
+            vcf.VcfWriter(
+                FLAGS.gvcf_outfile, header=header, round_qualities=True) \
+            as gvcf_writer:
+          nonvariant_generator = tfrecord.read_shard_sorted_tfrecords(
+              FLAGS.nonvariant_site_tfrecord_path,
+              key=_get_contig_based_variant_sort_keyfn(contigs),
+              proto=variants_pb2.Variant)
+          merge_and_write_variants_and_nonvariants(
+              variant_generator, nonvariant_generator, lessthanfn, fasta_reader,
+              vcf_writer, gvcf_writer)
+        if FLAGS.outfile.endswith(&quot.gz&quot):
+          build_index(FLAGS.outfile, use_csi)
+        if FLAGS.gvcf_outfile.endswith(&quot.gz&quot):
+          build_index(FLAGS.gvcf_outfile, use_csi)
+        logging.info(&quotFinished writing VCF and gVCF in %s minutes.&quot,
+                     (time.time() - start_time) / 60)
+      if FLAGS.vcf_stats_report:
+        outfile_base = _get_base_path(FLAGS.outfile)
+        with vcf.VcfReader(FLAGS.outfile) as reader:
+          vcf_stats.create_vcf_report(
+              variants=reader.iterate(),
+              output_basename=outfile_base,
+              sample_name=sample_name,
+              vcf_reader=reader)
+
+
+</a>if __name__ == &quot__main__&quot:
+  flags.mark_flags_as_required([&quotinfile&quot, &quotoutfile&quot, &quotref&quot])
+  tf.app.run()
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    if record is None:
+      logging.info(&quotcall_variants_output is empty. Writing out empty VCF.&quot)
+      sample_name = dv_constants.DEFAULT_SAMPLE_NAME
+      <a id="change">variant_generator = iter([])</a>
+    else:
+      sample_name = _extract_single_sample_name(record)
+      temp = tempfile.NamedTemporaryFile()
+      start_time = time.time()</code></pre>

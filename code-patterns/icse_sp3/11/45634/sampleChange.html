@@ -1,0 +1,51 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                &quottype&quot: BUDGET_TYPE_NORMAL
+            }
+
+            <a id="change">if any([unit in pattern[3] for unit in self.unit_present_list]):
+                comma_removed_unit_text = pattern[3].replace(&quot,&quot, &quot&quot)
+                amount = int(self.regex_object.unit_substitute(comma_removed_unit_text))
+            else:
+                comma_removed_number = pattern[3].replace(&quot,&quot, &quot&quot)
+                amount = int(comma_removed_number)
+
+           </a> if self.min_digit &lt;= len(str(amount)) &lt;= self.max_digit:
+                budget[&quotmax_budget&quot] = amount
+                budget_list.append(budget)
+                original_list.append(original)</code></pre><h3>After Change</h3><pre><code class='java'>
+        if original_list is None:
+            original_list = []
+
+        <a id="change">pattern = re.compile(r&quot\s(&quot
+                             r&quot(?:max|upto|o?nly|around|below|less than|less|less den|\&lt;\s*\=?)&quot
+                             r&quot\s+&quot +
+                             self._budget_pattern +
+                             r&quot)(?:\b|\.|\s)&quot, flags=re.UNICODE | re.IGNORECASE)</a>
+
+        <a id="change">for match in pattern.finditer(self.processed_text):
+            original, amount, unit = match.groups()
+
+            budget = {
+                &quotmin_budget&quot: 0,
+                &quotmax_budget&quot: 0,
+                &quottype&quot: BUDGET_TYPE_NORMAL
+            }
+
+            scale = self.get_scale(unit)
+
+            if amount.replace(&quot,&quot, &quot&quot).replace(&quot.&quot, &quot&quot).isdigit():
+                amount = float(amount.replace(&quot,&quot, &quot&quot)) * scale
+
+                amount = int(amount)  &#47&#47 casting to int for backward compatibility
+                if self.min_digit &lt;= len(str(amount)) &lt;= self.max_digit:
+                    budget[&quotmax_budget&quot] = amount
+                    budget_list.append(budget)
+                    original_list.append(original.strip())
+
+       </a> return budget_list, original_list
+
+    def _detect_min_max_budget(self, budget_list=None, original_list=None):
+        Detects both minimum and maximum budget from text using regex</code></pre>

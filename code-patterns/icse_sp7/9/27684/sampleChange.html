@@ -1,0 +1,128 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        tf.Tensor
+            The output feature
+        
+        <a id="change">graph = graph.local_var()</a>
+
+        if self._norm == &quotboth&quot:
+            degs = tf.clip_by_value(tf.cast(graph.out_degrees(), tf.float32),
+                                    clip_value_min=1,
+                                    clip_value_max=np.inf)
+            norm = tf.pow(degs, -0.5)
+            shp = norm.shape + (1,) * (feat.ndim - 1)
+            norm = tf.reshape(norm, shp)
+            feat = feat * norm
+
+        if weight is not None:
+            if self.weight is not None:
+                raise DGLError(&quotExternal weight is provided while at the same time the&quot
+                               &quot module has defined its own weight parameter. Please&quot
+                               &quot create the module with flag weight=False.&quot)
+        else:
+            weight = self.weight
+
+        if self._in_feats &gt; self._out_feats:
+            &#47&#47 mult W first to reduce the feature size for aggregation.
+            if weight is not None:
+                feat = tf.matmul(feat, weight)
+            <a id="change">graph.srcdata[&quoth&quot]</a> = feat
+            graph.update_all(fn.copy_src(src=&quoth&quot, out=&quotm&quot),
+                             fn.sum(msg=&quotm&quot, out=&quoth&quot))
+            rst = graph.dstdata[&quoth&quot]
+        else:
+            &#47&#47 aggregate first then mult W
+            <a id="change">graph.srcdata[&quoth&quot]</a> = feat
+            graph.update_all(fn.copy_src(src=&quoth&quot, out=&quotm&quot),
+                             fn.sum(msg=&quotm&quot, out=&quoth&quot))
+            rst = graph.dstdata[&quoth&quot]
+            if weight is not None:
+                rst = tf.matmul(rst, weight)
+
+        if self._norm != &quotnone&quot:
+            degs = tf.clip_by_value(tf.cast(graph.in_degrees(), tf.float32),
+                                    clip_value_min=1,
+                                    clip_value_max=np.inf)
+            if self._norm == &quotboth&quot:
+                norm = tf.pow(degs, -0.5)
+            else:
+                norm = 1.0 / degs
+            shp = norm.shape + (1,) * (feat.ndim - 1)
+            norm = tf.reshape(norm, shp)
+            rst = rst * norm
+
+        if self.bias is not None:
+            rst = rst + self.bias
+
+        if self._activation is not None:
+            rst = self._activation(rst)
+
+        <a id="change">return rst</a>
+
+    def extra_repr(self):
+        Set the extra representation of the module,
+        which will come into effect when printing the model.</code></pre><h3>After Change</h3><pre><code class='java'>
+        tf.Tensor
+            The output feature
+        
+        <a id="change">with graph.local_scope():
+            if self._norm == &quotboth&quot:
+                degs = tf.clip_by_value(tf.cast(graph.out_degrees(), tf.float32),
+                                        clip_value_min=1,
+                                        clip_value_max=np.inf)
+                norm = tf.pow(degs, -0.5)
+                shp = norm.shape + (1,) * (feat.ndim - 1)
+                norm = tf.reshape(norm, shp)
+                feat = feat * norm
+
+            if weight is not None:
+                if self.weight is not None:
+                    raise DGLError(&quotExternal weight is provided while at the same time the&quot
+                                   &quot module has defined its own weight parameter. Please&quot
+                                   &quot create the module with flag weight=False.&quot)
+            else:
+                weight = self.weight
+
+            if self._in_feats &gt; self._out_feats:
+                &#47&#47 mult W first to reduce the feature size for aggregation.
+                if weight is not None:
+                    feat = tf.matmul(feat, weight)
+                graph.srcdata[&quoth&quot] = feat
+                graph.update_all(fn.copy_src(src=&quoth&quot, out=&quotm&quot),
+                                 fn.sum(msg=&quotm&quot, out=&quoth&quot))
+                rst = graph.dstdata[&quoth&quot]
+            else:
+                &#47&#47 aggregate first then mult W
+                graph.srcdata[&quoth&quot] = feat
+                graph.update_all(fn.copy_src(src=&quoth&quot, out=&quotm&quot),
+                                 fn.sum(msg=&quotm&quot, out=&quoth&quot))
+                rst = graph.dstdata[&quoth&quot]
+                if weight is not None:
+                    rst = tf.matmul(rst, weight)
+
+            if self._norm != &quotnone&quot:
+                degs = tf.clip_by_value(tf.cast(graph.in_degrees(), tf.float32),
+                                        clip_value_min=1,
+                                        clip_value_max=np.inf)
+                if self._norm == &quotboth&quot:
+                    norm = tf.pow(degs, -0.5)
+                else:
+                    norm = 1.0 / degs
+                shp = norm.shape + (1,) * (feat.ndim - 1)
+                norm = tf.reshape(norm, shp)
+                rst = rst * norm
+
+            if self.bias is not None:
+                rst = rst + self.bias
+
+            if self._activation is not None:
+                rst = self._activation(rst)
+
+            return rst
+
+   </a> def extra_repr(self):
+        Set the extra representation of the module,
+        which will come into effect when printing the model.
+        </code></pre>

@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        hvd.init()
+        size = hvd.size()
+
+        <a id="change">with self.test_session(config=self.config) as session:
+            &#47&#47 As of TensorFlow v1.9, gradients are not supported on
+            &#47&#47 integer tensors
+            dtypes = [tf.float32, tf.float64]
+            dims = [1, 2, 3]
+            for dtype, dim in itertools.product(dtypes, dims):
+                with tf.device("/cpu:0"):
+                    tf.set_random_seed(1234)
+                    tensor = tf.random_uniform(
+                        [5] * dim, -100, 100, dtype=dtype)
+                    summed = hvd.allreduce(tensor, average=False)
+
+                grad_ys = tf.ones([5] * dim)
+                grad = tf.gradients(summed, tensor, grad_ys)[0]
+                grad_out = session.run(grad)
+
+                expected = np.ones([5] * dim) * size
+                err = np.linalg.norm(expected - grad_out)
+                self.assertLess(err, 0.00000001,
+                                "gradient %s differs from expected %s, "
+                                "error: %s" % (grad_out, expected, str(err)))
+
+   </a> def test_horovod_allgather(self):
+        Test that the allgather correctly gathers 1D, 2D, 3D tensors.
+        hvd.init()
+        rank = hvd.rank()</code></pre><h3>After Change</h3><pre><code class='java'>
+            with tf.device("/cpu:0"):
+                tf.set_random_seed(1234)
+                if _executing_eagerly():
+                    tensor = <a id="change">self.tfe.Variable(tf.random_uniform(
+                        [5] * dim, -100, 100, dtype=dtype))</a>
+                    with tf.GradientTape() as tape:
+                        <a id="change">summed = hvd.allreduce(tensor, average=False)</a>
+                else:
+                    tensor = tf.random_uniform(
+                        [5] * dim, -100, 100, dtype=dtype)
+                    summed = hvd.allreduce(tensor, average=False)</code></pre>

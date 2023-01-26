@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        with tf.variable_scope(&quoteval_net&quot):
+            &#47&#47 c_names(collections_names) are the collections to store variables
+            c_names, n_l1, w_initializer, b_initializer = \
+                [&quoteval_net_params&quot, <a id="change">tf</a>.GraphKeys.GLOBAL_VARIABLES], 10, \
+                tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  &#47&#47 config of layers
+            self.q_eval = build_layers(self.s, c_names, n_l1, w_initializer, b_initializer)
+
+        &#47&#47 ------------------ build target_net ------------------
+        with tf.variable_scope(&quottarget_net&quot):
+            &#47&#47 c_names(collections_names) are the collections to store variables
+            c_names = [&quottarget_net_params&quot, <a id="change">tf</a>.GraphKeys.GLOBAL_VARIABLES]
+            self.q_next = build_layers(self.s_, c_names, n_l1, w_initializer, b_initializer)
+
+        with tf.variable_scope(&quotq_target&quot):
+            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name=&quotQmax_s_&quot)    &#47&#47 shape=(None, )
+            self.q_target = tf.stop_gradient(q_target)
+
+        with tf.variable_scope(&quotq_eval&quot):
+            <a id="change">a_one_hot = tf.one_hot(self.a, depth=self.n_actions, dtype=tf.float32)</a>
+            self.q_eval_wrt_a = tf.reduce_sum(self.q_eval * a_one_hot, axis=1)     &#47&#47 shape=(None, )
+
+        with tf.variable_scope(&quotloss&quot):
+            self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval_wrt_a, name=&quotTD_error&quot))</code></pre><h3>After Change</h3><pre><code class='java'>
+            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name=&quotQmax_s_&quot)    &#47&#47 shape=(None, )
+            self.q_target = tf.stop_gradient(q_target)
+        with tf.variable_scope(&quotq_eval&quot):
+            a_indices = tf.stack([tf.range(<a id="change">tf.shape(self.a)[0]</a>, dtype=tf.int32), self.a], axis=1)
+            self.q_eval_wrt_a = tf.gather_nd(params=self.q_eval, indices=a_indices)    &#47&#47 shape=(None, )
+        with tf.variable_scope(&quotloss&quot):
+            self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval_wrt_a, name=&quotTD_error&quot))</code></pre>

@@ -1,0 +1,64 @@
+<html><h3>30703a7036f9bfd58ba23c2872887f1820ef928e,pudl/outputs.py,,frc_eia923_df,#Any#,200
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    out_df = pd.merge(out_df, plants_eia860,
+                      how=&quotleft&quot,
+                      on=[&quotplant_id&quot, &quotyear&quot])
+    <a id="change">out_df = pd.merge(out_df, utils_eia, how=&quotleft&quot, on=&quotoperator_id&quot)</a>
+    <a id="change">out_df = pd.merge(out_df, plants_eia, how=&quotleft&quot, on=&quotplant_id&quot)</a>
+
+    &#47&#47 Sadly b/c we&quotre depending on 860 for Operator/Plant mapping,
+    &#47&#47 we only get 2011 and later
+    out_df = out_df.dropna(subset=[&quotoperator_id&quot, &quotoperator_name&quot])</code></pre><h3>After Change</h3><pre><code class='java'>
+    pt = models.PUDLBase.metadata.tables
+    &#47&#47 Most of the fields we want come direclty from Fuel Receipts & Costs
+    frc_tbl = pt[&quotfuel_receipts_costs_eia923&quot]
+    <a id="change">frc_select = sa.sql.select([frc_tbl, ])</a>
+    frc_df = pd.read_sql(frc_select, pudl_engine)
+
+    &#47&#47 Need a year column to merge with EIA860 data which is annual.
+    frc_df[&quotyear&quot] = pd.to_datetime(frc_df[&quotreport_date&quot]).dt.year
+
+    &#47&#47 Need to re-integrate the MSHA coalmine info:
+    cmi_tbl = pt[&quotcoalmine_info_eia923&quot]
+    cmi_select = sa.sql.select(<a id="change">[cmi_tbl, ]</a>)
+    cmi_df = pd.read_sql(cmi_select, pudl_engine)
+
+    out_df = pd.merge(frc_df, cmi_df,
+                      how=&quotleft&quot,
+                      left_on=&quotcoalmine_id&quot,
+                      right_on=&quotid&quot)
+    pu_eia = plants_utils_eia_df(pudl_engine)
+    out_df = pd.merge(out_df, pu_eia, how=&quotleft&quot, on=[&quotplant_id&quot, &quotyear&quot])
+
+    &#47&#47 Sadly b/c we&quotre depending on 860 for Operator/Plant mapping,
+    &#47&#47 we only get 2011 and later
+    out_df = out_df.dropna(subset=[&quotoperator_id&quot, &quotoperator_name&quot])
+    cols_to_drop = [&quotfuel_receipt_id&quot,
+                    &quotcoalmine_id&quot,
+                    &quotid&quot,
+                    &quotyear&quot]
+    out_df = out_df.drop(cols_to_drop, axis=1)
+
+    &#47&#47 Calculate a few totals that are commonly needed:
+    out_df[&quottotal_heat_content_mmbtu&quot] = \
+        out_df[&quotaverage_heat_content&quot] * out_df[&quotfuel_quantity&quot]
+    out_df[&quottotal_fuel_cost&quot] = \
+        out_df[&quottotal_heat_content_mmbtu&quot] * out_df[&quotfuel_cost_per_mmbtu&quot]
+
+    &#47&#47 There are a couple of bad rows with no specified fuel.
+    out_df = out_df.dropna(subset=[&quotfuel_group&quot])
+    &#47&#47 Add a simplified fuel category (this should really happen at ingest)
+    out_df[&quotfuel_pudl&quot] = out_df.fuel_group.replace(
+        to_replace=[&quotPetroleum&quot, &quotNatural Gas&quot, &quotOther Gas&quot, &quotCoal&quot,
+                    &quotPetroleum Coke&quot],
+        value=[&quotoil&quot, &quotgas&quot, &quotgas&quot, &quotcoal&quot, &quotpetcoke&quot])
+
+    &#47&#47 Clean up the types of a few columns...
+    <a id="change">out_df[&quotplant_id&quot] = out_df.plant_id.astype(int)</a>
+    out_df[&quotplant_id_pudl&quot] = out_df.plant_id_pudl.astype(int)
+    out_df[&quotoperator_id&quot] = out_df.operator_id.astype(int)
+    out_df[&quotutil_id_pudl&quot] = out_df.util_id_pudl.astype(int)
+</code></pre><img src="210504332.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 7</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/catalyst-cooperative/pudl/commit/30703a7036f9bfd58ba23c2872887f1820ef928e#diff-4eb6d1963eb379c72095eaa319f9a40db22b0d296b208b6bcc769a49c92089c3L185' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-cooperative/pudl</div><div id='commit'> Commit Name: 30703a7036f9bfd58ba23c2872887f1820ef928e</div><div id='time'> Time: 2017-09-25</div><div id='author'> Author: zane.selvans@catalyst.coop</div><div id='file'> File Name: pudl/outputs.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: frc_eia923_df</div><BR><BR><div id='link'><a href='https://github.com/Ghadjeres/DeepBach/commit/a8d39d5144c12bbe6e1fe95cd11726e8edd2cb9d#diff-c1afbca74b66897cd474077f3805a4f896ff5a0065c670b82ff952012621e473L19' target='_blank'>Link</a></div><div id='project'> Project Name: Ghadjeres/DeepBach</div><div id='commit'> Commit Name: a8d39d5144c12bbe6e1fe95cd11726e8edd2cb9d</div><div id='time'> Time: 2017-07-12</div><div id='author'> Author: bohumir.zamecnik@gmail.com</div><div id='file'> File Name: models_zoo.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: deepBach</div><BR><BR><div id='link'><a href='https://github.com/J535D165/recordlinkage/commit/4a24e4e36ee175aef54b92eb03e08a2be7811a96#diff-fea50f724285beab97172e5c05a081a23bdb17f42969012487a45a2235bcc135L30' target='_blank'>Link</a></div><div id='project'> Project Name: J535D165/recordlinkage</div><div id='commit'> Commit Name: 4a24e4e36ee175aef54b92eb03e08a2be7811a96</div><div id='time'> Time: 2018-03-10</div><div id='author'> Author: jonathandebruinhome@gmail.com</div><div id='file'> File Name: recordlinkage/datasets/febrl.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: _febrl_links</div><BR>

@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def run_func(func, params, x):
+    with tvm.transform.PassContext(opt_level=3):
+        <a id="change">graph</a>, <a id="change">lib</a>, <a id="change">new_params</a> = relay.build(func, "llvm", params=params)
+
+    from tvm.contrib import graph_runtime
+
+    ctx = tvm.cpu(0)
+    dtype = "float32"
+    m = <a id="change">graph_runtime.create(graph, lib, ctx)</a>
+    &#47&#47 set inputs
+    m.set_input("data", tvm.nd.array(x.astype(dtype)))
+    <a id="change">m.set_input(**new_params)</a>
+    &#47&#47 execute
+    m.run()
+    &#47&#47 get outputs
+    tvm_output = m.get_output(0)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    ctx = tvm.cpu(0)
+    dtype = "float32"
+    m = <a id="change">graph_runtime.GraphModule(lib["default"](ctx))</a>
+    &#47&#47 set inputs
+    m.set_input("data", tvm.nd.array(x.astype(dtype)))
+    &#47&#47 execute
+    m.run()</code></pre>

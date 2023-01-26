@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def make_onehot(feature, planes):
+    onehot_features = np.zeros(feature.shape + (planes,), dtype=np.uint8)
+    <a id="change">for i in range(planes - 1):
+        onehot_features[:, :, i] = (feature == i+1)
+   </a> onehot_features[:, :, planes-1] = (feature &gt;= planes)
+    return onehot_features
+
+def planes(num_planes):</code></pre><h3>After Change</h3><pre><code class='java'>
+def make_onehot(feature, planes):
+    onehot_features = np.zeros(feature.shape + (planes,), dtype=np.uint8)
+    capped = np.minimum(feature, planes)
+    <a id="change">onehot_index_offsets = np.arange(0, product(onehot_features.shape), planes) + capped.ravel()</a>
+    &#47&#47 A 0 is encoded as [0,0,0,0], not [1,0,0,0], so we&quotll
+    &#47&#47 filter out any offsets that are a multiple of $planes
+    &#47&#47 A 1 is encoded as [1,0,0,0], not [0,1,0,0], so subtract 1 from offsets
+    nonzero_elements = (capped != 0).ravel()
+    nonzero_index_offsets = <a id="change">onehot_index_offsets[nonzero_elements]</a> - 1
+    onehot_features.ravel()[nonzero_index_offsets] = 1
+    return onehot_features
+</code></pre>

@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                            if mac:
+                                device = Device(mac, name)
+                                self.last_results.append(device)
+                    <a id="change">_LOGGER.info("nmap scan successful")</a>
+                    return True
+                except NmapParserException as parse_exc:
+                    _LOGGER.error("failed to parse nmap results: %s",
+                                  parse_exc.msg)</code></pre><h3>After Change</h3><pre><code class='java'>
+        with self.lock:
+            _LOGGER.info("Scanning")
+
+            <a id="change">options = "-F"</a>
+            exclude_targets = set()
+            if self.home_interval:
+                now = datetime.now()
+                for host in self.last_results:
+                    if host.last_update + self.home_interval &gt; now:
+                        exclude_targets.add(host)
+                if len(exclude_targets) &gt; 0:
+                    <a id="change">target_list = [t.ip for t in exclude_targets]</a>
+                    <a id="change">options += " --exclude {}".format(",".join(target_list))</a>
+
+            nmap = NmapProcess(targets=self.hosts, options=options)
+
+            nmap.run()</code></pre>

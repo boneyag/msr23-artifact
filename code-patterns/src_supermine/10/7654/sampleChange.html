@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+def get_xy_fd():
+    feature_dim_dict = {"sparse": [SingleFeat(&quotuser&quot, 3), SingleFeat(
+        &quotgender&quot, 2), SingleFeat(&quotitem&quot, 3 + 1), SingleFeat(&quotitem_gender&quot, 2 + 1)], "dense": <a id="change">[SingleFeat(&quotscore&quot, 0)]</a>}
+    behavior_feature_list = ["item", "item_gender"]
+    uid = np.array([0, 1, 2])
+    ugender = np.array([0, 1, 0])
+    iid = np.array([1, 2, 3])  &#47&#47 0 is mask value
+    igender = np.array([1, 2, 1])  &#47&#47 0 is mask value
+    score = np.array([0.1, 0.2, 0.3])
+
+    hist_iid = np.array([[1, 2, 3, 0], [1, 2, 3, 0], [1, 2, 0, 0]])
+    hist_igender = np.array([[1, 1, 2, 0], [2, 1, 1, 0], [2, 1, 0, 0]])
+
+    feature_dict = {&quotuser&quot: uid, &quotgender&quot: ugender, &quotitem&quot: iid, &quotitem_gender&quot: igender,
+                    &quothist_item&quot: hist_iid, &quothist_item_gender&quot: hist_igender, &quotscore&quot: score}
+
+    x = <a id="change">[</a>feature_dict[feat.name] <a id="change">for</a> feat in feature_dim_dict["sparse"]] + [feature_dict[feat.name]
+                                                                            for feat in feature_dim_dict["dense"]] + [
+            feature_dict[&quothist_&quot + feat] for feat in behavior_feature_list]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    feature_columns = [SparseFeat(&quotuser&quot,3),SparseFeat(
+        &quotgender&quot, 2), SparseFeat(&quotitem&quot, 3 + 1), SparseFeat(&quotitem_gender&quot, 2 + 1),DenseFeat(&quotscore&quot, 0)]
+    feature_columns += [VarLenSparseFeat(&quothist_item&quot,<a id="change">3+1</a>, maxlen=4, embedding_name=&quotitem&quot),
+                        VarLenSparseFeat(&quothist_item_gender&quot,<a id="change">3+1</a>, maxlen=4, embedding_name=&quotitem_gender&quot)]
+
+    behavior_feature_list = ["item", "item_gender"]
+    uid = np.array([0, 1, 2])
+    ugender = np.array([0, 1, 0])
+    iid = np.array([1, 2, 3])  &#47&#47 0 is mask value
+    igender = np.array([1, 2, 1])  &#47&#47 0 is mask value
+    score = np.array([0.1, 0.2, 0.3])
+
+    hist_iid = np.array([[1, 2, 3, 0], [1, 2, 3, 0], [1, 2, 0, 0]])
+    hist_igender = np.array([[1, 1, 2, 0], [2, 1, 1, 0], [2, 1, 0, 0]])
+
+    feature_dict = {&quotuser&quot: uid, &quotgender&quot: ugender, &quotitem&quot: iid, &quotitem_gender&quot: igender,
+                    &quothist_item&quot: hist_iid, &quothist_item_gender&quot: hist_igender, &quotscore&quot: score}
+
+    <a id="change">fixlen_feature_names = get_fixlen_feature_names(feature_columns)</a>
+    <a id="change">varlen_feature_names = get_varlen_feature_names(feature_columns)</a>
+    x = [feature_dict[name] for name in fixlen_feature_names] + [feature_dict[name] for name in varlen_feature_names]
+
+    y = [1, 0, 1]
+    return x, y, feature_columns, behavior_feature_list</code></pre>

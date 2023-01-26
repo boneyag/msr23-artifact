@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def rsample(self, sample_shape=torch.Size(), base_samples=None):
+        if base_samples is not None:
+            &#47&#47 Make sure that the base samples agree with the distribution
+            <a id="change">if tuple(self.mean.size()) != tuple(self.mean.size()[-self.mean.dim() :]):
+                raise RuntimeError(
+                    "The size of base_samples (minus sample shape dimensions) should agree with the size "
+                    "of self.mean. Expected ...{} but got {}".format(self.loc.size(), base_samples.size())
+                )
+
+           </a> <a id="change">sample_shape = torch.Size(tuple(base_samples.size(i) for i in range(base_samples.dim() - self.mean.dim())))</a>
+            base_samples = base_samples.view(*sample_shape, *self.loc.shape)
+
+        samples = super(MultitaskMultivariateNormal, self).rsample(sample_shape=sample_shape, base_samples=base_samples)
+        samples = samples.view(sample_shape + self._output_shape)</code></pre><h3>After Change</h3><pre><code class='java'>
+            base_samples = base_samples.view(*sample_shape, *self.loc.shape)
+
+        samples = super().rsample(sample_shape=sample_shape, base_samples=base_samples)
+        <a id="change">if not self._interleaved:
+            samples = samples.transpose(-1, -2).contiguous()
+       </a> return samples.view(sample_shape + self._output_shape)
+
+    @property
+    def variance(self):</code></pre>

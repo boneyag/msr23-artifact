@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        featurizers=self.featurizers, tasks=self.tasks)
+    input_type = _get_input_type(input_file)
+
+    <a id="change">metadata_rows = []</a>
+    <a id="change">for shard_num, raw_df_shard in enumerate(load_data(input_file, shard_size)):
+      log("Loaded shard %d of size %s from file." % (shard_num+1, str(shard_size)),
+          self.verbosity)
+      log("About to featurize shard.", self.verbosity)
+
+      def process_helper(row, fields, input_type):
+        return self._process_raw_sample(input_type, row, fields)
+      process_fn = partial(process_helper, fields=raw_df_shard.keys(),
+                           input_type=input_type)
+
+      metadata_rows.append(self._featurize_shard(
+          raw_df_shard, process_fn, write_fn, shard_num, input_type))
+
+    &#47&#47 TODO(rbharath): This whole bit with metadata_rows is an awkward way of
+    &#47&#47 creating a Dataset. Is there a more elegant solutions?
+   </a> dataset = Dataset(data_dir=data_dir,
+                      metadata_rows=metadata_rows,
+                      reload=reload, verbosity=self.verbosity)
+    return dataset </code></pre><h3>After Change</h3><pre><code class='java'>
+
+    if worker_pool is None:
+      worker_pool = mp.Pool(processes=1)
+    <a id="change">metadata_rows = worker_pool.map(
+        map_function, enumerate(load_data(input_files, shard_size)))</a>
+
+    &#47&#47 TODO(rbharath): This whole bit with metadata_rows is an awkward way of
+    &#47&#47 creating a Dataset. Is there a more elegant solutions?
+    dataset = Dataset(data_dir=data_dir,</code></pre>

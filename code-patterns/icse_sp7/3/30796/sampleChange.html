@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def dumped_chroot(self, targets):
+    python_repos = create_subsystem(PythonRepos)
+
+    <a id="change">with subsystem_instance(IvySubsystem) as ivy_subsystem:
+      ivy_bootstrapper = Bootstrapper(ivy_subsystem=ivy_subsystem)
+
+      with subsystem_instance(ThriftBinary.Factory) as thrift_binary_factory:
+        interpreter_cache = PythonInterpreterCache(self.python_setup, python_repos)
+        interpreter_cache.setup()
+        interpreters = list(interpreter_cache.matched_interpreters([
+          self.python_setup.interpreter_requirement]))
+        self.assertGreater(len(interpreters), 0)
+        interpreter = interpreters[0]
+
+        with temporary_dir() as chroot:
+          pex_builder = PEXBuilder(path=chroot, interpreter=interpreter)
+
+          python_chroot = PythonChroot(python_setup=self.python_setup,
+                                       python_repos=python_repos,
+                                       ivy_bootstrapper=ivy_bootstrapper,
+                                       thrift_binary_factory=thrift_binary_factory.create,
+                                       interpreter=interpreter,
+                                       builder=pex_builder,
+                                       targets=targets,
+                                       platforms=[&quotcurrent&quot])
+          try:
+            python_chroot.dump()
+            yield pex_builder, python_chroot
+          finally:
+            python_chroot.delete()
+
+ </a> def test_antlr(self):
+    self.create_file(relpath=&quotsrc/antlr/word/word.g&quot, contents=dedent(
+      grammar word;
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    self.context(for_subsystems=[PythonRepos, PythonSetup, IvySubsystem,
+                                 ThriftBinary.Factory, BinaryUtil.Factory])
+    python_repos = PythonRepos.global_instance()
+    <a id="change">ivy_bootstrapper = Bootstrapper(ivy_subsystem=IvySubsystem.global_instance())</a>
+    thrift_binary_factory = ThriftBinary.Factory.global_instance().create
+
+    interpreter_cache = PythonInterpreterCache(self.python_setup, python_repos)
+    interpreter_cache.setup()</code></pre>

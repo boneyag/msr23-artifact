@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    label_sum = tf.reduce_sum(input_tensor=labels, axis=1, keepdims=True)
+    &#47&#47 Padding for rows with label_sum = 0.
+    nonzero_mask = tf.greater(tf.reshape(label_sum, [-1]), 0.0)
+    <a id="change">padded_labels = tf.compat.v1.where(nonzero_mask, labels,
+                                       _EPSILON * tf.ones_like(labels))</a>
+    padded_label_sum = tf.reduce_sum(
+        input_tensor=padded_labels, axis=1, keepdims=True)
+    labels_for_softmax = padded_labels / padded_label_sum
+    <a id="change">logits_for_softmax = logits</a>
+    &#47&#47 Padded labels have 0 weights in label_sum.
+    <a id="change">weights_for_softmax = tf.reshape(label_sum, [-1])</a>
+    <a id="change">return labels_for_softmax, logits_for_softmax, weights_for_softmax</a>
+
+  def compute_unreduced_loss(self, labels, logits, weights):
+    See `_RankingLoss`.
+    labels, logits, weights = self._precompute(labels, logits, weights)</code></pre><h3>After Change</h3><pre><code class='java'>
+      labels = self._lambda_weight.individual_weights(labels, ranks)
+    if weights is not None:
+      labels *= weights
+    <a id="change">return labels, logits</a>
+
+  def compute_unreduced_loss(self, labels, logits):
+    See `_RankingLoss`.
+    label_sum = tf.reduce_sum(input_tensor=labels, axis=1, keepdims=True)</code></pre>

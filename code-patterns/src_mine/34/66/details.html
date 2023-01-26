@@ -1,0 +1,60 @@
+<html><h3>9520f251808add32cd7c6b36f65fc6e031eaa3ff,nni/algorithms/compression/pytorch/quantization/quantizers.py,,update_quantization_param,#,68
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    &#47&#47 extend the [min, max] interval to ensure that it contains 0.
+    &#47&#47 Otherwise, we would not meet the requirement that 0 be an exactly
+    &#47&#47 representable value.
+    <a id="change">if rmin.is_cuda:
+        rmin = torch.min(rmin, torch.Tensor([0]).cuda())
+        rmax = torch.max(rmax, torch.Tensor([0]).cuda())
+        qmin = torch.Tensor([0]).cuda()
+        qmax = torch.Tensor([(1 &lt;&lt; bits) - 1]).cuda()
+    else:
+        rmin = torch.min(rmin, torch.Tensor([0]))
+        rmax = torch.max(rmax, torch.Tensor([0]))
+        qmin = torch.Tensor([0])
+        qmax = torch.Tensor([(1 &lt;&lt; bits) - 1])
+
+    &#47&#47 First determine the scale.
+   </a> <a id="change">scale</a> = (rmax - rmin) / (qmax - qmin)
+
+    &#47&#47 Zero-point computation.
+    <a id="change">initial_zero_point</a> = qmin - rmin / scale
+
+    &#47&#47 Now we need to nudge the zero point to be an integer
+    nudged_zero_point = 0
+    if initial_zero_point &lt; qmin:
+        nudged_zero_point = qmin
+    elif initial_zero_point &gt; qmax:
+        nudged_zero_point = qmax
+    else:
+        <a id="change">nudged_zero_point</a> = torch.round(initial_zero_point)
+
+    return scale, nudged_zero_point
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 extend the [min, max] interval to ensure that it contains 0.
+    &#47&#47 Otherwise, we would not meet the requirement that 0 be an exactly
+    &#47&#47 representable value.
+    <a id="change">rmin</a> = torch.min(rmin, torch.Tensor([0]).to(rmin.device))
+    rmax = torch.max(rmax, torch.Tensor([0]).to(rmin.device))
+    qmin = torch.Tensor([0]).to(rmin.device)
+    <a id="change">qmax</a> = <a id="change">torch.Tensor([(1 &lt;&lt; bits) - 1]).to(rmin.device)</a>
+
+    &#47&#47 First determine the scale.
+    <a id="change">scale</a> = (rmax - rmin) / (qmax - qmin)
+
+    &#47&#47 Zero-point computation.
+    <a id="change">initial_zero_point</a> = qmin - rmin / scale
+
+    &#47&#47 Now we need to nudge the zero point to be an integer
+    if initial_zero_point &lt; qmin:
+        nudged_zero_point = qmin
+    elif initial_zero_point &gt; qmax:
+        nudged_zero_point = qmax
+    else:
+        <a id="change">nudged_zero_point</a> = torch.round(initial_zero_point)
+
+    return scale, nudged_zero_point
+</code></pre><img src="330773.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 9</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/microsoft/nni/commit/9520f251808add32cd7c6b36f65fc6e031eaa3ff#diff-477f6f949d1a768c2f620ba4c367e5c02505d188e0d1865cf932d04d19b37addL88' target='_blank'>Link</a></div><div id='project'> Project Name: microsoft/nni</div><div id='commit'> Commit Name: 9520f251808add32cd7c6b36f65fc6e031eaa3ff</div><div id='time'> Time: 2020-12-22</div><div id='author'> Author: 39682259+eedalong@users.noreply.github.com</div><div id='file'> File Name: nni/algorithms/compression/pytorch/quantization/quantizers.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: update_quantization_param</div><BR>

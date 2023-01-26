@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                    self.get_ecobee_data()
+                    self.authorization_stage = "AUTHORIZED"
+        if self.authorization_stage != "AUTHORIZED":
+            <a id="change">if self.authorization_stage == "REQUEST_TOKENS":
+                try:
+                    self.update_authorization()
+                except (ConnectionError, NewConnectionError) as ce:
+                    _log.error("Error requesting tokens during configuration: {}. Resetting Ecobe authorization".format(
+                        ce))
+                    self.authorization_stage = "UNAUTHORIZED"
+           </a> if self.authorization_stage == "UNAUTHORIZED":
+                self.update_authorization()
+
+        if not self.poll_greenlet:</code></pre><h3>After Change</h3><pre><code class='java'>
+        self.parse_config(registry_config_str)
+
+        &#47&#47 Fetch any stored configuration values to reuse
+        <a id="change">self.authorization_stage = "UNAUTHORIZED"</a>
+        stored_auth_config = self.get_auth_config_from_store()
+        &#47&#47 Do some minimal checks on auth
+        if stored_auth_config:
+            if stored_auth_config.get("AUTH_CODE"):
+                self.authorization_code = stored_auth_config.get("AUTH_CODE")
+                self.authorization_stage = "REQUEST_TOKENS"
+                if stored_auth_config.get("ACCESS_TOKEN") and stored_auth_config.get("REFRESH_TOKEN"):
+                    self.access_token = stored_auth_config.get("ACCESS_TOKEN")
+                    self.refresh_token = stored_auth_config.get("REFRESH_TOKEN")
+                    try:
+                        self.get_ecobee_data()
+                        self.authorization_stage = "AUTHORIZED"
+                    except (RuntimeError, RemoteError):
+                        _log.warning("Ecobee tokens expired, requesting new auth")
+                        self.authorization_stage = "UNAUTHORIZED"
+        if self.authorization_stage != "AUTHORIZED":
+            self.update_authorization()
+            <a id="change">self.get_ecobee_data()</a>
+
+        if not self.poll_greenlet:
+            self.poll_greenlet = self.core.periodic(180, self.get_ecobee_data)
+        _log.debug("Ecobee configuration complete.")</code></pre>

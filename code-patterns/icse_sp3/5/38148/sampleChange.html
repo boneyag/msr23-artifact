@@ -1,0 +1,39 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+def join_table_by_indices(left, right, indices):
+    if not indices:
+        return None
+    domain = <a id="change">Orange.data.Domain(
+        left.domain.attributes + right.domain.attributes,
+        left.domain.class_vars + right.domain.class_vars,
+        left.domain.metas + right.domain.metas
+    )</a>
+    X = join_array_by_indices(left.X, right.X, indices)
+    Y = join_array_by_indices(np.c_[left.Y], np.c_[right.Y], indices)
+    metas = join_array_by_indices(left.metas, right.metas, indices)
+    <a id="change">for col, var in enumerate(domain.metas):
+        if var.is_string:
+            for row in range(metas.shape[0]):
+                cell = metas[row, col]
+                if isinstance(cell, float) and np.isnan(cell):
+                    metas[row, col] = ""
+
+   </a> return Orange.data.Table.from_numpy(domain, X, Y, metas)
+
+
+def join_array_by_indices(left, right, indices, masked=float("nan")):</code></pre><h3>After Change</h3><pre><code class='java'>
+            return None
+        domain = Orange.data.Domain(
+            *(getattr(self.data.domain, x) + getattr(reduced_extra.domain, x)
+              for x in <a id="change">("attributes", "class_vars", "metas")</a>))
+        X = self.join_array_by_indices(
+            self.data.X, reduced_extra.X, indices)
+        Y = self.join_array_by_indices(
+            np.c_[self.data.Y], np.c_[reduced_extra.Y], indices)
+        <a id="change">string_cols = [i for i, var in enumerate(domain.metas) if var.is_string]</a>
+        metas = self.join_array_by_indices(
+            self.data.metas, reduced_extra.metas, indices, string_cols)
+        return Orange.data.Table.from_numpy(domain, X, Y, metas)
+</code></pre>

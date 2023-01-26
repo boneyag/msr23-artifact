@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        self.model = model
+        self.sess = KTF.get_session()
+        if self.histogram_freq and self.merged is None:
+            <a id="change">layers = self.model.layers</a>
+            <a id="change">for layer in layers:
+                if hasattr(layer, &quotW&quot):
+                    tf.histogram_summary(&quot{}_W&quot.format(layer.name), layer.W)
+                if hasattr(layer, &quotb&quot):
+                    tf.histogram_summary(&quot{}_b&quot.format(layer.name), layer.b)
+                if hasattr(layer, &quotoutput&quot):
+                    tf.histogram_summary(&quot{}_out&quot.format(layer.name),
+                                         layer.output)
+       </a> self.merged = tf.merge_all_summaries()
+        if self.write_graph:
+            if parse_version(tf.__version__) &gt;= parse_version(&quot0.8.0&quot):
+                self.writer = tf.train.SummaryWriter(self.log_dir,</code></pre><h3>After Change</h3><pre><code class='java'>
+        if self.histogram_freq and self.merged is None:
+            for layer in self.model.layers:
+
+                <a id="change">for weight in layer.weights:
+                    tf.histogram_summary(weight.name, weight)
+
+                    if self.write_images:
+                        w_img = tf.squeeze(weight)
+
+                        shape = w_img.get_shape()
+                        if len(shape) &gt; 1 and shape[0] &gt; shape[1]:
+                            w_img = tf.transpose(w_img)
+
+                        if len(shape) == 1:
+                            w_img = tf.expand_dims(w_img, 0)
+
+                        w_img = tf.expand_dims(tf.expand_dims(w_img, 0), -1)
+
+                        tf.image_summary(weight.name, w_img)
+
+               </a> if hasattr(layer, &quotoutput&quot):
+                    tf.histogram_summary(&quot{}_out&quot.format(layer.name),
+                                         layer.output)
+        self.merged = tf.merge_all_summaries()</code></pre>

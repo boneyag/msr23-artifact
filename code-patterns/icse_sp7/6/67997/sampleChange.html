@@ -1,0 +1,47 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+  &#47&#47 We need to use retries because if we don&quott we see random failures
+  &#47&#47 where kfctl just appears to die.
+  run_with_retries(<a id="change">[
+      kfctl_path, "generate", "-V", "all", "--email=" + email, "--zone=" + zone
+  ]</a>,
+                   cwd=app_path)
+
+  &#47&#47 Do not run with retries since it masks errors</code></pre><h3>After Change</h3><pre><code class='java'>
+
+  logging.info("Using app path %s", app_path)
+  zone = &quotus-central1-a&quot
+  <a id="change">os</a>.environ["ZONE"] = zone
+  if not zone:
+    raise ValueError("Could not get zone being used")
+  &#47&#47 We need to specify a valid email because
+  &#47&#47  1. We need to create appropriate RBAC rules to allow the current user
+  &#47&#47     to create the required K8s resources.
+  &#47&#47  2. Setting the IAM policy will fail if the email is invalid.
+  email = util.run(["gcloud", "config", "get-value", "account"])
+  os.environ["EMAIL"] = email
+  if not email:
+    raise ValueError("Could not determine GCP account being used.")
+  os.environ["PROJECT"] = project
+  if not project:
+    raise ValueError("Could not get project being used")
+  &#47&#47 username and password are passed as env vars and won&quott appear in the logs
+  &#47&#47
+  config_spec = get_config_spec(config_path, project, email)
+
+  &#47&#47 Set KfDef name to be unique
+  regex = re.compile(&quot[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?&quot)
+  kfdef_name = regex.findall(app_path)[-1]
+  config_spec["metadata"]["name"] = kfdef_name
+
+  if not os.path.exists(parent_dir):
+    os.makedirs(parent_dir)
+  if not os.path.exists(app_path):
+    <a id="change">os.makedirs(app_path)</a>
+
+  with open(os.path.join(parent_dir, "tmp.yaml"), "w") as f:
+    yaml.dump(config_spec, f)
+</code></pre>

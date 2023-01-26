@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 mahotas.features.haralick bricks itself when provided a dtype larger than uint8 (version 1.4.3)
+        pixel_data = skimage.exposure.rescale_intensity(pixel_data,out_range=(0,gray_levels-1)).astype(numpy.uint8)
+
+        features = numpy.empty((n_directions, 13, <a id="change">len(unique_labels)</a>))
+
+        for index, label in enumerate(unique_labels):
+            label_data = numpy.zeros_like(pixel_data)</code></pre><h3>After Change</h3><pre><code class='java'>
+        pixel_data = skimage.exposure.rescale_intensity(pixel_data,out_range=(0,gray_levels-1)).astype(numpy.uint8)
+        props = skimage.measure.regionprops(labels, pixel_data)
+        per_label = [self.run_mahotas(prop, scale, n_directions) for prop in props]
+        features = <a id="change">dask.compute(per_label, scheduler=&quotthreads&quot)</a>
+        <a id="change">features = numpy.array(features)[0].transpose(1,2,0)</a>
+
+        for direction, direction_features in enumerate(features):
+            for feature_name, feature in zip(F_HARALICK, direction_features):
+                statistics += self.record_measurement(</code></pre>

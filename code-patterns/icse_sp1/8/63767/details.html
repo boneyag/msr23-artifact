@@ -1,0 +1,35 @@
+<html><h3>f76a4dabb4cd38ee58d01a35c5b511e224d060d2,gpytorch/lazy/sum_batch_lazy_tensor.py,SumBatchLazyTensor,_matmul,#SumBatchLazyTensor#Any#,29
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        rhs = rhs.unsqueeze(0)
+        rhs_size = list(rhs.size())
+        rhs_size[0] = self.batch_size()
+        rhs = <a id="change">rhs.expand(*rhs_size)</a>
+
+        res = self.base_lazy_tensor._matmul(rhs)
+        if self.sum_batch_size is not None:
+            res = res.view(-1, self.sum_batch_size, res.size(1), res.size(2))
+            res = res.sum(1)
+        else:
+            <a id="change">res = res.sum(0)</a>
+
+        if isvector:
+            res = res.squeeze(-1)
+        return res</code></pre><h3>After Change</h3><pre><code class='java'>
+            rhs = rhs.unsqueeze(0)
+            rhs = rhs.expand(self.base_lazy_tensor.size(0), *tuple(rhs.size())[1:])
+        else:
+            rhs = <a id="change">rhs.unsqueeze(1)</a>
+            rhs = rhs.expand(rhs.size(0), self.num_blocks, *tuple(rhs.size())[2:])
+            rhs = rhs.contiguous().view(-1, rhs.size(<a id="change">-2</a>), rhs.size(-1))
+
+        res = self.base_lazy_tensor._matmul(rhs)
+
+        if self.num_blocks is not None:
+            <a id="change">res = res.view(-1, self.num_blocks, res.size(1), res.size(2))</a>
+        res = res.sum(-3)
+
+        if isvector:
+            res = res.squeeze(-1)</code></pre><img src="294231305.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/f76a4dabb4cd38ee58d01a35c5b511e224d060d2#diff-3b3d0b7b67055fb926366e19eab63a573c243d1b65da030c368d3112708950d2L29' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: f76a4dabb4cd38ee58d01a35c5b511e224d060d2</div><div id='time'> Time: 2018-09-17</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/lazy/sum_batch_lazy_tensor.py</div><div id='class'> Class Name: SumBatchLazyTensor</div><div id='method'> Method Name: _matmul</div><BR><BR><div id='link'><a href='https://github.com/cornellius-gp/gpytorch/commit/60a342edc8b501802135df44869353cc8604d838#diff-b110adb1897838e27a3903e77c9061e1f5378089b0e617fd7e95ea8489b61282L14' target='_blank'>Link</a></div><div id='project'> Project Name: cornellius-gp/gpytorch</div><div id='commit'> Commit Name: 60a342edc8b501802135df44869353cc8604d838</div><div id='time'> Time: 2018-01-11</div><div id='author'> Author: gpleiss@gmail.com</div><div id='file'> File Name: gpytorch/kernels/rbf_kernel.py</div><div id='class'> Class Name: RBFKernel</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/mozilla/TTS/commit/5e148038be5971f2c7c811d46a1d7b28c759ecda#diff-1ca76b8dab5cda419aaf68884653245f0428af8e57cdb707fc538936bb59af29L162' target='_blank'>Link</a></div><div id='project'> Project Name: mozilla/TTS</div><div id='commit'> Commit Name: 5e148038be5971f2c7c811d46a1d7b28c759ecda</div><div id='time'> Time: 2020-01-09</div><div id='author'> Author: root@sp-mlc3-5423-0.mlc</div><div id='file'> File Name: layers/common_layers.py</div><div id='class'> Class Name: GravesAttention</div><div id='method'> Method Name: forward</div><BR>

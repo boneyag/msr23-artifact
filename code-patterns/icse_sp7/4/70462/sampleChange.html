@@ -1,0 +1,23 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        gan = self.gan
+        ops = self.ops
+
+        stacks = ops.shape(net)[0] // <a id="change">gan.batch_size()</a>
+        split_shape = ops.shape(net)
+        split_shape[-1] = gan.channels()
+        <a id="change">split_shape[0] //= stacks</a>
+        enhancers = gan.skip_connections.get_array(&quotprogressive_enhancement&quot, split_shape)
+        concats = [net]
+
+        &#47&#47 progressive enhancement</code></pre><h3>After Change</h3><pre><code class='java'>
+            x = self.add_noise(self.gan.inputs.x)
+            x = tf.image.resize_images(x,new_shape, 1) &#47&#47TODO what if the input is user defined? i.e. 2d test
+            size = [ops.shape(net)[1], ops.shape(net)[2]]
+            enhancers = <a id="change">[tf.image.resize_images(enhance, size, 1) for enhance in enhancers]</a>
+            enhance = tf.concat(axis=0, values=[x]+enhancers)
+
+            &#47&#47 progressive growing
+            if config.progressive_growing:</code></pre>

@@ -1,0 +1,61 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                self.features.add(stage)
+            self.features.add(DPNFinalBlock(channels=in_channels))
+
+            <a id="change">self.output = nn.HybridSequential(prefix=&quot&quot)</a>
+            if for_training or not test_time_pool:
+                self.output.add(nn.GlobalAvgPool2D())
+                self.output.add(conv1x1(
+                    in_channels=in_channels,
+                    out_channels=classes,
+                    use_bias=True))
+                self.output.add(<a id="change">nn.Flatten()</a>)
+            else:
+                <a id="change">self.output.add(nn.AvgPool2D(
+                    pool_size=7,
+                    strides=1))</a>
+                self.output.add(conv1x1(
+                    in_channels=in_channels,
+                    out_channels=classes,
+                    use_bias=True))
+                self.output.add(GlobalAvgMaxPool2D())
+                <a id="change">self.output.add(nn.Flatten())</a>
+
+    def hybrid_forward(self, F, x):
+        x = self.features(x)
+        x = self.output(x)</code></pre><h3>After Change</h3><pre><code class='java'>
+                    setattr(self.features, "stage{}".format(i + 1), stage)
+                setattr(self.features, &quotfinal_block&quot, DPNFinalBlock(channels=in_channels))
+
+            <a id="change">self.output = SimpleSequential()</a>
+            <a id="change">with self.output.init_scope():
+                if for_training or not test_time_pool:
+                    setattr(self.output, &quotfinal_pool&quot, GlobalAvgPool2D())
+                    setattr(self.output, &quotfinal_conv&quot, conv1x1(
+                        in_channels=in_channels,
+                        out_channels=classes,
+                        use_bias=True))
+                    setattr(self.output, &quotfinal_flatten&quot, partial(
+                        F.reshape,
+                        shape=(-1, classes)))
+                else:
+                    setattr(self.output, &quotavg_pool&quot, partial(
+                        F.average_pooling_2d,
+                        ksize=7,
+                        stride=1))
+                    setattr(self.output, &quotfinal_conv&quot, conv1x1(
+                        in_channels=in_channels,
+                        out_channels=classes,
+                        use_bias=True))
+                    setattr(self.output, &quotavgmax_pool&quot, GlobalAvgMaxPool2D())
+                    setattr(self.output, &quotfinal_flatten&quot, partial(
+                        F.reshape,
+                        shape=(-1, classes)))
+
+   </a> def __call__(self, x):
+        x = self.features(x)
+        x = self.output(x)
+        return x</code></pre>

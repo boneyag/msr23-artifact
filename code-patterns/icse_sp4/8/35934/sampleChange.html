@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    joint = batch_squash.unflatten(joint)  &#47&#47 [B x T, ...] -&gt; [B, T, ...]
+
+    <a id="change">with tf.name_scope(&quotreset_mask&quot):
+      reset_mask = tf.equal(step_type, time_step.StepType.FIRST)
+    &#47&#47 Unroll over the time sequence.
+   </a> joint, network_state = self._dynamic_unroll(
+        joint,
+        reset_mask,
+        initial_state=network_state,</code></pre><h3>After Change</h3><pre><code class='java'>
+        initial_state=network_state,
+        training=training,
+        **network_kwargs)
+    <a id="change">if isinstance(self._lstm_network, dynamic_unroll_layer.DynamicUnroll):
+      joint, network_state = output
+    else:
+      joint = output[0]
+      network_state = tf.nest.pack_sequence_as(
+          self._lstm_network.cell.state_size, tf.nest.flatten(output[1:]))
+
+   </a> output = batch_squash.flatten(joint)  &#47&#47 [B, T, ...] -&gt; [B x T, ...]
+
+    for layer in self._output_layers:
+      output = layer(output, training=training)</code></pre>

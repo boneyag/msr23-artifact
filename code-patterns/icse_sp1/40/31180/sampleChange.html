@@ -1,0 +1,105 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+                    &#47&#47 Train
+                    if first_run:
+                        for i in <a id="change">range(self.n_models)</a>:
+                            if <a id="change">self._task_type != constants.REGRESSION and \
+                               self._task_type != constants.MULTI_TARGET_REGRESSION</a>:
+                                self.model[i].partial_fit(X, y, self.stream.target_values)
+                            else:
+                                self.model[i].partial_fit(X, y)
+                        first_run = False
+                    else:
+                        for i in range(self.n_models):
+                            self.model[i].partial_fit(X, y)
+
+                    self._check_progress(logging, n_samples)   &#47&#47 TODO Confirm place
+
+                    &#47&#47 Test on holdout set
+                    if self.dynamic_test_set:
+                        perform_test = self.global_sample_count == (self.n_wait * (performance_sampling_cnt + 1)
+                                                                    + (self.test_size * performance_sampling_cnt))
+                    else:
+                        perform_test = (self.global_sample_count - self.test_size) % self.n_wait == 0
+
+                    if perform_test | (self.global_sample_count &gt;= self.max_samples):
+
+                        if self.dynamic_test_set:
+                            logging.info(&quotSeparating %s holdout samples.&quot, str(self.test_size))
+                            self.X_test, self.y_test = self.stream.next_sample(self.test_size)
+                            self.global_sample_count += self.test_size
+
+                        &#47&#47 Test
+                        if (self.X_test is not None) and (self.y_test is not None):
+                            prediction = [[] for _ in range(self.n_models)]
+                            for i in range(self.n_models):
+                                try:
+                                    prediction[i].extend(self.model[i].predict(self.X_test))
+                                except TypeError:
+                                    raise TypeError("Unexpected prediction value from {}"
+                                                    .format(type(self.model[i]).__name__))
+                            if prediction is not None:
+                                for j in <a id="change">range(self.n_models)</a>:
+                                    for i in range(len(prediction[0])):
+                                        <a id="change">if self._task_type == constants.CLASSIFICATION:
+                                            self.mean_eval_measurements[j].add_result(self.y_test[i],
+                                                                                      prediction[j][i])
+                                            self.current_eval_measurements[j].add_result(self.y_test[i],
+                                                                                         prediction[j][i])
+                                        else:
+                                            self.mean_eval_measurements[j].add_result(self.y_test[i],
+                                                                                      prediction[j][i])
+                                            self.current_eval_measurements[j].add_result(self.y_test[i],
+                                                                                         prediction[j][i])
+                               </a> self._update_metrics()
+                            performance_sampling_cnt += 1
+
+                end_time = timer()</code></pre><h3>After Change</h3><pre><code class='java'>
+
+                    &#47&#47 Train
+                    if first_run:
+                        for i in <a id="change">range(self.n_models)</a>:
+                            if <a id="change">self._task_type == consta</a>nts.CLASSIFICATION:
+                                self.model[i].partial_fit(X=X, y=y, classes=self.stream.target_values)
+                            elif <a id="change">self._task_type == consta</a>nts.MULTI_TARGET_CLASSIFICATION:
+                                <a id="change">self.model[i].partial_fit(X=X, y=y, classes=unique(self.stream.target_values))</a>
+                            else:
+                                self.model[i].partial_fit(X=X, y=y)
+                        first_run = False
+                    else:
+                        for i in range(self.n_models):
+                            self.model[i].partial_fit(X, y)
+
+                    self._check_progress(logging, n_samples)   &#47&#47 TODO Confirm place
+
+                    &#47&#47 Test on holdout set
+                    if self.dynamic_test_set:
+                        perform_test = self.global_sample_count == (self.n_wait * (performance_sampling_cnt + 1)
+                                                                    + (self.test_size * performance_sampling_cnt))
+                    else:
+                        perform_test = (self.global_sample_count - self.test_size) % self.n_wait == 0
+
+                    if perform_test | (self.global_sample_count &gt;= self.max_samples):
+
+                        if self.dynamic_test_set:
+                            logging.info(&quotSeparating %s holdout samples.&quot, str(self.test_size))
+                            self.X_test, self.y_test = self.stream.next_sample(self.test_size)
+                            self.global_sample_count += self.test_size
+
+                        &#47&#47 Test
+                        if (self.X_test is not None) and (self.y_test is not None):
+                            prediction = [[] for _ in range(self.n_models)]
+                            for i in range(self.n_models):
+                                try:
+                                    prediction[i].extend(self.model[i].predict(self.X_test))
+                                except TypeError:
+                                    raise TypeError("Unexpected prediction value from {}"
+                                                    .format(type(self.model[i]).__name__))
+                            if prediction is not None:
+                                for j in <a id="change">range(self.n_models)</a>:
+                                    for i in range(len(prediction[0])):
+                                        self.mean_eval_measurements[j].add_result(self.y_test[i],
+                                                                                  prediction[j][i])</code></pre>

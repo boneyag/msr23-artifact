@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+                           args=(results_file_path, timing_queue,))
+
+  &#47&#47 The start the server to listen and put results on queue.
+  handler = <a id="change">functools.partial(
+      RequestHandler, process_pool, hostname, timing_queue, clients_port)</a>
+  <a id="change">listener = server.HTTPServer(server_address, handler)</a>
+  logging.info(&quotStarting httpserver...\n&quot)
+  try:
+    listener.serve_forever()
+  except KeyboardInterrupt:</code></pre><h3>After Change</h3><pre><code class='java'>
+  server_address = (&quot&quot, int(sys.argv[1]))
+  results_file_path = sys.argv[2]
+  clients_port = sys.argv[3]
+  <a id="change">use_listening_server = sys.argv[4] == &quotTrue&quot</a>
+  vms_name_constructor = functools.partial(sys.argv[5].replace, &quotVM_ID&quot)
+  num_vms = int(sys.argv[6])
+  hostname = socket.gethostname()
+  process_pool = multiprocessing.Pool()
+  multiprocessing_manager = multiprocessing.Manager()
+  timing_queue = multiprocessing_manager.Queue()
+
+  &#47&#47 Start the worker to move results from queue to file first.
+  process_pool.apply_async(WriteResultsToFile,
+                           args=(results_file_path, timing_queue,))
+  <a id="change">if use_listening_server:
+    ActAsServer(process_pool, timing_queue, clients_port, hostname,
+                server_address)
+
+  &#47&#47 The start the server to listen and put results on queue.
+  else:
+    ActAsClient(process_pool, timing_queue, clients_port,
+                vms_name_constructor, num_vms)</a>
+</code></pre>

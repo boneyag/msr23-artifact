@@ -1,0 +1,28 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        n_mats = gs.shape(inner_prod_mat)[0]
+
+        n_inner_prod = gs.maximum(n_tangent_vec_a, n_tangent_vec_b)
+        n_inner_prod = <a id="change">gs.maximum(n_inner_prod, n_mats)</a>
+
+        n_tiles_a = gs.divide(n_inner_prod, n_tangent_vec_a)
+        n_tiles_a = gs.cast(n_tiles_a, gs.int32)
+        tangent_vec_a = gs.tile(tangent_vec_a, [n_tiles_a, 1])</code></pre><h3>After Change</h3><pre><code class='java'>
+        n_mats = gs.shape(inner_prod_mat)[0]
+
+        if n_tangent_vec_a != n_mats:
+            <a id="change">if n_tangent_vec_a == 1:
+                tangent_vec_a = gs.squeeze(tangent_vec_a, axis=0)
+                einsum_str_a = &quotj,njk-&gt;nk&quot
+            elif n_mats == 1:
+                inner_prod_mat = gs.squeeze(inner_prod_mat, axis=0)
+                einsum_str_a = &quotnj,jk-&gt;nk&quot
+            else:
+                raise ValueError(&quotShape mismatch for einsum.&quot)
+
+       </a> aux = gs.einsum(&quotnj,njk-&gt;nk&quot, tangent_vec_a, inner_prod_mat)
+
+
+        inner_prod = gs.einsum(&quotnk,nk-&gt;n&quot, aux, tangent_vec_b)</code></pre>

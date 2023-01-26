@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47include &lt;omp.h&gt;
+        &#47&#47include &lt;math.h&gt;
+        
+        weave.inline(code, support_code=support_code, libraries=<a id="change">[&quotgomp&quot]</a>,
+                     arg_names=[&quotN&quot, &quotnum_inducing&quot, &quotinput_dim&quot, &quotmu&quot, &quotZhat&quot, &quotmudist_sq&quot, &quotmudist&quot, &quotinv_lengthscale2&quot, &quot_psi2_denom&quot, &quotpsi2_Zdist_sq&quot, &quotpsi2_exponent&quot, &quothalf_log_psi2_denom&quot, &quotpsi2&quot, &quotvariance_sq&quot],
+                     type_converters=weave.converters.blitz, **self.weave_options)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+        else:
+            inv_lengthscale2 = np.ones(input_dim) * self.inv_lengthscale2
+
+        <a id="change">if config.getboolean(&quotparallel&quot, &quotopenmp&quot):
+            pragma_string = &quot&#47&#47pragma omp parallel for private(tmp)&quot
+        else:
+            pragma_string = &quot&quot
+
+       </a> <a id="change">code = 
+        double tmp;
+
+        %s
+        for (int n=0; n&lt;N; n++){
+            for (int m=0; m&lt;num_inducing; m++){
+               for (int mm=0; mm&lt;(m+1); mm++){
+                   for (int q=0; q&lt;input_dim; q++){
+                       //compute mudist
+                       tmp = mu(n,q) - Zhat(m,mm,q);
+                       mudist(n,m,mm,q) = tmp;
+                       mudist(n,mm,m,q) = tmp;
+
+                       //now mudist_sq
+                       tmp = tmp*tmp*inv_lengthscale2(q)/_psi2_denom(n,q);
+                       mudist_sq(n,m,mm,q) = tmp;
+                       mudist_sq(n,mm,m,q) = tmp;
+
+                       //now psi2_exponent
+                       tmp = -psi2_Zdist_sq(m,mm,q) - tmp - half_log_psi2_denom(n,q);
+                       psi2_exponent(n,mm,m) += tmp;
+                       if (m !=mm){
+                           psi2_exponent(n,m,mm) += tmp;
+                       }
+                   //psi2 would be computed like this, but np is faster
+                   //tmp = variance_sq*exp(psi2_exponent(n,m,mm));
+                   //psi2(n,m,mm) = tmp;
+                   //psi2(n,mm,m) = tmp;
+                   }
+                }
+            }
+        }
+
+         % pragma_string</a>
+
+        weave.inline(code, support_code=self.weave_support_code,
+                     arg_names=[&quotN&quot, &quotnum_inducing&quot, &quotinput_dim&quot, &quotmu&quot, &quotZhat&quot, &quotmudist_sq&quot, &quotmudist&quot, &quotinv_lengthscale2&quot, &quot_psi2_denom&quot, &quotpsi2_Zdist_sq&quot, &quotpsi2_exponent&quot, &quothalf_log_psi2_denom&quot, &quotpsi2&quot, &quotvariance_sq&quot],
+                     type_converters=weave.converters.blitz, **self.weave_options)</code></pre>

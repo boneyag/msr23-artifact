@@ -1,0 +1,44 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            if should_start_run:
+                mlflow.start_run()
+            artifact_path = "onnx_model"
+            <a id="change">mlflow.onnx.log_model(onnx_model=onnx_model, artifact_path=artifact_path)</a>
+            model_uri = "runs:/{run_id}/{artifact_path}".format(
+                run_id=mlflow.active_run().info.run_id, artifact_path=artifact_path
+            )
+</code></pre><h3>After Change</h3><pre><code class='java'>
+def test_model_log_evaluate_pyfunc_format(onnx_model, data, predicted):
+    x = data[0]
+
+    <a id="change">with mlflow.start_run() as run:
+        artifact_path = "onnx_model"
+        mlflow.onnx.log_model(onnx_model=onnx_model, artifact_path=artifact_path)
+        model_uri = "runs:/{run_id}/{artifact_path}".format(
+            run_id=run.info.run_id, artifact_path=artifact_path
+        )
+
+        &#47&#47 Loading pyfunc model
+        pyfunc_loaded = mlflow.pyfunc.load_pyfunc(model_uri=model_uri)
+        assert np.allclose(
+            pyfunc_loaded.predict(x).values.flatten(), predicted, rtol=1e-05, atol=1e-05
+        )
+        &#47&#47 test with a single numpy array
+        np_ary = x.values
+
+        &#47&#47 NB: Onnx wrapper returns a dictionary for non-dataframe inputs, we want to get the
+        &#47&#47 numpy array belonging to the first (and only) model output.
+        def get_ary_output(args):
+            return next(iter(pyfunc_loaded.predict(args).values())).flatten()
+
+        assert np.allclose(get_ary_output(np_ary), predicted, rtol=1e-05, atol=1e-05)
+        &#47&#47 test with a dict with a single tensor
+        assert np.allclose(get_ary_output({"input": np_ary}), predicted, rtol=1e-05, atol=1e-05)
+
+
+</a>@pytest.mark.large
+def test_model_save_evaluate_pyfunc_format_multi_tensor(
+    multi_tensor_onnx_model, data, multi_tensor_model_prediction
+):</code></pre>

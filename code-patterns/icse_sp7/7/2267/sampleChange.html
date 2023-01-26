@@ -1,0 +1,49 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            inputs = [input_name[0], scales_tensor_name]
+            op_version = 9
+
+    <a id="change">container.add_node(&quotUpsample&quot, inputs, output_name, op_version=op_version, **attrs)</a>
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    :param mode: nearest or linear
+    :param scales: an integer list of scaling-up rate of all input dimensions
+    &quot&quot&quot
+    <a id="change">if container.target_opset &lt; 10:
+        name = _create_name_or_use_existing_one(scope, &quotUpsample&quot, operator_name)
+        inputs = input_name
+        attrs = {&quotname&quot: name}
+        if container.target_opset &lt; 7:
+            if len(scales) != 4:
+                raise ValueError(&quotNeed to specify a 4-element list the the scales of N-, C-, H-, and W-axes&quot)
+            attrs[&quotheight_scale&quot] = float(scales[2])
+            attrs[&quotwidth_scale&quot] = float(scales[3])
+            attrs[&quotmode&quot] = mode.upper()
+            op_version = 1
+        else:
+            attrs[&quotmode&quot] = mode.lower()
+            if container.target_opset &lt; 9:
+                attrs[&quotscales&quot] = list(map(float, scales))
+                op_version = 7
+            else:
+                &#47&#47 scales moved from attribute to input in opset 9
+                scales_tensor_name = scope.get_unique_variable_name(name + &quot_scales&quot)
+                container.add_initializer(scales_tensor_name, onnx_proto.TensorProto.FLOAT, [len(scales)], scales)
+                inputs = [input_name[0], scales_tensor_name]
+                op_version = 9
+
+        container.add_node(&quotUpsample&quot, inputs, output_name, op_version=op_version, **attrs)
+    else:
+        &#47&#47 TODO, we need verify this after onnx opset 10 release
+        name = _create_name_or_use_existing_one(scope, &quotResize&quot, operator_name)
+        attrs = {&quotname&quot: name}
+        attrs[&quotmode&quot] = mode.lower()
+
+        scales_tensor_name = scope.get_unique_variable_name(name + &quot_scales&quot)
+        container.add_initializer(scales_tensor_name, onnx_proto.TensorProto.FLOAT, [len(scales)], scales)
+        inputs = [input_name[0], scales_tensor_name]
+        op_version = 10
+
+        container.add_node(&quotResize&quot, inputs, output_name, op_version=op_version, **attrs)</a>
+</code></pre>

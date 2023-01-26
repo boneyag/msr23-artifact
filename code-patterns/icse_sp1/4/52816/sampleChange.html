@@ -1,0 +1,22 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    iou = i_area / u_area
+
+    &#47&#47 Fills -1 for padded ground truth boxes.
+    <a id="change">padding_mask = tf.less(i_xmin, tf.zeros_like(i_xmin))</a>
+    iou = tf.where(padding_mask, -tf.ones_like(iou), iou)
+
+    return iou
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 Fills -1 for IoU entries between the padded ground truth boxes.
+    gt_invalid_mask = tf.less(
+        tf.reduce_max(gt_boxes, axis=-1, keepdims=True), 0.0)
+    <a id="change">padding_mask = tf.logical_or(
+        tf.zeros_like(bb_x_min, dtype=tf.bool),
+        tf.transpose(gt_invalid_mask, [0, 2, 1]))</a>
+    iou = tf.where(padding_mask, -tf.ones_like(iou), iou)
+
+    return iou
+</code></pre>

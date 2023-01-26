@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    :func:`masked_softmax`, then put the tensor back in its original shape.
+    
+    tensor_shape = tensor.size()
+    <a id="change">reshaped_tensor = tensor.view(-1, tensor.size()[-1])</a>
+    if mask is not None:
+        while mask.dim() &lt; tensor.dim():
+            mask = mask.unsqueeze(1)
+        <a id="change">mask = mask.expand_as(tensor).contiguous().float()</a>
+        mask = mask.view(-1, mask.size()[-1])
+    <a id="change">reshaped_result = masked_softmax(reshaped_tensor, mask)</a>
+    <a id="change">return reshaped_result.view(*tensor_shape)</a>
+
+
+def weighted_sum(matrix: torch.Tensor, attention: torch.Tensor) -&gt; torch.Tensor:
+    </code></pre><h3>After Change</h3><pre><code class='java'>
+    assume the tensor has shape ``(batch_size, ..., sequence_length)`` and that the mask (if given)
+    has shape ``(batch_size, sequence_length)``.
+    
+    <a id="change">return _last_dimension_applicator(masked_softmax, tensor, mask)</a>
+
+
+def last_dim_log_softmax(tensor: torch.Tensor, mask: Optional[torch.Tensor] = None) -&gt; torch.Tensor:
+    </code></pre>

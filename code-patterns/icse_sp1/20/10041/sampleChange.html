@@ -1,0 +1,50 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+
+def test_index_existing_game(app, monkeypatch):
+    <a id="change">mock_http = MockHttp(200, content=json.dumps({&quotaccess_token&quot: &quot123&quot}))</a>
+    <a id="change">monkeypatch.setattr(httplib2, &quotHttp&quot, mock_http)</a>
+    userX = users.User(&quotx@example.com&quot, _user_id=&quot123&quot)
+    firetactoe.Game(id=&quotrazem&quot, userX=userX).put()
+
+    response = app.get(&quot/?g=razem&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+
+def test_index_existing_game(app, monkeypatch):
+    <a id="change">with mock.patch(
+        "google.auth.transport.requests.AuthorizedSession.request", autospec=True
+    ) as auth_session:
+        data = {&quotaccess_token&quot: &quot123&quot}
+        auth_session.return_value = MockResponse(data, http_client.OK)
+
+        userX = users.User(&quotx@example.com&quot, _user_id=&quot123&quot)
+        firetactoe.Game(id=&quotrazem&quot, userX=userX).put()
+
+        response = app.get(&quot/?g=razem&quot)
+
+        assert &quotg=&quot in response.body
+        &#47&#47 Look for the unique game token
+        assert re.search(
+            r&quotinitGame[^\n]+\&quot[\w+/=]+\.[\w+/=]+\.[\w+/=]+\&quot&quot, response.body)
+
+        assert firetactoe.Game.query().count() == 1
+        game = ndb.Key(&quotGame&quot, &quotrazem&quot).get()
+        assert game is not None
+        assert game.userO.user_id() == &quot38&quot
+
+        auth_session.assert_called_once_with(
+            mock.ANY,  &#47&#47 AuthorizedSession object
+            method="PATCH",
+            url="http://firebase.com/test-db-url/channels/38razem.json",
+            body=&quot{"winner": null, "userX": "123", "moveX": null, "winningBoard": null, "board": null, "userO": "38"}&quot,
+            data=None,
+        )
+
+
+</a>def test_index_nonexisting_game(app, monkeypatch):
+    with mock.patch(
+        "google.auth.transport.requests.AuthorizedSession.request", autospec=True
+    ) as auth_session:</code></pre>

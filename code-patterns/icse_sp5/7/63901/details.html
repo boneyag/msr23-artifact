@@ -1,0 +1,55 @@
+<html><h3>a6667bf98c59a7447a6bc55869459e83f5bdb603,dnc/sparse_memory.py,SparseMemory,read_from_sparse_memory,#SparseMemory#Any#Any#Any#Any#Any#,185
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  def read_from_sparse_memory(self, memory, indexes, keys, last_used_mem, usage):
+    b = keys.size(0)
+    read_positions = []
+    <a id="change">read_weights = []</a>
+
+    &#47&#47 print(keys.squeeze())
+    &#47&#47 non-differentiable operations
+    for batch in range(b):
+      distances, positions = indexes[batch].search(keys[batch])
+      read_weights.append(distances)
+      read_positions.append(T.clamp(positions, 0, self.mem_size - 1))
+
+    &#47&#47 add least used mem to read positions
+    read_positions = T.stack(read_positions, 0)
+
+    &#47&#47 TODO: explore possibility of reading co-locations and such
+    &#47&#47 if read_collocations:
+      &#47&#47 read the previous and the next memory locations
+      &#47&#47 read_positions = T.cat([read_positions, read_positions-1, read_positions+1], -1)
+
+    read_positions = var(read_positions)
+    read_positions = T.cat([read_positions, last_used_mem.unsqueeze(1)], 2)
+    &#47&#47 print(read_positions.squeeze())
+
+    &#47&#47 add weight of 0 for least used mem block
+    read_weights = T.stack(read_weights, 0)
+    new_block = read_weights.new(b, 1, 1)
+    new_block.fill_(δ)
+    read_weights = <a id="change">T.cat([read_weights, new_block], 2)</a>
+    read_weights = var(read_weights)
+    &#47&#47 condition read weights by their usages
+    relevant_usages = usage.gather(1, read_positions.squeeze())
+    <a id="change">read_weights = (read_weights.squeeze(1) * relevant_usages).unsqueeze(1)</a>
+
+    (b, m, w) = memory.size()
+    read_vectors = memory.gather(1, read_positions.squeeze().unsqueeze(2).expand(b, self.K+1, w))
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 TODO: explore possibility of reading co-locations or ranges and such
+    (b, r, k) = read_positions.size()
+    read_positions = var(read_positions)
+    read_positions = T.cat(<a id="change">[read_positions.view(b, -1), last_used_mem]</a>, 1)
+
+    (b, m, w) = memory.size()
+    visible_memory = memory.gather(1, read_positions.unsqueeze(2).expand(b, r*k+1, w))
+
+    <a id="change">read_weights = F.softmax(θ(visible_memory, keys), dim=2)</a>
+    read_vectors = T.bmm(read_weights, visible_memory)
+
+    return read_vectors, read_positions, read_weights, visible_memory
+</code></pre><img src="297186710.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ixaxaar/pytorch-dnc/commit/a6667bf98c59a7447a6bc55869459e83f5bdb603#diff-1e2bc3913f11c22504d865b90327ccb4c0c92ea35c1103c36fd9b1f31eb26d1bL185' target='_blank'>Link</a></div><div id='project'> Project Name: ixaxaar/pytorch-dnc</div><div id='commit'> Commit Name: a6667bf98c59a7447a6bc55869459e83f5bdb603</div><div id='time'> Time: 2017-12-07</div><div id='author'> Author: root@ixaxaar.in</div><div id='file'> File Name: dnc/sparse_memory.py</div><div id='class'> Class Name: SparseMemory</div><div id='method'> Method Name: read_from_sparse_memory</div><BR><BR><div id='link'><a href='https://github.com/eriklindernoren/PyTorch-YOLOv3/commit/9b0a0dd6fe7b4ac021d91acc6b4f96b403dd6b67#diff-dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100bL250' target='_blank'>Link</a></div><div id='project'> Project Name: eriklindernoren/PyTorch-YOLOv3</div><div id='commit'> Commit Name: 9b0a0dd6fe7b4ac021d91acc6b4f96b403dd6b67</div><div id='time'> Time: 2019-04-26</div><div id='author'> Author: eriklindernoren@live.se</div><div id='file'> File Name: models.py</div><div id='class'> Class Name: Darknet</div><div id='method'> Method Name: forward</div><BR><BR><div id='link'><a href='https://github.com/HyperGAN/HyperGAN/commit/84c0cd80f13df87c1b8e5f547a9b77a490a874b1#diff-951f8497117a386c977013db53a1e451e169e7548b29b47de4e733b2d596e2d3L11' target='_blank'>Link</a></div><div id='project'> Project Name: HyperGAN/HyperGAN</div><div id='commit'> Commit Name: 84c0cd80f13df87c1b8e5f547a9b77a490a874b1</div><div id='time'> Time: 2020-08-09</div><div id='author'> Author: martyn@255bits.com</div><div id='file'> File Name: hypergan/samplers/factorization_batch_walk_sampler.py</div><div id='class'> Class Name: FactorizationBatchWalkSampler</div><div id='method'> Method Name: __init__</div><BR><BR><div id='link'><a href='https://github.com/interactiveaudiolab/nussl/commit/e7b29c20004bc520b202fea982b8db4c760fc822#diff-8e24ae1876b6acf6b147b64965b92678414c0a4211393f8daeb7aa2777614063L69' target='_blank'>Link</a></div><div id='project'> Project Name: interactiveaudiolab/nussl</div><div id='commit'> Commit Name: e7b29c20004bc520b202fea982b8db4c760fc822</div><div id='time'> Time: 2020-08-06</div><div id='author'> Author: prem@u.northwestern.edu</div><div id='file'> File Name: tests/ml/test_loss.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_permutation_invariant_loss_tf</div><BR>

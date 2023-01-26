@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    src_dict = checkpoint[&quotdicts&quot][&quotsrc&quot]
+    tgt_dict = checkpoint[&quotdicts&quot][&quottgt&quot]
+
+    <a id="change">emb_opts = {&quotsrc_word_vec_size&quot: model_opt.src_word_vec_size,
+                &quotposition_encoding&quot: model_opt.position_encoding,
+                &quotfeat_merge&quot: model_opt.feat_merge,
+                &quotfeat_vec_exponent&quot: model_opt.feat_vec_exponent,
+                &quotfeat_vec_size&quot: model_opt.feat_vec_size}</a>
+    cuda = (len(model_opt.gpuid) &gt; 0)
+    encoder = onmt.Models.Encoder(model_opt.encoder_type, model_opt.brnn,
+                                  model_opt.rnn_type, model_opt.enc_layers,
+                                  model_opt.rnn_size, model_opt.dropout,</code></pre><h3>After Change</h3><pre><code class='java'>
+    if opt.cuda:
+        torch.cuda.set_device(opt.gpu)
+
+    <a id="change">model_opt</a> = checkpoint[&quotopt&quot]
+    src_dict = checkpoint[&quotdicts&quot][&quotsrc&quot]
+    tgt_dict = checkpoint[&quotdicts&quot][&quottgt&quot]
+
+    cuda = (len(model_opt.gpuid) &gt; 0)
+    <a id="change">embeddings = onmt.Models.build_embeddings(
+                model_opt, src_dict.stoi[onmt.IO.PAD_WORD],
+                len(src_dict), for_encoder=True)</a>
+    encoder = onmt.Models.Encoder(model_opt.encoder_type, model_opt.brnn,
+                                  model_opt.rnn_type, model_opt.enc_layers,
+                                  model_opt.rnn_size, model_opt.dropout,
+                                  cuda, embeddings)
+    embeddings = onmt.Models.build_embeddings(
+                model_opt, tgt_dict.stoi[onmt.IO.PAD_WORD],
+                len(tgt_dict), for_encoder=False)
+    decoder = <a id="change">onmt</a>.Models.Decoder(model_opt, cuda, embeddings)
+    encoder_embeddings = encoder.word_lut.weight.data.tolist()
+    decoder_embeddings = decoder.word_lut.weight.data.tolist()
+</code></pre>

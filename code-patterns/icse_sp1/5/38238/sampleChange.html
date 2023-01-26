@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  ds = ds.interleave(tf.data.TFRecordDataset, cycle_length=1)
+  ds = ds.map(parse_tfr).batch(10)
+  iterator = ds.make_one_shot_iterator()
+  <a id="change">image_label = iterator.get_next(name=&quotinf_image&quot)</a>
+
+  &#47&#47 create an output file per spark worker for the predictions
+  tf.gfile.MakeDirs(args.output)
+  output_file = tf.gfile.GFile("{}/part-{:05d}".format(args.output, worker_num), mode=&quotw&quot)</code></pre><h3>After Change</h3><pre><code class='java'>
+  for batch in ds:
+    predictions = predict(conv2d_input=batch[0])
+    labels = np.reshape(batch[1], -1).astype(np.int)
+    <a id="change">preds = np.argmax(predictions[&quotdense_1&quot], axis=1)</a>
+    for x in zip(labels, preds):
+      output_file.write("{} {}\n".format(<a id="change">x[0]</a>, x[1]))
+
+  output_file.close()
+</code></pre>

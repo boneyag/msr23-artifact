@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      Indices of complexes that failed to featurize.
+    
+
+    <a id="change">pool = multiprocessing.Pool()</a>
+    results = []
+    for i, (mol_file, protein_pdb) in enumerate(zip(mol_files, protein_pdbs)):
+      log_message = "Featurizing %d / %d" % (i, len(mol_files))
+      results.append(
+          pool.apply_async(ComplexFeaturizer._featurize_callback,
+                           (self, mol_file, protein_pdb, log_message)))
+    <a id="change">pool.close()</a>
+    features = []
+    failures = []
+    for ind, result in enumerate(results):
+      new_features = result.get()</code></pre><h3>After Change</h3><pre><code class='java'>
+    if not isinstance(complexes, Iterable):
+      complexes = [cast(Tuple[str, str], complexes)]
+    features = []
+    <a id="change">for i, point in enumerate(complexes):
+      if i % log_every_n == 0:
+        logger.info("Featurizing datapoint %i" % i)
+      try:
+        features.append(self._featurize(point))
+      except:
+        logger.warning(
+            "Failed to featurize datapoint %i. Appending empty array." % i)
+        features.append(np.array([]))
+
+   </a> features = np.asarray(features)
+    return features
+
+  def _featurize(self, complex: Tuple[str, str]):</code></pre>

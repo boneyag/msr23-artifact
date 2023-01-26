@@ -1,0 +1,145 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        keep_prob_ph = 1  &#47&#47 not passed in as a placeholder
+        for i in range(4):
+            ch.append(round((ch[-1] + conditioning_channels * self.generator_shortcuts[i]) / 2))
+            <a id="change">sz</a> = [[<a id="change">round(i / 2)</a> for i in sz[0]]] + sz
+        if spatial_rank == 3:
+            def resize_func(x, sz):
+                sz_x = x.get_shape().as_list()
+                r1 = tf.image.resize_images(tf.reshape(x, sz_x[:3] + [-1]), sz[0:2])
+                r2 = tf.image.resize_images(tf.reshape(r1, [sz_x[0], sz[0] * sz[1], sz_x[3], -1]),
+                                            [sz[0] * sz[1], sz[2]])
+                return tf.reshape(r2, [sz_x[0]] + sz + [sz_x[-1]])
+        elif spatial_rank == 2:
+            resize_func = tf.image.resize_bilinear
+
+        def concat_cond(x, i):
+            if add_noise:
+                noise = [tf.random_normal(x.get_shape().as_list()[0:-1] + [add_noise], 0, .1)]
+            else:
+                noise = []
+            if conditioning is not None and self.generator_shortcuts[i]:
+                with tf.name_scope(&quotconcat_conditioning&quot):
+                    resized_cond = resize_func(conditioning, x.get_shape().as_list()[1:-1])
+                    return tf.concat([x, resized_cond] + noise, axis=3)
+            else:
+                return x
+
+        def conv(ch, x):
+            with tf.name_scope(&quotconv&quot):
+                conv_layer = ConvolutionalLayer(ch, 3, w_initializer=w_init)
+                return tf.nn.relu(conv_layer(x, is_training=is_training))
+
+        def up(ch, x):
+            with tf.name_scope(&quotup&quot):
+                deconv_layer = DeconvolutionalLayer(ch, 3, stride=2, w_initializer=w_init)
+                return tf.nn.relu(deconv_layer(x, is_training=is_training))
+
+        def up_block(ch, x, i):
+            with tf.name_scope(&quotup_block&quot):
+                u = up(ch, x)
+                cond = concat_cond(u, i)
+                return conv(cond.get_shape().as_list()[-1], cond)
+
+        def noise_to_image(sz, ch, random_source):
+            noise_size = random_source.get_shape().as_list()[1]
+            batch_size = random_source.get_shape().as_list()[0]
+            with tf.name_scope(&quotnoise_to_image&quot):
+                g_no_0 = np.prod(sz) * ch
+                w1p = tf.get_variable("G_W1p", shape=[noise_size, g_no_0], initializer=w_init)
+                b1p = tf.get_variable(&quotG_b1p&quot, shape=[g_no_0], initializer=b_init)
+                g_h1p = tf.nn.dropout(tf.nn.relu(tf.matmul(random_source, w1p) + b1p), keep_prob_ph)
+                g_h1p = tf.reshape(g_h1p, [batch_size] + sz + [ch])
+                g_h1p = concat_cond(g_h1p, 0)
+                return conv(ch + conditioning_channels, g_h1p)
+
+        <a id="change">g_h1</a> = noise_to_image(sz[0], ch[0], random_source)
+        g_h2 = up_block(ch[1], g_h1, 1)
+        g_h3 = up_block(ch[2], g_h2, 2)
+        <a id="change">g_h4</a> = up_block(ch[3], g_h3, 3)
+        g_h5 = up_block(ch[4], g_h4, 4)  &#47&#47 did not implement different epsilon
+        with tf.name_scope(&quotfinal_image&quot):
+            if add_noise:
+                noise = tf.random_normal(g_h5.get_shape().as_list()[0:-1] + [add_noise], 0, .1)
+                g_h5 = tf.concat([g_h5, noise], axis=3)
+            x_sample = ConvolutionalLayer(1, 3, with_bn=False, with_bias=True,
+                                          w_initializer=w_init,
+                                          b_initializer=b_init)(g_h5, is_training=is_training)
+            <a id="change">x_sample</a> = tf.nn.dropout(tf.nn.tanh(x_sample), keep_prob_ph)
+        with tf.name_scope(&quotsummaries_verbose&quot):
+            tf.summary.histogram(&quothist_g_h2&quot, g_h2, [logging.LOG])
+            tf.summary.histogram(&quothist_g_h3&quot, g_h3, [logging.LOG])</code></pre><h3>After Change</h3><pre><code class='java'>
+        keep_prob_ph = 1  &#47&#47 not passed in as a placeholder
+        for i in range(4):
+            ch.append(round((ch[-1] + conditioning_channels * self.generator_shortcuts[i]) / 2))
+            <a id="change">sz</a> = [[<a id="change">int(round(i / 2))</a> for i in sz[0]]] + sz
+        if spatial_rank == 3:
+            def resize_func(x, sz):
+                sz_x = x.get_shape().as_list()
+                r1 = tf.image.resize_images(tf.reshape(x, sz_x[:3] + [-1]), sz[0:2])
+                r2 = tf.image.resize_images(tf.reshape(r1, [sz_x[0], sz[0] * sz[1], sz_x[3], -1]),
+                                            [sz[0] * sz[1], sz[2]])
+                resized_3d = tf.reshape(r2, [sz_x[0]] + sz + [sz_x[-1]])
+                return resized_3d
+        elif spatial_rank == 2:
+            resize_func = tf.image.resize_bilinear
+
+        def concat_cond(x, i):
+            if add_noise:
+                noise = [tf.random_normal(x.get_shape().as_list()[0:-1] + [add_noise], 0, .1)]
+            else:
+                noise = []
+            if conditioning is not None and self.generator_shortcuts[i]:
+                with tf.name_scope(&quotconcat_conditioning&quot):
+                    resized_cond = resize_func(conditioning, x.get_shape().as_list()[1:-1])
+                    return tf.concat([x, resized_cond] + noise, axis=-1)
+            else:
+                return x
+
+        def conv(ch, x):
+            with tf.name_scope(&quotconv&quot):
+                conv_layer = ConvolutionalLayer(ch, 3, w_initializer=w_init)
+                return tf.nn.relu(conv_layer(x, is_training=is_training))
+
+        def up(ch, x):
+            with tf.name_scope(&quotup&quot):
+                deconv_layer = DeconvolutionalLayer(ch, 3, stride=2, w_initializer=w_init)
+                return tf.nn.relu(deconv_layer(x, is_training=is_training))
+
+        def up_block(ch, x, i):
+            with tf.name_scope(&quotup_block&quot):
+                u = up(ch, x)
+                cond = concat_cond(u, i)
+                return conv(cond.get_shape().as_list()[-1], cond)
+
+        def noise_to_image(sz, ch, random_source):
+            noise_size = random_source.get_shape().as_list()[1]
+            batch_size = random_source.get_shape().as_list()[0]
+            with tf.name_scope(&quotnoise_to_image&quot):
+                g_no_0 = np.prod(sz) * ch
+                w1p = tf.get_variable("G_W1p", shape=[noise_size, g_no_0], initializer=w_init)
+                b1p = tf.get_variable(&quotG_b1p&quot, shape=[g_no_0], initializer=b_init)
+                g_h1p = tf.nn.dropout(tf.nn.relu(tf.matmul(random_source, w1p) + b1p), keep_prob_ph)
+                g_h1p = tf.reshape(g_h1p, [batch_size] + sz + [ch])
+                g_h1p = concat_cond(g_h1p, 0)
+                return conv(ch + conditioning_channels, g_h1p)
+
+        <a id="change">g_h1</a> = noise_to_image(sz[0], ch[0], random_source)
+        g_h2 = up_block(ch[1], g_h1, 1)
+        g_h3 = up_block(ch[2], g_h2, 2)
+        <a id="change">g_h4</a> = up_block(ch[3], g_h3, 3)
+        g_h5 = up_block(ch[4], g_h4, 4)  &#47&#47 did not implement different epsilon
+        with tf.name_scope(&quotfinal_image&quot):
+            if add_noise:
+                noise = tf.random_normal(g_h5.get_shape().as_list()[0:-1] + [add_noise], 0, .1)
+                g_h5 = tf.concat([g_h5, noise], axis=3)
+            x_sample = ConvolutionalLayer(1, 3, with_bn=False, with_bias=True,
+                                          w_initializer=w_init,
+                                          b_initializer=b_init)(g_h5, is_training=is_training)
+            <a id="change">x_sample</a> = tf.nn.dropout(tf.nn.tanh(x_sample), keep_prob_ph)
+        &#47&#47with tf.name_scope(&quotsummaries_verbose&quot):
+        &#47&#47    tf.summary.histogram(&quothist_g_h2&quot, g_h2, [logging.LOG])
+        &#47&#47    tf.summary.histogram(&quothist_g_h3&quot, g_h3, [logging.LOG])</code></pre>

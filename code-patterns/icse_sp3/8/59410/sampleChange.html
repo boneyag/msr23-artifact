@@ -1,0 +1,34 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    if output_dtype is None:
+      raise TypeError(&quotTensor type %r is not supported&quot % x.dtype)
+  sum_dtype, sum_fn = _sum_combine_fn_and_dtype(x.dtype)
+  <a id="change">if isinstance(x, tf.SparseTensor):
+    if not reduce_instance_dims:
+      raise TypeError(
+          &quotSparseTensor is only supported when reduce_instance_dims=True&quot)
+    x = x.values
+ </a> with tf.name_scope(name, &quotmean&quot):
+    &#47&#47 For now _numeric_combine will return a tuple with as many elements as the
+    &#47&#47 input tuple.
+    x_count, x_sum = _numeric_combine(  &#47&#47 pylint: disable=unbalanced-tuple-unpacking</code></pre><h3>After Change</h3><pre><code class='java'>
+  sum_dtype, sum_fn = _sum_combine_fn_and_dtype(x.dtype)
+  with tf.name_scope(name, &quotmean&quot):
+    if isinstance(x, tf.SparseTensor):
+      <a id="change">if reduce_instance_dims:
+        ones_values, x_values = tf.ones_like(x.values), x.values
+      else:
+        sparse_ones = tf.SparseTensor(
+            indices=x.indices,
+            values=tf.ones_like(x.values),
+            dense_shape=x.dense_shape)
+        ones_values = tf.sparse_reduce_sum(sparse_ones, axis=0, keep_dims=True)
+        x = tf.cast(x, output_dtype)
+        ones_values = tf.cast(ones_values, output_dtype)
+        x_values = tf.sparse_reduce_sum(x, axis=0, keep_dims=True)
+   </a> else:
+      ones_values, x_values = tf.ones_like(x), x
+    x_count, x_sum = _numeric_combine(  &#47&#47 pylint: disable=unbalanced-tuple-unpacking
+        [ones_values, x_values],</code></pre>

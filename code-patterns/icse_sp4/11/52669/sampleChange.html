@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  pows = 1
+  for core_idx in range(kron_a.ndims()):
+    core = kron_a.tt_cores[core_idx]
+    if core.get_shape()[1] != <a id="change">core.get_shape()[2]</a>:
+      raise ValueError(&quotThe argument should be a Kronecker product of square&quot
+                      &quotmatrices (tt-cores must be square)&quot)
+    pows *= core.get_shape()[1].value</code></pre><h3>After Change</h3><pre><code class='java'>
+    raise ValueError(&quotThe argument should be a Kronecker product &quot 
+                     &quot(tt-ranks should be 1)&quot)
+ 
+  <a id="change">shapes_defined</a> = <a id="change">kron_a.get_shape().is_fully_defined()</a>
+  <a id="change">if shapes_defined:
+    i_shapes = kron_a.get_raw_shape()[0]
+    j_shapes = kron_a.get_raw_shape()[1]
+  else:
+    i_shapes = raw_shape(kron_a)[0]
+
+ </a> if shapes_defined:
+    if i_shapes != j_shapes:
+      raise ValueError(&quotThe argument should be a Kronecker product of square &quot
+                       &quotmatrices (tt-cores must be square)&quot)
+  <a id="change">pows = tf.cast(tf.reduce_prod(i_shapes), kron_a.dtype)</a>
+                                                          
+  logdet = 0.
+  det_sign = 1.
+  for core_idx in range(kron_a.ndims()):
+    core = kron_a.tt_cores[core_idx]
+    core_det = tf.matrix_determinant(core[0, :, :, 0])
+    core_abs_det = tf.abs(core_det)
+    core_det_sign = tf.sign(core_det)
+    core_pow = pows / <a id="change">i_shapes</a>[core_idx].value
+    logdet += tf.log(core_abs_det) * core_pow
+    det_sign *= core_det_sign**(core_pow)
+  </code></pre>

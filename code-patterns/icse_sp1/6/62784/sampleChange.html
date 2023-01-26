@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+      for feed_dict in generator:
+        feed_dict = {
+            self.layers[k.name].out_tensor: v
+            <a id="change">for</a> k, v in six.iteritems(feed_dict)
+        }
+        feed_dict[self._training_placeholder] = 0.0
+        feed_results = self.session.run(outputs, feed_dict=feed_dict)</code></pre><h3>After Change</h3><pre><code class='java'>
+      results = [[] for out in outputs]
+      n_samples = 0
+      n_enqueued = [0]
+      <a id="change">final_sample = [None]</a>
+      if self.queue_installed:
+        <a id="change">enqueue_thread = threading.Thread(
+            target=_enqueue_batch,
+            args=(self, generator, self._get_tf("Graph"), self.session,
+                  n_enqueued, final_sample))</a>
+        <a id="change">enqueue_thread.start()</a>
+      for feed_dict in self._create_feed_dicts(generator, False):
+        if self.queue_installed:
+          &#47&#47 Don&quott let this thread get ahead of the enqueue thread, since if
+          &#47&#47 we try to read more batches than the total number that get queued,</code></pre>

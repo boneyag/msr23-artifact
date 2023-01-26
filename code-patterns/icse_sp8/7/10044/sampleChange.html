@@ -1,0 +1,29 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        &#47&#47 tgt[i] = align[i] + len(tgt_vocab)
+        &#47&#47 for i such that tgt[i] == 0 and align[i] != 0
+        target_data = target.data.clone()
+        <a id="change">correct_mask = target_data.eq(0) * align.data.ne(0)</a>
+        correct_copy = (align.data + len(self.tgt_vocab)) * <a id="change">correct_mask.long()</a>
+        <a id="change">target_data = target_data + correct_copy</a>
+
+        &#47&#47 Compute sum of perplexities for stats
+        loss_data = loss.sum().data.clone()
+        <a id="change">stats = self._stats(loss_data, scores_data, target_data)</a>
+
+        if self.normalize_by_length:
+            &#47&#47 Compute Loss as NLL divided by seq length
+            &#47&#47 Compute Sequence Lengths</code></pre><h3>After Change</h3><pre><code class='java'>
+        &#47&#47 tgt[i] = align[i] + len(tgt_vocab)
+        &#47&#47 for i such that tgt[i] == 0 and align[i] != 0
+        target_data = target.clone()
+        <a id="change">unk = self.criterion.unk_index</a>
+        correct_mask = (target_data == unk) & (align != unk)
+        offset_align = align[correct_mask] + len(self.tgt_vocab)
+        <a id="change">target_data[correct_mask] += offset_align</a>
+
+        &#47&#47 Compute sum of perplexities for stats
+        stats = self._stats(loss.sum().clone(), scores_data, target_data)
+</code></pre>

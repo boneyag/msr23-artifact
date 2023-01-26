@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    def __init__(self, nclass, backbone=&quotresnet50&quot, norm_layer=nn.BatchNorm,
+                 aux=True, **kwargs):
+        super(PSPNet, self).__init__(nclass, backbone, aux, norm_layer, **kwargs)
+        <a id="change">with self.name_scope():
+            self.head = _PSPHead(nclass, norm_layer=norm_layer, **kwargs)
+            self.head.initialize()
+            self.head.collect_params().setattr(&quotlr_mult&quot, 10)
+            if self.aux:
+                self.auxlayer = _FCNHead(1024, nclass, norm_layer=norm_layer, **kwargs)
+                self.auxlayer.initialize()
+                self.auxlayer.collect_params().setattr(&quotlr_mult&quot, 10)
+
+   </a> def forward(self, x):
+        _, _, H, W = x.shape
+        c3, c4 = self.base_forward(x)
+        outputs = []</code></pre><h3>After Change</h3><pre><code class='java'>
+            if self.aux:
+                self.auxlayer = _FCNHead(1024, nclass, norm_layer=norm_layer, **kwargs)
+                self.auxlayer.initialize()
+                self.auxlayer.collect_para<a id="change">ms().setattr(&quotlr_mult&quot, 10)
+
+    def hybrid_forward(self, F, x):
+        c3, c4 = self.base_forward(x)
+        outputs = []
+       </a> x = self.head(c4)
+        x = F.contrib.BilinearResize2D(x, **self._up_kwargs)
+        outputs.append(x)
+</code></pre>

@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+         Extract data from the received images and assign them to eopatch features
+        
+
+        images = ((img[&quotdefault.tif&quot], <a id="change">img[&quotuserdata.json&quot]</a>) <a id="change">for</a> img in images)
+        images = <a id="change">[(img, meta.get(&quotnorm_factor&quot, 0)) for img, meta in images]</a>
+
+        for f_type, f_name_src, f_name_dst in self.additional_data:
+            <a id="change">eopatch[(f_type, f_name_dst)] = self._extract_additional_data(images, f_type, f_name_src, shape)</a>
+
+        if self.bands:
+            self._extract_bands(eopatch, images, shape)
+</code></pre><h3>After Change</h3><pre><code class='java'>
+    def _extract_data(self, eopatch, images, shape):
+         Extract data from the received images and assign them to eopatch features
+        
+        rtypes = [rtype <a id="change">for</a> rtype in self.request_types if rtype.id != &quotbands&quot]
+        itr_tifs = <a id="change">((rtype, [img[rtype.id + &quot.tif&quot] for img in images], self.request_types[rtype]) for rtype in rtypes)</a>
+
+        <a id="change">for rtype, tifs, bands in itr_tifs:
+            for band in bands:
+                feature = rtype.feature_type, band
+                eopatch[feature] = self._extract_array(tifs, bands.index(band), shape, rtype.np_dtype)
+
+       </a> if self.bands_feature:
+            self._extract_bands_feature(eopatch, images, shape)
+
+        return eopatch</code></pre>

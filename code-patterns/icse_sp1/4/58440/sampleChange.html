@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    @staticmethod
+    def forward(ctx, X, C, S):
+        B, N, _ = X.size()
+        K = <a id="change">C.size(0)</a>
+        with torch.cuda.device_of(X):
+            SL = <a id="change">X.new(B, N, K)</a>
+        if isinstance(X, torch.cuda.FloatTensor):
+            with torch.cuda.device_of(X):
+                encoding_lib.Encoding_Float_scaledl2_forward(SL, X, C, S)
+        elif isinstance(X, torch.cuda.DoubleTensor):</code></pre><h3>After Change</h3><pre><code class='java'>
+class _scaledL2(Function):
+    @staticmethod
+    def forward(ctx, X, C, S):
+        <a id="change">if X.is_cuda:
+            SL = lib.gpu.scaled_l2_forward(X, C, S)
+        else:
+            raise NotImplemented
+       </a> ctx.save_for_backward(X, C, S, SL)
+        return SL
+
+    @staticmethod</code></pre>

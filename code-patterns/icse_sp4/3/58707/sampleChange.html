@@ -1,0 +1,32 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+  io_dim = mtf.Dimension(&quotio&quot, FLAGS.io_size)
+
+  x = mtf.import_tf_tensor(mesh, features, mtf.Shape([batch_dim, io_dim]))
+  h = <a id="change">mtf.layers.dense(x, hidden_dim, name=&quotlayer1&quot, use_bias=False)</a>
+  y = mtf.layers.dense(h, io_dim, name=&quotlayer2&quot, use_bias=False)
+
+  loss = mtf.reduce_sum(mtf.square(y - x))
+  return y, loss</code></pre><h3>After Change</h3><pre><code class='java'>
+  x = mtf.import_tf_tensor(mesh, features, mtf.Shape([batch_dim, io_dim]))
+  x = mtf.cast(x, activation_dtype)
+  h = x
+  <a id="change">for lnum in xrange(FLAGS.num_hidden_layers + 1):
+    if lnum + 1 == FLAGS.num_hidden_layers + 1:
+      dim = io_dim
+    elif lnum % 2 == 0:
+      dim = mtf.Dimension(&quothidden_even&quot, FLAGS.hidden_size)
+    else:
+      dim = mtf.Dimension(&quothidden_odd&quot, FLAGS.hidden_size)
+    h = mtf.layers.dense(
+        h, dim,
+        use_bias=False,
+        master_dtype=master_dtype,
+        slice_dtype=slice_dtype,
+        name=&quotlayer_%d&quot % lnum)
+ </a> y = h
+
+  loss = mtf.reduce_mean(mtf.square(y - x))
+  return y, loss</code></pre>

@@ -1,0 +1,35 @@
+<html><h3>c18ea010c0f43c5144f1c5265874709f68c2e1f3,lazyflow/utility/blockwise_view.py,,blockwise_view,#Any#Any#Any#,3
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    view_10d = blockwise_view_5d( a_5d, blockshape_5d )
+    
+    &#47&#47 Drop the extra dimensions
+    slicing_5d = (0,)*padded_dims + (<a id="change">slice(None)</a>,)*a.ndim
+    slicing_10d = slicing_5d + slicing_5d
+    
+    <a id="change">view = view_10d[slicing_10d]</a>
+    assert view.shape == tuple(numpy.array(a.shape) / blockshape) + blockshape
+    if require_aligned_blocks:
+        assert view.size == a.size
+    return view</code></pre><h3>After Change</h3><pre><code class='java'>
+    &#47&#47 inter_block_strides = a.itemsize * numpy.array([z*y*x*bt, y*x*bz, x*by, bx])
+
+    &#47&#47 strides within each block
+    <a id="change">intra_block_strides = [1]</a>
+    for s in a.shape[-1:0:-1]:
+        intra_block_strides.append( s*intra_block_strides[-1] )
+    intra_block_strides = numpy.array(intra_block_strides[::-1])
+    
+    &#47&#47 strides from one block to another
+    inter_block_strides = numpy.array(intra_block_strides) * blockshape
+    
+    intra_block_strides *= a.itemsize
+    <a id="change">inter_block_strides *= a.itemsize</a>
+
+    <a id="change">strides = tuple(inter_block_strides) + tuple(intra_block_strides)</a>
+
+    &#47&#47 This is where the magic happens.
+    &#47&#47 Generate a view with our new strides.
+    return numpy.lib.stride_tricks.as_strided(a, shape=view_shape, strides=strides)</code></pre><img src="165398491.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 4</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/ilastik/ilastik/commit/c18ea010c0f43c5144f1c5265874709f68c2e1f3#diff-87de8b4cc914148005b921c49fb4608d8f518d7e707405b8cb336955cb3fdc46L21' target='_blank'>Link</a></div><div id='project'> Project Name: ilastik/ilastik</div><div id='commit'> Commit Name: c18ea010c0f43c5144f1c5265874709f68c2e1f3</div><div id='time'> Time: 2015-01-28</div><div id='author'> Author: bergs@janelia.hhmi.org</div><div id='file'> File Name: lazyflow/utility/blockwise_view.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: blockwise_view</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/080700865e68f22295b296e097032baa89231d99#diff-0575c34a014514e06c274ac0659e24fcde0ef12884cfd9865372cd27ea1a2c1eL69' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 080700865e68f22295b296e097032baa89231d99</div><div id='time'> Time: 2018-04-13</div><div id='author'> Author: huangyp@google.com</div><div id='file'> File Name: models/official/resnet/resnet_preprocessing.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: distorted_bounding_box_crop</div><BR><BR><div id='link'><a href='https://github.com/scikit-image/scikit-image/commit/02c704530eab9c8376b029aab4047babda5c65b8#diff-098ee4fc629229b8749767f4cd9b401a90172bb4d294788286618ee984ef14a7L99' target='_blank'>Link</a></div><div id='project'> Project Name: scikit-image/scikit-image</div><div id='commit'> Commit Name: 02c704530eab9c8376b029aab4047babda5c65b8</div><div id='time'> Time: 2017-10-29</div><div id='author'> Author: contact@kne42.me</div><div id='file'> File Name: skimage/measure/_moments.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: moments_contour_central</div><BR><BR><div id='link'><a href='https://github.com/tensorflow/tpu/commit/080700865e68f22295b296e097032baa89231d99#diff-a3df9424f506944db4207b154cb1e8077815cfac53042c260002aa6d4d2a59eeL111' target='_blank'>Link</a></div><div id='project'> Project Name: tensorflow/tpu</div><div id='commit'> Commit Name: 080700865e68f22295b296e097032baa89231d99</div><div id='time'> Time: 2018-04-13</div><div id='author'> Author: huangyp@google.com</div><div id='file'> File Name: models/experimental/resnet_bfloat16/resnet_preprocessing.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: distorted_bounding_box_crop</div><BR>

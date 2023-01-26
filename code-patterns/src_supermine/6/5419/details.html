@@ -1,0 +1,34 @@
+<html><h3>aab3902d4a7d55f5a86058854adc36b8a12c873f,catalyst/dl/callbacks/base.py,OptimizerCallback,on_batch_end,#OptimizerCallback#Any#,202
+</h3><link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        else:
+            model = state.model
+            model.zero_grad()
+            <a id="change">optimizer = state.get_key(
+                key="optimizer", inner_key=self.optimizer_key
+            )</a>
+            loss = state.get_key(key="loss", inner_key=self.optimizer_key)
+            scaled_loss = self.fp16_grad_scale * loss.float()
+            scaled_loss.backward()
+
+            master_params = list(<a id="change">optimizer.param_groups[0]["params"]</a>)
+            model_params = list(
+                filter(lambda p: p.requires_grad, model.parameters())
+            )
+            copy_grads(source=model_params, target=master_params)
+            <a id="change">for param in master_params:
+                param.grad.data.mul_(1. / self.fp16_grad_scale)
+           </a> self.grad_step(
+                optimizer=optimizer,
+                optimizer_wd=self._optimizer_wd,
+                grad_clip_fn=self.grad_clip_fn</code></pre><h3>After Change</h3><pre><code class='java'>
+    def on_batch_end(self, state):
+        loss = state.get_key(key="loss", inner_key=self.loss_key)
+        if isinstance(loss, dict):
+            <a id="change">loss = list(loss.values())</a>
+        if isinstance(loss, list):
+            loss = torch.mean(torch.stack(loss))
+
+        if self.prefix is not None:</code></pre><img src="23245362.png" alt="Italian Trulli"   style="width:500px;height:500px;"><div id='inPattern'>In pattern: SUPERPATTERN</div><BR><div id='frequency'>Frequency: 3</div><BR><div id='size'>Non-data size: 6</div><BR><h3>Instances</h3><BR><div id='link'><a href='https://github.com/catalyst-team/catalyst/commit/aab3902d4a7d55f5a86058854adc36b8a12c873f#diff-94f0b9669517bfb949ba9c8c8bd57cbd96ea0f16b7482a95010f509c6c577190L197' target='_blank'>Link</a></div><div id='project'> Project Name: catalyst-team/catalyst</div><div id='commit'> Commit Name: aab3902d4a7d55f5a86058854adc36b8a12c873f</div><div id='time'> Time: 2019-05-20</div><div id='author'> Author: ekhvedchenya@gmail.com</div><div id='file'> File Name: catalyst/dl/callbacks/base.py</div><div id='class'> Class Name: OptimizerCallback</div><div id='method'> Method Name: on_batch_end</div><BR><BR><div id='link'><a href='https://github.com/NifTK/NiftyNet/commit/fd8ca0c975e380dfcd7239408258b5852be33f06#diff-e97e8e1efa826e3b26cc11164d00c8b17349f1c9cdeeb2db4f2efde1031c9837L54' target='_blank'>Link</a></div><div id='project'> Project Name: NifTK/NiftyNet</div><div id='commit'> Commit Name: fd8ca0c975e380dfcd7239408258b5852be33f06</div><div id='time'> Time: 2017-08-12</div><div id='author'> Author: wenqi.li@ucl.ac.uk</div><div id='file'> File Name: niftynet/engine/sampler_grid.py</div><div id='class'> Class Name: GridSampler</div><div id='method'> Method Name: layer_op</div><BR><BR><div id='link'><a href='https://github.com/ray-project/ray/commit/9c5e5a97576f9bb8c7d7256cd566cdd4bcd63a3f#diff-05e4aa82cc94d18e3024505ead7533109b55351c4ddbe99e7ab180aca1720294L209' target='_blank'>Link</a></div><div id='project'> Project Name: ray-project/ray</div><div id='commit'> Commit Name: 9c5e5a97576f9bb8c7d7256cd566cdd4bcd63a3f</div><div id='time'> Time: 2020-08-18</div><div id='author'> Author: mfitton@berkeley.edu</div><div id='file'> File Name: python/ray/tests/test_metrics.py</div><div id='class'> Class Name: </div><div id='method'> Method Name: test_raylet_info_endpoint</div><BR>

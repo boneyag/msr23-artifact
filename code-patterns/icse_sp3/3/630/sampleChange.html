@@ -1,0 +1,19 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            B, L, I_EMBED = x.size()[:2]
+            mask = 1 - self.mask_embedding(mask).transpose(1, 2).unsqueeze(2) &#47&#47 (B, L) -&gt; (B, L, S) -&gt; (B, S, L) -&gt; (B, S, 1, L)
+            x = x.transpose(1, 2).unsqueeze(1) &#47&#47 (B, L, I_EMBED) -&gt; (B, I_EMBED, L) -&gt; (B, 1, I_EMBED, L)
+            x = (x + self._minus * mask).view(<a id="change">[-1, I_EMBED, L]</a>) &#47&#47 (B, S, I_EMBED, L) -&gt; (B * S, I_EMBED, L)
+            x = self.pool(x).squeeze(-1) &#47&#47 (B * S, I_EMBED, 1) -&gt; (B * S, I_EMBED)
+            x = x.view([B, -1])  &#47&#47 (B, S * I_EMBED)
+            return x</code></pre><h3>After Change</h3><pre><code class='java'>
+            &#47&#47 return x
+            mask = 1 - self.mask_embedding(mask).transpose(1, 2)
+            x = x.transpose(1, 2)
+            <a id="change">pool1 = self.pool(x + self._minus * mask[:, 0:1, :])</a>
+            pool2 = self.pool(x + self._minus * mask[:, 1:2, :])
+            pool3 = self.pool(x + self._minus * mask[:, 2:3, :])
+
+            x = torch.cat([pool1, pool2, pool3], 1)</code></pre>

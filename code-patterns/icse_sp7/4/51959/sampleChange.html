@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+        
+        loss = 0.0
+        for func, weight in zip(self._loss_functions, self._loss_weights):
+            <a id="change">loss += (K.mean(func(y_true, y_pred)) * weight)</a>
+        return loss
+</code></pre><h3>After Change</h3><pre><code class='java'>
+            logger.debug("Processing loss function: (func: %s, weight: %s, mask_channel: %s)",
+                         func, weight, mask_channel)
+            n_true, n_pred = self._apply_mask(y_true, y_pred, mask_channel)
+            <a id="change">if isinstance(func, DSSIMObjective):
+                &#47&#47 Extract Image Patches in SSIM requires that y_pred be of a known shape, so
+                &#47&#47 specifically reshape the tensor.
+                n_pred = K.reshape(n_pred, K.int_shape(y_pred))
+           </a> this_loss = func(n_true, n_pred)
+            loss_dims = K.ndim(this_loss)
+            loss += (K.mean(this_loss, axis=list(range(1, loss_dims))) * weight)
+        return loss</code></pre>

@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+            else:
+                alpha = torch.rand(real_AB.size())
+
+            x_hat = <a id="change">Variable(alpha * real_AB.data + (1 - alpha) * fake_AB.detach().data, requires_grad=True)</a>
+
+            pred_hat = self.netD(x_hat)
+            if self.use_gpu:
+                <a id="change">gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()).cuda(),
+                                create_graph=True, retain_graph=True, only_inputs=True)[0]</a>
+            else:
+                gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()),
+                                    create_graph=True, retain_graph=True, only_inputs=True)[0]
+</code></pre><h3>After Change</h3><pre><code class='java'>
+
+            &#47&#47 calculate gradient penalty
+            alpha = torch.rand(real_AB.size()).to(self.device)
+            x_hat = alpha * <a id="change">real_AB.detach()</a> + (1 - alpha) * fake_AB.detach()
+            <a id="change">x_hat.requires_grad_(True)</a>
+            pred_hat = self.netD(x_hat)
+
+            gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()).to(self.device),
+                                create_graph=True, retain_graph=True, only_inputs=True)[0]</code></pre>

@@ -1,0 +1,26 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    train_files = ["%s/train-%05d-of-"
+                   "01024" % (FLAGS.data_dir, num) for num in range(1024)]
+    dataset = tf.contrib.data.TFRecordDataset(train_files)
+    dataset = <a id="change">dataset</a>.repeat().map(parser).batch(batch_size)
+    images, labels = dataset.make_one_shot_iterator().get_next()
+    return (
+        tf.reshape(images, [batch_size, 224, 224, 3]),</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    train_files = ["%s/train-%05d-of-"
+                   "01024" % (FLAGS.data_dir, num) for num in range(1024)]
+    dataset = <a id="change">tf.contrib.data.TFRecordDataset(train_files).repeat()</a>
+    if FLAGS.num_preprocessing_threads == 0:
+      dataset = dataset.map(parser)
+    else:
+      dataset = dataset.map(parser,
+                            FLAGS.num_preprocessing_threads)
+    if FLAGS.prefetch_buffer_size != 0:
+      dataset = <a id="change">dataset.prefetch(FLAGS.prefetch_buffer_size)</a>
+    dataset = dataset.batch(batch_size)
+    images, labels = dataset.make_one_shot_iterator().get_next()
+    return (
+        tf.reshape(images, [batch_size, 224, 224, 3]),</code></pre>

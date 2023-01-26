@@ -1,0 +1,40 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    for train_metric in train_metrics:
+      train_metric.tf_summaries(step_metrics=train_metrics[:2])
+    <a id="change">summary_op = tf.contrib.summary.all_summary_ops()</a>
+
+    with eval_summary_writer.as_default(), \
+         tf.compat.v2.summary.record_if(True):
+      for eval_metric in eval_metrics:
+        eval_metric.tf_summaries()
+
+    init_agent_op = tf_agent.initialize()
+
+    with tf.compat.v1.Session() as sess:
+      <a id="change">tf</a>.contrib.summary.initialize(graph=tf.compat.v1.get_default_graph())
+      &#47&#47 Initialize the graph.
+      train_checkpointer.initialize_or_restore(sess)
+      rb_checkpointer.initialize_or_restore(sess)
+      sess.run(iterator.initializer)
+      &#47&#47 TODO(sguada) Remove once Periodically can be saved.
+      common_utils.initialize_uninitialized_variables(sess)
+
+      sess.run(init_agent_op)
+      <a id="change">tf.contrib.summary.initialize(session=sess)</a>
+      logging.info(&quotCollecting initial experience.&quot)
+      sess.run(initial_collect_op)
+
+      &#47&#47 Compute evaluation metrics.</code></pre><h3>After Change</h3><pre><code class='java'>
+    init_agent_op = tf_agent.initialize()
+
+    with tf.compat.v1.Session() as sess:
+      <a id="change">sess.run(train_summary_writer.init())</a>
+      <a id="change">sess.run(eval_summary_writer.init())</a>
+      &#47&#47 Initialize the graph.
+      train_checkpointer.initialize_or_restore(sess)
+      rb_checkpointer.initialize_or_restore(sess)
+      sess.run(iterator.initializer)</code></pre>

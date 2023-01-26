@@ -1,0 +1,18 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+
+    kernel_tuple: Tuple[int, int] = (kernel_size, kernel_size)
+    &#47&#47 direction from [-1, 1] to [0, 1] range
+    direction = (<a id="change">torch.clamp(direction, -1., 1.).item()</a> + 1.) / 2.
+    kernel = torch.zeros(kernel_tuple, dtype=torch.float)
+    kernel[kernel_tuple[0] // 2, :] = torch.linspace(direction, 1. - direction, steps=kernel_tuple[0])
+    kernel = kernel.unsqueeze(0).unsqueeze(0)</code></pre><h3>After Change</h3><pre><code class='java'>
+
+    &#47&#47 Element-wise linspace
+    kernel[:, kernel_tuple[0] // 2, :] = torch.stack(
+        <a id="change">[(direction - (1 / (kernel_tuple[0] - 1)) * i) for i in range(kernel_tuple[0])]</a>, dim=-1)
+    kernel = kernel.unsqueeze(1)
+    &#47&#47 rotate (counterclockwise) kernel by given angle
+    kernel = rotate(kernel, angle, mode=&quotnearest&quot, align_corners=True)</code></pre>

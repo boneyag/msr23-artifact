@@ -1,0 +1,63 @@
+<link rel="stylesheet" href="../../../../default.css">
+<script src="../../../../highlight.pack.js"></script> 
+<script>hljs.initHighlightingOnLoad();</script>
+<html><h3></h3><h3>Before Change</h3><pre><code class='java'>
+    src_features, tgt_features = _collect_report_features(fields)
+    for j, feat in enumerate(src_features):
+        logger.info(&quot * src feature %d size = %d&quot
+                    % <a id="change">(j, len(fields[feat].vocab))</a>)
+    for j, feat in enumerate(tgt_features):
+        logger.info(&quot * tgt feature %d size = %d&quot
+                    % (j, len(fields[feat].vocab)))</code></pre><h3>After Change</h3><pre><code class='java'>
+        model_opt = default_opt
+        model_opt.__dict__.update(checkpoint[&quotopt&quot].__dict__)
+        logger.info(&quotLoading vocab from checkpoint at %s.&quot % opt.train_from)
+        <a id="change">vocab = checkpoint[&quotvocab&quot]</a>
+    else:
+        checkpoint = None
+        model_opt = opt
+        vocab = torch.load(opt.data + &quot.vocab.pt&quot)
+
+    &#47&#47 Load a shard dataset to determine the data_type.
+    &#47&#47 (All datasets have the same data_type).
+    &#47&#47 this should be refactored out of existence reasonably soon
+    first_dataset = torch.load(glob.glob(opt.data + &quot.train*.pt&quot)[0])
+    data_type = first_dataset.data_type
+
+    &#47&#47 check for code where vocab is saved instead of fields
+    &#47&#47 (in the future this will be done in a smarter way
+    if old_style_vocab(vocab):
+        fields = load_fields_from_vocab(vocab, data_type)
+    else:
+        fields = vocab
+
+    &#47&#47 Report src and tgt vocab sizes, including for features
+    for side in [&quotsrc&quot, &quottgt&quot]:
+        <a id="change">for name, f in fields[side]:
+            if f.use_vocab:
+                logger.info(&quot * %s vocab size = %d&quot % (name, len(f.vocab)))
+
+    &#47&#47 Build model.
+   </a> model = build_model(model_opt, opt, fields, checkpoint)
+    n_params, enc, dec = _tally_parameters(model)
+    logger.info(&quotencoder: %d&quot % enc)
+    logger.info(&quotdecoder: %d&quot % dec)
+    logger.info(&quot* number of parameters: %d&quot % n_params)
+    _check_save_model_path(opt)
+
+    &#47&#47 Build optimizer.
+    optim = build_optim(model, opt, checkpoint)
+
+    &#47&#47 Build model saver
+    model_saver = build_model_saver(model_opt, opt, model, fields, optim)
+
+    trainer = build_trainer(opt, device_id, model, fields,
+                            optim, data_type, model_saver=model_saver)
+
+    &#47&#47 this line is kind of a temporary kludge because different objects expect
+    &#47&#47 fields to have a different structure
+    <a id="change">dataset_fields = dict(chain.from_iterable(fields.values()))</a>
+
+    train_iter = build_dataset_iter("train", dataset_fields, opt)
+    valid_iter = build_dataset_iter(
+        "valid", dataset_fields, opt, is_train=False)</code></pre>
