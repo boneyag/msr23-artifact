@@ -2,7 +2,9 @@
 
 **Generalizable Python code change patterns - MSR 2023 paper artifact**
 
-The `PythonCodePatterns.xlsx` contains the annotated data. 
+The `PythonCodePatterns.xlsx` contains the annotated data.
+
+We also included `PythonCodePatterns.json` so that it is convenient to filter patterns. 
 
 To access the patterns locally, download the `code-patterns` directory and place it inside a local web server (like Apache).
 
